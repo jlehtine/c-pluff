@@ -11,7 +11,7 @@
             </xs:sequence>
 			<xs:attribute name="name" type="xs:string" use="required"/>
 			<xs:attribute name="id" type="xs:string" use="required"/>
-			<xs:attribute name="version" type="versionPattern" use="required"/>
+			<xs:attribute name="version" type="version" use="required"/>
 			<xs:attribute name="provider-name" type="xs:string"/>
 		</xs:complexType>
 	</xs:element>
@@ -25,7 +25,7 @@
 	<xs:element name="import">
 		<xs:complexType>
 			<xs:attribute name="plugin" type="xs:string" use="required"/>
-			<xs:attribute name="version" type="versionPattern"/>
+			<xs:attribute name="version" type="version"/>
 			<xs:attribute name="match" type="matchChoice" default="compatible"/>
 			<xs:attribute name="optional" type="xs:boolean"/>
 		</xs:complexType>
@@ -40,7 +40,7 @@
 	<xs:element name="extension-point">
 		<xs:complexType>
 			<xs:attribute name="name" type="xs:string" use="required"/>
-			<xs:attribute name="id" type="xs:string" use="required"/>
+			<xs:attribute name="id" type="simpleIdentifier" use="required"/>
 			<xs:attribute name="schema" type="xs:string"/>
 		</xs:complexType>
 	</xs:element>
@@ -50,11 +50,16 @@
 				<xs:any minOccurs="0" maxOccurs="unbounded" processContents="skip"/>
 			</xs:sequence>
 			<xs:attribute name="point" type="xs:string" use="required"/>
-			<xs:attribute name="id" type="xs:string"/>
+			<xs:attribute name="id" type="simpleIdentifier"/>
 			<xs:attribute name="name" type="xs:string"/>
 		</xs:complexType>
 	</xs:element>
-	<xs:simpleType name="versionPattern">
+	<xs:simpleType name="simpleIdentifier">
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[^.]*"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="version">
 		<xs:restriction base="xs:string">
 			<xs:pattern value="(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)(\.\S+)?)?)?"/>
 		</xs:restriction>
