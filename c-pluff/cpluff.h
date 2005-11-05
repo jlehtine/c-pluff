@@ -6,11 +6,22 @@
 #ifndef _CPLUFF_H_
 #define _CPLUFF_H_
 
-#include <cpkazlib/list.h>
+#include "cpkazlib/list.h"
 
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus*/
+
+
+/* ------------------------------------------------------------------------
+ * Constants
+ * ----------------------------------------------------------------------*/
+
+/** Return value for successful operations */
+#define CPLUFF_OK 0
+
+/** Return value for failed operations */
+#define CPLUFF_ERROR (-1)
 
 
 /* ------------------------------------------------------------------------
@@ -238,13 +249,25 @@ list_t *plugins;
  * ----------------------------------------------------------------------*/
 
 
-/* Initialization functions */
+/* Initialization and destroy functions */
 
 /**
- * Initializes the C-Pluff framework. This function must be called before
- * calling any other function or accessing C-Pluff data structures.
+ * Initializes the C-Pluff framework. The framework must be initialized before
+ * trying to use its functionality or the associated data structures. This
+ * function does nothing if the framework has already been initialized.
+ * 
+ * @return CPLUFF_OK (0) on success, CPLUFF_ERROR (-1) on failure
  */
-void cpluff_init(void);
+int cpluff_init(void);
+
+/**
+ * Stops and unloads all plug-ins and releases all resources allocated by
+ * the C-Pluff framework. Framework functionality and data structures are not
+ * available after calling this function. This function does nothing if the
+ * framework has not been initialized. The framework may be reinitialized by
+ * calling cpluff_init function.
+ */
+void cpluff_destroy(void);
 
 
 /* Functions for error handling */
@@ -254,13 +277,17 @@ void cpluff_init(void);
  * framework when an error occurs. For example, failures to start and register
  * plug-ins are reported to the error handler function, if set. Error messages
  * are localized, if possible. There can be several registered error handlers.
+ * This function does nothing and returns CPLUFF_OK if the specified error
+ * handler has already been registered.
  * 
  * @param error_handler the error handler to be added
+ * @return CPLUFF_OK (0) on success, CPLUFF_ERROR (-1) on failure
  */
-void add_cp_error_handler(void (*error_handler)(const char *msg));
+int add_cp_error_handler(void (*error_handler)(const char *msg));
 
 /**
- * Removes an error handler.
+ * Removes an error handler. This function does nothing if the specified error
+ * handler has not been registered.
  * 
  * @param error_handler the error handler to be removed
  */
@@ -278,15 +305,18 @@ void remove_cp_error_handler(void (*error_handler)(const char *msg));
  * only called after (for installation) or before (for uninstallation) the
  * actual state change. The read/write lock is being held while calling the
  * listener so the listener should return promptly. There can be several
- * registered listeners.
+ * registered listeners. This function does nothing and returns CPLUFF_OK
+ * if the specified listener has already been registered.
  * 
  * @param event_listener the event_listener to be added
+ * @return CPLUFF_OK (0) on success, CPLUFF_ERROR (-1) on failure
  */
-void add_cp_event_listener
+int add_cp_event_listener
 	(void (*event_listener)(const plugin_event_t *event));
 
 /**
- * Removes an event listener.
+ * Removes an event listener. This function does nothing if the specified
+ * listener has not been registered.
  * 
  * @param event_listener the event listener to be removed
  */
@@ -328,8 +358,9 @@ extension_t *find_extension(const char *id);
  * found.
  * 
  * @param dir the directory containing plug-ins
+ * @return the number of successfully deployed new plug-ins
  */
-void scan_plugins(const char *dir);
+int scan_plugins(const char *dir);
 
 /**
  * Loads a plug-in from a specified path. The plug-in is added to the list of
@@ -351,7 +382,7 @@ plugin_t *load_plugin(const char *path);
  * has stopped and then starts the plug-in.
  * 
  * @param plugin the plug-in to be started
- * @return whether the plug-in was successfully started
+ * @return CPLUFF_OK (0) on success, CPLUFF_ERROR (-1) on failure
  */
 int start_plugin(plugin_t *plugin);
 
@@ -383,33 +414,27 @@ void stop_all_plugins(void);
 void unload_plugin(plugin_t *plugin);
 
 /**
- * Unloads all plug-ins. This effectively stops the plug-in framework and
- * releases the allocated resources.
+ * Unloads all plug-ins. This effectively stops all plug-in activity and
+ * releases the resources allocated by the plug-ins.
  */
 void unload_all_plugins(void);
 
 
-/* Locking global data structures for exclusive or shared read-only access */
+/* Locking global data structures for exclusive access */
 
 /**
- * Acquires shared read-only access for global C-Pluff data structures.
+ * Acquires exclusive access to C-Pluff data structures. Access is granted to
+ * the calling thread. This function does not block if the calling thread
+ * already has exclusive access. If access is acquired multiple times by the
+ * same thread then it is only released after corresponding number of calls to
+ * release.
  */
-void acquire_cp_data_ro();
+void acquire_cp_data(void);
 
 /**
- * Releases shared read-only access for global C-Pluff data structures.
+ * Releases exclusive access to C-Pluff data structures.
  */
-void release_cp_data_ro();
-
-/**
- * Acquires exclusive read/write access for global C-Pluff data structures.
- */
-void acquire_cp_data_rw();
-
-/**
- * Releases exclusive read/write access for global C-Pluff data structures.
- */
-void release_cp_data_rw();
+void release_cp_data(void);
 
 
 #ifdef __cplusplus

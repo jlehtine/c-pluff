@@ -5,7 +5,8 @@
 #
 # Process this file with automake to produce a real makefile.
 
-AM_CFLAGS = -Wall -pedantic
+AM_CFLAGS = -Wall -Wmissing-prototypes -pedantic
+AM_CPPFLAGS = -DNDEBUG
 
 lib_LIBRARIES = libcpluff.a
-libcpluff_a_SOURCES = framework.c
+libcpluff_a_SOURCES = core.c cpkazlib/list.c

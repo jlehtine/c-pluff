@@ -25,6 +25,9 @@ AC_PROG_CC_C_O
 AC_C_CONST
 AC_PROG_RANLIB
 
+# Check for pthread support
+AC_CHECK_HEADERS([pthread.h])
+
 # Output Makefiles
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
