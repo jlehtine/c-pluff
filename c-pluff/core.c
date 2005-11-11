@@ -8,6 +8,7 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <assert.h>
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
@@ -64,6 +65,16 @@ static void process_error(list_t *list, lnode_t *node, void *msg);
  * @param event the event being delivered
  */
 static void deliver_event(list_t *list, lnode_t *node, void *event);
+
+/**
+ * Locks the data mutex.
+ */
+static void lock_mutex(void);
+
+/**
+ * Unlocks the data mutex.
+ */
+static void unlock_mutex(void);
 
 
 /* ------------------------------------------------------------------------
@@ -189,6 +200,9 @@ int add_cp_error_handler(void (*error_handler)(const char *msg)) {
 	acquire_cp_data();
 	status = set_append(error_handlers, (void *) error_handler);
 	release_cp_data();
+	if (status != CPLUFF_OK) {
+		cpi_process_error("An error handler could not be registered due to insufficient resources.");
+	}
 	return status;
 }
 
@@ -218,6 +232,9 @@ int add_cp_event_listener
 	acquire_cp_data();
 	status = set_append(event_listeners, (void *) event_listener);
 	release_cp_data();
+	if (status != CPLUFF_OK) {
+		cpi_process_error("An event listener could not be registered due to insufficient resources.");
+	}
 	return status;	
 }
 
@@ -246,22 +263,44 @@ static void deliver_event(list_t *list, lnode_t *node, void *event) {
 void acquire_cp_data(void) {
 #ifdef HAVE_PTHREAD_H
 	pthread_t self = pthread_self();
-	pthread_mutex_lock(&data_mutex);
+	lock_mutex();
 	while (data_lock_count > 0 && !pthread_equal(self, data_thread)) {
 		pthread_cond_wait(&data_cond, &data_mutex);
 	}
 	data_thread = self;
 	data_lock_count++;
-	pthread_mutex_unlock(&data_mutex);
+	unlock_mutex();
 #endif /*HAVE_PTHREAD_H*/
 }
 
 void release_cp_data(void) {
 #ifdef HAVE_PTHREAD_H
-	pthread_mutex_lock(&data_mutex);
+	lock_mutex();
 	assert(pthread_equal(pthread_self(), data_thread));
 	data_lock_count--;
 	pthread_cond_broadcast(&data_cond);
-	pthread_mutex_unlock(&data_mutex);
+	unlock_mutex();
 #endif /*HAVE_PTHREAD_H*/
 }
+
+#ifdef HAVE_PTHREAD_H
+
+static void lock_mutex(void) {
+	int ec;
+	if ((ec = pthread_mutex_lock(&data_mutex))) {
+		fprintf(stderr,
+			"fatal error: mutex locking failed (error code %d)\n", ec);
+		exit(1);
+	}
+}
+
+static void unlock_mutex(void) {
+	int ec;
+	if ((ec = pthread_mutex_unlock(&data_mutex))) {
+		fprintf(stderr,
+			"fatal error: mutex unlocking failed (error code %d)\n", ec);
+		exit(1);
+	}
+}
+
+#endif /*HAVE_PTHREAD_H*/
