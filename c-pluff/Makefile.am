@@ -9,4 +9,4 @@ AM_CFLAGS = -Wall -Wmissing-prototypes -pedantic
 AM_CPPFLAGS = -DNDEBUG
 
 lib_LIBRARIES = libcpluff.a
-libcpluff_a_SOURCES = core.c cpkazlib/list.c
+libcpluff_a_SOURCES = plugin.c core.c kazlib/list.c

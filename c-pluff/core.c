@@ -10,11 +10,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <stdarg.h>
 #ifdef HAVE_PTHREAD_H
 #include <pthread.h>
 #endif /*HAVE_PTHREAD_H*/
 #include "cpluff.h"
 #include "core.h"
+#include "kazlib/list.h"
 
 
 /* ------------------------------------------------------------------------
@@ -66,6 +68,8 @@ static void process_error(list_t *list, lnode_t *node, void *msg);
  */
 static void deliver_event(list_t *list, lnode_t *node, void *event);
 
+#ifdef HAVE_PTHREAD_H
+
 /**
  * Locks the data mutex.
  */
@@ -76,12 +80,14 @@ static void lock_mutex(void);
  */
 static void unlock_mutex(void);
 
+#endif /*HAVE_PTHREAD_H*/
+
 
 /* ------------------------------------------------------------------------
  * Variables
  * ----------------------------------------------------------------------*/
 
-list_t *plugins = NULL;
+plugin_t *plugins = NULL;
 
 /** Installed error handlers */
 static list_t *error_handlers = NULL;
@@ -138,12 +144,6 @@ int cpluff_init(void) {
 	int status = CPLUFF_OK;
 	
 	/* Initialize data structures as necessary */
-	if (plugins == NULL && status == CPLUFF_OK) {
-		plugins = list_create(LISTCOUNT_T_MAX);
-		if (!plugins) {
-			status = CPLUFF_ERROR;
-		}
-	}
 	if (error_handlers == NULL && status == CPLUFF_OK) {
 		error_handlers = list_create(LISTCOUNT_T_MAX);
 		if (error_handlers == NULL) {
@@ -176,10 +176,7 @@ void cpluff_destroy(void) {
 }
 
 static void cleanup(void) {
-	if (plugins != NULL) {
-		list_destroy(plugins);
-		plugins = NULL;
-	}
+	assert(plugins == NULL);
 	if (error_handlers != NULL) {
 		list_destroy_nodes(error_handlers);
 		list_destroy(error_handlers);
@@ -221,6 +218,17 @@ void cpi_process_error(const char *msg) {
 static void process_error(list_t *list, lnode_t *node, void *msg) {
 	void (*handler)(const char *) = (void (*)(const char *)) lnode_get(node);
 	handler((const char *) msg);
+}
+
+void cpi_process_errorf(const char *msg, ...) {
+	va_list params;
+	char fmsg[256];
+	
+	va_start(params, msg);
+	vsnprintf(fmsg, sizeof(fmsg), msg, params);
+	va_end(params);
+	fmsg[sizeof(fmsg)/sizeof(char)- 1] = '\0';
+	cpi_process_error(fmsg);
 }
 
 

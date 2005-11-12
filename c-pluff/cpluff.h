@@ -6,8 +6,6 @@
 #ifndef _CPLUFF_H_
 #define _CPLUFF_H_
 
-#include "cpkazlib/list.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus*/
@@ -56,19 +54,11 @@ typedef enum version_match_t {
 	MATCH_GREATEROREQUAL
 } version_match_t;
 
-/** Event types */
-typedef enum plugin_event_type_t {
-	EVENT_PRECHANGE, /* committed to a state change */
-	EVENT_POSTCHANGE /* state change complete */
-} plugin_event_type_t;
-
 /* Forward type definitions */
 typedef struct plugin_t plugin_t;
 typedef struct plugin_import_t plugin_import_t;
 typedef struct ext_point_t ext_point_t;
 typedef struct extension_t extension_t;
-typedef struct plugin_list_t plugin_list_t;
-typedef struct extension_list_t extension_list_t;
 
 
 /* Plug-in data structures */
@@ -89,19 +79,16 @@ struct ext_point_t {
 	 * Simple identifier uniquely identifying the extension point within the
 	 * providing plug-in
 	 */
-	char *simpleIdentifier;
+	char *simple_id;
 	
 	/**
 	 * Unique identifier constructed by concatenating the plug-in identifier,
 	 * period character '.' and the simple identifier
 	 */
-	char *uniqueIdentifier;
+	char *unique_id;
 	
 	/** Plug-in providing this extension point */
 	plugin_t *plugin;
-
-	/** Extensions installed at this extension point */
-	list_t *extensions;
 	
 };
 
@@ -124,19 +111,16 @@ struct extension_t {
 	 
 	/**
 	 * Unique identifier constructed by concatenating the plug-in identifier,
-	 * period character '.' and the simple identifier
+	 * period character '.' and the simple identifier or NULL if not available
 	 */
 	char *unique_id;
 	  
-	/** Plug-in providing this extension */
-	plugin_t *plugin;
-
 	/** Unique identifier of the extension point */
 	char *extpt_id;
 	 
-	/** The extension point being extended, or NULL if not yet resolved */
-	ext_point_t *extpt; 
-	 
+	/** Plug-in providing this extension */
+	plugin_t *plugin;
+
 };
 
 /**
@@ -177,24 +161,24 @@ struct plugin_t {
 	/** Provider name, possibly localized */
 	char *providerName;
 	
+	/** Canonical path of the plugin directory */
+	char *path;
+	
 	/** Number of imports */
 	int num_imports;
 	
 	/** Imports */
 	plugin_import_t *imports;
 
-	/** Canonical path of the plugin directory */
-	char *path;
-	
-	/** Imported plug-ins if plug-in has been resolved */
-	plugin_list_t *imported;
+    /** The relative path of plug-in runtime library */
+    char *lib_path;
+    
+    /** The name of the start function */
+    char *start_func_name;
+    
+    /** The name of the stop function */
+    char *stop_func_name;
 
-	/** The start function, or NULL if none or plug-in is not resolved */
-	int (*start_func)(void);
-	
-	/** The stop function, or NULL if none or plug-in is not resolved */
-	void (*stop_func)(void);
-	
 	/** Number of extension points provided by this plug-in */
 	int num_ext_points;
 	
@@ -206,9 +190,15 @@ struct plugin_t {
 	
 	/** Extensions provided by this plug-in */
 	extension_t *extensions;
+
+
+	/* Plug-in list structure */
 	
-	/** Plug-ins currently importing this plug-in */
-	list_t *importing;
+	/** Previous installed plug-in, or NULL if first */
+	plugin_t *previous;
+	
+	/** Next installed plug-in, or NULL if last */
+	plugin_t *next;
 
 };
 
@@ -219,13 +209,6 @@ typedef struct plugin_event_t {
 	
 	/** The associated plug-in */
 	plugin_t *plugin;
-	
-	/**
-	 * Type of the event. This tells whether the plug-in framework has
-	 * committed to the change and about to perform it or whether the
-	 * change is already complete.
-	 */
-	plugin_event_type_t type;
 	
 	/** Old state of the plug-in */
 	plugin_state_t old_state;
@@ -240,8 +223,8 @@ typedef struct plugin_event_t {
  * External variables
  * ----------------------------------------------------------------------*/
 
-/** Installed plug-ins */
-list_t *plugins;
+/** First installed plug-in, or NULL if none */
+plugin_t *plugins;
 
 
 /* ------------------------------------------------------------------------
@@ -298,15 +281,12 @@ void remove_cp_error_handler(void (*error_handler)(const char *msg));
 
 /**
  * Adds an event listener which will be called on plug-in state changes.
- * The event listener is called synchronously after committing to but before
- * actually performing the actions related to a plug-in state change and
- * again immediately after the state change is complete. Installation and
- * uninstallation of a plugin are handled differently in that event listener is
- * only called after (for installation) or before (for uninstallation) the
- * actual state change. The read/write lock is being held while calling the
- * listener so the listener should return promptly. There can be several
- * registered listeners. This function does nothing and returns CPLUFF_OK
- * if the specified listener has already been registered.
+ * The event listener is called synchronously immediately after plug-in state
+ * has changed, or immediately before uninstalling a plug-in. The data
+ * structures lock is being held while calling the listener so the listener
+ * should return promptly. There can be several registered listeners. This
+ * function does nothing and returns CPLUFF_OK if the specified listener has
+ * already been registered.
  * 
  * @param event_listener the event_listener to be added
  * @return CPLUFF_OK (0) on success, CPLUFF_ERROR (-1) on failure

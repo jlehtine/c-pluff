@@ -29,6 +29,15 @@ extern "C" {
 void cpi_process_error(const char *msg);
 
 /**
+ * Delivers a printf formatted plugin-in framework error to registered
+ * error handlers.
+ * 
+ * @param msg the formatted error message
+ * @param ... parameters
+ */
+void cpi_process_errorf(const char *msg, ...);
+
+/**
  * Delivers a plug-in event to registered event listeners.
  * 
  * @param event the event

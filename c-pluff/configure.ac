@@ -25,8 +25,8 @@ AC_PROG_CC_C_O
 AC_C_CONST
 AC_PROG_RANLIB
 
-# Check for pthread support
-AC_CHECK_HEADERS([pthread.h])
+# Check for Posix thread support
+AC_CHECK_HEADER([pthread.h], AC_DEFINE([HAVE_PTHREAD_H]), AC_MSG_WARN([multi-threading support is disabled]))
 
 # Output Makefiles
 AC_CONFIG_FILES([Makefile])
