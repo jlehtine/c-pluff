@@ -46,7 +46,7 @@ void cpi_release_data(void);
  * 
  * @param msg the error message
  */
-void cpi_process_error(const char *msg);
+void cpi_error(const char *msg);
 
 /**
  * Delivers a printf formatted plugin-in framework error to registered
@@ -55,7 +55,7 @@ void cpi_process_error(const char *msg);
  * @param msg the formatted error message
  * @param ... parameters
  */
-void cpi_process_errorf(const char *msg, ...);
+void cpi_errorf(const char *msg, ...);
 
 
 /* Delivering plug-in events */

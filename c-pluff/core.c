@@ -11,12 +11,32 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdarg.h>
-#if CP_THREADS == Posix
+#ifdef CP_THREADS_POSIX
 #include <pthread.h>
-#endif /*CP_THREADS == Posix*/
+#endif /*CP_THREADS_POSIX*/
 #include "cpluff.h"
 #include "core.h"
-#include "kazlib/hash.h"
+#include "kazlib/list.h"
+
+/* ------------------------------------------------------------------------
+ * Data types
+ * ----------------------------------------------------------------------*/
+
+/**
+ * A holder structure for error handler pointers. For ISO C conformance
+ * (to avoid conversions between function and object pointers).
+ */
+typedef struct eh_holder_t {
+	cp_error_handler_t error_handler;
+} eh_holder_t;
+
+/**
+ * A holder structure for event listener pointers. For ISO C conformance
+ * (to avoid conversions between function and object pointers).
+ */
+typedef struct el_holder_t {
+	cp_event_listener_t event_listener;
+} el_holder_t;
 
 
 /* ------------------------------------------------------------------------
@@ -29,23 +49,65 @@
 static void cleanup(void);
 
 /**
- * Compares pointers.
+ * Processes a node by freeing the associated eh_holder_t and deleting
+ * the node from the list.
  * 
- * @param ptr1 the first pointer to be compared
- * @param ptr2 the second pointer to be compared
- * @return zero if the pointers are equal, otherwise non-zero
+ * @param list the list being processed
+ * @param node the node being processed
+ * @param dummy not used
  */
-static int ptr_comp_f(const void *ptr1, const void *ptr2);
+static void process_free_eh_holder(list_t *list, lnode_t *node, void *dummy);
 
 /**
- * Produces hash values for pointers.
+ * Processes a node by freeing the associated el_holder_t and deleting the
+ * node from the list.
  * 
- * @param ptr the pointer to be hashed
- * @return the hash value for the pointer
+ * @param list the list being processed
+ * @param node the node being processed
+ * @param dummy not used
  */
-static hash_val_t ptr_hash_f(const void *ptr);
+static void process_free_el_holder(list_t *list, lnode_t *node, void *dummy);
 
-#ifdef CP_THREADS
+/**
+ * Compares error handler holders.
+ * 
+ * @param h1 the first holder to be compared
+ * @param h2 the second holder to be compared
+ * @return zero if the holders point to the same function, otherwise non-zero
+ */
+static int comp_eh_holder(const void *h1, const void *h2);
+
+/**
+ * Compares event listener holders.
+ * 
+ * @param h1 the first holder to be compared
+ * @param h2 the second holder to be compared
+ * @return zero if the holders point to the same function, otherwise non-zero
+ */
+static int comp_el_holder(const void *h1, const void *h2);
+
+/**
+ * Processes a node by delivering the specified error message to the associated
+ * error handler.
+ * 
+ * @param list the list being processed
+ * @param node the node being processed
+ * @param msg the error message
+ */
+static void process_error(list_t *list, lnode_t *node, void *msg);
+
+/**
+ * Processes a node by delivering the specified event to the associated
+ * event listener.
+ * 
+ * @param list the list being processed
+ * @param node the node being processed
+ * @param event the event being delivered
+ */
+static void process_event(list_t *list, lnode_t *node, void *event);
+
+
+#ifdef CP_THREADS_POSIX
 
 /**
  * Locks the data mutex.
@@ -57,7 +119,7 @@ static void lock_mutex(void);
  */
 static void unlock_mutex(void);
 
-#endif /*CP_THREADS*/
+#endif /*CP_THREADS_POSIX*/
 
 
 /* ------------------------------------------------------------------------
@@ -65,18 +127,18 @@ static void unlock_mutex(void);
  * ----------------------------------------------------------------------*/
 
 /** Installed error handlers */
-static hash_t *error_handlers = NULL;
+static list_t *error_handlers = NULL;
 
 /** Installed event listeners */
-static hash_t *event_listeners = NULL;
+static list_t *event_listeners = NULL;
 
 /* Recursive mutex implementation for data access */
-#ifdef CP_THREADS
+#ifdef CP_THREADS_POSIX
 static pthread_mutex_t data_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t data_cond = PTHREAD_COND_INITIALIZER;
 static unsigned int data_lock_count = 0;
 static pthread_t data_thread;
-#endif /*CP_THREADS*/
+#endif /*CP_THREADS_POSIX*/
 
 
 /* ------------------------------------------------------------------------
@@ -86,29 +148,59 @@ static pthread_t data_thread;
 
 /* Generic */
 
-static int ptr_comp_f(const void *ptr1, const void *ptr2) {
-	return (ptr1 != ptr2);
+static void process_free_eh_holder(list_t *list, lnode_t *node, void *dummy) {
+	eh_holder_t *h = lnode_get(node);
+	list_delete(list, node);
+	lnode_destroy(node);
+	free(h);
 }
 
-static hash_val_t ptr_hash_f(const void *ptr) {
-	return (hash_val_t) ptr;
+static void process_free_el_holder(list_t *list, lnode_t *node, void *dummy) {
+	el_holder_t *h = lnode_get(node);
+	list_delete(list, node);
+	lnode_destroy(node);
+	free(h);
+}
+
+static int comp_eh_holder(const void *h1, const void *h2) {
+	const eh_holder_t *ehh1 = h1;
+	const eh_holder_t *ehh2 = h2;
+	
+	return (ehh1->error_handler != ehh2->error_handler);
+}
+
+static int comp_el_holder(const void *h1, const void *h2) {
+	const el_holder_t *elh1 = h1;
+	const el_holder_t *elh2 = h2;
+	
+	return (elh1->event_listener != elh2->event_listener);
+}
+
+static void process_error(list_t *list, lnode_t *node, void *msg) {
+	eh_holder_t *h = lnode_get(node);
+	h->error_handler(msg);
+}
+
+static void process_event(list_t *list, lnode_t *node, void *event) {
+	el_holder_t *h = lnode_get(node);
+	h->event_listener(event);
 }
 
 
 /* Initialization and destroy */
 
-int cp_init(void) {
+CP_EXPORT int cp_init(void) {
 	int status = CP_OK;
 	
 	/* Initialize data structures as necessary */
 	if (error_handlers == NULL && status == CP_OK) {
-		error_handlers = hash_create(HASHCOUNT_T_MAX, ptr_comp_f, ptr_hash_f);
+		error_handlers = list_create(LISTCOUNT_T_MAX);
 		if (error_handlers == NULL) {
 			status = CP_ERR_RESOURCE;
 		}
 	}
 	if (event_listeners == NULL && status == CP_OK) {
-		event_listeners = hash_create(HASHCOUNT_T_MAX, ptr_comp_f, ptr_hash_f);
+		event_listeners = list_create(LISTCOUNT_T_MAX);
 		if (event_listeners == NULL) {
 			status = CP_ERR_RESOURCE;
 		}
@@ -123,7 +215,7 @@ int cp_init(void) {
 	return status;
 }
 
-void cp_destroy(void) {
+CP_EXPORT void cp_destroy(void) {
 	
 	/* Stop and unload all plugins */
 	cp_unload_all_plugins();
@@ -134,13 +226,13 @@ void cp_destroy(void) {
 
 static void cleanup(void) {
 	if (error_handlers != NULL) {
-		hash_free_nodes(error_handlers);
-		hash_destroy(error_handlers);
+		list_process(error_handlers, NULL, process_free_eh_holder);
+		list_destroy(error_handlers);
 		error_handlers = NULL;
 	}
 	if (event_listeners != NULL) {
-		hash_free_nodes(event_listeners);
-		hash_destroy(event_listeners);
+		list_process(error_handlers, NULL, process_free_el_holder);
+		list_destroy(event_listeners);
 		event_listeners = NULL;
 	}
 }
@@ -148,51 +240,48 @@ static void cleanup(void) {
 
 /* Error handling */
 
-int cp_add_error_handler(cp_error_handler_t error_handler) {
-	int status;
+CP_EXPORT int cp_add_error_handler(cp_error_handler_t error_handler) {
+	int status = CP_ERR_RESOURCE;
+	eh_holder_t *holder;
+	lnode_t *node;
 	
 	cpi_acquire_data();
-	if (hash_lookup(error_handlers, (void *) error_handler) == NULL) {
-		if (hash_alloc_insert(error_handlers, (void *) error_handler,
-			(void *) error_handler)) {
+	if ((holder = malloc(sizeof(eh_holder_t))) != NULL) {
+		holder->error_handler = error_handler;
+		if ((node = lnode_create(holder)) != NULL) {
+			list_append(error_handlers, node);
 			status = CP_OK;
 		} else {
-			status = CP_ERR_RESOURCE;
+			free(holder);
 		}
-	} else {
-		status = CP_OK;
 	}
 	cpi_release_data();
 	if (status != CP_OK) {
-		cpi_process_error("An error handler could not be registered due to insufficient resources.");
+		cpi_error("An error handler could not be registered due to insufficient resources.");
 	}
 	return status;
 }
 
-void cp_remove_error_handler(cp_error_handler_t error_handler) {
-	hnode_t *node;
+CP_EXPORT void cp_remove_error_handler(cp_error_handler_t error_handler) {
+	eh_holder_t holder;
+	lnode_t *node;
 	
+	holder.error_handler = error_handler;
 	cpi_acquire_data();
-	node = hash_lookup(error_handlers, (void *) error_handler);
+	node = list_find(error_handlers, &holder, comp_eh_holder);
 	if (node != NULL) {
-		hash_delete_free(error_handlers, node);
+		process_free_eh_holder(error_handlers, node, NULL);
 	}
 	cpi_release_data();
 }
 
-void cpi_process_error(const char *msg) {
-	hscan_t scan;
-	hnode_t *node;
-	
+void cpi_error(const char *msg) {
 	cpi_acquire_data();
-	hash_scan_begin(&scan, error_handlers);
-	while ((node = hash_scan_next(&scan)) != NULL) {
-		((cp_error_handler_t) hnode_get(node))(msg);
-	}
+	list_process(error_handlers, (void *) msg, process_error);
 	cpi_release_data();
 }
 
-void cpi_process_errorf(const char *msg, ...) {
+void cpi_errorf(const char *msg, ...) {
 	va_list params;
 	char fmsg[256];
 	
@@ -200,53 +289,50 @@ void cpi_process_errorf(const char *msg, ...) {
 	vsnprintf(fmsg, sizeof(fmsg), msg, params);
 	va_end(params);
 	fmsg[sizeof(fmsg)/sizeof(char)- 1] = '\0';
-	cpi_process_error(fmsg);
+	cpi_error(fmsg);
 }
 
 
 /* Event listeners */
 
-int cp_add_event_listener(cp_event_listener_t event_listener) {
-	int status;
+CP_EXPORT int cp_add_event_listener(cp_event_listener_t event_listener) {
+	int status = CP_ERR_RESOURCE;
+	el_holder_t *holder;
+	lnode_t *node;
 	
 	cpi_acquire_data();
-	if (hash_lookup(event_listeners, (void *) event_listener) == NULL) {
-		if (hash_alloc_insert(event_listeners, (void *) event_listener,
-			(void *) event_listener)) {
+	if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
+		holder->event_listener = event_listener;
+		if ((node = lnode_create(holder)) != NULL) {
+			list_append(event_listeners, node);
 			status = CP_OK;
 		} else {
-			status = CP_ERR_RESOURCE;
+			free(holder);
 		}
-	} else {
-		status = CP_OK;
 	}
 	cpi_release_data();
 	if (status != CP_OK) {
-		cpi_process_error("An event listener could not be registered due to insufficient resources.");
+		cpi_error("An event listener could not be registered due to insufficient resources.");
 	}
-	return status;	
+	return status;
 }
 
-void cp_remove_event_listener(cp_event_listener_t event_listener) {
-	hnode_t *node;
+CP_EXPORT void cp_remove_event_listener(cp_event_listener_t event_listener) {
+	el_holder_t holder;
+	lnode_t *node;
 	
+	holder.event_listener = event_listener;
 	cpi_acquire_data();
-	node = hash_lookup(event_listeners, (void *) event_listener);
+	node = list_find(event_listeners, &holder, comp_el_holder);
 	if (node != NULL) {
-		hash_delete_free(event_listeners, node);
+		process_free_el_holder(event_listeners, node, NULL);
 	}
 	cpi_release_data();
 }
 
 void cpi_deliver_event(const cp_plugin_event_t *event) {
-	hscan_t scan;
-	hnode_t *node;
-	
 	cpi_acquire_data();
-	hash_scan_begin(&scan, event_listeners);
-	while ((node = hash_scan_next(&scan)) != NULL) {
-		((cp_event_listener_t) hnode_get(node))(event);
-	}
+	list_process(event_listeners, (void *) event, process_event);
 	cpi_release_data();
 }
 
@@ -254,7 +340,7 @@ void cpi_deliver_event(const cp_plugin_event_t *event) {
 /* Locking */
 
 void cpi_acquire_data(void) {
-#if CP_THREADS == Posix
+#ifdef CP_THREADS_POSIX
 	pthread_t self = pthread_self();
 	lock_mutex();
 	while (data_lock_count > 0 && !pthread_equal(self, data_thread)) {
@@ -263,20 +349,20 @@ void cpi_acquire_data(void) {
 	data_thread = self;
 	data_lock_count++;
 	unlock_mutex();
-#endif /*CP_THREADS == Posix*/
+#endif /*CP_THREADS_POSIX*/
 }
 
 void cpi_release_data(void) {
-#if CP_THREADS == Posix
+#ifdef CP_THREADS_POSIX
 	lock_mutex();
 	assert(pthread_equal(pthread_self(), data_thread));
 	data_lock_count--;
 	pthread_cond_broadcast(&data_cond);
 	unlock_mutex();
-#endif /*CP_THREADS == Posix*/
+#endif /*CP_THREADS_POSIX*/
 }
 
-#ifdef CP_THREADS
+#ifdef CP_THREADS_POSIX
 
 static void lock_mutex(void) {
 	int ec;
@@ -296,4 +382,4 @@ static void unlock_mutex(void) {
 	}
 }
 
-#endif /*CP_THREADS*/
+#endif /*CP_THREADS_POSIX*/

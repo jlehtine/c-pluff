@@ -30,6 +30,7 @@ AC_PROG_CXX
 AC_PROG_CXXCPP
 AC_C_CONST
 AC_PROG_RANLIB
+AC_DEFINE([CP_BUILD])
 
 
 # Thread support checks
@@ -62,7 +63,8 @@ if test "$enable_threads" != no; then
   
   # Check for wxWidget thread support
   if test -z "$cp_threads" && \
-    ( test -z "$enable_threads" || test "$enable_threads" = wxWidgets ); then
+    ( test -z "$enable_threads" || test "$enable_threads" = wxWidgets ) && \
+    test "$cross_compiling" != yes; then
     if test -z "$CXX"; then
       AC_MSG_WARN([not considering wxWidgets threads because C++ compiler not found])
     else
@@ -93,7 +95,14 @@ if test -z "$cp_threads"; then
   fi
 else
   AC_MSG_NOTICE([compiling with $cp_threads thread support])
-  AC_DEFINE([CP_THREADS], [$cp_threads])
+  case "$cp_threads" in
+    Posix)
+      AC_DEFINE([CP_THREADS_POSIX])
+      ;;
+    wxWidgets)
+      AC_DEFINE([CP_THREADS_WXWIDGETS])
+      ;;
+  esac
 fi
 
 # Output Makefiles

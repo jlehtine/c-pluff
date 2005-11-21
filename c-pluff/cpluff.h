@@ -6,6 +6,17 @@
 #ifndef _CPLUFF_H_
 #define _CPLUFF_H_
 
+/* Define CP_EXPORT for Windows host */
+#ifdef __WIN32__
+#ifdef CP_BUILD
+#define CP_EXPORT __declspec(dllexport)
+#else /*CP_BUILD*/
+#define CP_EXPORT __declspec(dllimport)
+#endif
+#else /*__WIN32__*/
+#define CP_EXPORT
+#endif /*__WIN32__*/
+
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus*/
@@ -101,14 +112,16 @@ typedef struct cp_plugin_event_t {
 } cp_plugin_event_t;
 
 /** 
- * An error handler function. An error handler function should return promptly
- * and it must not register or unregister error handlers.
+ * An error handler function called when a recoverable error occurs. An error
+ * handler function should return promptly and it must not register or
+ * unregister error handlers.
  */
 typedef void (*cp_error_handler_t)(const char *msg);
 
 /**
- * An event listener function. An event listener function should return
- * promptly and it must not register or unregister event listeners.
+ * An event listener function called synchronously after a plugin state change.
+ * An event listener function should return promptly and it must not register
+ * or unregister event listeners.
  */
 typedef void (*cp_event_listener_t)(const cp_plugin_event_t *event);
 
@@ -128,7 +141,7 @@ typedef void (*cp_event_listener_t)(const cp_plugin_event_t *event);
  * 
  * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
  */
-int cp_init(void);
+CP_EXPORT int cp_init(void);
 
 /**
  * Stops and unloads all plug-ins and releases all resources allocated by
@@ -138,7 +151,7 @@ int cp_init(void);
  * after corresponding number of calls to cpluff_destroy. The framework may be
  * reinitialized by calling cpluff_init function.
  */
-void cp_destroy(void);
+CP_EXPORT void cp_destroy(void);
 
 
 /* Functions for error handling */
@@ -146,16 +159,13 @@ void cp_destroy(void);
 /**
  * Adds an error handler function that will be called by the plug-in
  * framework when an error occurs. For example, failures to start and register
- * plug-ins are reported to the error handler function, if set. Error messages
- * are localized, if possible. The error handler should return promptly.
- * There can be several registered error handlers. This function does nothing
- * and returns CP_OK if the specified error handler has already been
- * registered.
+ * plug-ins are reported to the registered error handlers. Error messages are
+ * localized, if possible. There can be several registered error handlers.
  * 
  * @param error_handler the error handler to be added
  * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
  */
-int cp_add_error_handler(cp_error_handler_t error_handler);
+CP_EXPORT int cp_add_error_handler(cp_error_handler_t error_handler);
 
 /**
  * Removes an error handler. This function does nothing if the specified error
@@ -163,7 +173,7 @@ int cp_add_error_handler(cp_error_handler_t error_handler);
  * 
  * @param error_handler the error handler to be removed
  */
-void cp_remove_error_handler(cp_error_handler_t error_handler);
+CP_EXPORT void cp_remove_error_handler(cp_error_handler_t error_handler);
 
 
 /* Functions for registering plug-in event listeners */
@@ -171,14 +181,12 @@ void cp_remove_error_handler(cp_error_handler_t error_handler);
 /**
  * Adds an event listener which will be called on plug-in state changes.
  * The event listener is called synchronously immediately after plug-in state
- * has changed and it should return promptly. There can be several registered
- * listeners. This function does nothing and returns CP_OK if the specified
- * listener has already been registered.
+ * has changed. There can be several registered listeners.
  * 
  * @param event_listener the event_listener to be added
  * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
  */
-int cp_add_event_listener(cp_event_listener_t event_listener);
+CP_EXPORT int cp_add_event_listener(cp_event_listener_t event_listener);
 
 /**
  * Removes an event listener. This function does nothing if the specified
@@ -186,7 +194,7 @@ int cp_add_event_listener(cp_event_listener_t event_listener);
  * 
  * @param event_listener the event listener to be removed
  */
-void cp_remove_event_listener(cp_event_listener_t event_listener);
+CP_EXPORT void cp_remove_event_listener(cp_event_listener_t event_listener);
 
 
 /* Functions for controlling plug-ins */
@@ -202,7 +210,7 @@ void cp_remove_event_listener(cp_event_listener_t event_listener);
  * @return CP_OK (0) if the scanning was successful or an error code
  *   if there were errors while loading some plug-ins
  */
-int cp_rescan_plugins(const char *dir, int flags);
+CP_EXPORT int cp_rescan_plugins(const char *dir, int flags);
 
 /**
  * Loads a plug-in from the specified path. The plug-in is added to the list of
@@ -213,7 +221,7 @@ int cp_rescan_plugins(const char *dir, int flags);
  *     pointed to by this pointer if this pointer is non-NULL
  * @return CP_OK (0) on success or an error code on failure
  */
-int cp_load_plugin(const char *path, cp_id_t *id);
+CP_EXPORT int cp_load_plugin(const char *path, cp_id_t *id);
 
 /**
  * Starts a plug-in. The plug-in is first resolved, if necessary, and all
@@ -226,7 +234,7 @@ int cp_load_plugin(const char *path, cp_id_t *id);
  * @param id identifier of the plug-in to be started
  * @return CP_OK (0) on success or an error code on failure
  */
-int cp_start_plugin(const char *id);
+CP_EXPORT int cp_start_plugin(const char *id);
 
 /**
  * Stops a plug-in. First stops any importing plug-ins that are currently
@@ -239,12 +247,12 @@ int cp_start_plugin(const char *id);
  * @param id identifier of the plug-in to be stopped
  * @return CP_OK (0) on success or CP_ERR_UNKNOWN if no such plug-in exists
  */
-int cp_stop_plugin(const char *id);
+CP_EXPORT int cp_stop_plugin(const char *id);
 
 /**
  * Stops all active plug-ins.
  */
-void cp_stop_all_plugins(void);
+CP_EXPORT void cp_stop_all_plugins(void);
 
 /**
  * Unloads an installed plug-in. The plug-in is first stopped if it is active.
@@ -252,13 +260,13 @@ void cp_stop_all_plugins(void);
  * @param id identifier of the plug-in to be unloaded
  * @return CP_OK (0) on success or CP_ERR_UNKNOWN if no such plug-in exists
  */
-int cp_unload_plugin(const char *id);
+CP_EXPORT int cp_unload_plugin(const char *id);
 
 /**
  * Unloads all plug-ins. This effectively stops all plug-in activity and
  * releases the resources allocated by the plug-ins.
  */
-void cp_unload_all_plugins(void);
+CP_EXPORT void cp_unload_all_plugins(void);
 
 
 #ifdef __cplusplus
