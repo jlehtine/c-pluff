@@ -21,6 +21,26 @@ extern "C" {
  * Function declarations
  * ----------------------------------------------------------------------*/
 
+
+/* Locking data structures for exclusive access */
+
+/**
+ * Acquires exclusive access to C-Pluff data structures. Access is granted to
+ * the calling thread. This function does not block if the calling thread
+ * already has exclusive access. If access is acquired multiple times by the
+ * same thread then it is only released after corresponding number of calls to
+ * release.
+ */
+void cpi_acquire_data(void);
+
+/**
+ * Releases exclusive access to C-Pluff data structures.
+ */
+void cpi_release_data(void);
+
+
+/* Processing errors */
+
 /**
  * Delivers a plug-in framework error to registered error handlers.
  * 
@@ -37,12 +57,15 @@ void cpi_process_error(const char *msg);
  */
 void cpi_process_errorf(const char *msg, ...);
 
+
+/* Delivering plug-in events */
+
 /**
  * Delivers a plug-in event to registered event listeners.
  * 
  * @param event the event
  */
-void cpi_deliver_event(const plugin_event_t *event);
+void cpi_deliver_event(const cp_plugin_event_t *event);
 
 
 #ifdef __cplusplus
