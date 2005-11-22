@@ -20,14 +20,12 @@ AM_INIT_AUTOMAKE([foreign])
 
 # C/C++ compiler settings
 # -------------------
+AC_LANG([C])
 AC_PROG_CC
 if test -z "$CC"; then
   AC_MSG_ERROR([C compiler was not found (required)])
 fi
-AC_LANG([C])
 AC_PROG_CC_C_O
-AC_PROG_CXX
-AC_PROG_CXXCPP
 AC_C_CONST
 AC_PROG_RANLIB
 AC_DEFINE([CP_BUILD])
@@ -43,7 +41,7 @@ case "$enable_threads" in
   	# We try to detect them by default
   	enable_threads=''
   	;;
-  ''|no|Posix|wxWidgets)
+  ''|no|Posix|Windows)
   	# Ok, legal value, no action needed
   	;;
   *)
@@ -58,25 +56,33 @@ if test "$enable_threads" != no; then
   # Check for Posix thread support
   if test -z "$cp_threads" && \
     ( test -z "$enable_threads" || test "$enable_threads" = Posix ); then
-    AC_CHECK_HEADER([pthread.h], [cp_threads=Posix])
+    AC_MSG_CHECKING([for Posix threads])
+    AC_LINK_IFELSE(
+[#include <pthread.h>
+
+int main(int argc, char *argv[]) {
+	pthread_mutex_t mutex;
+	
+	pthread_mutex_init(&mutex, NULL);
+	return 0;
+}
+], [AC_MSG_RESULT([yes])
+cp_threads=Posix], AC_MSG_RESULT([no]))
   fi
   
-  # Check for wxWidget thread support
+  # Check for Windows thread suppport
   if test -z "$cp_threads" && \
-    ( test -z "$enable_threads" || test "$enable_threads" = wxWidgets ) && \
-    test "$cross_compiling" != yes; then
-    if test -z "$CXX"; then
-      AC_MSG_WARN([not considering wxWidgets threads because C++ compiler not found])
-    else
-      AC_CHECK_PROGS([WXCONFIG], [wx-config])
-      if test -n "$WXCONFIG"; then
-        AC_LANG([C++])
-        old_CPPFLAGS="$CPPFLAGS"
-        CPPFLAGS="$CPPFLAGS `"$WXCONFIG" --cppflags`"
-        AC_CHECK_HEADER([wx/thread.h], [cp_threads=wxWidgets], [CPPFLAGS="$old_CPPFLAGS"])
-        AC_LANG([C])
-      fi
-    fi
+    ( test -z "$enable_threads" || test "$enable_threads" = Windows ); then
+    AC_MSG_CHECKING([for Windows threads])
+    AC_LINK_IFELSE(
+[#include <windows.h>
+
+int main(int argc, char *argv[]) {
+  CreateMutex(NULL, FALSE, NULL);
+  return 0;
+}
+], [AC_MSG_RESULT([yes])
+cp_threads=Windows], AC_MSG_RESULT([no]))
   fi
   
   # Check if we got the desired thread support
@@ -99,8 +105,8 @@ else
     Posix)
       AC_DEFINE([CP_THREADS_POSIX])
       ;;
-    wxWidgets)
-      AC_DEFINE([CP_THREADS_WXWIDGETS])
+    Windows)
+      AC_DEFINE([CP_THREADS_WINDOWS])
       ;;
   esac
 fi

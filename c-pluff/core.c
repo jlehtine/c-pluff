@@ -11,9 +11,11 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdarg.h>
-#ifdef CP_THREADS_POSIX
+#if defined(CP_THREADS_POSIX)
 #include <pthread.h>
-#endif /*CP_THREADS_POSIX*/
+#elif defined(CP_THREADS_WINDOWS)
+#include <windows.h>
+#endif
 #include "cpluff.h"
 #include "core.h"
 #include "kazlib/list.h"
@@ -107,7 +109,7 @@ static void process_error(list_t *list, lnode_t *node, void *msg);
 static void process_event(list_t *list, lnode_t *node, void *event);
 
 
-#ifdef CP_THREADS_POSIX
+#if defined(CP_THREADS_POSIX) || defined(CP_THREADS_WINDOWS)
 
 /**
  * Locks the data mutex.
@@ -119,12 +121,15 @@ static void lock_mutex(void);
  */
 static void unlock_mutex(void);
 
-#endif /*CP_THREADS_POSIX*/
+#endif
 
 
 /* ------------------------------------------------------------------------
  * Variables
  * ----------------------------------------------------------------------*/
+
+/** Initialization count */
+static int init_count = 0;
 
 /** Installed error handlers */
 static list_t *error_handlers = NULL;
@@ -133,12 +138,22 @@ static list_t *error_handlers = NULL;
 static list_t *event_listeners = NULL;
 
 /* Recursive mutex implementation for data access */
-#ifdef CP_THREADS_POSIX
+#if defined(CP_THREADS_POSIX)
+
 static pthread_mutex_t data_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t data_cond = PTHREAD_COND_INITIALIZER;
 static unsigned int data_lock_count = 0;
 static pthread_t data_thread;
-#endif /*CP_THREADS_POSIX*/
+
+#elif defined(CP_THREADS_WINDOWS)
+
+static HANDLE data_mutex = NULL;
+static HANDLE data_event = NULL;
+static unsigned int data_wait_count = 0;
+static unsigned int data_lock_count = 0;
+static DWORD data_thread;
+
+#endif
 
 
 /* ------------------------------------------------------------------------
@@ -191,20 +206,42 @@ static void process_event(list_t *list, lnode_t *node, void *event) {
 
 CP_EXPORT int cp_init(void) {
 	int status = CP_OK;
+
+	/* Check if already initialized */
+	if (init_count++ > 0) {
+		return status;
+	}
 	
-	/* Initialize data structures as necessary */
-	if (error_handlers == NULL && status == CP_OK) {
+	/* Initialize internal state */
+	do {
+	
+#ifdef CP_THREADS_WINDOWS
+		/* Initialize mutex and event objects */
+		data_mutex = CreateMutex(NULL, FALSE, NULL);
+		if (data_mutex == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+		data_event = CreateEvent(NULL, TRUE, FALSE, NULL);
+		if (data_event == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+#endif
+	
+		/* Initialize data structures as necessary */
 		error_handlers = list_create(LISTCOUNT_T_MAX);
 		if (error_handlers == NULL) {
 			status = CP_ERR_RESOURCE;
+			break;
 		}
-	}
-	if (event_listeners == NULL && status == CP_OK) {
 		event_listeners = list_create(LISTCOUNT_T_MAX);
 		if (event_listeners == NULL) {
 			status = CP_ERR_RESOURCE;
+			break;
 		}
-	}
+		
+	} while (0);
 	
 	/* Rollback initialization on failure */
 	if (status != CP_OK) {
@@ -216,6 +253,11 @@ CP_EXPORT int cp_init(void) {
 }
 
 CP_EXPORT void cp_destroy(void) {
+
+	/* Check if still to be kept initialized */
+	if (--init_count > 0) {
+		return;
+	}
 	
 	/* Stop and unload all plugins */
 	cp_unload_all_plugins();
@@ -235,6 +277,16 @@ static void cleanup(void) {
 		list_destroy(event_listeners);
 		event_listeners = NULL;
 	}
+#ifdef CP_THREADS_WINDOWS
+	if (data_mutex != NULL) {
+		CloseHandle(data_mutex);
+		data_mutex = NULL;
+	}
+	if (data_event != NULL) {
+		CloseHandle(data_event);
+		data_event = NULL;
+	}
+#endif
 }
 
 
@@ -340,7 +392,7 @@ void cpi_deliver_event(const cp_plugin_event_t *event) {
 /* Locking */
 
 void cpi_acquire_data(void) {
-#ifdef CP_THREADS_POSIX
+#if defined(CP_THREADS_POSIX)
 	pthread_t self = pthread_self();
 	lock_mutex();
 	while (data_lock_count > 0 && !pthread_equal(self, data_thread)) {
@@ -349,37 +401,94 @@ void cpi_acquire_data(void) {
 	data_thread = self;
 	data_lock_count++;
 	unlock_mutex();
-#endif /*CP_THREADS_POSIX*/
+#elif defined(CP_THREADS_WINDOWS)
+	DWORD self = GetCurrentThreadId();
+	lock_mutex();
+	while (data_lock_count > 0 && data_thread != self) {
+		DWORD ec;
+		data_wait_count++;
+		unlock_mutex();
+		if ((ec = WaitForSingleObject(data_event, INFINITE)) != WAIT_OBJECT_0) {
+			fprintf(stderr,
+				"fatal error: event waiting failed (error code %lu)\n",
+				(unsigned long) ec);
+			exit(1);
+		}
+		lock_mutex();
+		data_wait_count--;
+		if (data_wait_count == 0) {
+			if (!ResetEvent(data_event)) {
+				fprintf(stderr, "fatal error: failed to reset event\n");
+				exit(1);
+			}
+		}
+	}
+	data_thread = self;
+	data_lock_count++;
+	unlock_mutex();
+#endif
 }
 
 void cpi_release_data(void) {
-#ifdef CP_THREADS_POSIX
+#if defined(CP_THREADS_POSIX)
 	lock_mutex();
 	assert(pthread_equal(pthread_self(), data_thread));
+	assert(data_lock_count > 0);
 	data_lock_count--;
-	pthread_cond_broadcast(&data_cond);
+	if (data_lock_count == 0) {
+		pthread_cond_broadcast(&data_cond);
+	}
 	unlock_mutex();
-#endif /*CP_THREADS_POSIX*/
+#elif defined(CP_THREADS_WINDOWS)
+	lock_mutex();
+	assert(data_thread == GetCurrentThreadId());
+	assert(data_lock_count > 0);
+	data_lock_count--;
+	if (data_lock_count == 0 && data_wait_count > 0) {
+		if (!SetEvent(data_event)) {
+			fprintf(stderr, "fatal error: failed to signal event\n");
+			exit(1);
+		}
+	}
+	unlock_mutex();
+#endif
 }
 
-#ifdef CP_THREADS_POSIX
+#if defined(CP_THREADS_POSIX) || defined(CP_THREADS_WINDOWS)
 
 static void lock_mutex(void) {
+#if defined(CP_THREADS_POSIX)
 	int ec;
 	if ((ec = pthread_mutex_lock(&data_mutex))) {
 		fprintf(stderr,
 			"fatal error: mutex locking failed (error code %d)\n", ec);
 		exit(1);
 	}
+#elif defined(CP_THREADS_WINDOWS)
+	DWORD ec;
+	if ((ec = WaitForSingleObject(data_mutex, INFINITE)) != WAIT_OBJECT_0) {
+		fprintf(stderr,
+			"fatal error: mutex locking failed (error code %lu)\n",
+			(unsigned long) ec);
+		exit(1);
+	}
+#endif
 }
 
 static void unlock_mutex(void) {
+#if defined(CP_THREADS_POSIX)
 	int ec;
 	if ((ec = pthread_mutex_unlock(&data_mutex))) {
 		fprintf(stderr,
 			"fatal error: mutex unlocking failed (error code %d)\n", ec);
 		exit(1);
 	}
+#elif defined(CP_THREADS_WINDOWS)
+	if (!ReleaseMutex(data_mutex)) {
+		fprintf(stderr, "fatal error: mutex unlocking failed\n");
+		exit(1);
+	}
+#endif
 }
 
-#endif /*CP_THREADS_POSIX*/
+#endif
