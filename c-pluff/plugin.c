@@ -55,10 +55,10 @@ struct registered_plugin_t {
 	cp_stop_t stop_func;
 	
 	/**
-	 * Whether this plug-in is currently being resolved (to break loops
-	 * in the dependency chain)
+	 * Whether there is currently an active operation on this plug-in (to
+	 * break loops in the dependency graph)
 	 */
-	int being_resolved;
+	int active_operation;
 };
 
 /* ------------------------------------------------------------------------
@@ -273,7 +273,7 @@ static int register_plugin(cp_plugin_t *plugin) {
 		rp->runtime_lib = NULL;
 		rp->start_func = NULL;
 		rp->stop_func = NULL;
-		rp->being_resolved = 0;
+		rp->active_operation = 0;
 		if (!hash_alloc_insert(plugins, plugin->identifier, rp)) {
 			free(rp);
 			status = CP_ERR_RESOURCE;
@@ -361,7 +361,7 @@ static int resolve_plugin_rec
 	assert(plugin->state == CP_PLUGIN_INSTALLED);
 	
 	/* Check if being resolved (due to circular dependency) */
-	if (plugin->being_resolved) {
+	if (plugin->active_operation) {
 		return CP_OK_PRELIMINARY;
 	}	
 
@@ -373,7 +373,7 @@ static int resolve_plugin_rec
 	}
 	
 	/* Check that all imported plug-ins are present and resolved */
-	plugin->being_resolved = 1;
+	plugin->active_operation = 1;
 	for (i = 0;
 		(status == CP_OK || status == CP_OK_PRELIMINARY)
 			&& i < plugin->plugin->num_imports;
@@ -426,18 +426,7 @@ static int resolve_plugin_rec
 		}
 		
 	}
-	plugin->being_resolved = 0;
-	
-	/* Update state and inform listeners on definite success */
-	if (status == CP_OK) {
-		cp_plugin_event_t event;
-		
-		event.plugin_id = plugin->plugin->identifier;
-		event.old_state = plugin->state;
-		event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
-		cpi_deliver_event(&event);
-	}
-	
+
 	/* Update state but postpone listener update on preliminary success */
 	if (status == CP_OK_PRELIMINARY) {
 		if (cpi_ptrset_add(preliminary, plugin)) {
@@ -451,6 +440,12 @@ static int resolve_plugin_rec
 	if (status != CP_OK && status != CP_OK_PRELIMINARY) {
 		lnode_t *node;
 		
+		/* Report possible resource allocation problem */
+		if (status == CP_ERR_RESOURCE) {
+			cpi_errorf("Could not resolve plug-in %s due to insufficient "
+				"resources.", plugin->plugin->identifier);
+		}
+	
 		/* 
 		 * Unresolve plug-ins which import this plug-in (if there were
 		 * circular dependencies while resolving this plug-in)
@@ -476,12 +471,17 @@ static int resolve_plugin_rec
 		}
 		list_destroy(plugin->imported);
 		plugin->imported = NULL;
-	}
+	}	
+	plugin->active_operation = 0;
 	
-	/* Report possible resource allocation problem */
-	if (status == CP_ERR_RESOURCE) {
-		cpi_errorf("Could not resolve plug-in %s due to insufficient "
-			"resources.", plugin->plugin->identifier);
+	/* Update state and inform listeners on definite success */
+	if (status == CP_OK) {
+		cp_plugin_event_t event;
+		
+		event.plugin_id = plugin->plugin->identifier;
+		event.old_state = plugin->state;
+		event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
+		cpi_deliver_event(&event);
 	}
 	
 	return status;
@@ -489,13 +489,19 @@ static int resolve_plugin_rec
 
 static void unresolve_preliminary_plugin(registered_plugin_t *plugin) {
 	lnode_t *node;
-		
+	
+	/* Break circular dependencies */
+	if (plugin->active_operation) {
+		return;
+	}
+
 	/* Unresolve plug-ins which import this plug-in */
+	plugin->active_operation = 1;
 	while ((node = list_first(plugin->importing)) != NULL) {
 		registered_plugin_t *ip = lnode_get(node);
 		unresolve_preliminary_plugin(ip);
-		assert(!cpi_ptrset_contains(plugin->importing, ip));
 	}
+	plugin->active_operation = 0;
 		
 	/* Remove references to imported plug-ins */
 	while ((node = list_first(plugin->imported)) != NULL) {
@@ -665,16 +671,23 @@ static void unresolve_plugin(registered_plugin_t *plugin) {
 		return;
 	}
 
+	/* Break circular dependencies */
+	if (plugin->active_operation) {
+		return;
+	}
+
 	/* Make sure the plug-in is not active */
 	stop_plugin(plugin);
 	assert(plugin->state == CP_PLUGIN_RESOLVED);
 	
 	/* Unresolve plug-ins which import this plug-in */
+	plugin->active_operation = 1;
 	while ((node = list_first(plugin->importing)) != NULL) {
 		registered_plugin_t *ip = lnode_get(node);
 		unresolve_plugin(ip);
 		assert(!cpi_ptrset_contains(plugin->importing, ip));
 	}
+	plugin->active_operation = 0;
 		
 	/* Remove references to imported plug-ins */
 	while ((node = list_first(plugin->imported)) != NULL) {
