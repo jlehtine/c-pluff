@@ -18,6 +18,7 @@
 #endif
 #include "cpluff.h"
 #include "core.h"
+#include "plugin.h"
 #include "kazlib/list.h"
 
 /* ------------------------------------------------------------------------
@@ -216,7 +217,7 @@ CP_EXPORT int cp_init(void) {
 	do {
 	
 #ifdef CP_THREADS_WINDOWS
-		/* Initialize mutex and event objects */
+		/* Initialize IPC resources */
 		data_mutex = CreateMutex(NULL, FALSE, NULL);
 		if (data_mutex == NULL) {
 			status = CP_ERR_RESOURCE;
@@ -241,13 +242,16 @@ CP_EXPORT int cp_init(void) {
 			break;
 		}
 		
+		/* Initialize plug-in controlling component */
+		status = cpi_init_plugins();
+		
 	} while (0);
 	
 	/* Rollback initialization on failure */
 	if (status != CP_OK) {
-		cleanup();
+		cp_destroy();
 	}
-	
+
 	/* Return the final status */
 	return status;
 }
@@ -258,15 +262,12 @@ CP_EXPORT void cp_destroy(void) {
 	if (--init_count > 0) {
 		return;
 	}
+	assert(init_count == 0);
 	
-	/* Stop and unload all plugins */
-	cp_unload_all_plugins();
+	/* Destroy plug-in controlling component */
+	cpi_destroy_plugins();
 	
-	/* Clean up data structures */
-	cleanup();
-}
-
-static void cleanup(void) {
+	/* Release data structures */
 	if (error_handlers != NULL) {
 		list_process(error_handlers, NULL, process_free_eh_holder);
 		list_destroy(error_handlers);
@@ -277,7 +278,9 @@ static void cleanup(void) {
 		list_destroy(event_listeners);
 		event_listeners = NULL;
 	}
+
 #ifdef CP_THREADS_WINDOWS
+	/* Release IPC resources */
 	if (data_mutex != NULL) {
 		CloseHandle(data_mutex);
 		data_mutex = NULL;
@@ -287,6 +290,7 @@ static void cleanup(void) {
 		data_event = NULL;
 	}
 #endif
+	
 }
 
 

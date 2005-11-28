@@ -35,10 +35,10 @@ AC_DEFINE([CP_BUILD])
 # ---------------------
 
 # Check the options
-AC_ARG_ENABLE([threads], AS_HELP_STRING([--enable-threads@<:@=TYPE@:>@], [enable multi-threading support (supported TYPEs are "Posix" and "wxWidgets")]))
+AC_ARG_ENABLE([threads], AS_HELP_STRING([--enable-threads@<:@=TYPE@:>@], [enable multi-threading support (supported TYPEs are "Posix" and "Windows")]))
 case "$enable_threads" in
   yes)
-  	# We try to detect them by default
+  	# Use the default auto detection
   	enable_threads=''
   	;;
   ''|no|Posix|Windows)
@@ -91,9 +91,6 @@ cp_threads=Windows], AC_MSG_RESULT([no]))
   fi
   
 fi
-
-# Inform the user about some choices
-# ----------------------------------
 
 if test -z "$cp_threads"; then
   if test "$enable_threads" != no; then

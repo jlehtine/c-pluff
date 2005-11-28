@@ -56,26 +56,51 @@ extern "C" {
 /** Plug-in conflicts with an existing plug-in when loading a plug-in */
 #define CP_ERR_CONFLICT (-6)
 
+/** Plug-in dependencies could not be satisfied */
+#define CP_ERR_DEPENDENCY (-7)
+
+/** An error in a plug-in runtime */
+#define CP_ERR_RUNTIME (-8)
+
 
 /* Flags for cp_rescan_plugins */
 
-/** Setting this flag prevents uninstallation of plug-ins */
-#define CP_RESCAN_NO_UNINSTALL 0x01
+/** Setting this flag enables installation of new plug-ins */
+#define CP_RESCAN_INSTALL 0x01
 
-/** Setting this flag prevents downgrading of installed plug-ins */
-#define CP_RESCAN_NO_DOWNGRADE 0x02
+/** Settings this flag enables upgrades of installed plug-ins */
+#define CP_RESCAN_UPGRADE 0x02
 
-/** Setting this flag prevents installation of new plug-ins */
-#define CP_RESCAN_NO_INSTALL 0x04
+/** Setting this flag enables downgrades of installed plug-ins */
+#define CP_RESCAN_DOWNGRADE 0x04
 
-/** Setting this flag prevents upgrading of installed plug-ins */
-#define CP_RESCAN_NO_UPGRAGE 0x08
+/** Setting this flag enables uninstallation of removed plug-ins */
+#define CP_RESCAN_UNINSTALL 0x08
+
+/**
+ * Setting this flag causes all services to be stopped if there are any
+ * changes to the currently installed plug-ins
+ */
+#define CP_RESCAN_STOP_ALL 0x10
+
+/**
+ * Setting this flag causes the currently active plug-ins to be restarted
+ * (if they were stopped) after all changes to the plug-ins have been made
+ */
+#define CP_RESCAN_RESTART_ACTIVE 0x20
+
+/**
+ * This bitmask corresponds to incremental loading of plug-ins. New plug-ins
+ * are installed and installed ones are upgraded if possible but no plug-ins
+ * are uninstalled or downgraded.
+ */
+#define CP_RESCAN_INCREMENTAL 0x03
 
 /** This bitmask corresponds to full rescan */
-#define CP_RESCAN_FULL 0x0
+#define CP_RESCAN_FULL 0x0f
 
-/** This bitmask allows for incremental installs and upgrades only */
-#define CP_RESCAN_INCREMENTAL (CP_RESCAN_NO_UNINSTALL | CP_RESCAN_NO_DOWNGRADE)
+/** This bitmask corresponds to full rescan and full restart */
+#define CP_RESCAN_FULL_RESTART 0x3f
 
 
 /* ------------------------------------------------------------------------
@@ -101,7 +126,7 @@ typedef enum cp_plugin_state_t {
 typedef struct cp_plugin_event_t {
 	
 	/** The affected plug-in */
-	cp_id_t plugin_id;
+	char *plugin_id;
 	
 	/** Old state of the plug-in */
 	cp_plugin_state_t old_state;
@@ -125,6 +150,18 @@ typedef void (*cp_error_handler_t)(const char *msg);
  */
 typedef void (*cp_event_listener_t)(const cp_plugin_event_t *event);
 
+/**
+ * A start function called to start a plug-in. The start function must return
+ * non-zero on success and zero on failure. If the start fails then the
+ * stop function (if any) is called to clean up plug-in state.
+ */
+typedef int (*cp_start_t)(void);
+
+/**
+ * A stop function called to stop a plugin.
+ */
+typedef void (*cp_stop_t)(void);
+
 
 /* ------------------------------------------------------------------------
  * Function declarations
@@ -137,7 +174,8 @@ typedef void (*cp_event_listener_t)(const cp_plugin_event_t *event);
  * Initializes the C-Pluff framework. The framework must be initialized before
  * trying to use it. This function does nothing if the framework has already
  * been initialized but the framework will be uninitialized only after the
- * corresponding number of calls to cpluff_destroy.
+ * corresponding number of calls to cpluff_destroy. This behavior is not
+ * thread-safe, however.
  * 
  * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
  */
@@ -148,8 +186,9 @@ CP_EXPORT int cp_init(void);
  * the C-Pluff framework. Framework functionality and data structures are not
  * available after calling this function. If cpluff_init has been called
  * multiple times then the actual uninitialization takes place only
- * after corresponding number of calls to cpluff_destroy. The framework may be
- * reinitialized by calling cpluff_init function.
+ * after corresponding number of calls to cpluff_destroy. This behavior is not
+ * thread-safe, however. The framework may be reinitialized by calling
+ * cpluff_init function.
  */
 CP_EXPORT void cp_destroy(void);
 
@@ -200,15 +239,14 @@ CP_EXPORT void cp_remove_event_listener(cp_event_listener_t event_listener);
 /* Functions for controlling plug-ins */
 
 /**
- * (Re)scans for plug-ins in the specified directory, reloading updated (and
- * downgraded) plug-ins, loading new plug-ins and unloading plug-ins that do
- * not exist anymore. This method can also be used to initially load all the
- * plug-ins. Flags can be specified to inhibit some operations.
+ * (Re)scans for plug-ins in the specified directory, re-installing updated
+ * (and downgraded) plug-ins, installing new plug-ins and uninstalling plug-ins
+ * that do not exist anymore. The allowed operations is specified as a bitmask.
+ * This method can also be used to initially load the plug-ins.
  * 
  * @param dir the directory containing plug-ins
- * @param flags a bitmask specifying flags (CPLUFF_RESCAN_...)
- * @return CP_OK (0) if the scanning was successful or an error code
- *   if there were errors while loading some plug-ins
+ * @param flags a bitmask specifying allowed operations (CPLUFF_RESCAN_...)
+ * @return CP_OK (0) on success, an error code on failure
  */
 CP_EXPORT int cp_rescan_plugins(const char *dir, int flags);
 
@@ -219,7 +257,7 @@ CP_EXPORT int cp_rescan_plugins(const char *dir, int flags);
  * @param path the installation path of the plug-in
  * @param id the identifier of the loaded plug-in is copied to the location
  *     pointed to by this pointer if this pointer is non-NULL
- * @return CP_OK (0) on success or an error code on failure
+ * @return CP_OK (0) on success, an error code on failure
  */
 CP_EXPORT int cp_load_plugin(const char *path, cp_id_t *id);
 
@@ -232,7 +270,7 @@ CP_EXPORT int cp_load_plugin(const char *path, cp_id_t *id);
  * has stopped and then starts the plug-in.
  * 
  * @param id identifier of the plug-in to be started
- * @return CP_OK (0) on success or an error code on failure
+ * @return CP_OK (0) on success, an error code on failure
  */
 CP_EXPORT int cp_start_plugin(const char *id);
 
@@ -245,7 +283,7 @@ CP_EXPORT int cp_start_plugin(const char *id);
  * started (or failed to start) and then stops the plug-in.
  * 
  * @param id identifier of the plug-in to be stopped
- * @return CP_OK (0) on success or CP_ERR_UNKNOWN if no such plug-in exists
+ * @return CP_OK (0) on success, an error code on failure
  */
 CP_EXPORT int cp_stop_plugin(const char *id);
 
@@ -255,10 +293,10 @@ CP_EXPORT int cp_stop_plugin(const char *id);
 CP_EXPORT void cp_stop_all_plugins(void);
 
 /**
- * Unloads an installed plug-in. The plug-in is first stopped if it is active.
+ * Unloads a plug-in. The plug-in is first stopped if it is active.
  * 
  * @param id identifier of the plug-in to be unloaded
- * @return CP_OK (0) on success or CP_ERR_UNKNOWN if no such plug-in exists
+ * @return CP_OK (0) on success, an error code on failure
  */
 CP_EXPORT int cp_unload_plugin(const char *id);
 
