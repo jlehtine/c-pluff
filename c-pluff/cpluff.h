@@ -6,16 +6,32 @@
 #ifndef _CPLUFF_H_
 #define _CPLUFF_H_
 
-/* Define CP_EXPORT for Windows host */
-#ifdef __WIN32__
+/* Define CP_API to declare API functions */
+#ifdef _MSC_EXTENSIONS
 #ifdef CP_BUILD
-#define CP_EXPORT __declspec(dllexport)
+#define CP_IMPORT __declspec(dllexport)
 #else /*CP_BUILD*/
-#define CP_EXPORT __declspec(dllimport)
-#endif
-#else /*__WIN32__*/
-#define CP_EXPORT
-#endif /*__WIN32__*/
+#define CP_IMPORT __declspec(dllimport)
+#endif /*CP_BUILD*/
+#else /*_MSC_EXTENSIONS*/
+#define CP_IMPORT
+#endif /*_MSC_EXTENSIONS*/
+#define CP_API(type) CP_IMPORT type
+
+/* Gettext defines for building C-Pluff */
+#ifdef CP_BUILD
+#ifdef HAVE_GETTEXT
+#include <libintl.h>
+#define _(String) dgettext(PACKAGE, String)
+#define gettext_noop(String) String
+#define N_(String) gettext_noop(String)
+#else
+#define _(String) (String)
+#define N_(String) String
+#define textdomain(Domain)
+#define bindtextdomain(Package, Directory)
+#endif /*CP_GETTEXT*/
+#endif /*CP_BUILD*/
 
 #ifdef __cplusplus
 extern "C" {
@@ -125,7 +141,7 @@ typedef enum cp_plugin_state_t {
  */
 typedef struct cp_plugin_event_t {
 	
-	/** The affected plug-in */
+	/** The identifier of the affected plug-in in UTF-8 encoding */
 	char *plugin_id;
 	
 	/** Old state of the plug-in */
@@ -139,7 +155,8 @@ typedef struct cp_plugin_event_t {
 /** 
  * An error handler function called when a recoverable error occurs. An error
  * handler function should return promptly and it must not register or
- * unregister error handlers.
+ * unregister error handlers. The error message is localized and the encoding
+ * depends on the locale.
  */
 typedef void (*cp_error_handler_t)(const char *msg);
 
@@ -177,9 +194,10 @@ typedef void (*cp_stop_t)(void);
  * corresponding number of calls to cpluff_destroy. This behavior is not
  * thread-safe, however.
  * 
+ * @param error_handler an initial error handler, or NULL if none
  * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
  */
-CP_EXPORT int cp_init(void);
+CP_API(int) cp_init(cp_error_handler_t error_handler);
 
 /**
  * Stops and unloads all plug-ins and releases all resources allocated by
@@ -190,7 +208,7 @@ CP_EXPORT int cp_init(void);
  * thread-safe, however. The framework may be reinitialized by calling
  * cpluff_init function.
  */
-CP_EXPORT void cp_destroy(void);
+CP_API(void) cp_destroy(void);
 
 
 /* Functions for error handling */
@@ -204,7 +222,7 @@ CP_EXPORT void cp_destroy(void);
  * @param error_handler the error handler to be added
  * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
  */
-CP_EXPORT int cp_add_error_handler(cp_error_handler_t error_handler);
+CP_API(int) cp_add_error_handler(cp_error_handler_t error_handler);
 
 /**
  * Removes an error handler. This function does nothing if the specified error
@@ -212,7 +230,7 @@ CP_EXPORT int cp_add_error_handler(cp_error_handler_t error_handler);
  * 
  * @param error_handler the error handler to be removed
  */
-CP_EXPORT void cp_remove_error_handler(cp_error_handler_t error_handler);
+CP_API(void) cp_remove_error_handler(cp_error_handler_t error_handler);
 
 
 /* Functions for registering plug-in event listeners */
@@ -225,7 +243,7 @@ CP_EXPORT void cp_remove_error_handler(cp_error_handler_t error_handler);
  * @param event_listener the event_listener to be added
  * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
  */
-CP_EXPORT int cp_add_event_listener(cp_event_listener_t event_listener);
+CP_API(int) cp_add_event_listener(cp_event_listener_t event_listener);
 
 /**
  * Removes an event listener. This function does nothing if the specified
@@ -233,7 +251,7 @@ CP_EXPORT int cp_add_event_listener(cp_event_listener_t event_listener);
  * 
  * @param event_listener the event listener to be removed
  */
-CP_EXPORT void cp_remove_event_listener(cp_event_listener_t event_listener);
+CP_API(void) cp_remove_event_listener(cp_event_listener_t event_listener);
 
 
 /* Functions for controlling plug-ins */
@@ -248,7 +266,7 @@ CP_EXPORT void cp_remove_event_listener(cp_event_listener_t event_listener);
  * @param flags a bitmask specifying allowed operations (CPLUFF_RESCAN_...)
  * @return CP_OK (0) on success, an error code on failure
  */
-CP_EXPORT int cp_rescan_plugins(const char *dir, int flags);
+CP_API(int) cp_rescan_plugins(const char *dir, int flags);
 
 /**
  * Loads a plug-in from the specified path. The plug-in is added to the list of
@@ -259,7 +277,7 @@ CP_EXPORT int cp_rescan_plugins(const char *dir, int flags);
  *     pointed to by this pointer if this pointer is non-NULL
  * @return CP_OK (0) on success, an error code on failure
  */
-CP_EXPORT int cp_load_plugin(const char *path, cp_id_t *id);
+CP_API(int) cp_load_plugin(const char *path, cp_id_t *id);
 
 /**
  * Starts a plug-in. The plug-in is first resolved, if necessary, and all
@@ -272,7 +290,7 @@ CP_EXPORT int cp_load_plugin(const char *path, cp_id_t *id);
  * @param id identifier of the plug-in to be started
  * @return CP_OK (0) on success, an error code on failure
  */
-CP_EXPORT int cp_start_plugin(const char *id);
+CP_API(int) cp_start_plugin(const char *id);
 
 /**
  * Stops a plug-in. First stops any importing plug-ins that are currently
@@ -285,12 +303,12 @@ CP_EXPORT int cp_start_plugin(const char *id);
  * @param id identifier of the plug-in to be stopped
  * @return CP_OK (0) on success, an error code on failure
  */
-CP_EXPORT int cp_stop_plugin(const char *id);
+CP_API(int) cp_stop_plugin(const char *id);
 
 /**
  * Stops all active plug-ins.
  */
-CP_EXPORT void cp_stop_all_plugins(void);
+CP_API(void) cp_stop_all_plugins(void);
 
 /**
  * Unloads a plug-in. The plug-in is first stopped if it is active.
@@ -298,13 +316,13 @@ CP_EXPORT void cp_stop_all_plugins(void);
  * @param id identifier of the plug-in to be unloaded
  * @return CP_OK (0) on success, an error code on failure
  */
-CP_EXPORT int cp_unload_plugin(const char *id);
+CP_API(int) cp_unload_plugin(const char *id);
 
 /**
  * Unloads all plug-ins. This effectively stops all plug-in activity and
  * releases the resources allocated by the plug-ins.
  */
-CP_EXPORT void cp_unload_all_plugins(void);
+CP_API(void) cp_unload_all_plugins(void);
 
 
 #ifdef __cplusplus

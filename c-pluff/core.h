@@ -57,6 +57,24 @@ void cpi_error(const char *msg);
  */
 void cpi_errorf(const char *msg, ...);
 
+/**
+ * Delivers a plug-in framework error to the specified error handler.
+ * 
+ * @param error_handler the error handler or NULL if none
+ * @param msg the error message
+ */
+void cpi_herror(cp_error_handler_t error_handler, const char *msg);
+
+/**
+ * Delivers a printf formatted plug-in framework error to the specified
+ * error handler.
+ * 
+ * @param error_handler the error handler or NULL if none
+ * @param msg the formatted error message
+ * @param ... parameters
+ */
+void cpi_herrorf(cp_error_handler_t error_handler, const char *msg, ...);
+
 
 /* Delivering plug-in events */
 

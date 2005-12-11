@@ -17,6 +17,9 @@ AC_CONFIG_AUX_DIR([auxliary])
 # Automake initialization
 # -----------------------
 AM_INIT_AUTOMAKE([foreign])
+AM_GNU_GETTEXT([external])
+AM_GNU_GETTEXT_VERSION([0.14.4])
+AM_ICONV
 
 # C/C++ compiler settings
 # -------------------
@@ -28,14 +31,14 @@ fi
 AC_PROG_CC_C_O
 AC_C_CONST
 AC_PROG_RANLIB
-AC_DEFINE([CP_BUILD])
-
+AC_PROG_LIBTOOL
+CPPFLAGS="$CPPFLAGS -I."
 
 # Thread support checks
 # ---------------------
 
 # Check the options
-AC_ARG_ENABLE([threads], AS_HELP_STRING([--enable-threads@<:@=TYPE@:>@], [enable multi-threading support (supported TYPEs are "Posix" and "Windows")]))
+AC_ARG_ENABLE([threads], AS_HELP_STRING([--enable-threads@<:@=TYPE@:>@], [enable multi-threading support (supported TYPEs are "Posix" and "Windows", default is to check support in this order)]))
 case "$enable_threads" in
   yes)
   	# Use the default auto detection
@@ -92,24 +95,35 @@ cp_threads=Windows], AC_MSG_RESULT([no]))
   
 fi
 
-if test -z "$cp_threads"; then
-  if test "$enable_threads" != no; then
-    AC_MSG_WARN([multi-threading support not detected])
-  fi
-else
-  AC_MSG_NOTICE([compiling with $cp_threads thread support])
-  case "$cp_threads" in
-    Posix)
-      AC_DEFINE([CP_THREADS_POSIX])
-      ;;
-    Windows)
-      AC_DEFINE([CP_THREADS_WINDOWS])
-      ;;
-  esac
+if test -z "$cp_threads" && test "$enable_threads" != no; then
+  AC_MSG_WARN([multi-threading support not detected])
 fi
+
+case "$cp_threads" in
+  Posix)
+    AC_DEFINE([CP_THREADS_POSIX], [], [Enable Posix thread support])
+    ;;
+  Windows)
+    AC_DEFINE([CP_THREADS_WINDOWS], [], [Enable Windows thread support])
+    ;;
+esac
+
 
 # Output Makefiles
 # ----------------
 
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile po/Makefile.in])
 AC_OUTPUT
+
+
+# Print configuration information
+# -------------------------------
+AC_MSG_NOTICE([-----------------------------------------------------------])
+AC_MSG_NOTICE([C-Pluff configuration])
+if test -n "$cp_threads"; then
+  val="yes ($cp_threads)"
+else
+  val=no
+fi
+AC_MSG_NOTICE([  multi-threading support: $val])
+AC_MSG_NOTICE([-----------------------------------------------------------])

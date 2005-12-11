@@ -13,14 +13,10 @@
 #include <string.h>
 #include "cpluff.h"
 #include "core.h"
-#include "plugin.h"
+#include "pcontrol.h"
 #include "util.h"
 #include "kazlib/list.h"
 #include "kazlib/hash.h"
-
-/* ------------------------------------------------------------------------
- * Constants
- * ----------------------------------------------------------------------*/
 
 
 /* ------------------------------------------------------------------------
@@ -61,17 +57,10 @@ struct registered_plugin_t {
 	int active_operation;
 };
 
+
 /* ------------------------------------------------------------------------
  * Static function declarations
  * ----------------------------------------------------------------------*/
-
-/**
- * Registers a previously loaded plug-in.
- * 
- * @param plugin the plug-in to be registered
- * @return CP_OK (0) on success, an error code on failure
- */
-static int register_plugin(cp_plugin_t *plugin);
 
 /**
  * Resolves a plug-in. Resolves all dependencies of a plug-in and loads
@@ -136,13 +125,6 @@ static void unload_plugin(hnode_t *node);
  */
 static void free_registered_plugin(registered_plugin_t *plugin);
 
-/**
- * Frees any space allocated for plug-in description.
- * 
- * @param plugin the plug-in to be freed
- */
-static void free_plugin(cp_plugin_t *plugin);
-
 
 /* ------------------------------------------------------------------------
  * Variables
@@ -158,9 +140,6 @@ static list_t *started_plugins = NULL;
 /* ------------------------------------------------------------------------
  * Function definitions
  * ----------------------------------------------------------------------*/
-
-/* General functions */
-
 
 /* Initiliazation and destruction */
 
@@ -185,6 +164,9 @@ int cpi_init_plugins(void) {
 		}
 		
 	} while (0);
+	if (status != CP_OK) {
+		cpi_error(_("Initialization of internal data structures failed due to insufficient resources."));
+	}
 	return status;
 }
 
@@ -209,42 +191,13 @@ void cpi_destroy_plugins(void) {
 
 /* Plug-in control */
 
-CP_EXPORT int cp_rescan_plugins(const char *dir, int flags) {
-	/* TODO */
-	return CP_ERR_UNSPECIFIED;
-}
-
-CP_EXPORT int cp_load_plugin(const char *path, cp_id_t *id) {
-	cp_plugin_t *plugin = NULL;
-	int status;
-
-	do {
-	
-		/* TODO actually load the plugin */
-
-		/* Register the plug-in */
-		status = register_plugin(plugin);
-		if (status != CP_OK) {
-			break;
-		}
-	
-	} while (0);
-	
-	/* Release any allocated data on failure */
-	if (status != CP_OK) {
-		if (plugin != NULL) {
-			free_plugin(plugin);
-		}
-	}
-	
-	return status;
-}
-
-static int register_plugin(cp_plugin_t *plugin) {
+int cpi_install_plugin(cp_plugin_t *plugin) {
 	registered_plugin_t *rp;
 	int status = CP_OK;
 	cp_plugin_event_t event;
 
+	assert(plugin != NULL);
+	
 	cpi_acquire_data();
 	do {
 
@@ -293,16 +246,14 @@ static int register_plugin(cp_plugin_t *plugin) {
 		case CP_OK:
 			break;
 		case CP_ERR_CONFLICT:
-			cpi_errorf("Plug-in %s could not be installed because a plug-in "
-				"with the same identifier is already installed.", 
+			cpi_errorf(_("Plug-in %s could not be installed because a plug-in with the same identifier is already installed."), 
 				plugin->identifier);
 			break;
 		case CP_ERR_RESOURCE:
-			cpi_errorf("Plug-in %s could not be installed due to insufficient "
-				"resources.", plugin->identifier);
+			cpi_errorf(_("Plug-in %s could not be installed due to insufficient resources."), plugin->identifier);
 			break;
 		default:
-			cpi_errorf("Could not register plug-in %s.", plugin->identifier);
+			cpi_errorf(_("Could not register plug-in %s."), plugin->identifier);
 			break;
 	}
 	return status;
@@ -313,6 +264,8 @@ static int resolve_plugin(registered_plugin_t *plugin) {
 	int status;
 	lnode_t *node;
 	
+	assert(plugin != NULL);
+	
 	/* Check if already resolved */
 	if (plugin->state >= CP_PLUGIN_RESOLVED) {
 		return CP_OK;
@@ -321,8 +274,7 @@ static int resolve_plugin(registered_plugin_t *plugin) {
 	/* Create a list for preliminarily resolved plug-ins */
 	preliminary = list_create(LISTCOUNT_T_MAX);
 	if (preliminary == NULL) {
-		cpi_errorf("Could not resolve plug-in %s due to insufficient "
-			"resources.", plugin->plugin->identifier);
+		cpi_errorf(_("Could not resolve plug-in %s due to insufficient resources."), plugin->plugin->identifier);
 		return CP_ERR_RESOURCE;
 	}
 	
@@ -390,6 +342,8 @@ static int resolve_plugin_rec
 			ip = NULL;
 		}
 		
+		/* TODO: Check plug-in version */
+		
 		/* Try to resolve the plugin */
 		if (ip != NULL) {
 			rc = resolve_plugin_rec(ip, preliminary);
@@ -412,13 +366,11 @@ static int resolve_plugin_rec
 		/* Otherwise check if the failed import was mandatory */
 		else if (!(plugin->plugin->imports[i].optional)) {
 			if (plugin == NULL) {
-				cpi_errorf("Plug-in %s could not be resolved because it "
-					"depends on plug-in %s which is not installed.",
+				cpi_errorf(_("Plug-in %s could not be resolved because it depends on plug-in %s which is not installed."),
 					plugin->plugin->identifier,
 					plugin->plugin->imports[i].plugin_id);
 			} else {
-				cpi_errorf("Plug-in %s could not be resolved because it "
-					"depends on plug-in %s which could not be resolved.",
+				cpi_errorf(_("Plug-in %s could not be resolved because it depends on plug-in %s which could not be resolved."),
 					plugin->plugin->identifier,
 					plugin->plugin->imports[i].plugin_id);
 			}
@@ -442,8 +394,7 @@ static int resolve_plugin_rec
 		
 		/* Report possible resource allocation problem */
 		if (status == CP_ERR_RESOURCE) {
-			cpi_errorf("Could not resolve plug-in %s due to insufficient "
-				"resources.", plugin->plugin->identifier);
+			cpi_errorf(_("Could not resolve plug-in %s due to insufficient resources."), plugin->plugin->identifier);
 		}
 	
 		/* 
@@ -454,9 +405,7 @@ static int resolve_plugin_rec
 			registered_plugin_t *ip = lnode_get(node);
 			unresolve_preliminary_plugin(ip);
 			if (cpi_ptrset_remove(preliminary, ip)) {
-				cpi_errorf("Preliminarily resolved plug-in %s failed to "
-					"fully resolve because of failed circular "
-					"dependencies.",
+				cpi_errorf(_("Preliminarily resolved plug-in %s failed to fully resolve because of failed circular dependencies."),
 					ip->plugin->identifier);
 			}
 			assert(!cpi_ptrset_contains(plugin->importing, ip));
@@ -517,10 +466,12 @@ static void unresolve_preliminary_plugin(registered_plugin_t *plugin) {
 	plugin->state = CP_PLUGIN_INSTALLED;	
 }
 
-CP_EXPORT int cp_start_plugin(const char *id) {
+CP_API(int) cp_start_plugin(const char *id) {
 	hnode_t *node;
 	registered_plugin_t *plugin;
 	int status = CP_OK;
+
+	assert(id != NULL);
 
 	/* Look up and start the plug-in */
 	cpi_acquire_data();
@@ -562,7 +513,7 @@ static int start_plugin(registered_plugin_t *plugin) {
 	/* Allocate space for the list node */
 	node = lnode_create(plugin);
 	if (node == NULL) {
-		cpi_errorf("Could not start plug-in %s due to insufficient resources.",
+		cpi_errorf(_("Could not start plug-in %s due to insufficient resources."),
 			plugin->plugin->identifier);
 		return CP_ERR_RESOURCE;
 	}
@@ -572,7 +523,7 @@ static int start_plugin(registered_plugin_t *plugin) {
 		if (!plugin->start_func()) {
 			
 			/* Report error */
-			cpi_errorf("Plug-in %s failed to start due to runtime error.",
+			cpi_errorf(_("Plug-in %s failed to start due to runtime error."),
 				plugin->plugin->identifier);
 				
 			/* Roll back plug-in state */
@@ -602,10 +553,12 @@ static int start_plugin(registered_plugin_t *plugin) {
 	return CP_OK;
 }
 
-CP_EXPORT int cp_stop_plugin(const char *id) {
+CP_API(int) cp_stop_plugin(const char *id) {
 	hnode_t *node;
 	registered_plugin_t *plugin;
 	int status = CP_OK;
+
+	assert(id != NULL);
 
 	/* Look up and stop the plug-in */
 	cpi_acquire_data();
@@ -621,7 +574,7 @@ CP_EXPORT int cp_stop_plugin(const char *id) {
 	return status;
 }
 
-CP_EXPORT void cp_stop_all_plugins(void) {
+CP_API(void) cp_stop_all_plugins(void) {
 	lnode_t *node;
 	
 	/* Stop the active plug-ins in the reverse order they were started */
@@ -706,9 +659,11 @@ static void unresolve_plugin(registered_plugin_t *plugin) {
 	cpi_deliver_event(&event);
 }
 
-CP_EXPORT int cp_unload_plugin(const char *id) {
+CP_API(int) cp_unload_plugin(const char *id) {
 	hnode_t *node;
 	int status = CP_OK;
+
+	assert(id != NULL);
 
 	/* Look up and unload the plug-in */
 	cpi_acquire_data();
@@ -723,7 +678,7 @@ CP_EXPORT int cp_unload_plugin(const char *id) {
 	return status;
 }
 
-CP_EXPORT void cp_unload_all_plugins(void) {
+CP_API(void) cp_unload_all_plugins(void) {
 	hscan_t scan;
 	hnode_t *node;
 	
@@ -761,16 +716,25 @@ static void unload_plugin(hnode_t *node) {
 }
 
 static void free_registered_plugin(registered_plugin_t *plugin) {
-	free_plugin(plugin->plugin);
+	cpi_free_plugin(plugin->plugin);
 	
-	/* These should be null because plug-in should be in unresolved state */
+	/* Release data structures */
+	if (plugin->importing != NULL) {
+		
+		/* This should be empty because the plug-in should be unresolved */
+		assert(list_isempty(plugin->importing));
+		
+		list_destroy(plugin->importing);
+	}
+
+	/* This should be null because the plug-in should be unresolved */
 	assert(plugin->imported == NULL);
-	assert(plugin->importing == NULL);
 	
 	free(plugin);
 }
 
-static void free_plugin(cp_plugin_t *plugin) {
+void cpi_free_plugin(cp_plugin_t *plugin) {
+	assert(plugin != NULL);
 	if (plugin->path != NULL) {
 		free(plugin->path);
 	}

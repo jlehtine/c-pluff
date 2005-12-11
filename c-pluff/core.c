@@ -18,7 +18,7 @@
 #endif
 #include "cpluff.h"
 #include "core.h"
-#include "plugin.h"
+#include "pcontrol.h"
 #include "kazlib/list.h"
 
 /* ------------------------------------------------------------------------
@@ -45,11 +45,6 @@ typedef struct el_holder_t {
 /* ------------------------------------------------------------------------
  * Static function declarations
  * ----------------------------------------------------------------------*/
-
-/**
- * Cleans up data structures after all plug-in activity has stopped.
- */
-static void cleanup(void);
 
 /**
  * Processes a node by freeing the associated eh_holder_t and deleting
@@ -124,6 +119,20 @@ static void unlock_mutex(void);
 
 #endif
 
+#ifdef CP_THREADS_WINDOWS
+
+/**
+ * Returns the system error message corresponding to the specified Windows
+ * error code.
+ * 
+ * @param error the system error code
+ * @param buffer buffer for the error message
+ * @param size the size of buffer in bytes
+ * @return the filled buffer
+ */
+static char *get_win_errormsg(DWORD error, char *buffer, size_t size);
+
+#endif
 
 /* ------------------------------------------------------------------------
  * Variables
@@ -205,7 +214,7 @@ static void process_event(list_t *list, lnode_t *node, void *event) {
 
 /* Initialization and destroy */
 
-CP_EXPORT int cp_init(void) {
+CP_API(int) cp_init(cp_error_handler_t error_handler) {
 	int status = CP_OK;
 
 	/* Check if already initialized */
@@ -216,30 +225,42 @@ CP_EXPORT int cp_init(void) {
 	/* Initialize internal state */
 	do {
 	
+		/* Gettext initialization */
+		bindtextdomain(PACKAGE, CP_DATADIR "/locale");
+	
 #ifdef CP_THREADS_WINDOWS
 		/* Initialize IPC resources */
-		data_mutex = CreateMutex(NULL, FALSE, NULL);
-		if (data_mutex == NULL) {
-			status = CP_ERR_RESOURCE;
-			break;
+		if ((data_mutex = CreateMutex(NULL, FALSE, NULL)) != NULL) {
+			data_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 		}
-		data_event = CreateEvent(NULL, TRUE, FALSE, NULL);
 		if (data_event == NULL) {
+			if (error_handler != NULL) {
+				char buffer[256];
+				DWORD ec = GetLastError();				
+				cpi_herrorf(error_handler, _("IPC resources could not be initialized due to error %ld: %s"), (long) ec, get_win_errormsg(ec, buffer, sizeof(buffer));
+			}
 			status = CP_ERR_RESOURCE;
 			break;
 		}
 #endif
 	
 		/* Initialize data structures as necessary */
-		error_handlers = list_create(LISTCOUNT_T_MAX);
-		if (error_handlers == NULL) {
+		if ((error_handlers = list_create(LISTCOUNT_T_MAX)) != NULL) {
+			event_listeners = list_create(LISTCOUNT_T_MAX);		
+		}
+		if (event_listeners == NULL) {
+			cpi_herror(error_handler, _("Internal data structures could not be initialized due to insufficient resources."));
 			status = CP_ERR_RESOURCE;
 			break;
 		}
-		event_listeners = list_create(LISTCOUNT_T_MAX);
-		if (event_listeners == NULL) {
-			status = CP_ERR_RESOURCE;
-			break;
+
+		/* Register initial error handler */
+		if (error_handler != NULL) {
+			status = cp_add_error_handler(error_handler);
+			if (status != CP_OK) {
+				cpi_herror(error_handler, _("The initial error handler could not be registered due to insufficient resources."));
+				break;
+			}
 		}
 		
 		/* Initialize plug-in controlling component */
@@ -256,7 +277,7 @@ CP_EXPORT int cp_init(void) {
 	return status;
 }
 
-CP_EXPORT void cp_destroy(void) {
+CP_API(void) cp_destroy(void) {
 
 	/* Check if still to be kept initialized */
 	if (--init_count > 0) {
@@ -281,13 +302,13 @@ CP_EXPORT void cp_destroy(void) {
 
 #ifdef CP_THREADS_WINDOWS
 	/* Release IPC resources */
-	if (data_mutex != NULL) {
-		CloseHandle(data_mutex);
-		data_mutex = NULL;
-	}
 	if (data_event != NULL) {
 		CloseHandle(data_event);
 		data_event = NULL;
+	}
+	if (data_mutex != NULL) {
+		CloseHandle(data_mutex);
+		data_mutex = NULL;
 	}
 #endif
 	
@@ -296,10 +317,12 @@ CP_EXPORT void cp_destroy(void) {
 
 /* Error handling */
 
-CP_EXPORT int cp_add_error_handler(cp_error_handler_t error_handler) {
+CP_API(int) cp_add_error_handler(cp_error_handler_t error_handler) {
 	int status = CP_ERR_RESOURCE;
 	eh_holder_t *holder;
 	lnode_t *node;
+	
+	assert(error_handler != NULL);
 	
 	cpi_acquire_data();
 	if ((holder = malloc(sizeof(eh_holder_t))) != NULL) {
@@ -313,12 +336,12 @@ CP_EXPORT int cp_add_error_handler(cp_error_handler_t error_handler) {
 	}
 	cpi_release_data();
 	if (status != CP_OK) {
-		cpi_error("An error handler could not be registered due to insufficient resources.");
+		cpi_error(_("An error handler could not be registered due to insufficient resources."));
 	}
 	return status;
 }
 
-CP_EXPORT void cp_remove_error_handler(cp_error_handler_t error_handler) {
+CP_API(void) cp_remove_error_handler(cp_error_handler_t error_handler) {
 	eh_holder_t holder;
 	lnode_t *node;
 	
@@ -332,6 +355,7 @@ CP_EXPORT void cp_remove_error_handler(cp_error_handler_t error_handler) {
 }
 
 void cpi_error(const char *msg) {
+	assert(msg != NULL);
 	cpi_acquire_data();
 	list_process(error_handlers, (void *) msg, process_error);
 	cpi_release_data();
@@ -341,20 +365,42 @@ void cpi_errorf(const char *msg, ...) {
 	va_list params;
 	char fmsg[256];
 	
+	assert(msg != NULL);
 	va_start(params, msg);
 	vsnprintf(fmsg, sizeof(fmsg), msg, params);
 	va_end(params);
-	fmsg[sizeof(fmsg)/sizeof(char)- 1] = '\0';
+	fmsg[sizeof(fmsg)/sizeof(char) - 1] = '\0';
 	cpi_error(fmsg);
+}
+
+void cpi_herror(cp_error_handler_t error_handler, const char *msg) {
+	assert(msg != NULL);
+	if (error_handler != NULL) {
+		error_handler(msg);
+	}
+}
+
+void cpi_herrorf(cp_error_handler_t error_handler, const char *msg, ...) {
+	va_list params;
+	char fmsg[256];
+	
+	assert(msg != NULL);
+	va_start(params, msg);
+	vsnprintf(fmsg, sizeof(fmsg), msg, params);
+	va_end(params);
+	fmsg[sizeof(fmsg)/sizeof(char) - 1] = '\0';
+	cpi_herror(error_handler, msg);
 }
 
 
 /* Event listeners */
 
-CP_EXPORT int cp_add_event_listener(cp_event_listener_t event_listener) {
+CP_API(int) cp_add_event_listener(cp_event_listener_t event_listener) {
 	int status = CP_ERR_RESOURCE;
 	el_holder_t *holder;
 	lnode_t *node;
+
+	assert(event_listener != NULL);
 	
 	cpi_acquire_data();
 	if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
@@ -368,12 +414,12 @@ CP_EXPORT int cp_add_event_listener(cp_event_listener_t event_listener) {
 	}
 	cpi_release_data();
 	if (status != CP_OK) {
-		cpi_error("An event listener could not be registered due to insufficient resources.");
+		cpi_error(_("An event listener could not be registered due to insufficient resources."));
 	}
 	return status;
 }
 
-CP_EXPORT void cp_remove_event_listener(cp_event_listener_t event_listener) {
+CP_API(void) cp_remove_event_listener(cp_event_listener_t event_listener) {
 	el_holder_t holder;
 	lnode_t *node;
 	
@@ -387,6 +433,8 @@ CP_EXPORT void cp_remove_event_listener(cp_event_listener_t event_listener) {
 }
 
 void cpi_deliver_event(const cp_plugin_event_t *event) {
+	assert(event != NULL);
+	assert(event->plugin_id != NULL);
 	cpi_acquire_data();
 	list_process(event_listeners, (void *) event, process_event);
 	cpi_release_data();
@@ -413,16 +461,21 @@ void cpi_acquire_data(void) {
 		data_wait_count++;
 		unlock_mutex();
 		if ((ec = WaitForSingleObject(data_event, INFINITE)) != WAIT_OBJECT_0) {
+			char buffer[256];
+			ec = GetLastError();
 			fprintf(stderr,
-				"fatal error: event waiting failed (error code %lu)\n",
-				(unsigned long) ec);
+				_(PACKAGE_NAME ": FATAL: Could not wait for an event due to error %ld: %s\n"),
+				(long) ec, get_win_errormsg(ec, buffer, sizeof(buffer)));
 			exit(1);
 		}
 		lock_mutex();
 		data_wait_count--;
 		if (data_wait_count == 0) {
 			if (!ResetEvent(data_event)) {
-				fprintf(stderr, "fatal error: failed to reset event\n");
+				char buffer[256];
+				ec = GetLastError();
+				fprintf(stderr, _(PACKAGE_NAME ": FATAL: Could not reset an event due to error %ld: %s\n"),
+					(long) ec, get_win_errormsg(ec, buffer, sizeof(buffer)));
 				exit(1);
 			}
 		}
@@ -450,7 +503,10 @@ void cpi_release_data(void) {
 	data_lock_count--;
 	if (data_lock_count == 0 && data_wait_count > 0) {
 		if (!SetEvent(data_event)) {
-			fprintf(stderr, "fatal error: failed to signal event\n");
+			char buffer[256];
+			DWORD ec = GetLastError();
+			fprintf(stderr, _(PACKAGE_NAME " FATAL: Could not signal an event due to error %ld: %s\n"),
+				(long) ec, get_win_errormsg(ec, buffer, sizeof(buffer)));
 			exit(1);
 		}
 	}
@@ -465,15 +521,17 @@ static void lock_mutex(void) {
 	int ec;
 	if ((ec = pthread_mutex_lock(&data_mutex))) {
 		fprintf(stderr,
-			"fatal error: mutex locking failed (error code %d)\n", ec);
+			_(PACKAGE_NAME ": FATAL: Could not lock a mutex due to error %d.\n"), ec);
 		exit(1);
 	}
 #elif defined(CP_THREADS_WINDOWS)
 	DWORD ec;
 	if ((ec = WaitForSingleObject(data_mutex, INFINITE)) != WAIT_OBJECT_0) {
+		char buffer[256];
+		ec = GetLastError();
 		fprintf(stderr,
-			"fatal error: mutex locking failed (error code %lu)\n",
-			(unsigned long) ec);
+			_(PACKAGE_NAME ": FATAL: Could not lock a mutex due to error %ld: %s\n"),
+			(long) ec, get_win_errormsg(ec, buffer, sizeof(buffer)));
 		exit(1);
 	}
 #endif
@@ -484,15 +542,35 @@ static void unlock_mutex(void) {
 	int ec;
 	if ((ec = pthread_mutex_unlock(&data_mutex))) {
 		fprintf(stderr,
-			"fatal error: mutex unlocking failed (error code %d)\n", ec);
+			_(PACKAGE_NAME ": FATAL: Could not unlock a mutex due to error %d.\n"), ec);
 		exit(1);
 	}
 #elif defined(CP_THREADS_WINDOWS)
 	if (!ReleaseMutex(data_mutex)) {
-		fprintf(stderr, "fatal error: mutex unlocking failed\n");
+		char buffer[256];
+		DWORD ec = GetLastError();
+		fprintf(stderr, _(PACKAGE_NAME ": FATAL: Could not release a mutex due to error %ld: %s\n"),
+			(long) ec, get_win_errormsg(ec, buffer, sizeof(buffer)));
 		exit(1);
 	}
 #endif
 }
+
+#ifdef CP_THREADS_WINDOWS
+static void get_win_errormsg(DWORD error, char *buffer, size_t size) {
+	if (!FormatMessageA(FORMAT_MESSAGE_IGNORE_INSERTS
+		| FORMAT_MESSAGE_SYSTEM,
+		NULL,
+		error,
+		0,
+		buffer,
+		size / sizeof(char),
+		NULL)) {
+		strncpy(buffer, _("unknown error"), size);
+	}
+	buffer[size/sizeof(char) - 1] = '\0';
+	return buffer;
+}
+#endif /*CP_THREADS_WINDOWS*/
 
 #endif

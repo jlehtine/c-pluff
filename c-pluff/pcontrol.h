@@ -37,7 +37,7 @@ extern "C" {
 /** A component name in UTF-8 encoding */
 typedef char cp_name_t[CP_NAME_MAX_LENGTH + 1];
 
-/** A plug-in version string */
+/** A plug-in version string in UTF-8 encoding */
 typedef char cp_verstr_t[CP_VERSTR_MAX_LENGTH + 1];
 
 /** Possible version match rules */
@@ -66,13 +66,13 @@ struct cp_ext_point_t {
 	
 	/**
 	 * Human-readable, possibly localized, extension point name or empty
-	 * if not available
+	 * if not available (UTF-8)
 	 */
 	cp_name_t name;
 	
 	/**
 	 * Simple identifier uniquely identifying the extension point within the
-	 * providing plug-in
+	 * providing plug-in (UTF-8)
 	 */
 	cp_id_t simple_id;
 	
@@ -85,17 +85,17 @@ struct cp_extension_t {
 	
 	/** 
 	 * Human-readable, possibly localized, extension name or empty if not
-	 * available
+	 * available (UTF-8)
 	 **/
 	cp_name_t name;
 	
 	/**
 	 * Simple identifier uniquely identifying the extension within the
-	 * providing plug-in or empty if not available
+	 * providing plug-in or empty if not available (UTF-8)
 	 */
 	cp_id_t simple_id;
 	 
-	/** Unique identifier of the extension point */
+	/** Unique identifier of the extension point (UTF-8) */
 	cp_id_t extpt_id;
 
 };
@@ -105,10 +105,10 @@ struct cp_extension_t {
  */
 struct cp_plugin_import_t {
 	
-	/** Identifier of the imported plug-in */
+	/** Identifier of the imported plug-in (UTF-8) */
 	cp_id_t plugin_id;
 	
-	/** Version to be matched, or empty if none */
+	/** Version to be matched, or empty if none (UTF-8) */
 	cp_verstr_t version;
 	
 	/** Version match rule */
@@ -123,16 +123,16 @@ struct cp_plugin_import_t {
  */
 struct cp_plugin_t {
 	
-	/** Human-readable, possibly localized, plug-in name */
+	/** Human-readable, possibly localized, plug-in name (UTF-8) */
 	cp_name_t name;
 	
-	/** Unique identifier */
+	/** Unique identifier (UTF-8) */
 	cp_id_t identifier;
 	
-	/** Version string */
+	/** Version string (UTF-8) */
 	cp_verstr_t version;
 	
-	/** Provider name, possibly localized */
+	/** Provider name, possibly localized (UTF-8) */
 	cp_name_t provider_name;
 	
 	/** Absolute path of the plugin directory, or NULL if not known */
@@ -183,6 +183,21 @@ int cpi_init_plugins(void);
  * Destroys the plug-in controlling component.
  */
 void cpi_destroy_plugins(void);
+
+/**
+ * Installs a plug-in.
+ * 
+ * @param plugin the plug-in to be installed
+ * @return CP_OK (0) on success, an error code on failure
+ */
+int cpi_install_plugin(cp_plugin_t *plugin);
+
+/**
+ * Frees any resources allocated for a plug-in description.
+ * 
+ * @param plugin the plug-in to be freed
+ */
+void cpi_free_plugin(cp_plugin_t *plugin);
 
 
 #ifdef __cplusplus
