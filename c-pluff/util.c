@@ -1,6 +1,6 @@
 /*-------------------------------------------------------------------------
  * C-Pluff, a plug-in framework for C
- * Copyright 2005 Johannes Lehtinen
+ * Copyright 2005-2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
 #include <stdio.h>

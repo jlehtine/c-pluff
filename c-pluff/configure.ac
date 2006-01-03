@@ -1,6 +1,6 @@
 dnl --------------------------------------------------------------------------
 dnl C-Pluff, a plug-in framework for C
-dnl Copyright 2005 Johannes Lehtinen
+dnl Copyright 2005-2006 Johannes Lehtinen
 dnl --------------------------------------------------------------------------
 dnl
 dnl Process this file with autoconf to produce a configure script.
@@ -125,5 +125,12 @@ if test -n "$cp_threads"; then
 else
   val=no
 fi
-AC_MSG_NOTICE([  multi-threading support: $val])
+AC_MSG_NOTICE([  multi-threading support:        $val])
+val=no
+case "$DEFS" in
+  *-DHAVE_GETTEXT=1*)
+    val="yes (gettext)"
+    ;;
+esac
+AC_MSG_NOTICE([  localization support:           $val])
 AC_MSG_NOTICE([-----------------------------------------------------------])
