@@ -9,9 +9,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = po
 
-AM_CFLAGS = -Wall -Wmissing-prototypes -pedantic
 AM_CPPFLAGS = -DCP_BUILD -DCP_DATADIR="\"$(datadir)\""
-#AM_CPPFLAGS += -DNDEBUG
 
 lib_LTLIBRARIES = libcpluff.la
 libcpluff_la_SOURCES = ploader.c pcontrol.c core.c util.c kazlib/list.c kazlib/hash.c

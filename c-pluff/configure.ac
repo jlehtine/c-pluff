@@ -32,7 +32,12 @@ AC_PROG_CC_C_O
 AC_C_CONST
 AC_PROG_RANLIB
 AC_PROG_LIBTOOL
+
 CPPFLAGS="$CPPFLAGS -I."
+AC_ARG_ENABLE([debug], AS_HELP_STRING([--enable-debug], [enable debugging and assertion checks]))
+if ! test "$enable_debug" = yes; then
+  CPPFLAGS="$CPPFLAGS -DNDEBUG"
+fi
 
 # Thread support checks
 # ---------------------
@@ -109,6 +114,13 @@ case "$cp_threads" in
 esac
 
 
+# Check for Expat XML parsing library
+# -----------------------------------
+
+AC_CHECK_HEADER([expat.h], , AC_MSG_ERROR([Expat header file is required]))
+AC_CHECK_LIB([expat], [XML_ParseBuffer], , AC_MSG_ERROR([Expat library is required]))
+
+
 # Output Makefiles
 # ----------------
 
@@ -133,4 +145,13 @@ case "$DEFS" in
     ;;
 esac
 AC_MSG_NOTICE([  localization support:           $val])
+case "$enable_debug" in
+  yes)
+    val=yes
+    ;;
+  *)
+    val=no
+    ;;
+esac
+AC_MSG_NOTICE([  debugging and assertion checks: $val])
 AC_MSG_NOTICE([-----------------------------------------------------------])
