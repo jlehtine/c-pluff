@@ -12,6 +12,34 @@
 
 #include "cpluff.h"
 
+/* Gettext defines */
+#ifdef HAVE_GETTEXT
+#include <libintl.h>
+#define _(String) dgettext(PACKAGE, String)
+#define gettext_noop(String) String
+#define N_(String) gettext_noop(String)
+#else
+#define _(String) (String)
+#define N_(String) String
+#define textdomain(Domain)
+#define bindtextdomain(Package, Directory)
+#endif /*CP_GETTEXT*/
+
+/* Additional defines for function attributes (under GCC). */
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 5)
+#define CP_PRINTF(format_idx, arg_idx) \
+	__attribute__((format (printf, format_idx, arg_idx)))
+#define CP_CONST __attribute__((const))
+#else
+#define CP_PRINTF(format_idx, arg_idx)
+#define CP_CONST
+#endif
+#if __GNUC__ >2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 96)
+#define CP_PURE __attribute__((pure))
+#else
+#define CP_PURE
+#endif
+
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus*/
@@ -55,7 +83,7 @@ void cpi_error(const char *msg);
  * @param msg the formatted error message
  * @param ... parameters
  */
-void cpi_errorf(const char *msg, ...);
+void cpi_errorf(const char *msg, ...) CP_PRINTF(1, 2);
 
 /**
  * Delivers a plug-in framework error to the specified error handler.
@@ -73,7 +101,8 @@ void cpi_herror(cp_error_handler_t error_handler, const char *msg);
  * @param msg the formatted error message
  * @param ... parameters
  */
-void cpi_herrorf(cp_error_handler_t error_handler, const char *msg, ...);
+void cpi_herrorf(cp_error_handler_t error_handler, const char *msg, ...)
+	CP_PRINTF(2, 3);
 
 
 /* Delivering plug-in events */

@@ -8,6 +8,8 @@
 #ifndef _PTRSET_H_
 #define _PTRSET_H_
 
+#include "cpluff.h"
+#include "core.h"
 #include "kazlib/list.h"
 
 #ifdef __cplusplus
@@ -45,7 +47,7 @@ int cpi_ptrset_remove(list_t *set, const void *ptr);
  * @param ptr the pointer
  * @return non-zero if the pointer is included, zero otherwise
  */
-int cpi_ptrset_contains(list_t *set, const void *ptr);
+int cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
 
 
 #ifdef __cplusplus

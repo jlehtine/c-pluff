@@ -73,7 +73,7 @@ static void process_free_el_holder(list_t *list, lnode_t *node, void *dummy);
  * @param h2 the second holder to be compared
  * @return zero if the holders point to the same function, otherwise non-zero
  */
-static int comp_eh_holder(const void *h1, const void *h2);
+static int comp_eh_holder(const void *h1, const void *h2) CP_PURE;
 
 /**
  * Compares event listener holders.
@@ -82,7 +82,7 @@ static int comp_eh_holder(const void *h1, const void *h2);
  * @param h2 the second holder to be compared
  * @return zero if the holders point to the same function, otherwise non-zero
  */
-static int comp_el_holder(const void *h1, const void *h2);
+static int comp_el_holder(const void *h1, const void *h2) CP_PURE;
 
 /**
  * Processes a node by delivering the specified error message to the associated
@@ -295,7 +295,7 @@ CP_API(void) cp_destroy(void) {
 		error_handlers = NULL;
 	}
 	if (event_listeners != NULL) {
-		list_process(error_handlers, NULL, process_free_el_holder);
+		list_process(event_listeners, NULL, process_free_el_holder);
 		list_destroy(event_listeners);
 		event_listeners = NULL;
 	}

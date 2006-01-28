@@ -18,21 +18,6 @@
 #endif /*_MSC_EXTENSIONS*/
 #define CP_API(type) CP_IMPORT type
 
-/* Gettext defines for building C-Pluff */
-#ifdef CP_BUILD
-#ifdef HAVE_GETTEXT
-#include <libintl.h>
-#define _(String) dgettext(PACKAGE, String)
-#define gettext_noop(String) String
-#define N_(String) gettext_noop(String)
-#else
-#define _(String) (String)
-#define N_(String) String
-#define textdomain(Domain)
-#define bindtextdomain(Package, Directory)
-#endif /*CP_GETTEXT*/
-#endif /*CP_BUILD*/
-
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus*/
@@ -49,7 +34,7 @@ extern "C" {
 #define CP_ID_MAX_LENGTH 63
 
 
-/* Return values for operations that might fail */
+/* Error codes for operations that might fail */
 
 /** Operation performed successfully */
 #define CP_OK 0

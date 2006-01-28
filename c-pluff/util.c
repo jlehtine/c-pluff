@@ -19,7 +19,7 @@
  * @param ptr2 the second pointer
  * @return zero if the pointers are equal, otherwise non-zero
  */
-static int comp_ptr(const void *ptr1, const void *ptr2);
+static int comp_ptr(const void *ptr1, const void *ptr2) CP_CONST;
 
 /* ------------------------------------------------------------------------
  * Function definitions
