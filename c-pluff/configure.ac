@@ -34,10 +34,6 @@ AC_PROG_RANLIB
 AC_PROG_LIBTOOL
 
 CPPFLAGS="$CPPFLAGS -I."
-AC_ARG_ENABLE([debug], AS_HELP_STRING([--enable-debug], [enable debugging and assertion checks]))
-if ! test "$enable_debug" = yes; then
-  CPPFLAGS="$CPPFLAGS -DNDEBUG"
-fi
 
 # Thread support checks
 # ---------------------
@@ -113,17 +109,40 @@ case "$cp_threads" in
     ;;
 esac
 
+# Debugging support
+# -----------------
+AC_ARG_ENABLE([debug],
+  AS_HELP_STRING([--enable-debug], [enable debugging and assertion checks]))
+if ! test "$enable_debug" = yes; then
+  CPPFLAGS="$CPPFLAGS -DNDEBUG"
+fi
+AC_ARG_ENABLE([gcc-warnings],
+  AS_HELP_STRING([--enable-gcc-warnings],
+    [enable default set of GCC compiler warnings]))
+if test "$enable_gcc_warnings" = yes; then
+  CFLAGS="$CFLAGS -Wall -pedantic -std=c99"
+fi
+
+# Check if dmalloc usage requested
+# --------------------------------
+AC_ARG_WITH([dmalloc],
+  AS_HELP_STRING([--with-dmalloc],
+    [compile and link with dmalloc to debug memory usage]))
+if test "$with_dmalloc" = yes; then
+  AC_CHECK_HEADERS([dmalloc.h],,
+    AC_MSG_WARN([Dmalloc header files not found (not including)]))
+  AC_CHECK_LIB([dmalloc${cp_threads+th}], [malloc],,
+    AC_MSG_ERROR([Dmalloc library is required for requested dmalloc support]))
+fi
 
 # Check for Expat XML parsing library
 # -----------------------------------
-
 AC_CHECK_HEADER([expat.h], , AC_MSG_ERROR([Expat header file is required]))
-AC_CHECK_LIB([expat], [XML_ParseBuffer], , AC_MSG_ERROR([Expat library is required]))
+AC_CHECK_LIB([expat], [XML_ParseBuffer],, AC_MSG_ERROR([Expat library is required]))
 
 
 # Output Makefiles
 # ----------------
-
 AC_CONFIG_FILES([Makefile po/Makefile.in])
 AC_OUTPUT
 
@@ -145,13 +164,22 @@ case "$DEFS" in
     ;;
 esac
 AC_MSG_NOTICE([  localization support:           $val])
-case "$enable_debug" in
-  yes)
-    val=yes
-    ;;
-  *)
-    val=no
-    ;;
-esac
+if test "$enable_debug" = yes; then
+  val=yes
+else
+  val=no;
+fi
 AC_MSG_NOTICE([  debugging and assertion checks: $val])
+if test "$with_dmalloc" = yes; then
+  val="yes (dmalloc)"
+else
+  val=no
+fi
+AC_MSG_NOTICE([  memory debugger:                $val])
+AC_MSG_NOTICE([  compiler and linker settings:])
+AC_MSG_NOTICE([    CC='$CC'])
+AC_MSG_NOTICE([    CPPFLAGS='$CPPFLAGS'])
+AC_MSG_NOTICE([    CFLAGS='$CFLAGS'])
+AC_MSG_NOTICE([    LDFLAGS='$LDFLAGS'])
+AC_MSG_NOTICE([    LIBS='$LIBS'])
 AC_MSG_NOTICE([-----------------------------------------------------------])

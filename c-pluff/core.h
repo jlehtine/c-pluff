@@ -11,6 +11,9 @@
 #define _CORE_H_
 
 #include "cpluff.h"
+#ifdef HAVE_DMALLOC_H
+#include <dmalloc.h>
+#endif
 
 /* Gettext defines */
 #ifdef HAVE_GETTEXT
