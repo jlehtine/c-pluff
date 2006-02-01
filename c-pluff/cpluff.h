@@ -226,13 +226,13 @@ struct cp_plugin_t {
 	cp_name_t provider_name;
 	
 	/** Absolute path of the plugin directory, or NULL if not known */
-	char *path;
+	const char *path;
 	
 	/** Number of imports */
 	int num_imports;
 	
 	/** Imports */
-	cp_plugin_import_t *imports;
+	const cp_plugin_import_t *imports;
 
     /** The relative path of plug-in runtime library, or empty if none */
     char lib_path[128];
@@ -247,13 +247,13 @@ struct cp_plugin_t {
 	int num_ext_points;
 	
 	/** Extension points provided by this plug-in */
-	cp_ext_point_t *ext_points;
+	const cp_ext_point_t *ext_points;
 	
 	/** Number of extensions provided by this plugin */
 	int num_extensions;
 	
 	/** Extensions provided by this plug-in */
-	cp_extension_t *extensions;
+	const cp_extension_t *extensions;
 
 };
 
