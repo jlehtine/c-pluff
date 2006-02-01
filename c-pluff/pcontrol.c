@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <dlfcn.h>
 #include "cpluff.h"
 #include "core.h"
 #include "pcontrol.h"
@@ -31,6 +32,9 @@ struct registered_plugin_t {
 	
 	/** Plug-in information */
 	cp_plugin_t *plugin;
+	
+	/** Use count for plug-in information */
+	int use_count;
 	
 	/** The current state of the plug-in */
 	cp_plugin_state_t state;
@@ -125,6 +129,16 @@ static void unload_plugin(hnode_t *node);
  */
 static void free_registered_plugin(registered_plugin_t *plugin);
 
+/**
+ * Returns the enclosing registration for the specified plugin information
+ * structure.
+ * 
+ * @param plugin the plug-in information structure
+ * @return the enclosing registration
+ */
+static registered_plugin_t *get_enclosing_registration(const cp_plugin_t *plugin)
+	CP_CONST;
+
 
 /* ------------------------------------------------------------------------
  * Variables
@@ -157,14 +171,13 @@ int cpi_init_plugins(void) {
 		}
 		started_plugins = list_create(LISTCOUNT_T_MAX);
 		if (started_plugins == NULL) {
-			hash_destroy(plugins);
-			plugins = NULL;
 			status = CP_ERR_RESOURCE;
 			break;
 		}
 		
 	} while (0);
 	if (status != CP_OK) {
+		cpi_destroy_plugins();
 		cpi_error(_("Initialization of internal data structures failed due to insufficient resources."));
 	}
 	return status;
@@ -181,10 +194,12 @@ void cpi_destroy_plugins(void) {
 	if (plugins != NULL) {
 		assert(hash_isempty(plugins));
 		hash_destroy(plugins);
+		plugins = NULL;
 	}
 	if (started_plugins != NULL) {
 		assert(list_isempty(started_plugins));
 		list_destroy(started_plugins);
+		started_plugins = NULL;
 	}
 }
 
@@ -214,19 +229,15 @@ int cpi_install_plugin(cp_plugin_t *plugin) {
 		}
 	
 		/* Initialize plug-in state */
+		memset(rp, 0, sizeof(registered_plugin_t));
 		rp->plugin = plugin;
 		rp->state = CP_PLUGIN_INSTALLED;
-		rp->imported = NULL;
 		rp->importing = list_create(LISTCOUNT_T_MAX);
 		if (rp->importing == NULL) {
 			free(rp);
 			status = CP_ERR_RESOURCE;
 			break;
 		}
-		rp->runtime_lib = NULL;
-		rp->start_func = NULL;
-		rp->stop_func = NULL;
-		rp->active_operation = 0;
 		if (!hash_alloc_insert(plugins, plugin->identifier, rp)) {
 			free(rp);
 			status = CP_ERR_RESOURCE;
@@ -620,7 +631,7 @@ static void unresolve_plugin(registered_plugin_t *plugin) {
 	lnode_t *node;
 
 	/* Check if already unresolved */
-	if (plugin->state < CP_PLUGIN_RESOLVED) {
+	if (plugin->state <= CP_PLUGIN_INSTALLED) {
 		return;
 	}
 
@@ -652,10 +663,18 @@ static void unresolve_plugin(registered_plugin_t *plugin) {
 	list_destroy(plugin->imported);
 	plugin->imported = NULL;
 	
+	/* Reset pointers */
+	plugin->start_func = NULL;
+	plugin->stop_func = NULL;
+	if (plugin->runtime_lib != NULL) {
+		dlclose(plugin->runtime_lib);
+		plugin->runtime_lib = NULL;
+	}
+	
 	/* Inform the listeners */
 	event.plugin_id = plugin->plugin->identifier;
-	event.old_state = CP_PLUGIN_RESOLVED;
-	event.new_state = plugin->state;
+	event.old_state = plugin->state;
+	event.new_state = plugin->state = CP_PLUGIN_INSTALLED;
 	cpi_deliver_event(&event);
 }
 
@@ -697,22 +716,66 @@ static void unload_plugin(hnode_t *node) {
 	registered_plugin_t *plugin;
 	cp_plugin_event_t event;
 	
-	/* Make sure the plug-in is not in resolved state */
+	/* Check if already uninstalled */
 	plugin = (registered_plugin_t *) hnode_get(node);
+	if (plugin->state <= CP_PLUGIN_UNINSTALLED) {
+		return;
+	}
+	
+	/* Make sure the plug-in is not in resolved state */
 	unresolve_plugin(plugin);
 
+	/* Plug-in uninstalled */
+	event.plugin_id = plugin->plugin->identifier;
+	event.old_state = plugin->state;
+	event.new_state = plugin->state = CP_PLUGIN_UNINSTALLED;
+	cpi_deliver_event(&event);
+	
 	/* Unregister the plug-in */
 	hash_delete_free(plugins, node);
 
-	/* Plug-in unregistered */
-	event.plugin_id = plugin->plugin->identifier;
-	event.old_state = plugin->state;
-	event.new_state = CP_PLUGIN_UNINSTALLED;
-	cpi_deliver_event(&event);
-
-	/* Free the plug-in data structures */
-	free_registered_plugin(plugin);
+	/* Free the plug-in data structures if they are not needed anymore */
+	if (plugin->use_count == 0) {
+		free_registered_plugin(plugin);
+	}
 	
+}
+
+CP_API(const cp_plugin_t *) cp_get_plugin(const char *id) {
+	hnode_t *node;
+	cp_plugin_t *plugin;
+
+	assert(id != NULL);
+
+	/* Look up the plug-in and return information */
+	cpi_acquire_data();
+	node = hash_lookup(plugins, id);
+	if (node != NULL) {
+		registered_plugin_t *rp = hnode_get(node);
+		
+		rp->use_count++;
+		plugin = rp->plugin;
+	} else {
+		plugin = NULL;
+	}
+	cpi_release_data();
+
+	return plugin;
+}
+
+CP_API(void) cp_release_plugin(const cp_plugin_t *plugin) {
+	registered_plugin_t *rp;
+	
+	assert(plugin != NULL);
+	
+	/* Look up the plug-in and return information */
+	cpi_acquire_data();
+	rp = get_enclosing_registration(plugin);
+	rp->use_count--;
+	if (rp->use_count == 0 && rp->state == CP_PLUGIN_UNINSTALLED) {
+		free_registered_plugin(rp);
+	}
+	cpi_release_data();
 }
 
 static void free_registered_plugin(registered_plugin_t *plugin) {
@@ -737,15 +800,26 @@ void cpi_free_plugin(cp_plugin_t *plugin) {
 	assert(plugin != NULL);
 	if (plugin->path != NULL) {
 		free(plugin->path);
+		plugin->path = NULL;
 	}
 	if (plugin->imports != NULL) {
 		free(plugin->imports);
+		plugin->imports = NULL;
 	}
 	if (plugin->ext_points != NULL) {
 		free(plugin->ext_points);
+		plugin->ext_points = NULL;
 	}
 	if (plugin->extensions != NULL) {
 		free(plugin->extensions);
+		plugin->extensions = NULL;
 	}
 	free(plugin);
+}
+
+static registered_plugin_t *get_enclosing_registration(const cp_plugin_t *plugin) {
+	registered_plugin_t dummyrp;
+	
+	return (registered_plugin_t *)
+		((char *) plugin - ((char *) &(dummyrp.plugin) - (char *) &dummyrp));
 }
