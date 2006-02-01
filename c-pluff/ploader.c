@@ -236,24 +236,24 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 	ploader_context_t *context = NULL;
 
 	do {
-		int i;
+		int path_len;
 
 		/* Construct the file name for the plug-in descriptor */
-		i = strlen(path);
-		if (i == 0) {
+		path_len = strlen(path);
+		if (path_len == 0) {
 			status = CP_ERR_IO;
 			break;
 		}
-		if (path[i-1] == CP_PATHSEP_CHAR) {
-			i--;
+		if (path[path_len-1] == CP_PATHSEP_CHAR) {
+			path_len--;
 		}
-		file = malloc((i + strlen(postfix) + 1) * sizeof(char));
+		file = malloc((path_len + strlen(postfix) + 1) * sizeof(char));
 		if (file == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
 		strcpy(file, path);
-		strcpy(file + i, postfix);
+		strcpy(file + path_len, postfix);
 
 		/* Open the file */
 		{
@@ -301,6 +301,7 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 		while (1) {
 			int bytes_read;
 			void *xml_buffer;
+			int i;
 			
 			/* Get buffer from Expat */
 			if ((xml_buffer = XML_GetBuffer(parser, CP_XML_PARSER_BUFFER_SIZE))
@@ -346,7 +347,7 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 		}
 
 		/* Initialize the plug-in path */
-		*(file + i) = '\0';
+		*(file + path_len) = '\0';
 		context->plugin->path = file;
 		file = NULL;
 		
