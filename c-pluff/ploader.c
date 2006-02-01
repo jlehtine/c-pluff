@@ -20,7 +20,6 @@
 #include "cpluff.h"
 #include "core.h"
 #include "pcontrol.h"
-#include "kazlib/list.h"
 
 
 /* ------------------------------------------------------------------------
@@ -81,10 +80,10 @@ struct ploader_context_t {
 	
 	/** The current parser depth (used in PARSER_UNKNOWN) */
 	int depth;
-	
-	/** The list of imports for the plug-in being loaded */
-	list_t *imports;
 
+	/** Size of allocated imports table */
+	int imports_size;
+	
 	/** The number of parsing errors that have occurred */
 	int error_count;
 	
@@ -287,18 +286,14 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
-		context->plugin = NULL;
-		context->imports = NULL;
-		if ((context->plugin = malloc(sizeof(cp_plugin_t))) == NULL
-			|| (context->imports = list_create(LISTCOUNT_T_MAX)) == NULL) {
+		memset(context, 0, sizeof(ploader_context_t));
+		if ((context->plugin = malloc(sizeof(cp_plugin_t))) == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
 		context->parser = parser;
 		context->file = file;
 		context->state = PARSER_BEGIN;
-		context->error_count = 0;
-		context->resource_error_count = 0;
 		memset(context->plugin, 0, sizeof(cp_plugin_t));
 		XML_SetUserData(parser, context);
 
@@ -374,9 +369,11 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 	if (status != CP_OK) {
 		if (file != NULL) {
 			free(file);
+			file = NULL;
 		}
 		if (context != NULL && context->plugin != NULL) {
 			cpi_free_plugin(context->plugin);
+			context->plugin = NULL;
 		}
 	}
 
@@ -393,11 +390,8 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 		close(fd);
 	}
 	if (context != NULL) {
-		if (context->imports != NULL) {
-			list_destroy_nodes(context->imports);
-			list_destroy(context->imports);
-		}
 		free(context);
+		context = NULL;
 	}
 
 	return status;
@@ -406,7 +400,9 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 static void XMLCALL cp_start_element_handler(
 	void *userData, const XML_Char *name, const XML_Char **atts) {
 	static const XML_Char *req_plugin_atts[] = { "name", "id", "version", NULL };
-	static const XML_Char *opt_plugin_atts[] = { "provider-name" };
+	static const XML_Char *opt_plugin_atts[] = { "provider-name", NULL };
+	static const XML_Char *req_import_atts[] = { "plugin", NULL };
+	static const XML_Char *opt_import_atts[] = { "version", "match", "optional", NULL };
 	ploader_context_t *context = userData;
 	int i;
 
@@ -414,10 +410,12 @@ static void XMLCALL cp_start_element_handler(
 	switch (context->state) {
 		case PARSER_BEGIN:
 			if (!strcmp(name, "plugin")) {
-				check_attributes(context, atts, req_plugin_atts,
-					opt_plugin_atts);
 				context->state = PARSER_PLUGIN;
-				for (i = 0; atts[i] != NULL; i++) {
+				if (!check_attributes(context, atts, req_plugin_atts,
+						opt_plugin_atts)) {
+					break;
+				}
+				for (i = 0; atts[i] != NULL; i += 2) {
 					if (!strcmp(atts[i], "name")) {
 						strncpy(context->plugin->name, atts[i+1], CP_NAME_MAX_LENGTH);
 						context->plugin->name[CP_NAME_MAX_LENGTH] = '\0';
@@ -446,14 +444,77 @@ static void XMLCALL cp_start_element_handler(
 		case PARSER_REQUIRES:
 			if (!strcmp(name, "import")) {
 				cp_plugin_import_t *import = NULL;
-				
-				if ((import = malloc(sizeof(cp_plugin_import_t))) == NULL) {
-					resource_error(context);
+				int error = 0;
+
+				/* Check attributes */
+				if (!check_attributes(context, atts, req_import_atts,
+						opt_import_atts)) {
 					break;
 				}
-				for (i = 0; atts[i] != NULL; i++) {
-					// TODO
+				
+				/* Allocate space for imports, if necessary */
+				if (context->plugin->num_imports == context->imports_size) {
+					cp_plugin_import_t *ni;
+					int ns;
+					
+					if (context->imports_size == 0) {
+						ns = 16;
+					} else {
+						ns = context->imports_size * 2;
+					}
+					if ((ni = realloc(context->plugin->imports,
+							ns * sizeof(cp_plugin_import_t))) == NULL) {
+						resource_error(context);
+						break;
+					}
+					context->plugin->imports = ni;
+					context->imports_size = ns;
 				}
+				
+				/* Parse import specification */
+				import = context->plugin->imports
+					+ context->plugin->num_imports;
+				memset(import, 0, sizeof(cp_plugin_import_t));
+				for (i = 0; atts[i] != NULL; i += 2) {
+					if (!strcmp(atts[i], "plugin")) {
+						strncpy(import->plugin_id, atts[i+1], CP_ID_MAX_LENGTH);
+						import->plugin_id[CP_ID_MAX_LENGTH] = '\0';
+					} else if (!strcmp(atts[i], "version")) {
+						strncpy(import->version, atts[i+1], CP_VERSTR_MAX_LENGTH);
+						import->version[CP_VERSTR_MAX_LENGTH] = '\0';
+					} else if (!strcmp(atts[i], "match")) {
+						if (!strcmp(atts[i+1], "perfect")) {
+							import->match = CP_MATCH_PERFECT;
+						} else if (!strcmp(atts[i+1], "equivalent")) {
+							import->match = CP_MATCH_EQUIVALENT;
+						} else if (!strcmp(atts[i+1], "compatible")) {
+							import->match = CP_MATCH_COMPATIBLE;
+						} else if (!strcmp(atts[i+1], "greaterOrEqual")) {
+							import->match = CP_MATCH_GREATEROREQUAL;
+						} else {
+							descriptor_errorf(context, 0, "unknown version matching mode %s", atts[i+1]);
+							error = 1;
+						}
+					} else if (!strcmp(atts[i], "optional")) {
+						if (!strcmp(atts[i+1], "true")
+							|| !strcmp(atts[i+1], "1")) {
+							import->optional = 1;
+						} else if (strcmp(atts[i+1], "false")
+							&& strcmp(atts[i+1], "0")) {
+							descriptor_errorf(context, 0, "unknown boolean value %s", atts[i+1]);
+							error = 1;
+						}
+					}
+				}
+				if (import->match != CP_MATCH_NONE
+					&& import->version[0] == '\0') {
+					descriptor_errorf(context, 0, "unable to match unspecified version");
+					error = 1;
+				}
+				if (!error) {
+					context->plugin->num_imports++;
+				}
+
 			} else {
 				unexpected_element(context, name);
 			}
@@ -480,6 +541,20 @@ static void XMLCALL cp_end_element_handler(
 			break;
 		case PARSER_REQUIRES:
 			if (!strcmp(name, "requires")) {
+				
+				/* Readjust memory allocated for imports, if necessary */
+				if (context->imports_size != context->plugin->num_imports) {
+					cp_plugin_import_t *ni;
+					
+					if ((ni = realloc(context->plugin->imports,
+							context->plugin->num_imports *
+								sizeof(cp_plugin_import_t))) != NULL
+						|| context->plugin->num_imports == 0) {
+						context->plugin->imports = ni;
+						context->imports_size = context->plugin->num_imports;
+					}
+				}
+				
 				context->state = PARSER_PLUGIN;
 			}
 			break;
