@@ -300,6 +300,10 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 		context->file = file;
 		context->state = PARSER_BEGIN;
 		memset(context->plugin, 0, sizeof(cp_plugin_t));
+		context->plugin->path = NULL;
+		context->plugin->imports = NULL;
+		context->plugin->ext_points = NULL;
+		context->plugin->extensions = NULL;
 		XML_SetUserData(parser, context);
 
 		/* Parse the plug-in descriptor */

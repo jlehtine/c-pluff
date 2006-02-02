@@ -237,6 +237,10 @@ int cpi_install_plugin(const cp_plugin_t *plugin) {
 		memset(rp, 0, sizeof(registered_plugin_t));
 		rp->plugin = plugin;
 		rp->state = CP_PLUGIN_INSTALLED;
+		rp->imported = NULL;
+		rp->runtime_lib = NULL;
+		rp->start_func = NULL;
+		rp->stop_func = NULL;
 		rp->importing = list_create(LISTCOUNT_T_MAX);
 		if (rp->importing == NULL) {
 			free(rp);
