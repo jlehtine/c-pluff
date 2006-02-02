@@ -11,6 +11,7 @@
 #include "cpluff.h"
 #include "core.h"
 #include "kazlib/list.h"
+#include "kazlib/hash.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -21,6 +22,23 @@ extern "C" {
  * ----------------------------------------------------------------------*/
 
 /* For operating on smallish pointer sets implemented as lists */
+
+/**
+ * Compares pointers.
+ * 
+ * @param ptr1 the first pointer
+ * @param ptr2 the second pointer
+ * @return zero if the pointers are equal, otherwise non-zero
+ */
+int cpi_comp_ptr(const void *ptr1, const void *ptr2) CP_CONST;
+
+/**
+ * Returns a hash value for a pointer.
+ * 
+ * @param ptr the pointer being hashed
+ * @return the corresponding hash value
+ */
+hash_val_t cpi_hashfunc_ptr(const void *ptr) CP_CONST;
 
 /**
  * Adds a new pointer to a list if the pointer is not yet included.

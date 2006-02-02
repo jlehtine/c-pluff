@@ -84,6 +84,9 @@ struct ploader_context_t {
 	/** Size of allocated imports table */
 	int imports_size;
 	
+	/** Size of allocated extension points table */
+	int ext_points_size;
+	
 	/** The number of parsing errors that have occurred */
 	int error_count;
 	
@@ -138,12 +141,14 @@ static void unexpected_element(ploader_context_t *context, const XML_Char *elem)
  * each missing required attribute.
  * 
  * @param context the parsing context
+ * @param elem the element being checked
  * @param atts the attribute list for the element
  * @param req_atts the required attributes (NULL terminated list, or NULL)
  * @param opt_atts the optional attributes (NULL terminated list, or NULL)
  * @return whether the required attributes are present
  */
-static int check_attributes(ploader_context_t *context, const XML_Char **atts,
+static int check_attributes(ploader_context_t *context,
+	const XML_Char *elem, const XML_Char **atts,
 	const XML_Char **req_atts, const XML_Char **opt_atts);
 
 /**
@@ -213,7 +218,7 @@ CP_API(int) cp_load_plugin(const char *path, cp_id_t *id) {
 	} while (0);
 	
 	/* On success, return the plug-in id */
-	if (status == CP_OK) {
+	if (status == CP_OK && id != NULL) {
 		strcpy((char *) id, plugin->identifier);
 	}
 	
@@ -404,6 +409,10 @@ static void XMLCALL cp_start_element_handler(
 	static const XML_Char *opt_plugin_atts[] = { "provider-name", NULL };
 	static const XML_Char *req_import_atts[] = { "plugin", NULL };
 	static const XML_Char *opt_import_atts[] = { "version", "match", "optional", NULL };
+	static const XML_Char *req_runtime_atts[] = { "library", NULL };
+	static const XML_Char *opt_runtime_atts[] = { "start-func", "stop-func", NULL };
+	static const XML_Char *req_ext_point_atts[] = { "name", "id", NULL };
+	static const XML_Char *opt_ext_point_atts[] = { "schema", NULL };
 	ploader_context_t *context = userData;
 	int i;
 
@@ -412,8 +421,8 @@ static void XMLCALL cp_start_element_handler(
 		case PARSER_BEGIN:
 			if (!strcmp(name, "plugin")) {
 				context->state = PARSER_PLUGIN;
-				if (!check_attributes(context, atts, req_plugin_atts,
-						opt_plugin_atts)) {
+				if (!check_attributes(context, name, atts,
+						req_plugin_atts, opt_plugin_atts)) {
 					break;
 				}
 				for (i = 0; atts[i] != NULL; i += 2) {
@@ -438,84 +447,151 @@ static void XMLCALL cp_start_element_handler(
 		case PARSER_PLUGIN:
 			if (!strcmp(name, "requires")) {
 				context->state = PARSER_REQUIRES;
+			} else if (!strcmp(name, "runtime")) {
+				if (check_attributes(context, name, atts,
+						req_runtime_atts, opt_runtime_atts)) {
+					for (i = 0; atts[i] != NULL; i += 2) {
+						if (!strcmp(atts[i], "library")) {
+							strncpy(context->plugin->lib_path, atts[i+1], 127);
+							context->plugin->lib_path[127] = '\0';
+						} else if (!strcmp(atts[i], "start-func")) {
+							strncpy(context->plugin->start_func_name, atts[i+1], 31);
+							context->plugin->start_func_name[31] = '\0';
+						} else if (!strcmp(atts[i], "stop-func")) {
+							strncpy(context->plugin->stop_func_name, atts[i+1], 31);
+							context->plugin->stop_func_name[31] = '\0';
+						}
+					}
+				}
+			} else if (!strcmp(name, "extension-point")) {
+				if (check_attributes(context, name, atts,
+						req_ext_point_atts, opt_ext_point_atts)) {
+					cp_ext_point_t *ext_point;
+					
+					/* Allocate space for extension points, if necessary */
+					if (context->plugin->num_ext_points == context->ext_points_size) {
+						cp_ext_point_t *nep;
+						int ns;
+						
+						if (context->ext_points_size == 0) {
+							ns = 16;
+						} else {
+							ns = context->ext_points_size * 2;
+						}
+						if ((nep = realloc((void *) context->plugin->ext_points,
+								ns * sizeof(cp_ext_point_t))) == NULL) {
+							resource_error(context);
+							break;
+						}
+						context->plugin->ext_points = nep;
+						context->ext_points_size = ns;
+					}
+					
+					/* Parse extension point specification */
+					ext_point = (cp_ext_point_t *) context->plugin->ext_points
+						+ context->plugin->num_ext_points;
+					for (i = 0; atts[i] != NULL; i += 2) {
+						if (!strcmp(atts[i], "name")) {
+							strncpy(ext_point->name, atts[i+1], CP_NAME_MAX_LENGTH);
+							ext_point->name[CP_NAME_MAX_LENGTH] = '\0';
+						} else if (!strcmp(atts[i], "id")) {
+							int j;
+							
+							strncpy(ext_point->simple_id, atts[i+1], CP_ID_MAX_LENGTH);
+							ext_point->simple_id[CP_ID_MAX_LENGTH] = '\0';
+							strncpy(ext_point->extpt_id, context->plugin->identifier, CP_ID_MAX_LENGTH);
+							ext_point->extpt_id[CP_ID_MAX_LENGTH] = '\0';
+							j = strlen(ext_point->extpt_id);
+							if (j < CP_ID_MAX_LENGTH) {
+								ext_point->extpt_id[j] = '.';
+								strncpy(ext_point->extpt_id + j + 1,
+									ext_point->simple_id,
+									CP_ID_MAX_LENGTH - j - 1);
+							}
+							ext_point->extpt_id[CP_ID_MAX_LENGTH] = '\0';
+						} else if (!strcmp(atts[i], "schema")) {
+							strncpy(ext_point->schema_path, atts[i+1], 127);
+							ext_point->schema_path[127] = '\0';
+						}
+					}
+					context->plugin->num_ext_points++;
+					
+				}
 			} else {
 				unexpected_element(context, name);
 			}
 			break;
 		case PARSER_REQUIRES:
 			if (!strcmp(name, "import")) {
-				cp_plugin_import_t *import = NULL;
-				int error = 0;
 
-				/* Check attributes */
-				if (!check_attributes(context, atts, req_import_atts,
-						opt_import_atts)) {
-					break;
-				}
+				if (check_attributes(context, name, atts,
+						req_import_atts, opt_import_atts)) {
+					cp_plugin_import_t *import = NULL;
+					int error = 0;
 				
-				/* Allocate space for imports, if necessary */
-				if (context->plugin->num_imports == context->imports_size) {
-					cp_plugin_import_t *ni;
-					int ns;
+					/* Allocate space for imports, if necessary */
+					if (context->plugin->num_imports == context->imports_size) {
+						cp_plugin_import_t *ni;
+						int ns;
 					
-					if (context->imports_size == 0) {
-						ns = 16;
-					} else {
-						ns = context->imports_size * 2;
-					}
-					if ((ni = realloc(context->plugin->imports,
-							ns * sizeof(cp_plugin_import_t))) == NULL) {
-						resource_error(context);
-						break;
-					}
-					context->plugin->imports = ni;
-					context->imports_size = ns;
-				}
-				
-				/* Parse import specification */
-				import = context->plugin->imports
-					+ context->plugin->num_imports;
-				memset(import, 0, sizeof(cp_plugin_import_t));
-				for (i = 0; atts[i] != NULL; i += 2) {
-					if (!strcmp(atts[i], "plugin")) {
-						strncpy(import->plugin_id, atts[i+1], CP_ID_MAX_LENGTH);
-						import->plugin_id[CP_ID_MAX_LENGTH] = '\0';
-					} else if (!strcmp(atts[i], "version")) {
-						strncpy(import->version, atts[i+1], CP_VERSTR_MAX_LENGTH);
-						import->version[CP_VERSTR_MAX_LENGTH] = '\0';
-					} else if (!strcmp(atts[i], "match")) {
-						if (!strcmp(atts[i+1], "perfect")) {
-							import->match = CP_MATCH_PERFECT;
-						} else if (!strcmp(atts[i+1], "equivalent")) {
-							import->match = CP_MATCH_EQUIVALENT;
-						} else if (!strcmp(atts[i+1], "compatible")) {
-							import->match = CP_MATCH_COMPATIBLE;
-						} else if (!strcmp(atts[i+1], "greaterOrEqual")) {
-							import->match = CP_MATCH_GREATEROREQUAL;
+						if (context->imports_size == 0) {
+							ns = 16;
 						} else {
-							descriptor_errorf(context, 0, "unknown version matching mode %s", atts[i+1]);
-							error = 1;
+							ns = context->imports_size * 2;
 						}
-					} else if (!strcmp(atts[i], "optional")) {
-						if (!strcmp(atts[i+1], "true")
-							|| !strcmp(atts[i+1], "1")) {
-							import->optional = 1;
-						} else if (strcmp(atts[i+1], "false")
-							&& strcmp(atts[i+1], "0")) {
-							descriptor_errorf(context, 0, "unknown boolean value %s", atts[i+1]);
-							error = 1;
+						if ((ni = realloc((void *) context->plugin->imports,
+								ns * sizeof(cp_plugin_import_t))) == NULL) {
+							resource_error(context);
+							break;
+						}
+						context->plugin->imports = ni;
+						context->imports_size = ns;
+					}
+				
+					/* Parse import specification */
+					import = (cp_plugin_import_t *) context->plugin->imports
+						+ context->plugin->num_imports;
+					memset(import, 0, sizeof(cp_plugin_import_t));
+					for (i = 0; atts[i] != NULL; i += 2) {
+						if (!strcmp(atts[i], "plugin")) {
+							strncpy(import->plugin_id, atts[i+1], CP_ID_MAX_LENGTH);
+							import->plugin_id[CP_ID_MAX_LENGTH] = '\0';
+						} else if (!strcmp(atts[i], "version")) {
+							strncpy(import->version, atts[i+1], CP_VERSTR_MAX_LENGTH);
+							import->version[CP_VERSTR_MAX_LENGTH] = '\0';
+						} else if (!strcmp(atts[i], "match")) {
+							if (!strcmp(atts[i+1], "perfect")) {
+								import->match = CP_MATCH_PERFECT;
+							} else if (!strcmp(atts[i+1], "equivalent")) {
+								import->match = CP_MATCH_EQUIVALENT;
+							} else if (!strcmp(atts[i+1], "compatible")) {
+								import->match = CP_MATCH_COMPATIBLE;
+							} else if (!strcmp(atts[i+1], "greaterOrEqual")) {
+								import->match = CP_MATCH_GREATEROREQUAL;
+							} else {
+								descriptor_errorf(context, 0, "unknown version matching mode %s", atts[i+1]);
+								error = 1;
+							}
+						} else if (!strcmp(atts[i], "optional")) {
+							if (!strcmp(atts[i+1], "true")
+								|| !strcmp(atts[i+1], "1")) {
+								import->optional = 1;
+							} else if (strcmp(atts[i+1], "false")
+								&& strcmp(atts[i+1], "0")) {
+								descriptor_errorf(context, 0, "unknown boolean value %s", atts[i+1]);
+								error = 1;
+							}
 						}
 					}
+					if (import->match != CP_MATCH_NONE
+						&& import->version[0] == '\0') {
+						descriptor_errorf(context, 0, "unable to match unspecified version");
+						error = 1;
+					}
+					if (!error) {
+						context->plugin->num_imports++;
+					}
 				}
-				if (import->match != CP_MATCH_NONE
-					&& import->version[0] == '\0') {
-					descriptor_errorf(context, 0, "unable to match unspecified version");
-					error = 1;
-				}
-				if (!error) {
-					context->plugin->num_imports++;
-				}
-
 			} else {
 				unexpected_element(context, name);
 			}
@@ -537,6 +613,20 @@ static void XMLCALL cp_end_element_handler(
 	switch (context->state) {
 		case PARSER_PLUGIN:
 			if (!strcmp(name, "plugin")) {
+				
+				/* Readjust memory allocated for extension points, if necessary */
+				if (context->ext_points_size != context->plugin->num_ext_points) {
+					cp_ext_point_t *nep;
+					
+					if ((nep = realloc((void *) context->plugin->ext_points,
+							context->plugin->num_ext_points *
+								sizeof(cp_ext_point_t))) != NULL
+						|| context->plugin->num_ext_points == 0) {
+						context->plugin->ext_points = nep;
+						context->ext_points_size = context->plugin->num_ext_points;
+					}
+				}
+				
 				context->state = PARSER_END;
 			}
 			break;
@@ -547,7 +637,7 @@ static void XMLCALL cp_end_element_handler(
 				if (context->imports_size != context->plugin->num_imports) {
 					cp_plugin_import_t *ni;
 					
-					if ((ni = realloc(context->plugin->imports,
+					if ((ni = realloc((void *) context->plugin->imports,
 							context->plugin->num_imports *
 								sizeof(cp_plugin_import_t))) != NULL
 						|| context->plugin->num_imports == 0) {
@@ -578,7 +668,8 @@ static void unexpected_element(ploader_context_t *context, const XML_Char *elem)
 	descriptor_errorf(context, 1, _("ignoring unexpected element %s and its contents"), elem);
 }
 
-static int check_attributes(ploader_context_t *context, const XML_Char **atts,
+static int check_attributes(ploader_context_t *context,
+	const XML_Char *elem, const XML_Char **atts,
 	const XML_Char **req_atts, const XML_Char **opt_atts) {
 	const XML_Char **a;
 	int error = 0;
@@ -590,13 +681,14 @@ static int check_attributes(ploader_context_t *context, const XML_Char **atts,
 		if ((av = contains_str(atts, *a, 2)) != NULL) {
 			if ((*(av + 1))[0] == '\0') {
 				descriptor_errorf(context, 0,
-					_("required attribute %s has empty value"),
-					*a);
+					_("required attribute \"%s\" for element \"%s\" has an empty value"),
+					*a, elem);
 				error = 1;
 			}
 		} else {
-			descriptor_errorf(context, 0, _("required attribute %s missing"),
-				*a);
+			descriptor_errorf(context, 0,
+				_("required attribute \"%s\" missing for element \"%s\""),
+				*a, elem);
 			error = 1;
 		}
 	}
@@ -605,8 +697,9 @@ static int check_attributes(ploader_context_t *context, const XML_Char **atts,
 	for (; *atts != NULL; atts += 2) {
 		if (contains_str(req_atts, *atts, 1) == NULL
 			&& contains_str(opt_atts, *atts, 1) == NULL) {
-			descriptor_errorf(context, 1, _("ignoring unknown attribute %s"),
-				*atts);
+			descriptor_errorf(context, 1,
+				_("ignoring unknown attribute \"%s\" for element \"%s\""),
+				*atts, elem);
 		}
 	}
 	

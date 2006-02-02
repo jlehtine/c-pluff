@@ -44,6 +44,12 @@ extern "C" {
  */
 #define CP_VERSTR_MAX_LENGTH 31
 
+/** Maximum length of a path name, excluding the trailing '\0' */
+#define CP_PATH_MAX_LENGTH 127
+
+/** Maximum length of a function name, excluding the trailing '\0' */
+#define CP_FUNCNAME_MAX_LENGTH 31
+
 
 /* Error codes for operations that might fail */
 
@@ -128,6 +134,12 @@ typedef char cp_name_t[CP_NAME_MAX_LENGTH + 1];
 /** A plug-in version string in UTF-8 encoding */
 typedef char cp_verstr_t[CP_VERSTR_MAX_LENGTH + 1];
 
+/** A file path in UTF-8 encoding */
+typedef char cp_path_t[CP_PATH_MAX_LENGTH + 1];
+
+/** A function name in UTF-8 encoding */
+typedef char cp_funcname_t[CP_FUNCNAME_MAX_LENGTH + 1];
+
 /** Possible version match rules */
 typedef enum cp_version_match_t {
 	CP_MATCH_NONE,
@@ -166,6 +178,9 @@ struct cp_ext_point_t {
 	
 	/** Unique identifier of the extension point (UTF-8) */
 	cp_id_t extpt_id;
+
+	/** Path to the extension schema definition or empty if none. */
+	cp_path_t schema_path;
 };
 
 /**
@@ -187,7 +202,6 @@ struct cp_extension_t {
 	 
 	/** Unique identifier of the extension point (UTF-8) */
 	cp_id_t extpt_id;
-
 };
 
 /**
@@ -235,13 +249,13 @@ struct cp_plugin_t {
 	const cp_plugin_import_t *imports;
 
     /** The relative path of plug-in runtime library, or empty if none */
-    char lib_path[128];
+    cp_path_t lib_path;
     
     /** The name of the start function, or empty if none */
-    char start_func_name[32];
+    cp_funcname_t start_func_name;
     
     /** The name of the stop function, or empty if none */
-    char stop_func_name[32];
+    cp_funcname_t stop_func_name;
 
 	/** Number of extension points provided by this plug-in */
 	int num_ext_points;
@@ -276,7 +290,7 @@ typedef enum cp_plugin_state_t {
 typedef struct cp_plugin_event_t {
 	
 	/** The identifier of the affected plug-in in UTF-8 encoding */
-	char *plugin_id;
+	const cp_id_t *plugin_id;
 	
 	/** Old state of the plug-in */
 	cp_plugin_state_t old_state;
@@ -470,9 +484,10 @@ CP_API(void) cp_unload_all_plugins(void);
  * it does not need the information anymore.
  * 
  * @param id identifier of the plug-in to be examined
- * @return pointer to the information structure or NULL if identifier is unknown
+ * @param error filled with an error code, if non-NULL
+ * @return pointer to the information structure or NULL if error occurs
  */
-CP_API(const cp_plugin_t *) cp_get_plugin(const char *id);
+CP_API(const cp_plugin_t *) cp_get_plugin(const char *id, int *error);
 
 /**
  * Releases a previously obtained plug-in information structure.

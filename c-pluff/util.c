@@ -13,21 +13,16 @@
  * Static function declarations
  * ----------------------------------------------------------------------*/
 
-/**
- * Compares pointers.
- * 
- * @param ptr1 the first pointer
- * @param ptr2 the second pointer
- * @return zero if the pointers are equal, otherwise non-zero
- */
-static int comp_ptr(const void *ptr1, const void *ptr2) CP_CONST;
-
 /* ------------------------------------------------------------------------
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-static int comp_ptr(const void *ptr1, const void *ptr2) {
+int cpi_comp_ptr(const void *ptr1, const void *ptr2) {
 	return !(ptr1 == ptr2);
+}
+
+hash_val_t cpi_hashfunc_ptr(const void *ptr) {
+	return (hash_val_t) ptr;
 }
 
 int cpi_ptrset_add(list_t *set, void *ptr) {
@@ -54,7 +49,7 @@ int cpi_ptrset_remove(list_t *set, const void *ptr) {
 	lnode_t *node;
 	
 	/* Find the pointer if it is in the set */
-	node = list_find(set, ptr, comp_ptr);
+	node = list_find(set, ptr, cpi_comp_ptr);
 	if (node != NULL) {
 		list_delete(set, node);
 		lnode_destroy(node);
@@ -65,5 +60,5 @@ int cpi_ptrset_remove(list_t *set, const void *ptr) {
 }
 
 int cpi_ptrset_contains(list_t *set, const void *ptr) {
-	return list_find(set, ptr, comp_ptr) != NULL;
+	return list_find(set, ptr, cpi_comp_ptr) != NULL;
 }

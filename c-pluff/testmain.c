@@ -23,8 +23,10 @@ int main(int argc, char *argv[]) {
 			const cp_plugin_t *plugin;
 			
 			printf("Loaded plug-in %s:\n", id);
-			plugin = cp_get_plugin(id);
-			assert(plugin != NULL);
+			if ((plugin = cp_get_plugin(id, NULL)) == NULL) {
+				fprintf(stderr, "Failed to get plug-in %s.\n", id);
+				exit(1);
+			}
 			printf("  name: %s\n", plugin->name);
 			printf("  identifier: %s\n", plugin->identifier);
 			printf("  version: %s\n", plugin->version);
@@ -37,6 +39,17 @@ int main(int argc, char *argv[]) {
 				printf("      version: %s\n", plugin->imports[i].version);
 				printf("      match: %d\n", (int) (plugin->imports[i].match));
 				printf("      optional: %d\n", plugin->imports[i].optional);
+			}
+			printf("  runtime:\n");
+			printf("    library: %s\n", plugin->lib_path);
+			printf("    start function: %s\n", plugin->start_func_name);
+			printf("    stop function: %s\n", plugin->stop_func_name);
+			printf("  extension points:\n");
+			for (i = 0; i < plugin->num_ext_points; i++) {
+				printf("    %d:\n", i+1);
+				printf("      name: %s\n", plugin->ext_points[i].name);
+				printf("      simple identifier: %s\n", plugin->ext_points[i].simple_id);
+				printf("      unique identifier: %s\n", plugin->ext_points[i].extpt_id);
 			}
 			cp_release_plugin(plugin);
 		}

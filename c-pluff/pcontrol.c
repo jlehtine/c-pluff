@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
+#include <stddef.h>
 #include <dlfcn.h>
 #include "cpluff.h"
 #include "core.h"
@@ -31,7 +32,7 @@ typedef struct registered_plugin_t registered_plugin_t;
 struct registered_plugin_t {
 	
 	/** Plug-in information */
-	cp_plugin_t *plugin;
+	const cp_plugin_t *plugin;
 	
 	/** Use count for plug-in information */
 	int use_count;
@@ -129,16 +130,6 @@ static void unload_plugin(hnode_t *node);
  */
 static void free_registered_plugin(registered_plugin_t *plugin);
 
-/**
- * Returns the enclosing registration for the specified plugin information
- * structure.
- * 
- * @param plugin the plug-in information structure
- * @return the enclosing registration
- */
-static registered_plugin_t *get_enclosing_registration(const cp_plugin_t *plugin)
-	CP_CONST;
-
 
 /* ------------------------------------------------------------------------
  * Variables
@@ -149,6 +140,9 @@ static hash_t *plugins = NULL;
 
 /** List of started plug-ins in the order they were started */
 static list_t *started_plugins = NULL;
+
+/** Hash of in-use registered plug-ins by plugin pointer */
+static hash_t *used_plugins = NULL;
 
 
 /* ------------------------------------------------------------------------
@@ -171,6 +165,12 @@ int cpi_init_plugins(void) {
 		}
 		started_plugins = list_create(LISTCOUNT_T_MAX);
 		if (started_plugins == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+		used_plugins = hash_create(HASHCOUNT_T_MAX,
+			cpi_comp_ptr, cpi_hashfunc_ptr);
+		if (used_plugins == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
@@ -201,12 +201,17 @@ void cpi_destroy_plugins(void) {
 		list_destroy(started_plugins);
 		started_plugins = NULL;
 	}
+	if (used_plugins != NULL) {
+		hash_free_nodes(used_plugins);
+		hash_destroy(used_plugins);
+		used_plugins = NULL;
+	}
 }
 
 
 /* Plug-in control */
 
-int cpi_install_plugin(cp_plugin_t *plugin) {
+int cpi_install_plugin(const cp_plugin_t *plugin) {
 	registered_plugin_t *rp;
 	int status = CP_OK;
 	cp_plugin_event_t event;
@@ -245,9 +250,9 @@ int cpi_install_plugin(cp_plugin_t *plugin) {
 		}
 		
 		/* Plug-in installed */
-		event.plugin_id = plugin->identifier;
+		event.plugin_id = &(plugin->identifier);
 		event.old_state = CP_PLUGIN_UNINSTALLED;
-		event.new_state = CP_PLUGIN_INSTALLED;
+		event.new_state = rp->state;
 		cpi_deliver_event(&event);
 
 	} while (0);
@@ -298,7 +303,7 @@ static int resolve_plugin(registered_plugin_t *plugin) {
 		cp_plugin_event_t event;
 		
 		rp = lnode_get(node);
-		event.plugin_id = rp->plugin->identifier;
+		event.plugin_id = &(rp->plugin->identifier);
 		event.old_state = CP_PLUGIN_INSTALLED;
 		event.new_state = rp->state;
 		cpi_deliver_event(&event);
@@ -438,7 +443,7 @@ static int resolve_plugin_rec
 	if (status == CP_OK) {
 		cp_plugin_event_t event;
 		
-		event.plugin_id = plugin->plugin->identifier;
+		event.plugin_id = &(plugin->plugin->identifier);
 		event.old_state = plugin->state;
 		event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
 		cpi_deliver_event(&event);
@@ -516,7 +521,7 @@ static int start_plugin(registered_plugin_t *plugin) {
 	assert(plugin->state == CP_PLUGIN_RESOLVED);
 		
 	/* About to start the plug-in */
-	event.plugin_id = plugin->plugin->identifier;
+	event.plugin_id = &(plugin->plugin->identifier);
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_STARTING;
 	cpi_deliver_event(&event);
@@ -609,7 +614,7 @@ static void stop_plugin(registered_plugin_t *plugin) {
 	assert(plugin->state == CP_PLUGIN_ACTIVE);
 		
 	/* About to stop the plug-in */
-	event.plugin_id = plugin->plugin->identifier;
+	event.plugin_id = &(plugin->plugin->identifier);
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_STOPPING;
 	cpi_deliver_event(&event);
@@ -672,7 +677,7 @@ static void unresolve_plugin(registered_plugin_t *plugin) {
 	}
 	
 	/* Inform the listeners */
-	event.plugin_id = plugin->plugin->identifier;
+	event.plugin_id = &(plugin->plugin->identifier);
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_INSTALLED;
 	cpi_deliver_event(&event);
@@ -726,7 +731,7 @@ static void unload_plugin(hnode_t *node) {
 	unresolve_plugin(plugin);
 
 	/* Plug-in uninstalled */
-	event.plugin_id = plugin->plugin->identifier;
+	event.plugin_id = &(plugin->plugin->identifier);
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_UNINSTALLED;
 	cpi_deliver_event(&event);
@@ -741,9 +746,10 @@ static void unload_plugin(hnode_t *node) {
 	
 }
 
-CP_API(const cp_plugin_t *) cp_get_plugin(const char *id) {
+CP_API(const cp_plugin_t *) cp_get_plugin(const char *id, int *error) {
 	hnode_t *node;
-	cp_plugin_t *plugin;
+	const cp_plugin_t *plugin;
+	int status = CP_OK;
 
 	assert(id != NULL);
 
@@ -753,33 +759,55 @@ CP_API(const cp_plugin_t *) cp_get_plugin(const char *id) {
 	if (node != NULL) {
 		registered_plugin_t *rp = hnode_get(node);
 		
-		rp->use_count++;
-		plugin = rp->plugin;
+		if (!hash_alloc_insert(used_plugins, rp->plugin, rp)) {
+			plugin = NULL;
+			status = CP_ERR_RESOURCE;
+			cpi_error(_("Insufficient resources to return plug-in information."));
+		} else {
+			rp->use_count++;
+			plugin = rp->plugin;
+		}
 	} else {
 		plugin = NULL;
+		status = CP_ERR_UNKNOWN;
 	}
 	cpi_release_data();
 
+	if (error != NULL) {
+		*error = status;
+	}
 	return plugin;
 }
 
 CP_API(void) cp_release_plugin(const cp_plugin_t *plugin) {
 	registered_plugin_t *rp;
+	hnode_t *node;
 	
 	assert(plugin != NULL);
 	
 	/* Look up the plug-in and return information */
 	cpi_acquire_data();
-	rp = get_enclosing_registration(plugin);
+	node = hash_lookup(used_plugins, plugin);
+	if (node == NULL) {
+		cpi_errorf(_("Attempt to release plug-in %s which is not in use."),
+			plugin->identifier);
+		return;
+	}
+	rp = (registered_plugin_t *) hnode_get(node);
 	rp->use_count--;
-	if (rp->use_count == 0 && rp->state == CP_PLUGIN_UNINSTALLED) {
-		free_registered_plugin(rp);
+	if (rp->use_count == 0) {
+		hash_delete_free(used_plugins, node);
+		if (rp->state == CP_PLUGIN_UNINSTALLED) {
+			free_registered_plugin(rp);
+		}
 	}
 	cpi_release_data();
 }
 
 static void free_registered_plugin(registered_plugin_t *plugin) {
-	cpi_free_plugin(plugin->plugin);
+	cpi_free_plugin((cp_plugin_t *) plugin->plugin);
+
+	assert(plugin != NULL);
 	
 	/* Release data structures */
 	if (plugin->importing != NULL) {
@@ -799,27 +827,20 @@ static void free_registered_plugin(registered_plugin_t *plugin) {
 void cpi_free_plugin(cp_plugin_t *plugin) {
 	assert(plugin != NULL);
 	if (plugin->path != NULL) {
-		free(plugin->path);
+		free((void *) plugin->path);
 		plugin->path = NULL;
 	}
 	if (plugin->imports != NULL) {
-		free(plugin->imports);
+		free((void *) plugin->imports);
 		plugin->imports = NULL;
 	}
 	if (plugin->ext_points != NULL) {
-		free(plugin->ext_points);
+		free((void *) plugin->ext_points);
 		plugin->ext_points = NULL;
 	}
 	if (plugin->extensions != NULL) {
-		free(plugin->extensions);
+		free((void *) plugin->extensions);
 		plugin->extensions = NULL;
 	}
 	free(plugin);
-}
-
-static registered_plugin_t *get_enclosing_registration(const cp_plugin_t *plugin) {
-	registered_plugin_t dummyrp;
-	
-	return (registered_plugin_t *)
-		((char *) plugin - ((char *) &(dummyrp.plugin) - (char *) &dummyrp));
 }

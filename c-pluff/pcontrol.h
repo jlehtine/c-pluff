@@ -47,7 +47,7 @@ void cpi_destroy_plugins(void);
  * @param plugin the plug-in to be installed
  * @return CP_OK (0) on success, an error code on failure
  */
-int cpi_install_plugin(cp_plugin_t *plugin);
+int cpi_install_plugin(const cp_plugin_t *plugin);
 
 /**
  * Frees any resources allocated for a plug-in description.
