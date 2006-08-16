@@ -152,6 +152,7 @@ typedef enum cp_version_match_t {
 /* Forward type definitions */
 typedef struct cp_plugin_import_t cp_plugin_import_t;
 typedef struct cp_ext_point_t cp_ext_point_t;
+typedef struct cp_cfg_element_t cp_cfg_element_t;
 typedef struct cp_extension_t cp_extension_t;
 typedef struct cp_plugin_t cp_plugin_t;
 
@@ -184,6 +185,39 @@ struct cp_ext_point_t {
 };
 
 /**
+ * Configuration element contains configuration information for an extension.
+ */
+struct cp_cfg_element_t {
+	
+	/** Name of the configuration element (UTF-8) */
+	char *name;
+	
+	/**
+	 * Attribute name, value pairs (alternating, UTF-8 encoded),
+	 * terminated by a pair of NULLs
+	 */
+	char **atts;
+	
+	/** The value (text contents) of this configuration element (UTF-8) */
+	char *value;
+	
+	/** The parent, or NULL if root node */
+ 	cp_cfg_element_t *parent;
+	
+	/** The first child, or NULL if no children */
+	cp_cfg_element_t *first_child;
+
+	/** The last child, or NULL if no children */
+	cp_cfg_element_t *last_child;
+	
+	/** The previous sibling, or NULL if first sibling */
+	cp_cfg_element_t *prev_sibling;
+	
+	/** The next sibling, or NULL if last sibling */
+	cp_cfg_element_t *next_sibling;
+};
+
+/**
  * Extension structure captures information about an extension.
  */
 struct cp_extension_t {
@@ -202,6 +236,9 @@ struct cp_extension_t {
 	 
 	/** Unique identifier of the extension point (UTF-8) */
 	cp_id_t extpt_id;
+	
+	/** Extension configuration (starting with the extension element) */
+	cp_cfg_element_t *configuration;
 };
 
 /**
@@ -240,13 +277,13 @@ struct cp_plugin_t {
 	cp_name_t provider_name;
 	
 	/** Absolute path of the plugin directory, or NULL if not known */
-	const char *path;
+	char *path;
 	
 	/** Number of imports */
 	int num_imports;
 	
 	/** Imports */
-	const cp_plugin_import_t *imports;
+	cp_plugin_import_t *imports;
 
     /** The relative path of plug-in runtime library, or empty if none */
     cp_path_t lib_path;
@@ -261,13 +298,13 @@ struct cp_plugin_t {
 	int num_ext_points;
 	
 	/** Extension points provided by this plug-in */
-	const cp_ext_point_t *ext_points;
+	cp_ext_point_t *ext_points;
 	
 	/** Number of extensions provided by this plugin */
 	int num_extensions;
 	
 	/** Extensions provided by this plug-in */
-	const cp_extension_t *extensions;
+	cp_extension_t *extensions;
 
 };
 
@@ -290,7 +327,7 @@ typedef enum cp_plugin_state_t {
 typedef struct cp_plugin_event_t {
 	
 	/** The identifier of the affected plug-in in UTF-8 encoding */
-	const cp_id_t *plugin_id;
+	cp_id_t *plugin_id;
 	
 	/** Old state of the plug-in */
 	cp_plugin_state_t old_state;

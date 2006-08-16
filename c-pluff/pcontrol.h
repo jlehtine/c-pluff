@@ -47,7 +47,7 @@ void cpi_destroy_plugins(void);
  * @param plugin the plug-in to be installed
  * @return CP_OK (0) on success, an error code on failure
  */
-int cpi_install_plugin(const cp_plugin_t *plugin);
+int cpi_install_plugin(cp_plugin_t *plugin);
 
 /**
  * Frees any resources allocated for a plug-in description.
@@ -55,6 +55,13 @@ int cpi_install_plugin(const cp_plugin_t *plugin);
  * @param plugin the plug-in to be freed
  */
 void cpi_free_plugin(cp_plugin_t *plugin);
+
+/**
+ * Frees any resources allocated for a configuration element.
+ * 
+ * @param cfg_element the configuration element to be freed
+ */
+void cpi_free_cfg_element(cp_cfg_element_t *cfg_element);
 
 
 #ifdef __cplusplus

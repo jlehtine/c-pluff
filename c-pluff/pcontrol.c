@@ -32,7 +32,7 @@ typedef struct registered_plugin_t registered_plugin_t;
 struct registered_plugin_t {
 	
 	/** Plug-in information */
-	const cp_plugin_t *plugin;
+	cp_plugin_t *plugin;
 	
 	/** Use count for plug-in information */
 	int use_count;
@@ -124,7 +124,7 @@ static void unresolve_plugin(registered_plugin_t *plugin);
 static void unload_plugin(hnode_t *node);
 
 /**
- * Frees any space allocated for a registered plug-in.
+ * Frees any memory allocated for a registered plug-in.
  * 
  * @param plugin the plug-in to be freed
  */
@@ -211,7 +211,7 @@ void cpi_destroy_plugins(void) {
 
 /* Plug-in control */
 
-int cpi_install_plugin(const cp_plugin_t *plugin) {
+int cpi_install_plugin(cp_plugin_t *plugin) {
 	registered_plugin_t *rp;
 	int status = CP_OK;
 	cp_plugin_event_t event;
@@ -809,7 +809,7 @@ CP_API(void) cp_release_plugin(const cp_plugin_t *plugin) {
 }
 
 static void free_registered_plugin(registered_plugin_t *plugin) {
-	cpi_free_plugin((cp_plugin_t *) plugin->plugin);
+	cpi_free_plugin(plugin->plugin);
 
 	assert(plugin != NULL);
 	
@@ -829,22 +829,47 @@ static void free_registered_plugin(registered_plugin_t *plugin) {
 }
 
 void cpi_free_plugin(cp_plugin_t *plugin) {
+	int i;
+	
 	assert(plugin != NULL);
 	if (plugin->path != NULL) {
-		free((void *) plugin->path);
-		plugin->path = NULL;
+		free(plugin->path);
 	}
 	if (plugin->imports != NULL) {
-		free((void *) plugin->imports);
-		plugin->imports = NULL;
+		free(plugin->imports);
 	}
 	if (plugin->ext_points != NULL) {
-		free((void *) plugin->ext_points);
-		plugin->ext_points = NULL;
+		free(plugin->ext_points);
+	}
+	for (i = 0; i < plugin->num_extensions; i++) {
+		if (plugin->extensions[i].configuration != NULL) {
+			cpi_free_cfg_element(plugin->extensions[i].configuration);
+		}
 	}
 	if (plugin->extensions != NULL) {
-		free((void *) plugin->extensions);
-		plugin->extensions = NULL;
+		free(plugin->extensions);
 	}
 	free(plugin);
+}
+
+void cpi_free_cfg_element(cp_cfg_element_t *cfg_element) {
+	if (cfg_element->next_sibling != NULL) {
+		cpi_free_cfg_element(cfg_element->next_sibling);
+	}
+	if (cfg_element->first_child != NULL) {
+		cpi_free_cfg_element(cfg_element->first_child);
+	}
+	if (cfg_element->value != NULL) {
+		free(cfg_element->value);
+	}
+	if (cfg_element->atts != NULL) {
+		if (cfg_element->atts[0] != NULL) {
+			free(cfg_element->atts[0]);
+		}
+		free(cfg_element->atts);
+	}
+	if (cfg_element->name != NULL) {
+		free(cfg_element->name);
+	}
+	free(cfg_element);
 }
