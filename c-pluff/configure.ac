@@ -133,6 +133,7 @@ if test "$with_dmalloc" = yes; then
     AC_MSG_WARN([Dmalloc header files not found (not including)]))
   AC_CHECK_LIB([dmalloc${cp_threads+th}], [malloc],,
     AC_MSG_ERROR([Dmalloc library is required for requested dmalloc support]))
+  AC_DEFINE([DMALLOC_FUNC_CHECK], [], [Use additional dmalloc checks])
 fi
 
 # Check for Expat XML parsing library

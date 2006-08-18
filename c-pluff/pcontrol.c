@@ -66,79 +66,6 @@ struct registered_plugin_t {
 
 
 /* ------------------------------------------------------------------------
- * Static function declarations
- * ----------------------------------------------------------------------*/
-
-/**
- * Resolves a plug-in. Resolves all dependencies of a plug-in and loads
- * the plug-in runtime library.
- * 
- * @param plugin the plug-in to be resolved
- * @return CP_OK (0) on success, an error code on failure
- */
-static int resolve_plugin(registered_plugin_t *plugin);
-
-/**
- * Recursively resolves a plug-in and its dependencies. Plug-ins with
- * circular dependencies are only preliminary resolved (listeners are
- * not informed).
- * 
- * @param plugin the plug-in to be resolved
- * @param preliminary list of preliminarily resolved plug-ins
- * @return CP_OK (0) or CP_OK_PRELIMINARY (1) on success, an error code on failure
- */
-static int resolve_plugin_rec(registered_plugin_t *plugin, list_t *preliminary);
-
-/**
- * Unresolves a preliminarily resolved plug-in.
- * 
- * @param plug-in the plug-in to be unresolved
- */
-static void unresolve_preliminary_plugin(registered_plugin_t *plugin);
-
-/**
- * Starts a plug-in.
- * 
- * @param plugin the plug-in to be started
- * @return CP_OK (0) on success, an error code on failure
- */
-static int start_plugin(registered_plugin_t *plugin);
-
-/**
- * Stops a plug-in.
- * 
- * @param plugin the plug-in to be stopped
- */
-static void stop_plugin(registered_plugin_t *plugin);
-
-/**
- * Unresolves a plug-in.
- * 
- * @param plug-in the plug-in to be unresolved
- */
-static void unresolve_plugin(registered_plugin_t *plugin);
-
-/**
- * Unloads a plug-in associated with the specified hash node.
- * 
- * @param node the hash node of the plug-in to be uninstalled
- */
-static void unload_plugin(hnode_t *node);
-
-/**
- * Frees any memory allocated for a registered plug-in.
- * 
- * @param plugin the plug-in to be freed
- */
-static void free_registered_plugin(registered_plugin_t *plugin);
-
-// TODO
-static void free_cfg_element_content(cp_cfg_element_t *ce);
-
-// TODO
-static void free_plugin_import_content(cp_plugin_import_t *import);
-
-/* ------------------------------------------------------------------------
  * Variables
  * ----------------------------------------------------------------------*/
 
@@ -255,6 +182,7 @@ int CP_LOCAL cpi_install_plugin(cp_plugin_t *plugin) {
 			break;
 		}
 		if (!hash_alloc_insert(plugins, plugin->identifier, rp)) {
+			list_destroy(rp->importing);
 			free(rp);
 			status = CP_ERR_RESOURCE;
 			break;
@@ -286,48 +214,50 @@ int CP_LOCAL cpi_install_plugin(cp_plugin_t *plugin) {
 	return status;
 }
 
-static int resolve_plugin(registered_plugin_t *plugin) {
-	list_t *preliminary;
-	int status;
+/**
+ * Unresolves a preliminarily resolved plug-in.
+ * 
+ * @param plug-in the plug-in to be unresolved
+ */
+static void unresolve_preliminary_plugin(registered_plugin_t *plugin) {
 	lnode_t *node;
 	
-	assert(plugin != NULL);
-	
-	/* Check if already resolved */
-	if (plugin->state >= CP_PLUGIN_RESOLVED) {
-		return CP_OK;
+	/* Break circular dependencies */
+	if (plugin->active_operation) {
+		return;
 	}
-	
-	/* Create a list for preliminarily resolved plug-ins */
-	preliminary = list_create(LISTCOUNT_T_MAX);
-	if (preliminary == NULL) {
-		cpi_errorf(_("Could not resolve plug-in %s due to insufficient resources."), plugin->plugin->identifier);
-		return CP_ERR_RESOURCE;
+
+	/* Unresolve plug-ins which import this plug-in */
+	plugin->active_operation = 1;
+	while ((node = list_first(plugin->importing)) != NULL) {
+		registered_plugin_t *ip = lnode_get(node);
+		unresolve_preliminary_plugin(ip);
 	}
-	
-	/* Resolve this plug-in recursively */
-	status = resolve_plugin_rec(plugin, preliminary);
-	
-	/* All plug-ins left in the preliminary list are successfully resolved */
-	while((node = list_first(preliminary)) != NULL) {
-		registered_plugin_t *rp;
-		cp_plugin_event_t event;
+	plugin->active_operation = 0;
 		
-		rp = lnode_get(node);
-		event.plugin_id = rp->plugin->identifier;
-		event.old_state = CP_PLUGIN_INSTALLED;
-		event.new_state = rp->state;
-		cpi_deliver_event(&event);
-		list_delete(preliminary, node);
+	/* Remove references to imported plug-ins */
+	while ((node = list_first(plugin->imported)) != NULL) {
+		registered_plugin_t *ip = lnode_get(node);
+		cpi_ptrset_remove(ip->importing, plugin);
+		list_delete(plugin->imported, node);
 		lnode_destroy(node);
 	}
-	if (status == CP_OK_PRELIMINARY) {
-		status = CP_OK;
-	}
-	
-	return status;
+	list_destroy(plugin->imported);
+	plugin->imported = NULL;
+		
+	/* Update plug-in state */
+	plugin->state = CP_PLUGIN_INSTALLED;	
 }
 
+/**
+ * Recursively resolves a plug-in and its dependencies. Plug-ins with
+ * circular dependencies are only preliminary resolved (listeners are
+ * not informed).
+ * 
+ * @param plugin the plug-in to be resolved
+ * @param preliminary list of preliminarily resolved plug-ins
+ * @return CP_OK (0) or CP_OK_PRELIMINARY (1) on success, an error code on failure
+ */
 static int resolve_plugin_rec
 (registered_plugin_t *plugin, list_t *preliminary) {
 	int i;
@@ -463,57 +393,61 @@ static int resolve_plugin_rec
 	return status;
 }
 
-static void unresolve_preliminary_plugin(registered_plugin_t *plugin) {
+/**
+ * Resolves a plug-in. Resolves all dependencies of a plug-in and loads
+ * the plug-in runtime library.
+ * 
+ * @param plugin the plug-in to be resolved
+ * @return CP_OK (0) on success, an error code on failure
+ */
+static int resolve_plugin(registered_plugin_t *plugin) {
+	list_t *preliminary;
+	int status;
 	lnode_t *node;
 	
-	/* Break circular dependencies */
-	if (plugin->active_operation) {
-		return;
+	assert(plugin != NULL);
+	
+	/* Check if already resolved */
+	if (plugin->state >= CP_PLUGIN_RESOLVED) {
+		return CP_OK;
 	}
-
-	/* Unresolve plug-ins which import this plug-in */
-	plugin->active_operation = 1;
-	while ((node = list_first(plugin->importing)) != NULL) {
-		registered_plugin_t *ip = lnode_get(node);
-		unresolve_preliminary_plugin(ip);
+	
+	/* Create a list for preliminarily resolved plug-ins */
+	preliminary = list_create(LISTCOUNT_T_MAX);
+	if (preliminary == NULL) {
+		cpi_errorf(_("Could not resolve plug-in %s due to insufficient resources."), plugin->plugin->identifier);
+		return CP_ERR_RESOURCE;
 	}
-	plugin->active_operation = 0;
+	
+	/* Resolve this plug-in recursively */
+	status = resolve_plugin_rec(plugin, preliminary);
+	
+	/* All plug-ins left in the preliminary list are successfully resolved */
+	while((node = list_first(preliminary)) != NULL) {
+		registered_plugin_t *rp;
+		cp_plugin_event_t event;
 		
-	/* Remove references to imported plug-ins */
-	while ((node = list_first(plugin->imported)) != NULL) {
-		registered_plugin_t *ip = lnode_get(node);
-		cpi_ptrset_remove(ip->importing, plugin);
-		list_delete(plugin->imported, node);
+		rp = lnode_get(node);
+		event.plugin_id = rp->plugin->identifier;
+		event.old_state = CP_PLUGIN_INSTALLED;
+		event.new_state = rp->state;
+		cpi_deliver_event(&event);
+		list_delete(preliminary, node);
 		lnode_destroy(node);
 	}
-	list_destroy(plugin->imported);
-	plugin->imported = NULL;
-		
-	/* Update plug-in state */
-	plugin->state = CP_PLUGIN_INSTALLED;	
-}
-
-int CP_API cp_start_plugin(const char *id) {
-	hnode_t *node;
-	registered_plugin_t *plugin;
-	int status = CP_OK;
-
-	assert(id != NULL);
-
-	/* Look up and start the plug-in */
-	cpi_acquire_data();
-	node = hash_lookup(plugins, id);
-	if (node != NULL) {
-		plugin = hnode_get(node);
-		status = start_plugin(plugin);
-	} else {
-		status = CP_ERR_UNKNOWN;
+	if (status == CP_OK_PRELIMINARY) {
+		status = CP_OK;
 	}
-	cpi_release_data();
-
+	
 	return status;
 }
 
+/**
+ * Starts a plug-in.
+ * 
+ * @param plugin the plug-in to be started
+ * @return CP_OK (0) on success, an error code on failure
+ */
 static int start_plugin(registered_plugin_t *plugin) {
 	int status;
 	cp_plugin_event_t event;
@@ -580,6 +514,59 @@ static int start_plugin(registered_plugin_t *plugin) {
 	return CP_OK;
 }
 
+int CP_API cp_start_plugin(const char *id) {
+	hnode_t *node;
+	registered_plugin_t *plugin;
+	int status = CP_OK;
+
+	assert(id != NULL);
+
+	/* Look up and start the plug-in */
+	cpi_acquire_data();
+	node = hash_lookup(plugins, id);
+	if (node != NULL) {
+		plugin = hnode_get(node);
+		status = start_plugin(plugin);
+	} else {
+		status = CP_ERR_UNKNOWN;
+	}
+	cpi_release_data();
+
+	return status;
+}
+
+/**
+ * Stops a plug-in.
+ * 
+ * @param plugin the plug-in to be stopped
+ */
+static void stop_plugin(registered_plugin_t *plugin) {
+	cp_plugin_event_t event;
+	
+	/* Check if already stopped */
+	if (plugin->state < CP_PLUGIN_ACTIVE) {
+		return;
+	}
+	assert(plugin->state == CP_PLUGIN_ACTIVE);
+		
+	/* About to stop the plug-in */
+	event.plugin_id = plugin->plugin->identifier;
+	event.old_state = plugin->state;
+	event.new_state = plugin->state = CP_PLUGIN_STOPPING;
+	cpi_deliver_event(&event);
+		
+	/* Stop the plug-in */
+	if (plugin->stop_func != NULL) {
+		plugin->stop_func();
+	}
+		
+	/* Plug-in stopped */
+	cpi_ptrset_remove(started_plugins, plugin);
+	event.old_state = plugin->state;
+	event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
+	cpi_deliver_event(&event);
+}
+
 int CP_API cp_stop_plugin(const char *id) {
 	hnode_t *node;
 	registered_plugin_t *plugin;
@@ -615,33 +602,11 @@ void CP_API cp_stop_all_plugins(void) {
 	cpi_release_data();
 }
 
-static void stop_plugin(registered_plugin_t *plugin) {
-	cp_plugin_event_t event;
-	
-	/* Check if already stopped */
-	if (plugin->state < CP_PLUGIN_ACTIVE) {
-		return;
-	}
-	assert(plugin->state == CP_PLUGIN_ACTIVE);
-		
-	/* About to stop the plug-in */
-	event.plugin_id = plugin->plugin->identifier;
-	event.old_state = plugin->state;
-	event.new_state = plugin->state = CP_PLUGIN_STOPPING;
-	cpi_deliver_event(&event);
-		
-	/* Stop the plug-in */
-	if (plugin->stop_func != NULL) {
-		plugin->stop_func();
-	}
-		
-	/* Plug-in stopped */
-	cpi_ptrset_remove(started_plugins, plugin);
-	event.old_state = plugin->state;
-	event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
-	cpi_deliver_event(&event);
-}
-
+/**
+ * Unresolves a plug-in.
+ * 
+ * @param plug-in the plug-in to be unresolved
+ */
 static void unresolve_plugin(registered_plugin_t *plugin) {
 	cp_plugin_event_t event;
 	lnode_t *node;
@@ -696,6 +661,115 @@ static void unresolve_plugin(registered_plugin_t *plugin) {
 	cpi_deliver_event(&event);
 }
 
+// TODO
+static void free_plugin_import_content(cp_plugin_import_t *import) {
+	assert(import != NULL);
+	free(import->plugin_id);
+	free(import->version);
+}
+
+// TODO
+static void free_cfg_element_content(cp_cfg_element_t *ce) {
+	int i;
+
+	assert(ce != NULL);
+	free(ce->name);
+	if (ce->atts != NULL) {
+		free(ce->atts[0]);
+		free(ce->atts);
+	}
+	free(ce->value);
+	for (i = 0; i < ce->num_children; i++) {
+		free_cfg_element_content(ce->children + i);
+	}
+	free(ce->children);
+}
+
+void CP_LOCAL cpi_free_plugin(cp_plugin_t *plugin) {
+	int i;
+	
+	assert(plugin != NULL);
+	free(plugin->name);
+	free(plugin->identifier);
+	free(plugin->version);
+	free(plugin->provider_name);
+	free(plugin->path);
+	for (i = 0; i < plugin->num_imports; i++) {
+		free_plugin_import_content(plugin->imports + i);
+	}
+	free(plugin->imports);
+	// TODO, ext point content
+	free(plugin->ext_points);
+	for (i = 0; i < plugin->num_extensions; i++) {
+		// TODO, extension content
+		if (plugin->extensions[i].configuration != NULL) {
+			free_cfg_element_content(plugin->extensions[i].configuration);
+			free(plugin->extensions[i].configuration);
+		}
+	}
+	free(plugin->extensions);
+	free(plugin);
+}
+
+/**
+ * Frees any memory allocated for a registered plug-in.
+ * 
+ * @param plugin the plug-in to be freed
+ */
+static void free_registered_plugin(registered_plugin_t *plugin) {
+	cpi_free_plugin(plugin->plugin);
+
+	assert(plugin != NULL);
+	
+	/* Release data structures */
+	if (plugin->importing != NULL) {
+		
+		/* This should be empty because the plug-in should be unresolved */
+		assert(list_isempty(plugin->importing));
+		
+		list_destroy(plugin->importing);
+	}
+
+	/* This should be null because the plug-in should be unresolved */
+	assert(plugin->imported == NULL);
+
+	free(plugin);
+}
+
+/**
+ * Unloads a plug-in associated with the specified hash node.
+ * 
+ * @param node the hash node of the plug-in to be uninstalled
+ */
+static void unload_plugin(hnode_t *node) {
+	registered_plugin_t *plugin;
+	cp_plugin_event_t event;
+	
+	/* Check if already uninstalled */
+	plugin = (registered_plugin_t *) hnode_get(node);
+	if (plugin->state <= CP_PLUGIN_UNINSTALLED) {
+		return;
+	}
+	
+	/* Make sure the plug-in is not in resolved state */
+	unresolve_plugin(plugin);
+
+	/* Plug-in uninstalled */
+	event.plugin_id = plugin->plugin->identifier;
+	event.old_state = plugin->state;
+	event.new_state = plugin->state = CP_PLUGIN_UNINSTALLED;
+	cpi_deliver_event(&event);
+	
+	/* Unregister the plug-in */
+	hash_delete_free(plugins, node);
+
+	/* Free the plug-in data structures if they are not needed anymore */
+	if (plugin->use_count == 0) {
+		free_registered_plugin(plugin);
+	}
+	
+}
+
 int CP_API cp_unload_plugin(const char *id) {
 	hnode_t *node;
 	int status = CP_OK;
@@ -728,35 +802,6 @@ void CP_API cp_unload_all_plugins(void) {
 		}
 	} while (node != NULL);
 	cpi_release_data();
-}
-
-static void unload_plugin(hnode_t *node) {
-	registered_plugin_t *plugin;
-	cp_plugin_event_t event;
-	
-	/* Check if already uninstalled */
-	plugin = (registered_plugin_t *) hnode_get(node);
-	if (plugin->state <= CP_PLUGIN_UNINSTALLED) {
-		return;
-	}
-	
-	/* Make sure the plug-in is not in resolved state */
-	unresolve_plugin(plugin);
-
-	/* Plug-in uninstalled */
-	event.plugin_id = plugin->plugin->identifier;
-	event.old_state = plugin->state;
-	event.new_state = plugin->state = CP_PLUGIN_UNINSTALLED;
-	cpi_deliver_event(&event);
-	
-	/* Unregister the plug-in */
-	hash_delete_free(plugins, node);
-
-	/* Free the plug-in data structures if they are not needed anymore */
-	if (plugin->use_count == 0) {
-		free_registered_plugin(plugin);
-	}
-	
 }
 
 const cp_plugin_t * CP_API cp_get_plugin(const char *id, int *error) {
@@ -817,99 +862,3 @@ void CP_API cp_release_plugin(const cp_plugin_t *plugin) {
 	cpi_release_data();
 }
 
-static void free_registered_plugin(registered_plugin_t *plugin) {
-	cpi_free_plugin(plugin->plugin);
-
-	assert(plugin != NULL);
-	
-	/* Release data structures */
-	if (plugin->importing != NULL) {
-		
-		/* This should be empty because the plug-in should be unresolved */
-		assert(list_isempty(plugin->importing));
-		
-		list_destroy(plugin->importing);
-	}
-
-	/* This should be null because the plug-in should be unresolved */
-	assert(plugin->imported == NULL);
-	
-	free(plugin);
-}
-
-void CP_LOCAL cpi_free_plugin(cp_plugin_t *plugin) {
-	int i;
-	
-	assert(plugin != NULL);
-	if (plugin->name != NULL) {
-		free(plugin->name);
-	}
-	if (plugin->identifier != NULL) {
-		free(plugin->identifier);
-	}
-	if (plugin->version != NULL) {
-		free(plugin->version);
-	}
-	if (plugin->provider_name != NULL) {
-		free(plugin->provider_name);
-	}
-	if (plugin->path != NULL) {
-		free(plugin->path);
-	}
-	for (i = 0; i < plugin->num_imports; i++) {
-		free_plugin_import_content(plugin->imports + i);
-	}
-	if (plugin->imports != NULL) {
-		free(plugin->imports);
-	}
-	if (plugin->ext_points != NULL) {
-		free(plugin->ext_points);
-	}
-	for (i = 0; i < plugin->num_extensions; i++) {
-		if (plugin->extensions[i].configuration != NULL) {
-			cpi_free_cfg_element(plugin->extensions[i].configuration);
-		}
-	}
-	if (plugin->extensions != NULL) {
-		free(plugin->extensions);
-	}
-	free(plugin);
-}
-
-static void free_plugin_import_content(cp_plugin_import_t *import) {
-	assert(import != NULL);
-	if (import->plugin_id != NULL) {
-		free(import->plugin_id);
-	}
-	if (import->version != NULL) {
-		free(import->version);
-	}
-}
-
-void CP_LOCAL cpi_free_cfg_element(cp_cfg_element_t *ce) {
-	free_cfg_element_content(ce);
-	free(ce);
-}
-
-static void free_cfg_element_content(cp_cfg_element_t *ce) {
-	int i;
-
-	if (ce->name != NULL) {
-		free(ce->name);
-	}
-	if (ce->atts != NULL) {
-		if (ce->atts[0] != NULL) {
-			free(ce->atts[0]);
-		}
-		free(ce->atts);
-	}
-	if (ce->value != NULL) {
-		free(ce->value);
-	}
-	for (i = 0; i < ce->num_children; i++) {
-		free_cfg_element_content(ce->children + i);
-	}
-	if (ce->children != NULL) {
-		free(ce->children);
-	}
-}

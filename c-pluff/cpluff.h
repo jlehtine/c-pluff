@@ -17,11 +17,18 @@
 #else /*CP_BUILD*/
 #define CP_API __declspec(dllimport)
 #endif /*CP_BUILD*/
-#elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
+#elif __GNUC__ > 5 || (__GNUC__ == 5 && __GNUC_MINOR__ >= 3)
 #define CP_API __attribute__ ((visibility ("default")))
-#else /* no API visibility support */
+#else /* Not restricting link time visibility of non-API symbols */
 #define CP_API
 #endif
+
+/* Define CP_API_CONST to declare const API data (outside implementation) */
+#ifdef CP_BUILD
+#define CP_API_CONST
+#else /*CP_BUILD*/
+#define CP_API_CONST const
+#endif /*CP_BUILD*/
 
 #ifdef __cplusplus
 extern "C" {
@@ -135,19 +142,19 @@ struct cp_ext_point_t {
 	 * Human-readable, possibly localized, extension point name or NULL
 	 * if not available (UTF-8)
 	 */
-	char *name;
+	CP_API_CONST char *name;
 	
 	/**
 	 * Local identifier uniquely identifying the extension point within the
 	 * providing plug-in (UTF-8)
 	 */
-	char *local_id;
+	CP_API_CONST char *local_id;
 	
 	/** Unique identifier of the extension point (UTF-8) */
-	char *global_id;
+	CP_API_CONST char *global_id;
 
 	/** Path to the extension schema definition or NULL if none. */
-	char *schema_path;
+	CP_API_CONST char *schema_path;
 };
 
 /**
@@ -156,28 +163,27 @@ struct cp_ext_point_t {
 struct cp_cfg_element_t {
 	
 	/** Name of the configuration element (UTF-8) */
-	char *name;
+	CP_API_CONST char *name;
 
 	/** Number of attributes */
 	int num_atts;
 	
 	/**
-	 * Attribute name, value pairs (alternating, UTF-8 encoded),
-	 * terminated by a pair of NULLs
+	 * Attribute name, value pairs (alternating, UTF-8 encoded)
 	 */
-	char **atts;
+	CP_API_CONST char * CP_API_CONST *atts;
 	
 	/** The value (text contents) of this configuration element (UTF-8) */
-	char *value;
+	CP_API_CONST char *value;
 	
 	/** The parent, or NULL if root node */
- 	cp_cfg_element_t *parent;
+ 	CP_API_CONST cp_cfg_element_t *parent;
  	
  	/** Number of children */
  	int num_children;
 
 	/** Children */
-	cp_cfg_element_t *children;
+	CP_API_CONST cp_cfg_element_t *children;
 };
 
 /**
@@ -189,22 +195,22 @@ struct cp_extension_t {
 	 * Human-readable, possibly localized, extension name or NULL if not
 	 * available (UTF-8)
 	 **/
-	char *name;
+	CP_API_CONST char *name;
 	
 	/**
 	 * Local identifier uniquely identifying the extension within the
 	 * providing plug-in or NULL if not available (UTF-8)
 	 */
-	char *local_id;
+	CP_API_CONST char *local_id;
 
     /** Unique identifier of the extension or NULL if not available (UTF-8) */
-    char *global_id;
+    CP_API_CONST char *global_id;
 	 
 	/** Unique identifier of the extension point (UTF-8) */
-	char *ext_point_id;
+	CP_API_CONST char *ext_point_id;
 	
 	/** Extension configuration (starting with the extension element) */
-	cp_cfg_element_t *configuration;
+	CP_API_CONST cp_cfg_element_t *configuration;
 };
 
 /**
@@ -213,10 +219,10 @@ struct cp_extension_t {
 struct cp_plugin_import_t {
 	
 	/** Identifier of the imported plug-in (UTF-8) */
-	char *plugin_id;
+	CP_API_CONST char *plugin_id;
 	
 	/** Version to be matched, or NULL if none (UTF-8) */
-	char *version;
+	CP_API_CONST char *version;
 	
 	/** Version match rule */
 	cp_version_match_t match;
@@ -231,46 +237,46 @@ struct cp_plugin_import_t {
 struct cp_plugin_t {
 	
 	/** Human-readable, possibly localized, plug-in name (UTF-8) */
-	char *name;
+	CP_API_CONST char *name;
 	
 	/** Unique identifier (UTF-8) */
-	char *identifier;
+	CP_API_CONST char *identifier;
 	
 	/** Version string (UTF-8) */
-	char *version;
+	CP_API_CONST char *version;
 	
 	/** Provider name, possibly localized (UTF-8) */
-	char *provider_name;
+	CP_API_CONST char *provider_name;
 	
 	/** Absolute path of the plugin directory, or NULL if not known */
-	char *path;
+	CP_API_CONST char *path;
 	
 	/** Number of imports */
 	int num_imports;
 	
 	/** Imports */
-	cp_plugin_import_t *imports;
+	CP_API_CONST cp_plugin_import_t *imports;
 
     /** The relative path of plug-in runtime library, or empty if none */
-    char *lib_path;
+    CP_API_CONST char *lib_path;
     
     /** The name of the start function, or empty if none */
-    char *start_func_name;
+    CP_API_CONST char *start_func_name;
     
     /** The name of the stop function, or empty if none */
-    char *stop_func_name;
+    CP_API_CONST char *stop_func_name;
 
 	/** Number of extension points provided by this plug-in */
 	int num_ext_points;
 	
 	/** Extension points provided by this plug-in */
-	cp_ext_point_t *ext_points;
+	CP_API_CONST cp_ext_point_t *ext_points;
 	
 	/** Number of extensions provided by this plugin */
 	int num_extensions;
 	
 	/** Extensions provided by this plug-in */
-	cp_extension_t *extensions;
+	CP_API_CONST cp_extension_t *extensions;
 
 };
 
@@ -293,7 +299,7 @@ typedef enum cp_plugin_state_t {
 typedef struct cp_plugin_event_t {
 	
 	/** The identifier of the affected plug-in in UTF-8 encoding */
-	char *plugin_id;
+	CP_API_CONST char *plugin_id;
 	
 	/** Old state of the plug-in */
 	cp_plugin_state_t old_state;

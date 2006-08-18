@@ -323,54 +323,52 @@ static void unexpected_element(ploader_context_t *context, const XML_Char *elem)
 }
 
 /**
- * Creates a copy of the specified attributes.
+ * Creates a copy of the specified attributes. Reports failed memory
+ * allocation.
  * 
  * @param context the parser context
  * @param src the source attributes to be copied
  * @param num pointer to the location where number of attributes is stored,
  * 			or NULL for none
- * @return the duplicated attribute array
+ * @return the duplicated attribute array, or NULL if empty or failed
  */
 static char **parser_attsdup(ploader_context_t *context, const XML_Char * const *src,
 	int *num_atts) {
-	char **atts, *attr_data;
+	char **atts = NULL, *attr_data = NULL;
 	int i;
 	int num;
 	size_t attr_size;
 	
 	/* Calculate the number of attributes and the amount of space required */
-	for (i = 0, num = 0, attr_size = 0; src[i] != NULL; i++) {
-		num++;
-		attr_size += strlen(src[i]) + 1;
+	for (num = 0, attr_size = 0; src[num] != NULL; num++) {
+		attr_size += strlen(src[num]) + 1;
 	}
 	assert((num & 1) == 0);
 	
 	/* Allocate necessary memory and copy attribute data */
-	if ((atts = malloc((num + 2) * sizeof(char *))) != NULL) {
-		if ((attr_data = malloc(attr_size * sizeof(char))) != NULL) {
-			size_t offset;
+	if (num > 0) {
+		if ((atts = parser_malloc(context, num * sizeof(char *))) != NULL) {
+			if ((attr_data = parser_malloc(context, attr_size * sizeof(char))) != NULL) {
+				size_t offset;
 			
-			for (i = 0, offset = 0; i < num; i++) {
-				strcpy(attr_data + offset, src[i]);
-				atts[i] = attr_data + offset;
-				offset += strlen(src[i]);
+				for (i = 0, offset = 0; i < num; i++) {
+					strcpy(attr_data + offset, src[i]);
+					atts[i] = attr_data + offset;
+					offset += strlen(src[i]) + 1;
+				}
 			}
-			atts[i++] = NULL;
-			atts[i] = NULL;
 		}
 	}
 	
 	/* If successful then return duplicates, otherwise free any allocations */
-	if (atts != NULL && attr_data != NULL) {
+	if (num == 0 || (atts != NULL && attr_data != NULL)) {
 		if (num_atts != NULL) {
 			*num_atts = num / 2;
 		}
 		return atts;
 	} else {
-		if (atts != NULL) {
-			free(atts);
-		}
-		resource_error(context);
+		free(attr_data);
+		free(atts);
 		return NULL;
 	}
 }
@@ -389,8 +387,7 @@ static cp_cfg_element_t *parse_cfg_element(ploader_context_t *context,
 	cp_cfg_element_t *ce;
 	
 	/* Allocate memory for the configuration element */
-	if ((ce = malloc(sizeof(cp_cfg_element_t))) == NULL) {
-		resource_error(context);
+	if ((ce = parser_malloc(context, sizeof(cp_cfg_element_t))) == NULL) {
 		return NULL;
 	}
 	
@@ -414,7 +411,7 @@ static cp_cfg_element_t *parse_cfg_element(ploader_context_t *context,
  * @param atts the element attributes
  */
 static void XMLCALL start_element_handler(
-	void *userData, const XML_Char *name, const XML_Char * const *atts) {
+	void *userData, const XML_Char *name, const XML_Char **atts) {
 	static const XML_Char * const req_plugin_atts[] = { N_("name"), N_("id"), N_("version"), NULL };
 	static const XML_Char * const opt_plugin_atts[] = { N_("provider-name"), NULL };
 	static const XML_Char * const req_import_atts[] = { N_("plugin"), NULL };
@@ -656,6 +653,7 @@ static void XMLCALL start_element_handler(
 			}
 			break;
 		case PARSER_EXTENSION:
+			context->depth++;
 			if (context->configuration != NULL) {
 				context->configuration = parse_cfg_element(context, name, atts, context->configuration);
 			}
@@ -726,7 +724,9 @@ static void XMLCALL end_element_handler(
 			break;
 		case PARSER_EXTENSION:
 			if (context->configuration != NULL) {
-				context->configuration->value = parser_strdup(context, context->value);
+				if (context->value != NULL) {
+					context->configuration->value = parser_strdup(context, context->value);
+				}
 				context->configuration = context->configuration->parent;
 			}			
 			if (--context->depth < 0) {
