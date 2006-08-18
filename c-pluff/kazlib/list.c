@@ -54,7 +54,7 @@ static const char rcsid[] = "$Id: list.c,v 1.19.2.1 2000/04/17 01:07:21 kaz Exp 
  * is not permitted.
  */
 
-list_t *list_init(list_t *list, listcount_t maxcount)
+list_t CP_LOCAL *list_init(list_t *list, listcount_t maxcount)
 {
     assert (maxcount != 0);
     list->nilnode.next = &list->nilnode;
@@ -70,7 +70,7 @@ list_t *list_init(list_t *list, listcount_t maxcount)
  * should be specified as LISTCOUNT_T_MAX, or, alternately, as -1.
  */
 
-list_t *list_create(listcount_t maxcount)
+list_t CP_LOCAL *list_create(listcount_t maxcount)
 {
     list_t *new = malloc(sizeof *new);
     if (new) {
@@ -88,7 +88,7 @@ list_t *list_create(listcount_t maxcount)
  * The client must remove the nodes first.
  */
 
-void list_destroy(list_t *list)
+void CP_LOCAL list_destroy(list_t *list)
 {
     assert (list_isempty(list));
     free(list);
@@ -100,7 +100,7 @@ void list_destroy(list_t *list)
  * is empty.
  */
 
-void list_destroy_nodes(list_t *list)
+void CP_LOCAL list_destroy_nodes(list_t *list)
 {
     lnode_t *lnode = list_first_priv(list), *nil = list_nil(list), *tmp;
 
@@ -120,7 +120,7 @@ void list_destroy_nodes(list_t *list)
  * the list must all have come from the same pool.
  */
 
-void list_return_nodes(list_t *list, lnodepool_t *pool)
+void CP_LOCAL list_return_nodes(list_t *list, lnodepool_t *pool)
 {
     lnode_t *lnode = list_first_priv(list), *tmp, *nil = list_nil(list);
 
@@ -139,7 +139,7 @@ void list_return_nodes(list_t *list, lnodepool_t *pool)
  * Insert the node ``new'' into the list immediately after ``this'' node.
  */
 
-void list_ins_after(list_t *list, lnode_t *new, lnode_t *this)
+void CP_LOCAL list_ins_after(list_t *list, lnode_t *new, lnode_t *this)
 {
     lnode_t *that = this->next;
 
@@ -162,7 +162,7 @@ void list_ins_after(list_t *list, lnode_t *new, lnode_t *this)
  * Insert the node ``new'' into the list immediately before ``this'' node.
  */
 
-void list_ins_before(list_t *list, lnode_t *new, lnode_t *this)
+void CP_LOCAL list_ins_before(list_t *list, lnode_t *new, lnode_t *this)
 {
     lnode_t *that = this->prev;
 
@@ -185,7 +185,7 @@ void list_ins_before(list_t *list, lnode_t *new, lnode_t *this)
  * Delete the given node from the list.
  */
 
-lnode_t *list_delete(list_t *list, lnode_t *del)
+lnode_t CP_LOCAL *list_delete(list_t *list, lnode_t *del)
 {
     lnode_t *next = del->next;
     lnode_t *prev = del->prev;
@@ -207,7 +207,7 @@ lnode_t *list_delete(list_t *list, lnode_t *del)
  * call to the function.
  */
 
-void list_process(list_t *list, void *context,
+void CP_LOCAL list_process(list_t *list, void *context,
 	void (* function)(list_t *list, lnode_t *lnode, void *context))
 {
     lnode_t *node = list_first_priv(list), *next, *nil = list_nil(list);
@@ -226,7 +226,7 @@ void list_process(list_t *list, void *context,
  * Dynamically allocate a list node and assign it the given piece of data.
  */
 
-lnode_t *lnode_create(void *data)
+lnode_t CP_LOCAL *lnode_create(void *data)
 {
     lnode_t *new = malloc(sizeof *new);
     if (new) {
@@ -241,7 +241,7 @@ lnode_t *lnode_create(void *data)
  * Initialize a user-supplied lnode.
  */
 
-lnode_t *lnode_init(lnode_t *lnode, void *data)
+lnode_t CP_LOCAL *lnode_init(lnode_t *lnode, void *data)
 {
     lnode->data = data;
     lnode->next = NULL;
@@ -253,7 +253,7 @@ lnode_t *lnode_init(lnode_t *lnode, void *data)
  * Destroy a dynamically allocated node.
  */
 
-void lnode_destroy(lnode_t *lnode)
+void CP_LOCAL lnode_destroy(lnode_t *lnode)
 {
     assert (!lnode_is_in_a_list(lnode));
     free(lnode);
@@ -265,7 +265,7 @@ void lnode_destroy(lnode_t *lnode)
  * ``n'' elements.
  */
 
-lnodepool_t *lnode_pool_init(lnodepool_t *pool, lnode_t *nodes, listcount_t n)
+lnodepool_t CP_LOCAL *lnode_pool_init(lnodepool_t *pool, lnode_t *nodes, listcount_t n)
 {
     listcount_t i;
 
@@ -286,7 +286,7 @@ lnodepool_t *lnode_pool_init(lnodepool_t *pool, lnode_t *nodes, listcount_t n)
  * Create a dynamically allocated pool of n nodes.
  */
 
-lnodepool_t *lnode_pool_create(listcount_t n)
+lnodepool_t CP_LOCAL *lnode_pool_create(listcount_t n)
 {
     lnodepool_t *pool;
     lnode_t *nodes;
@@ -309,7 +309,7 @@ lnodepool_t *lnode_pool_create(listcount_t n)
  * Determine whether the given pool is from this pool.
  */
 
-int lnode_pool_isfrom(lnodepool_t *pool, lnode_t *node)
+int CP_LOCAL lnode_pool_isfrom(lnodepool_t *pool, lnode_t *node)
 {
     listcount_t i;
 
@@ -328,7 +328,7 @@ int lnode_pool_isfrom(lnodepool_t *pool, lnode_t *node)
  * Destroy a dynamically allocated pool of nodes.
  */
 
-void lnode_pool_destroy(lnodepool_t *p)
+void CP_LOCAL lnode_pool_destroy(lnodepool_t *p)
 {
     free(p->pool);
     free(p);
@@ -339,7 +339,7 @@ void lnode_pool_destroy(lnodepool_t *p)
  * is exhausted. 
  */
 
-lnode_t *lnode_borrow(lnodepool_t *pool, void *data)
+lnode_t CP_LOCAL *lnode_borrow(lnodepool_t *pool, void *data)
 {
     lnode_t *new = pool->fre;
     if (new) {
@@ -356,7 +356,7 @@ lnode_t *lnode_borrow(lnodepool_t *pool, void *data)
  * from which it came.
  */
 
-void lnode_return(lnodepool_t *pool, lnode_t *node)
+void CP_LOCAL lnode_return(lnodepool_t *pool, lnode_t *node)
 {
     assert (lnode_pool_isfrom(pool, node));
     assert (!lnode_is_in_a_list(node));
@@ -371,7 +371,7 @@ void lnode_return(lnodepool_t *pool, lnode_t *node)
  * According to this function, a list does not contain its nilnode.
  */
 
-int list_contains(list_t *list, lnode_t *node)
+int CP_LOCAL list_contains(list_t *list, lnode_t *node)
 {
     lnode_t *n, *nil = list_nil(list);
 
@@ -389,7 +389,7 @@ int list_contains(list_t *list, lnode_t *node)
  * list.
  */
 
-void list_extract(list_t *dest, list_t *source, lnode_t *first, lnode_t *last)
+void CP_LOCAL list_extract(list_t *dest, list_t *source, lnode_t *first, lnode_t *last)
 {
     listcount_t moved = 1;
 
@@ -441,7 +441,7 @@ void list_extract(list_t *dest, list_t *source, lnode_t *first, lnode_t *last)
  * order.
  */
 
-void list_transfer(list_t *dest, list_t *source, lnode_t *first)
+void CP_LOCAL list_transfer(list_t *dest, list_t *source, lnode_t *first)
 {
     listcount_t moved = 1;
     lnode_t *last;
@@ -481,7 +481,7 @@ void list_transfer(list_t *dest, list_t *source, lnode_t *first)
     assert (list_verify(dest));
 }
 
-void list_merge(list_t *dest, list_t *sour,
+void CP_LOCAL list_merge(list_t *dest, list_t *sour,
 	int compare (const void *, const void *))
 {
     lnode_t *dn, *sn, *tn;
@@ -519,7 +519,7 @@ void list_merge(list_t *dest, list_t *sour,
 	list_transfer(dest, sour, sn);
 }
 
-void list_sort(list_t *list, int compare(const void *, const void *))
+void CP_LOCAL list_sort(list_t *list, int compare(const void *, const void *))
 {
     list_t extra;
     listcount_t middle;
@@ -542,7 +542,7 @@ void list_sort(list_t *list, int compare(const void *, const void *))
     assert (list_is_sorted(list, compare));
 }
 
-lnode_t *list_find(list_t *list, const void *key, int compare(const void *, const void *))
+lnode_t CP_LOCAL *list_find(list_t *list, const void *key, int compare(const void *, const void *))
 {
     lnode_t *node;
 
@@ -559,7 +559,7 @@ lnode_t *list_find(list_t *list, const void *key, int compare(const void *, cons
  * Return 1 if the list is in sorted order, 0 otherwise
  */
 
-int list_is_sorted(list_t *list, int compare(const void *, const void *))
+int CP_LOCAL list_is_sorted(list_t *list, int compare(const void *, const void *))
 {
     lnode_t *node, *next, *nil;
 
@@ -601,7 +601,7 @@ int list_is_sorted(list_t *list, int compare(const void *, const void *))
  * Return 1 if the list is empty, 0 otherwise
  */
 
-int list_isempty(list_t *list)
+int CP_LOCAL list_isempty(list_t *list)
 {
     return list->nodecount == 0;
 }
@@ -611,7 +611,7 @@ int list_isempty(list_t *list)
  * Permitted only on bounded lists. 
  */
 
-int list_isfull(list_t *list)
+int CP_LOCAL list_isfull(list_t *list)
 {
     return list->nodecount == list->maxcount;
 }
@@ -620,7 +620,7 @@ int list_isfull(list_t *list)
  * Check if the node pool is empty.
  */
 
-int lnode_pool_isempty(lnodepool_t *pool)
+int CP_LOCAL lnode_pool_isempty(lnodepool_t *pool)
 {
     return (pool->fre == NULL);
 }
@@ -629,7 +629,7 @@ int lnode_pool_isempty(lnodepool_t *pool)
  * Add the given node at the end of the list
  */
 
-void list_append(list_t *list, lnode_t *node)
+void CP_LOCAL list_append(list_t *list, lnode_t *node)
 {
     list_ins_before(list, node, &list->nilnode);
 }
@@ -638,7 +638,7 @@ void list_append(list_t *list, lnode_t *node)
  * Add the given node at the beginning of the list.
  */
 
-void list_prepend(list_t *list, lnode_t *node)
+void CP_LOCAL list_prepend(list_t *list, lnode_t *node)
 {
     list_ins_after(list, node, &list->nilnode);
 }
@@ -647,7 +647,7 @@ void list_prepend(list_t *list, lnode_t *node)
  * Retrieve the first node of the list
  */
 
-lnode_t *list_first(list_t *list)
+lnode_t CP_LOCAL *list_first(list_t *list)
 {
     if (list->nilnode.next == &list->nilnode)
 	return NULL;
@@ -658,7 +658,7 @@ lnode_t *list_first(list_t *list)
  * Retrieve the last node of the list
  */
 
-lnode_t *list_last(list_t *list)
+lnode_t CP_LOCAL *list_last(list_t *list)
 {
     if (list->nilnode.prev == &list->nilnode)
 	return NULL;
@@ -669,7 +669,7 @@ lnode_t *list_last(list_t *list)
  * Retrieve the count of nodes in the list
  */
 
-listcount_t list_count(list_t *list)
+listcount_t CP_LOCAL list_count(list_t *list)
 {
     return list->nodecount;
 }
@@ -678,7 +678,7 @@ listcount_t list_count(list_t *list)
  * Remove the first node from the list and return it.
  */
 
-lnode_t *list_del_first(list_t *list)
+lnode_t CP_LOCAL *list_del_first(list_t *list)
 {
     return list_delete(list, list->nilnode.next);
 }
@@ -687,7 +687,7 @@ lnode_t *list_del_first(list_t *list)
  * Remove the last node from the list and return it.
  */
 
-lnode_t *list_del_last(list_t *list)
+lnode_t CP_LOCAL *list_del_last(list_t *list)
 {
     return list_delete(list, list->nilnode.prev);
 }
@@ -697,7 +697,7 @@ lnode_t *list_del_last(list_t *list)
  * Associate a data item with the given node.
  */
 
-void lnode_put(lnode_t *lnode, void *data)
+void CP_LOCAL lnode_put(lnode_t *lnode, void *data)
 {
     lnode->data = data;
 }
@@ -706,7 +706,7 @@ void lnode_put(lnode_t *lnode, void *data)
  * Retrieve the data item associated with the node.
  */
 
-void *lnode_get(lnode_t *lnode)
+void CP_LOCAL *lnode_get(lnode_t *lnode)
 {
     return lnode->data;
 }
@@ -716,7 +716,7 @@ void *lnode_get(lnode_t *lnode)
  * NULL is returned.
  */
 
-lnode_t *list_next(list_t *list, lnode_t *lnode)
+lnode_t CP_LOCAL *list_next(list_t *list, lnode_t *lnode)
 {
     assert (list_contains(list, lnode));
 
@@ -729,7 +729,7 @@ lnode_t *list_next(list_t *list, lnode_t *lnode)
  * Retrieve the node's predecessor. See comment for lnode_next().
  */
 
-lnode_t *list_prev(list_t *list, lnode_t *lnode)
+lnode_t CP_LOCAL *list_prev(list_t *list, lnode_t *lnode)
 {
     assert (list_contains(list, lnode));
 
@@ -742,13 +742,13 @@ lnode_t *list_prev(list_t *list, lnode_t *lnode)
  * Return 1 if the lnode is in some list, otherwise return 0.
  */
 
-int lnode_is_in_a_list(lnode_t *lnode)
+int CP_LOCAL lnode_is_in_a_list(lnode_t *lnode)
 {
     return (lnode->next != NULL || lnode->prev != NULL);
 }
 
 
-int list_verify(list_t *list)
+int CP_LOCAL list_verify(list_t *list)
 {
     lnode_t *node = list_first_priv(list), *nil = list_nil(list);
     listcount_t count = list_count(list);

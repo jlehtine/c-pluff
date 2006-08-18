@@ -2,6 +2,7 @@
 
 set -e
 
+test -e auxliary/ltmain.sh || libtoolize
 aclocal
-automake
+automake -a
 autoconf

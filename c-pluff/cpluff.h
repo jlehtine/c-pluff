@@ -17,13 +17,11 @@
 #else /*CP_BUILD*/
 #define CP_API __declspec(dllimport)
 #endif /*CP_BUILD*/
-#else /*_MSC_EXTENSIONS*/
-#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
+#elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
 #define CP_API __attribute__ ((visibility ("default")))
-#else /* no GCC visibility support */
+#else /* no API visibility support */
 #define CP_API
 #endif
-#endif /*_MSC_EXTENSIONS*/
 
 #ifdef __cplusplus
 extern "C" {
@@ -40,28 +38,28 @@ extern "C" {
 #define CP_OK 0
 
 /** An unspecified error occurred */
-#define CP_ERR_UNSPECIFIED (-1)
+#define CP_ERR_UNSPECIFIED 1
 
 /** Not enough memory or other OS resources available */
-#define CP_ERR_RESOURCE (-2)
+#define CP_ERR_RESOURCE 2
 
 /** The specified object is unknown to the framework */
-#define CP_ERR_UNKNOWN (-3)
+#define CP_ERR_UNKNOWN 3
 
 /** An I/O error occurred */
-#define CP_ERR_IO (-4)
+#define CP_ERR_IO 4
 
 /** Malformed plug-in data when loading a plug-in */
-#define CP_ERR_MALFORMED (-5)
+#define CP_ERR_MALFORMED 5
 
 /** Plug-in conflicts with an existing plug-in when loading a plug-in */
-#define CP_ERR_CONFLICT (-6)
+#define CP_ERR_CONFLICT 6
 
 /** Plug-in dependencies could not be satisfied */
-#define CP_ERR_DEPENDENCY (-7)
+#define CP_ERR_DEPENDENCY 7
 
 /** An error in a plug-in runtime */
-#define CP_ERR_RUNTIME (-8)
+#define CP_ERR_RUNTIME 8
 
 
 /* Flags for cp_rescan_plugins */
@@ -140,13 +138,13 @@ struct cp_ext_point_t {
 	char *name;
 	
 	/**
-	 * Simple identifier uniquely identifying the extension point within the
+	 * Local identifier uniquely identifying the extension point within the
 	 * providing plug-in (UTF-8)
 	 */
-	char *simple_id;
+	char *local_id;
 	
 	/** Unique identifier of the extension point (UTF-8) */
-	char *extpt_id;
+	char *global_id;
 
 	/** Path to the extension schema definition or NULL if none. */
 	char *schema_path;
@@ -194,13 +192,16 @@ struct cp_extension_t {
 	char *name;
 	
 	/**
-	 * Simple identifier uniquely identifying the extension within the
+	 * Local identifier uniquely identifying the extension within the
 	 * providing plug-in or NULL if not available (UTF-8)
 	 */
-	char *simple_id;
+	char *local_id;
+
+    /** Unique identifier of the extension or NULL if not available (UTF-8) */
+    char *global_id;
 	 
 	/** Unique identifier of the extension point (UTF-8) */
-	char *extpt_id;
+	char *ext_point_id;
 	
 	/** Extension configuration (starting with the extension element) */
 	cp_cfg_element_t *configuration;

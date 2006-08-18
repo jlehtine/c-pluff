@@ -11,7 +11,9 @@
 #define _CORE_H_
 
 /* Define CP_LOCAL to hide internal symbols */
-#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
+#ifdef _MSC_EXTENSIONS
+#define CP_LOCAL
+#elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
 #define CP_LOCAL __attribute__ ((visibility ("hidden")))
 #else
 #define CP_LOCAL

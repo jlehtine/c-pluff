@@ -60,7 +60,7 @@ static void hnode_free(hnode_t *node, void *context);
 static hash_val_t hash_fun_default(const void *key);
 static int hash_comp_default(const void *key1, const void *key2);
 
-int hash_val_t_bit;
+int CP_LOCAL hash_val_t_bit;
 
 /*
  * Compute the number of bits in the hash_val_t type.  We know that hash_val_t
@@ -288,7 +288,7 @@ static void shrink_table(hash_t *hash)
  * 8. The table of chains must be properly reset to all null pointers.
  */
 
-hash_t *hash_create(hashcount_t maxcount, hash_comp_t compfun,
+hash_t CP_LOCAL *hash_create(hashcount_t maxcount, hash_comp_t compfun,
 	hash_fun_t hashfun)
 {
     hash_t *hash;
@@ -327,7 +327,7 @@ hash_t *hash_create(hashcount_t maxcount, hash_comp_t compfun,
  * Select a different set of node allocator routines.
  */
 
-void hash_set_allocator(hash_t *hash, hnode_alloc_t al,
+void CP_LOCAL hash_set_allocator(hash_t *hash, hnode_alloc_t al,
 	hnode_free_t fr, void *context)
 {
     assert (hash_count(hash) == 0);
@@ -343,7 +343,7 @@ void hash_set_allocator(hash_t *hash, hnode_alloc_t al,
  * cause the hash to become empty.
  */
 
-void hash_free_nodes(hash_t *hash)
+void CP_LOCAL hash_free_nodes(hash_t *hash)
 {
     hscan_t hs;
     hnode_t *node;
@@ -361,7 +361,7 @@ void hash_free_nodes(hash_t *hash)
  * freeing them and then freeing the table all in one step.
  */
 
-void hash_free(hash_t *hash)
+void CP_LOCAL hash_free(hash_t *hash)
 {
 #ifdef KAZLIB_OBSOLESCENT_DEBUG
     assert ("call to obsolescent function hash_free()" && 0);
@@ -374,7 +374,7 @@ void hash_free(hash_t *hash)
  * Free a dynamic hash table structure.
  */
 
-void hash_destroy(hash_t *hash)
+void CP_LOCAL hash_destroy(hash_t *hash)
 {
     assert (hash_val_t_bit != 0);
     assert (hash_isempty(hash));
@@ -395,7 +395,7 @@ void hash_destroy(hash_t *hash)
  *    so we reset it here.
  */
 
-hash_t *hash_init(hash_t *hash, hashcount_t maxcount,
+hash_t CP_LOCAL *hash_init(hash_t *hash, hashcount_t maxcount,
 	hash_comp_t compfun, hash_fun_t hashfun, hnode_t **table,
 	hashcount_t nchains)
 {
@@ -430,7 +430,7 @@ hash_t *hash_init(hash_t *hash, hashcount_t maxcount,
  *    so that hash_scan_next() shall indicate failure.
  */
 
-void hash_scan_begin(hscan_t *scan, hash_t *hash)
+void CP_LOCAL hash_scan_begin(hscan_t *scan, hash_t *hash)
 {
     hash_val_t nchains = hash->nchains;
     hash_val_t chain;
@@ -476,7 +476,7 @@ void hash_scan_begin(hscan_t *scan, hash_t *hash)
  */
 
 
-hnode_t *hash_scan_next(hscan_t *scan)
+hnode_t CP_LOCAL *hash_scan_next(hscan_t *scan)
 {
     hnode_t *next = scan->next;		/* 1 */
     hash_t *hash = scan->table;
@@ -515,7 +515,7 @@ hnode_t *hash_scan_next(hscan_t *scan)
  *    where N is the base 2 logarithm of the size of the hash table. 
  */
 
-void hash_insert(hash_t *hash, hnode_t *node, const void *key)
+void CP_LOCAL hash_insert(hash_t *hash, hnode_t *node, const void *key)
 {
     hash_val_t hkey, chain;
 
@@ -553,7 +553,7 @@ void hash_insert(hash_t *hash, hnode_t *node, const void *key)
  *    entry.
  */
 
-hnode_t *hash_lookup(hash_t *hash, const void *key)
+hnode_t CP_LOCAL *hash_lookup(hash_t *hash, const void *key)
 {
     hash_val_t hkey, chain;
     hnode_t *nptr;
@@ -587,7 +587,7 @@ hnode_t *hash_lookup(hash_t *hash, const void *key)
  * 6. Indicate that the node is no longer in a hash table.
  */
 
-hnode_t *hash_delete(hash_t *hash, hnode_t *node)
+hnode_t CP_LOCAL *hash_delete(hash_t *hash, hnode_t *node)
 {
     hash_val_t chain;
     hnode_t *hptr;
@@ -620,7 +620,7 @@ hnode_t *hash_delete(hash_t *hash, hnode_t *node)
     return node;
 }
 
-int hash_alloc_insert(hash_t *hash, const void *key, void *data)
+int CP_LOCAL hash_alloc_insert(hash_t *hash, const void *key, void *data)
 {
     hnode_t *node = hash->allocnode(hash->context);
 
@@ -632,7 +632,7 @@ int hash_alloc_insert(hash_t *hash, const void *key, void *data)
     return 0;
 }
 
-void hash_delete_free(hash_t *hash, hnode_t *node)
+void CP_LOCAL hash_delete_free(hash_t *hash, hnode_t *node)
 {
     hash_delete(hash, node);
     hash->freenode(node, hash->context);
@@ -643,7 +643,7 @@ void hash_delete_free(hash_t *hash, hnode_t *node)
  *  used from within a hash table scan operation. See notes for hash_delete.
  */
 
-hnode_t *hash_scan_delete(hash_t *hash, hnode_t *node)
+hnode_t CP_LOCAL *hash_scan_delete(hash_t *hash, hnode_t *node)
 {
     hash_val_t chain;
     hnode_t *hptr;
@@ -673,7 +673,7 @@ hnode_t *hash_scan_delete(hash_t *hash, hnode_t *node)
  * Like hash_delete_free but based on hash_scan_delete.
  */
 
-void hash_scan_delfree(hash_t *hash, hnode_t *node)
+void CP_LOCAL hash_scan_delfree(hash_t *hash, hnode_t *node)
 {
     hash_scan_delete(hash, node);
     hash->freenode(node, hash->context);
@@ -688,7 +688,7 @@ void hash_scan_delfree(hash_t *hash, hnode_t *node)
  *    to see whether it is correct for the node's chain.
  */
 
-int hash_verify(hash_t *hash)
+int CP_LOCAL hash_verify(hash_t *hash)
 {
     hashcount_t count = 0;
     hash_val_t chain;
@@ -723,7 +723,7 @@ int hash_verify(hash_t *hash)
  */
 
 #undef hash_isfull
-int hash_isfull(hash_t *hash)
+int CP_LOCAL hash_isfull(hash_t *hash)
 {
     return hash->nodecount == hash->maxcount;
 }
@@ -734,7 +734,7 @@ int hash_isfull(hash_t *hash)
  */
 
 #undef hash_isempty
-int hash_isempty(hash_t *hash)
+int CP_LOCAL hash_isempty(hash_t *hash)
 {
     return hash->nodecount == 0;
 }
@@ -754,7 +754,7 @@ static void hnode_free(hnode_t *node, void *context)
  * Create a hash table node dynamically and assign it the given data.
  */
 
-hnode_t *hnode_create(void *data)
+hnode_t CP_LOCAL *hnode_create(void *data)
 {
     hnode_t *node = malloc(sizeof *node);
     if (node) {
@@ -768,7 +768,7 @@ hnode_t *hnode_create(void *data)
  * Initialize a client-supplied node 
  */
 
-hnode_t *hnode_init(hnode_t *hnode, void *data)
+hnode_t CP_LOCAL *hnode_init(hnode_t *hnode, void *data)
 {
     hnode->data = data;
     hnode->next = NULL;
@@ -779,37 +779,37 @@ hnode_t *hnode_init(hnode_t *hnode, void *data)
  * Destroy a dynamically allocated node.
  */
 
-void hnode_destroy(hnode_t *hnode)
+void CP_LOCAL hnode_destroy(hnode_t *hnode)
 {
     free(hnode);
 }
 
 #undef hnode_put
-void hnode_put(hnode_t *node, void *data)
+void CP_LOCAL hnode_put(hnode_t *node, void *data)
 {
     node->data = data;
 }
 
 #undef hnode_get
-void *hnode_get(hnode_t *node)
+void CP_LOCAL *hnode_get(hnode_t *node)
 {
     return node->data;
 }
 
 #undef hnode_getkey
-const void *hnode_getkey(hnode_t *node)
+const void CP_LOCAL *hnode_getkey(hnode_t *node)
 {
     return node->key;
 }
 
 #undef hash_count
-hashcount_t hash_count(hash_t *hash)
+hashcount_t CP_LOCAL hash_count(hash_t *hash)
 {
     return hash->nodecount;
 }
 
 #undef hash_size
-hashcount_t hash_size(hash_t *hash)
+hashcount_t CP_LOCAL hash_size(hash_t *hash)
 {
     return hash->nchains;
 }

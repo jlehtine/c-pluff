@@ -48,8 +48,8 @@ int main(int argc, char *argv[]) {
 			for (i = 0; i < plugin->num_ext_points; i++) {
 				printf("    %d:\n", i+1);
 				printf("      name: %s\n", plugin->ext_points[i].name);
-				printf("      simple identifier: %s\n", plugin->ext_points[i].simple_id);
-				printf("      unique identifier: %s\n", plugin->ext_points[i].extpt_id);
+				printf("      simple identifier: %s\n", plugin->ext_points[i].local_id);
+				printf("      unique identifier: %s\n", plugin->ext_points[i].global_id);
 			}
 			cp_release_plugin(plugin);
 		}
