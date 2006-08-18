@@ -30,7 +30,7 @@ extern "C" {
  * @param ptr2 the second pointer
  * @return zero if the pointers are equal, otherwise non-zero
  */
-int cpi_comp_ptr(const void *ptr1, const void *ptr2) CP_CONST;
+int CP_LOCAL cpi_comp_ptr(const void *ptr1, const void *ptr2) CP_CONST;
 
 /**
  * Returns a hash value for a pointer.
@@ -38,7 +38,7 @@ int cpi_comp_ptr(const void *ptr1, const void *ptr2) CP_CONST;
  * @param ptr the pointer being hashed
  * @return the corresponding hash value
  */
-hash_val_t cpi_hashfunc_ptr(const void *ptr) CP_CONST;
+hash_val_t CP_LOCAL cpi_hashfunc_ptr(const void *ptr) CP_CONST;
 
 /**
  * Adds a new pointer to a list if the pointer is not yet included.
@@ -47,7 +47,7 @@ hash_val_t cpi_hashfunc_ptr(const void *ptr) CP_CONST;
  * @param ptr the pointer being added
  * @return non-zero if the operation was successful, zero if allocation failed
  */
-int cpi_ptrset_add(list_t *set, void *ptr);
+int CP_LOCAL cpi_ptrset_add(list_t *set, void *ptr);
 
 /**
  * Removes a pointer from a pointer set, if it is included.
@@ -56,7 +56,7 @@ int cpi_ptrset_add(list_t *set, void *ptr);
  * @param ptr the pointer being removed
  * @return whether the pointer was contained in the set
  */
-int cpi_ptrset_remove(list_t *set, const void *ptr);
+int CP_LOCAL cpi_ptrset_remove(list_t *set, const void *ptr);
 
 /**
  * Returns whether a pointer is included in a pointer set.
@@ -65,7 +65,7 @@ int cpi_ptrset_remove(list_t *set, const void *ptr);
  * @param ptr the pointer
  * @return non-zero if the pointer is included, zero otherwise
  */
-int cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
+int CP_LOCAL cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
 
 
 #ifdef __cplusplus

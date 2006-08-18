@@ -3,20 +3,27 @@
  * Copyright 2005-2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
+/*
+ * The public API header file
+ */
+
 #ifndef _CPLUFF_H_
 #define _CPLUFF_H_
 
 /* Define CP_API to declare API functions */
 #ifdef _MSC_EXTENSIONS
 #ifdef CP_BUILD
-#define CP_IMPORT __declspec(dllexport)
+#define CP_API __declspec(dllexport)
 #else /*CP_BUILD*/
-#define CP_IMPORT __declspec(dllimport)
+#define CP_API __declspec(dllimport)
 #endif /*CP_BUILD*/
 #else /*_MSC_EXTENSIONS*/
-#define CP_IMPORT
+#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
+#define CP_API __attribute__ ((visibility ("default")))
+#else /* no GCC visibility support */
+#define CP_API
+#endif
 #endif /*_MSC_EXTENSIONS*/
-#define CP_API(type) CP_IMPORT type
 
 #ifdef __cplusplus
 extern "C" {
@@ -26,30 +33,6 @@ extern "C" {
 /* ------------------------------------------------------------------------
  * Constants
  * ----------------------------------------------------------------------*/
-
-/**
- * Maximum length of a plug-in, extension or extension point identifier in
- * bytes, excluding the trailing '\0'
- */
-#define CP_ID_MAX_LENGTH 63
-
-/**
- * Maximum length of a plug-in, extension or extension point name in bytes,
- * excluding the trailing '\0'
- */
-#define CP_NAME_MAX_LENGTH 127
-
-/**
- * Maximum length of a version string in bytes, excluding the trailing '\0'
- */
-#define CP_VERSTR_MAX_LENGTH 31
-
-/** Maximum length of a path name, excluding the trailing '\0' */
-#define CP_PATH_MAX_LENGTH 127
-
-/** Maximum length of a function name, excluding the trailing '\0' */
-#define CP_FUNCNAME_MAX_LENGTH 31
-
 
 /* Error codes for operations that might fail */
 
@@ -125,21 +108,6 @@ extern "C" {
  * Data types
  * ----------------------------------------------------------------------*/
 
-/** A component identifier in UTF-8 encoding */
-typedef char cp_id_t[CP_ID_MAX_LENGTH + 1];
-
-/** A component name in UTF-8 encoding */
-typedef char cp_name_t[CP_NAME_MAX_LENGTH + 1];
-
-/** A plug-in version string in UTF-8 encoding */
-typedef char cp_verstr_t[CP_VERSTR_MAX_LENGTH + 1];
-
-/** A file path in UTF-8 encoding */
-typedef char cp_path_t[CP_PATH_MAX_LENGTH + 1];
-
-/** A function name in UTF-8 encoding */
-typedef char cp_funcname_t[CP_FUNCNAME_MAX_LENGTH + 1];
-
 /** Possible version match rules */
 typedef enum cp_version_match_t {
 	CP_MATCH_NONE,
@@ -166,22 +134,22 @@ typedef struct cp_plugin_t cp_plugin_t;
 struct cp_ext_point_t {
 	
 	/**
-	 * Human-readable, possibly localized, extension point name or empty
+	 * Human-readable, possibly localized, extension point name or NULL
 	 * if not available (UTF-8)
 	 */
-	cp_name_t name;
+	char *name;
 	
 	/**
 	 * Simple identifier uniquely identifying the extension point within the
 	 * providing plug-in (UTF-8)
 	 */
-	cp_id_t simple_id;
+	char *simple_id;
 	
 	/** Unique identifier of the extension point (UTF-8) */
-	cp_id_t extpt_id;
+	char *extpt_id;
 
-	/** Path to the extension schema definition or empty if none. */
-	cp_path_t schema_path;
+	/** Path to the extension schema definition or NULL if none. */
+	char *schema_path;
 };
 
 /**
@@ -191,6 +159,9 @@ struct cp_cfg_element_t {
 	
 	/** Name of the configuration element (UTF-8) */
 	char *name;
+
+	/** Number of attributes */
+	int num_atts;
 	
 	/**
 	 * Attribute name, value pairs (alternating, UTF-8 encoded),
@@ -203,18 +174,12 @@ struct cp_cfg_element_t {
 	
 	/** The parent, or NULL if root node */
  	cp_cfg_element_t *parent;
-	
-	/** The first child, or NULL if no children */
-	cp_cfg_element_t *first_child;
+ 	
+ 	/** Number of children */
+ 	int num_children;
 
-	/** The last child, or NULL if no children */
-	cp_cfg_element_t *last_child;
-	
-	/** The previous sibling, or NULL if first sibling */
-	cp_cfg_element_t *prev_sibling;
-	
-	/** The next sibling, or NULL if last sibling */
-	cp_cfg_element_t *next_sibling;
+	/** Children */
+	cp_cfg_element_t *children;
 };
 
 /**
@@ -223,19 +188,19 @@ struct cp_cfg_element_t {
 struct cp_extension_t {
 	
 	/** 
-	 * Human-readable, possibly localized, extension name or empty if not
+	 * Human-readable, possibly localized, extension name or NULL if not
 	 * available (UTF-8)
 	 **/
-	cp_name_t name;
+	char *name;
 	
 	/**
 	 * Simple identifier uniquely identifying the extension within the
-	 * providing plug-in or empty if not available (UTF-8)
+	 * providing plug-in or NULL if not available (UTF-8)
 	 */
-	cp_id_t simple_id;
+	char *simple_id;
 	 
 	/** Unique identifier of the extension point (UTF-8) */
-	cp_id_t extpt_id;
+	char *extpt_id;
 	
 	/** Extension configuration (starting with the extension element) */
 	cp_cfg_element_t *configuration;
@@ -247,10 +212,10 @@ struct cp_extension_t {
 struct cp_plugin_import_t {
 	
 	/** Identifier of the imported plug-in (UTF-8) */
-	cp_id_t plugin_id;
+	char *plugin_id;
 	
-	/** Version to be matched, or empty if none (UTF-8) */
-	cp_verstr_t version;
+	/** Version to be matched, or NULL if none (UTF-8) */
+	char *version;
 	
 	/** Version match rule */
 	cp_version_match_t match;
@@ -265,16 +230,16 @@ struct cp_plugin_import_t {
 struct cp_plugin_t {
 	
 	/** Human-readable, possibly localized, plug-in name (UTF-8) */
-	cp_name_t name;
+	char *name;
 	
 	/** Unique identifier (UTF-8) */
-	cp_id_t identifier;
+	char *identifier;
 	
 	/** Version string (UTF-8) */
-	cp_verstr_t version;
+	char *version;
 	
 	/** Provider name, possibly localized (UTF-8) */
-	cp_name_t provider_name;
+	char *provider_name;
 	
 	/** Absolute path of the plugin directory, or NULL if not known */
 	char *path;
@@ -286,13 +251,13 @@ struct cp_plugin_t {
 	cp_plugin_import_t *imports;
 
     /** The relative path of plug-in runtime library, or empty if none */
-    cp_path_t lib_path;
+    char *lib_path;
     
     /** The name of the start function, or empty if none */
-    cp_funcname_t start_func_name;
+    char *start_func_name;
     
     /** The name of the stop function, or empty if none */
-    cp_funcname_t stop_func_name;
+    char *stop_func_name;
 
 	/** Number of extension points provided by this plug-in */
 	int num_ext_points;
@@ -327,7 +292,7 @@ typedef enum cp_plugin_state_t {
 typedef struct cp_plugin_event_t {
 	
 	/** The identifier of the affected plug-in in UTF-8 encoding */
-	cp_id_t *plugin_id;
+	char *plugin_id;
 	
 	/** Old state of the plug-in */
 	cp_plugin_state_t old_state;
@@ -385,7 +350,7 @@ typedef void (*cp_stop_t)(void);
  * @param error_handler an initial error handler, or NULL if none
  * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
  */
-CP_API(int) cp_init(cp_error_handler_t error_handler);
+int CP_API cp_init(cp_error_handler_t error_handler);
 
 /**
  * Stops and unloads all plug-ins and releases all resources allocated by
@@ -396,7 +361,7 @@ CP_API(int) cp_init(cp_error_handler_t error_handler);
  * thread-safe, however. The framework may be reinitialized by calling
  * cpluff_init function.
  */
-CP_API(void) cp_destroy(void);
+void CP_API cp_destroy(void);
 
 
 /* Functions for error handling */
@@ -410,7 +375,7 @@ CP_API(void) cp_destroy(void);
  * @param error_handler the error handler to be added
  * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
  */
-CP_API(int) cp_add_error_handler(cp_error_handler_t error_handler);
+int CP_API cp_add_error_handler(cp_error_handler_t error_handler);
 
 /**
  * Removes an error handler. This function does nothing if the specified error
@@ -418,7 +383,7 @@ CP_API(int) cp_add_error_handler(cp_error_handler_t error_handler);
  * 
  * @param error_handler the error handler to be removed
  */
-CP_API(void) cp_remove_error_handler(cp_error_handler_t error_handler);
+void CP_API cp_remove_error_handler(cp_error_handler_t error_handler);
 
 
 /* Functions for registering plug-in event listeners */
@@ -431,7 +396,7 @@ CP_API(void) cp_remove_error_handler(cp_error_handler_t error_handler);
  * @param event_listener the event_listener to be added
  * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
  */
-CP_API(int) cp_add_event_listener(cp_event_listener_t event_listener);
+int CP_API cp_add_event_listener(cp_event_listener_t event_listener);
 
 /**
  * Removes an event listener. This function does nothing if the specified
@@ -439,7 +404,7 @@ CP_API(int) cp_add_event_listener(cp_event_listener_t event_listener);
  * 
  * @param event_listener the event listener to be removed
  */
-CP_API(void) cp_remove_event_listener(cp_event_listener_t event_listener);
+void CP_API cp_remove_event_listener(cp_event_listener_t event_listener);
 
 
 /* Functions for controlling plug-ins */
@@ -454,18 +419,18 @@ CP_API(void) cp_remove_event_listener(cp_event_listener_t event_listener);
  * @param flags a bitmask specifying allowed operations (CPLUFF_RESCAN_...)
  * @return CP_OK (0) on success, an error code on failure
  */
-CP_API(int) cp_rescan_plugins(const char *dir, int flags);
+int CP_API cp_rescan_plugins(const char *dir, int flags);
 
 /**
  * Loads a plug-in from the specified path. The plug-in is added to the list of
  * installed plug-ins. If loading fails then NULL is returned.
  * 
  * @param path the installation path of the plug-in
- * @param id the identifier of the loaded plug-in is copied to the location
- *     pointed to by this pointer if this pointer is non-NULL
+ * @param id the pointer to the identifier of the loaded plug-in is copied to
+ *     the location pointed to by this pointer if this pointer is non-NULL
  * @return CP_OK (0) on success, an error code on failure
  */
-CP_API(int) cp_load_plugin(const char *path, cp_id_t *id);
+int CP_API cp_load_plugin(const char *path, char **id);
 
 /**
  * Starts a plug-in. The plug-in is first resolved, if necessary, and all
@@ -478,7 +443,7 @@ CP_API(int) cp_load_plugin(const char *path, cp_id_t *id);
  * @param id identifier of the plug-in to be started
  * @return CP_OK (0) on success, an error code on failure
  */
-CP_API(int) cp_start_plugin(const char *id);
+int CP_API cp_start_plugin(const char *id);
 
 /**
  * Stops a plug-in. First stops any importing plug-ins that are currently
@@ -491,12 +456,12 @@ CP_API(int) cp_start_plugin(const char *id);
  * @param id identifier of the plug-in to be stopped
  * @return CP_OK (0) on success, an error code on failure
  */
-CP_API(int) cp_stop_plugin(const char *id);
+int CP_API cp_stop_plugin(const char *id);
 
 /**
  * Stops all active plug-ins.
  */
-CP_API(void) cp_stop_all_plugins(void);
+void CP_API cp_stop_all_plugins(void);
 
 /**
  * Unloads a plug-in. The plug-in is first stopped if it is active.
@@ -504,13 +469,13 @@ CP_API(void) cp_stop_all_plugins(void);
  * @param id identifier of the plug-in to be unloaded
  * @return CP_OK (0) on success, an error code on failure
  */
-CP_API(int) cp_unload_plugin(const char *id);
+int CP_API cp_unload_plugin(const char *id);
 
 /**
  * Unloads all plug-ins. This effectively stops all plug-in activity and
  * releases the resources allocated by the plug-ins.
  */
-CP_API(void) cp_unload_all_plugins(void);
+void CP_API cp_unload_all_plugins(void);
 
 
 /* Functions for accessing plug-ins */
@@ -524,14 +489,14 @@ CP_API(void) cp_unload_all_plugins(void);
  * @param error filled with an error code, if non-NULL
  * @return pointer to the information structure or NULL if error occurs
  */
-CP_API(const cp_plugin_t *) cp_get_plugin(const char *id, int *error);
+const cp_plugin_t * CP_API cp_get_plugin(const char *id, int *error);
 
 /**
  * Releases a previously obtained plug-in information structure.
  * 
  * @param plugin the plug-in information structure to be released
  */
-CP_API(void) cp_release_plugin(const cp_plugin_t *plugin);
+void CP_API cp_release_plugin(const cp_plugin_t *plugin);
 
 
 #ifdef __cplusplus

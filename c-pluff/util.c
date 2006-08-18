@@ -17,15 +17,15 @@
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-int cpi_comp_ptr(const void *ptr1, const void *ptr2) {
+int CP_LOCAL cpi_comp_ptr(const void *ptr1, const void *ptr2) {
 	return !(ptr1 == ptr2);
 }
 
-hash_val_t cpi_hashfunc_ptr(const void *ptr) {
+hash_val_t CP_LOCAL cpi_hashfunc_ptr(const void *ptr) {
 	return (hash_val_t) ptr;
 }
 
-int cpi_ptrset_add(list_t *set, void *ptr) {
+int CP_LOCAL cpi_ptrset_add(list_t *set, void *ptr) {
 	
 
 	/* Only add the pointer if it is not already included */
@@ -45,7 +45,7 @@ int cpi_ptrset_add(list_t *set, void *ptr) {
 	
 }
 
-int cpi_ptrset_remove(list_t *set, const void *ptr) {
+int CP_LOCAL cpi_ptrset_remove(list_t *set, const void *ptr) {
 	lnode_t *node;
 	
 	/* Find the pointer if it is in the set */
@@ -59,6 +59,6 @@ int cpi_ptrset_remove(list_t *set, const void *ptr) {
 	}
 }
 
-int cpi_ptrset_contains(list_t *set, const void *ptr) {
+int CP_LOCAL cpi_ptrset_contains(list_t *set, const void *ptr) {
 	return list_find(set, ptr, cpi_comp_ptr) != NULL;
 }

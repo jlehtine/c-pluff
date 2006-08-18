@@ -10,6 +10,13 @@
 #ifndef _CORE_H_
 #define _CORE_H_
 
+/* Define CP_LOCAL to hide internal symbols */
+#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
+#define CP_LOCAL __attribute__ ((visibility ("hidden")))
+#else
+#define CP_LOCAL
+#endif
+
 #include "cpluff.h"
 #ifdef HAVE_DMALLOC_H
 #include <dmalloc.h>
@@ -62,12 +69,12 @@ extern "C" {
  * same thread then it is only released after corresponding number of calls to
  * release.
  */
-void cpi_acquire_data(void);
+void CP_LOCAL cpi_acquire_data(void);
 
 /**
  * Releases exclusive access to C-Pluff data structures.
  */
-void cpi_release_data(void);
+void CP_LOCAL cpi_release_data(void);
 
 
 /* Processing errors */
@@ -77,7 +84,7 @@ void cpi_release_data(void);
  * 
  * @param msg the error message
  */
-void cpi_error(const char *msg);
+void CP_LOCAL cpi_error(const char *msg);
 
 /**
  * Delivers a printf formatted plugin-in framework error to registered
@@ -86,7 +93,7 @@ void cpi_error(const char *msg);
  * @param msg the formatted error message
  * @param ... parameters
  */
-void cpi_errorf(const char *msg, ...) CP_PRINTF(1, 2);
+void CP_LOCAL cpi_errorf(const char *msg, ...) CP_PRINTF(1, 2);
 
 /**
  * Delivers a plug-in framework error to the specified error handler.
@@ -94,7 +101,7 @@ void cpi_errorf(const char *msg, ...) CP_PRINTF(1, 2);
  * @param error_handler the error handler or NULL if none
  * @param msg the error message
  */
-void cpi_herror(cp_error_handler_t error_handler, const char *msg);
+void CP_LOCAL cpi_herror(cp_error_handler_t error_handler, const char *msg);
 
 /**
  * Delivers a printf formatted plug-in framework error to the specified
@@ -104,7 +111,7 @@ void cpi_herror(cp_error_handler_t error_handler, const char *msg);
  * @param msg the formatted error message
  * @param ... parameters
  */
-void cpi_herrorf(cp_error_handler_t error_handler, const char *msg, ...)
+void CP_LOCAL cpi_herrorf(cp_error_handler_t error_handler, const char *msg, ...)
 	CP_PRINTF(2, 3);
 
 
@@ -115,7 +122,7 @@ void cpi_herrorf(cp_error_handler_t error_handler, const char *msg, ...)
  * 
  * @param event the event
  */
-void cpi_deliver_event(const cp_plugin_event_t *event);
+void CP_LOCAL cpi_deliver_event(const cp_plugin_event_t *event);
 
 
 #ifdef __cplusplus

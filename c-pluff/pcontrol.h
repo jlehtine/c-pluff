@@ -6,6 +6,8 @@
 #ifndef _PLUGIN_H_
 #define _PLUGIN_H_
 
+#include "core.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus*/
@@ -34,12 +36,12 @@ extern "C" {
  * 
  * @return CP_OK (0) on success, an error code on failure
  */
-int cpi_init_plugins(void);
+int CP_LOCAL cpi_init_plugins(void);
 
 /**
  * Destroys the plug-in controlling component.
  */
-void cpi_destroy_plugins(void);
+void CP_LOCAL cpi_destroy_plugins(void);
 
 /**
  * Installs a plug-in.
@@ -47,21 +49,21 @@ void cpi_destroy_plugins(void);
  * @param plugin the plug-in to be installed
  * @return CP_OK (0) on success, an error code on failure
  */
-int cpi_install_plugin(cp_plugin_t *plugin);
+int CP_LOCAL cpi_install_plugin(cp_plugin_t *plugin);
 
 /**
  * Frees any resources allocated for a plug-in description.
  * 
  * @param plugin the plug-in to be freed
  */
-void cpi_free_plugin(cp_plugin_t *plugin);
+void CP_LOCAL cpi_free_plugin(cp_plugin_t *plugin);
 
 /**
  * Frees any resources allocated for a configuration element.
  * 
  * @param cfg_element the configuration element to be freed
  */
-void cpi_free_cfg_element(cp_cfg_element_t *cfg_element);
+void CP_LOCAL cpi_free_cfg_element(cp_cfg_element_t *cfg_element);
 
 
 #ifdef __cplusplus

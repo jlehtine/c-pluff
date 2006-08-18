@@ -11,7 +11,7 @@
 static void error_handler(const char *msg);
 
 int main(int argc, char *argv[]) {
-	cp_id_t id;
+	char *id;
 	int i;
 	
 	if (cp_init(error_handler) != CP_OK) {

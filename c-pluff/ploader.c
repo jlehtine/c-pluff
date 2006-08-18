@@ -182,25 +182,12 @@ static int check_attributes(ploader_context_t *context,
  * 
  * @param context the parser context
  * @param src the source attributes to be copied
+ * @param num pointer to the location where number of attributes is stored,
+ * 			or NULL for none
  * @return the duplicated attribute array
  */
-static char **parser_attsdup(ploader_context_t *context, const XML_Char **src);
-
-/**
- * Copies an attribute value into a fixed length string and emits a parser
- * error if the value is too long. Always adds a trailing '\0'.
- * 
- * @param context the parser context
- * @param elem the name of the containing element
- * @param attr the name of the attribute
- * @param dst the destination string
- * @param src the attribute value
- * @param n the maximum length of the string excluding the trailing '\0'
- * @return whether the operation was successful
- */
-static int parser_strncpy(ploader_context_t *context,
-	const XML_Char *elem, const XML_Char *attr,
-	char *dst, const XML_Char *src, size_t n);
+static char **parser_attsdup(ploader_context_t *context, const XML_Char **src,
+	int *num_atts);
 
 /**
  * Makes a copy of the specified string. The memory is allocated using malloc.
@@ -210,7 +197,17 @@ static int parser_strncpy(ploader_context_t *context,
  * @param src the source string to be copied
  * @return copy of the string, or NULL if memory allocation failed
  */
-static char *parser_strdup(ploader_context_t *context, const XML_Char *src);
+static char *parser_strdup(ploader_context_t *context, const char *src);
+
+/**
+ * Allocates memory using malloc. Reports a resource error if there is not
+ * enough available memory.
+ * 
+ * @param context the parsing context
+ * @param size the number of bytes to allocate
+ * @return pointer to the allocated memory, or NULL if memory allocation failed
+ */
+static void *parser_malloc(ploader_context_t *context, size_t size);
 	
 /**
  * Reports a descriptor error. Does not set the parser to error state but
@@ -252,13 +249,13 @@ static const XML_Char **contains_str(const XML_Char **list,
 
 /* Plug-in loading */
 
-CP_API(int) cp_rescan_plugins(const char *dir, int flags) {
+int CP_API cp_rescan_plugins(const char *dir, int flags) {
 	assert(dir != NULL);
 	/* TODO */
 	return CP_ERR_UNSPECIFIED;
 }
 
-CP_API(int) cp_load_plugin(const char *path, cp_id_t *id) {
+int CP_API cp_load_plugin(const char *path, char **id) {
 	cp_plugin_t *plugin = NULL;
 	int status;
 
@@ -281,7 +278,7 @@ CP_API(int) cp_load_plugin(const char *path, cp_id_t *id) {
 	
 	/* On success, return the plug-in id */
 	if (status == CP_OK && id != NULL) {
-		strcpy((char *) id, plugin->identifier);
+		*id = plugin->identifier;
 	}
 	
 	/* Release any allocated data on failure */
@@ -500,21 +497,17 @@ static void XMLCALL cp_start_element_handler(
 				}
 				for (i = 0; atts[i] != NULL; i += 2) {
 					if (!strcmp(atts[i], "name")) {
-						parser_strncpy(context, name, atts[i],
-							context->plugin->name, atts[i+1],
-							CP_NAME_MAX_LENGTH);
+						context->plugin->name
+							= parser_strdup(context, atts[i+1]);
 					} else if (!strcmp(atts[i], "id")) {
-						parser_strncpy(context, name, atts[i],
-							context->plugin->identifier, atts[i+1],
-							CP_ID_MAX_LENGTH);
+						context->plugin->identifier
+							= parser_strdup(context, atts[i+1]);
 					} else if (!strcmp(atts[i], "version")) {
-						parser_strncpy(context, name, atts[i],
-							context->plugin->version, atts[i+1],
-							CP_VERSTR_MAX_LENGTH);
+						context->plugin->version
+							= parser_strdup(context, atts[i+1]);
 					} else if (!strcmp(atts[i], "provider-name")) {
-						parser_strncpy(context, name, atts[i],
-							context->plugin->provider_name, atts[i+1],
-							CP_NAME_MAX_LENGTH);
+						context->plugin->provider_name
+							= parser_strdup(context, atts[i+1]);
 					}
 				}
 			} else {
@@ -529,17 +522,14 @@ static void XMLCALL cp_start_element_handler(
 						req_runtime_atts, opt_runtime_atts)) {
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], "library")) {
-							parser_strncpy(context, name, atts[i],
-								context->plugin->lib_path, atts[i+1],
-								CP_PATH_MAX_LENGTH);
+							context->plugin->lib_path
+								= parser_strdup(context, atts[i+1]);
 						} else if (!strcmp(atts[i], "start-func")) {
-							parser_strncpy(context, name, atts[i],
-								context->plugin->start_func_name, atts[i+1],
-								CP_FUNCNAME_MAX_LENGTH);
+							context->plugin->start_func_name
+								= parser_strdup(context, atts[i+1]);
 						} else if (!strcmp(atts[i], "stop-func")) {
-							parser_strncpy(context, name, atts[i],
-								context->plugin->stop_func_name, atts[i+1],
-								CP_FUNCNAME_MAX_LENGTH);
+							context->plugin->stop_func_name
+								= parser_strdup(context, atts[i+1]);
 						}
 					}
 				}
@@ -573,31 +563,25 @@ static void XMLCALL cp_start_element_handler(
 					memset(ext_point, 0, sizeof(cp_ext_point_t));
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], "name")) {
-							parser_strncpy(context, name, atts[i],
-								ext_point->name, atts[i+1],
-								CP_NAME_MAX_LENGTH);
+							ext_point->name
+								= parser_strdup(context, atts[i+1]);
 						} else if (!strcmp(atts[i], "id")) {
 							int j, k;
-							
-							parser_strncpy(context, name, atts[i],
-								ext_point->simple_id, atts[i+1],
-								CP_ID_MAX_LENGTH);
+
+							ext_point->simple_id
+								= parser_strdup(context, atts[i+1]);
 							j = strlen(context->plugin->identifier);
 							k = strlen(ext_point->simple_id);
-							if (j + k < CP_ID_MAX_LENGTH) {
+							ext_point->extpt_id
+								= parser_malloc(context, j + k + 2);
+							if (ext_point->extpt_id != NULL) {
 								strcpy(ext_point->extpt_id, context->plugin->identifier);
 								ext_point->extpt_id[j] = '.';
 								strcpy(ext_point->extpt_id + j + 1, ext_point->simple_id);
-							} else {
-								descriptor_errorf(context, 0,
-									_("unique identifier \"%s.%s\" is too long"),
-									context->plugin->identifier,
-									ext_point->simple_id);
 							}
 						} else if (!strcmp(atts[i], "schema")) {
-							parser_strncpy(context, name, atts[i],
-								ext_point->schema_path, atts[i+1],
-								CP_PATH_MAX_LENGTH);
+							ext_point->schema_path
+								= parser_strdup(context, atts[i+1]);
 						}
 					}
 					context->plugin->num_ext_points++;
@@ -636,17 +620,14 @@ static void XMLCALL cp_start_element_handler(
 					extension->configuration = NULL;
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], "point")) {
-							parser_strncpy(context, name, atts[i],
-								extension->extpt_id, atts[i+1],
-								CP_ID_MAX_LENGTH);
+							extension->extpt_id
+								= parser_strdup(context, atts[i+1]);
 						} else if (!strcmp(atts[i], "id")) {
-							parser_strncpy(context, name, atts[i],
-								extension->simple_id, atts[i+1],
-								CP_ID_MAX_LENGTH);
+							extension->simple_id
+								= parser_strdup(context, atts[i+1]);
 						} else if (!strcmp(atts[i], "name")) {
-							parser_strncpy(context, name, atts[i],
-								extension->name, atts[i+1],
-								CP_NAME_MAX_LENGTH);
+							extension->name
+								= parser_strdup(context, atts[i+1]);
 						}
 					}
 					context->plugin->num_extensions++;
@@ -692,13 +673,11 @@ static void XMLCALL cp_start_element_handler(
 					memset(import, 0, sizeof(cp_plugin_import_t));
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], "plugin")) {
-							parser_strncpy(context, name, atts[i],
-								import->plugin_id, atts[i+1],
-								CP_ID_MAX_LENGTH);
+							import->plugin_id
+								= parser_strdup(context, atts[i+1]);
 						} else if (!strcmp(atts[i], "version")) {
-							parser_strncpy(context, name, atts[i],
-								import->version, atts[i+1],
-								CP_VERSTR_MAX_LENGTH);
+							import->version
+								= parser_strdup(context, atts[i+1]);
 						} else if (!strcmp(atts[i], "match")) {
 							if (!strcmp(atts[i+1], "perfect")) {
 								import->match = CP_MATCH_PERFECT;
@@ -829,22 +808,12 @@ static cp_cfg_element_t *parse_cfg_element(ploader_context_t *context,
 	/* Initialize the configuration element */
 	memset(ce, 0, sizeof(cp_cfg_element_t));
 	ce->name = parser_strdup(context, name);
-	ce->atts = parser_attsdup(context, atts);
+	ce->atts = parser_attsdup(context, atts, &(ce->num_atts));
 	ce->value = NULL;
 	context->value = NULL;
 	context->value_size = 0;
 	ce->parent = parent;
-	ce->first_child = NULL;
-	ce->last_child = NULL;
-	if (parent != NULL) {
-		ce->prev_sibling = parent->last_child;
-		if (parent->first_child == NULL) {
-			parent->first_child = ce;
-		}
-		parent->last_child = ce;
-	}
-	ce->next_sibling = NULL;
-	
+	ce->children = NULL;	
 	return ce;
 }
 
@@ -893,7 +862,8 @@ static int check_attributes(ploader_context_t *context,
 	return !error;
 }
 
-static char **parser_attsdup(ploader_context_t *context, const XML_Char **src) {
+static char **parser_attsdup(ploader_context_t *context, const XML_Char **src,
+	int *num_atts) {
 	char **atts, *attr_data;
 	int i;
 	int num;
@@ -911,7 +881,7 @@ static char **parser_attsdup(ploader_context_t *context, const XML_Char **src) {
 		if ((attr_data = malloc(attr_size * sizeof(char))) != NULL) {
 			size_t offset;
 			
-			for (i = 0, offset = 0; i < 2*num; i++) {
+			for (i = 0, offset = 0; i < num; i++) {
 				strcpy(attr_data + offset, src[i]);
 				atts[i] = attr_data + offset;
 				offset += strlen(src[i]);
@@ -923,6 +893,9 @@ static char **parser_attsdup(ploader_context_t *context, const XML_Char **src) {
 	
 	/* If successful then return duplicates, otherwise free any allocations */
 	if (atts != NULL && attr_data != NULL) {
+		if (num_atts != NULL) {
+			*num_atts = num / 2;
+		}
 		return atts;
 	} else {
 		if (atts != NULL) {
@@ -933,30 +906,22 @@ static char **parser_attsdup(ploader_context_t *context, const XML_Char **src) {
 	}
 }
 
-static int parser_strncpy(ploader_context_t *context,
-	const XML_Char *elem, const XML_Char *attr,
-	char *dst, const XML_Char *src, size_t n) {
-	strncpy(dst, src, n);
-	dst[n+1] = '\0';
-	if (strlen(dst) != strlen(src)) {
-		descriptor_errorf(context, 0,
-			_("attribute \"%s\" in element \"%s\" has too long value \"%s\""),
-			attr, elem, src);
-		return 0;
-	} else {
-		return 1;
-	}
-}
-
-static char *parser_strdup(ploader_context_t *context, const XML_Char *src) {
+static char *parser_strdup(ploader_context_t *context, const char *src) {
 	char *dst;
 	
-	if ((dst = malloc(sizeof(char) * (strlen(src) + 1))) == NULL) {
+	if ((dst = strdup(src)) == NULL) {
 		resource_error(context);
-	} else {
-		strcpy(dst, src);
 	}
 	return dst;
+}
+
+static void *parser_malloc(ploader_context_t *context, size_t size) {
+	void *ptr;
+	
+	if ((ptr = malloc(size)) == NULL) {
+		resource_error(context);
+	}
+	return ptr;
 }
 
 static void descriptor_errorf(ploader_context_t *context, int warn,

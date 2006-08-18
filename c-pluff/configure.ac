@@ -142,8 +142,8 @@ AC_CHECK_LIB([expat], [XML_ParseBuffer],, AC_MSG_ERROR([Expat library is require
 
 # Check for dynamic loader library
 # --------------------------------
-AC_CHECK_HEADER([dlfcn.h],, AC_MSG_ERROR([Dynamic linking loader header files are required]))
-AC_CHECK_LIB([dl], [dlopen],, AC_MSG_ERROR([Dynamic linking loader library is required]))
+#AC_CHECK_HEADER([dlfcn.h],, AC_MSG_ERROR([Dynamic linking loader header files are required]))
+#AC_CHECK_LIB([dl], [dlopen],, AC_MSG_ERROR([Dynamic linking loader library is required]))
 
 # Output Makefiles
 # ----------------

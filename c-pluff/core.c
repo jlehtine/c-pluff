@@ -214,7 +214,7 @@ static void process_event(list_t *list, lnode_t *node, void *event) {
 
 /* Initialization and destroy */
 
-CP_API(int) cp_init(cp_error_handler_t error_handler) {
+int CP_API cp_init(cp_error_handler_t error_handler) {
 	int status = CP_OK;
 
 	/* Check if already initialized */
@@ -277,7 +277,7 @@ CP_API(int) cp_init(cp_error_handler_t error_handler) {
 	return status;
 }
 
-CP_API(void) cp_destroy(void) {
+void CP_API cp_destroy(void) {
 
 	/* Check if still to be kept initialized */
 	if (--init_count > 0) {
@@ -317,7 +317,7 @@ CP_API(void) cp_destroy(void) {
 
 /* Error handling */
 
-CP_API(int) cp_add_error_handler(cp_error_handler_t error_handler) {
+int CP_API cp_add_error_handler(cp_error_handler_t error_handler) {
 	int status = CP_ERR_RESOURCE;
 	eh_holder_t *holder;
 	lnode_t *node;
@@ -341,7 +341,7 @@ CP_API(int) cp_add_error_handler(cp_error_handler_t error_handler) {
 	return status;
 }
 
-CP_API(void) cp_remove_error_handler(cp_error_handler_t error_handler) {
+void CP_API cp_remove_error_handler(cp_error_handler_t error_handler) {
 	eh_holder_t holder;
 	lnode_t *node;
 	
@@ -354,14 +354,14 @@ CP_API(void) cp_remove_error_handler(cp_error_handler_t error_handler) {
 	cpi_release_data();
 }
 
-void cpi_error(const char *msg) {
+void CP_LOCAL cpi_error(const char *msg) {
 	assert(msg != NULL);
 	cpi_acquire_data();
 	list_process(error_handlers, (void *) msg, process_error);
 	cpi_release_data();
 }
 
-void cpi_errorf(const char *msg, ...) {
+void CP_LOCAL cpi_errorf(const char *msg, ...) {
 	va_list params;
 	char fmsg[256];
 	
@@ -373,14 +373,14 @@ void cpi_errorf(const char *msg, ...) {
 	cpi_error(fmsg);
 }
 
-void cpi_herror(cp_error_handler_t error_handler, const char *msg) {
+void CP_LOCAL cpi_herror(cp_error_handler_t error_handler, const char *msg) {
 	assert(msg != NULL);
 	if (error_handler != NULL) {
 		error_handler(msg);
 	}
 }
 
-void cpi_herrorf(cp_error_handler_t error_handler, const char *msg, ...) {
+void CP_LOCAL cpi_herrorf(cp_error_handler_t error_handler, const char *msg, ...) {
 	va_list params;
 	char fmsg[256];
 	
@@ -395,7 +395,7 @@ void cpi_herrorf(cp_error_handler_t error_handler, const char *msg, ...) {
 
 /* Event listeners */
 
-CP_API(int) cp_add_event_listener(cp_event_listener_t event_listener) {
+int CP_API cp_add_event_listener(cp_event_listener_t event_listener) {
 	int status = CP_ERR_RESOURCE;
 	el_holder_t *holder;
 	lnode_t *node;
@@ -419,7 +419,7 @@ CP_API(int) cp_add_event_listener(cp_event_listener_t event_listener) {
 	return status;
 }
 
-CP_API(void) cp_remove_event_listener(cp_event_listener_t event_listener) {
+void CP_API cp_remove_event_listener(cp_event_listener_t event_listener) {
 	el_holder_t holder;
 	lnode_t *node;
 	
@@ -432,7 +432,7 @@ CP_API(void) cp_remove_event_listener(cp_event_listener_t event_listener) {
 	cpi_release_data();
 }
 
-void cpi_deliver_event(const cp_plugin_event_t *event) {
+void CP_LOCAL cpi_deliver_event(const cp_plugin_event_t *event) {
 	assert(event != NULL);
 	assert(event->plugin_id != NULL);
 	cpi_acquire_data();
@@ -443,7 +443,7 @@ void cpi_deliver_event(const cp_plugin_event_t *event) {
 
 /* Locking */
 
-void cpi_acquire_data(void) {
+void CP_LOCAL cpi_acquire_data(void) {
 #if defined(CP_THREADS_POSIX)
 	pthread_t self = pthread_self();
 	lock_mutex();
@@ -486,7 +486,7 @@ void cpi_acquire_data(void) {
 #endif
 }
 
-void cpi_release_data(void) {
+void CP_LOCAL cpi_release_data(void) {
 #if defined(CP_THREADS_POSIX)
 	lock_mutex();
 	assert(pthread_equal(pthread_self(), data_thread));
