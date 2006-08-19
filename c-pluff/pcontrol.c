@@ -669,6 +669,22 @@ static void free_plugin_import_content(cp_plugin_import_t *import) {
 }
 
 // TODO
+static void free_ext_point_content(cp_ext_point_t *ext_point) {
+	free(ext_point->name);
+	free(ext_point->local_id);
+	free(ext_point->global_id);
+	free(ext_point->schema_path);
+}
+
+// TODO
+static void free_extension_content(cp_extension_t *extension) {
+	free(extension->name);
+	free(extension->local_id);
+	free(extension->global_id);
+	free(extension->ext_point_id);
+}
+
+// TODO
 static void free_cfg_element_content(cp_cfg_element_t *ce) {
 	int i;
 
@@ -698,10 +714,12 @@ void CP_LOCAL cpi_free_plugin(cp_plugin_t *plugin) {
 		free_plugin_import_content(plugin->imports + i);
 	}
 	free(plugin->imports);
-	// TODO, ext point content
+	for (i = 0; i < plugin->num_ext_points; i++) {
+		free_ext_point_content(plugin->ext_points + i);
+	}
 	free(plugin->ext_points);
 	for (i = 0; i < plugin->num_extensions; i++) {
-		// TODO, extension content
+		free_extension_content(plugin->extensions + i);
 		if (plugin->extensions[i].configuration != NULL) {
 			free_cfg_element_content(plugin->extensions[i].configuration);
 			free(plugin->extensions[i].configuration);

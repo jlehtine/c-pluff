@@ -242,14 +242,25 @@ static int check_attributes(ploader_context_t *context,
  * @param size the number of bytes to allocate
  * @return pointer to the allocated memory, or NULL if memory allocation failed
  */
+#ifdef HAVE_DMALLOC_H
+static void *parser_malloc(ploader_context_t *context, size_t size, int line) {
+#else
 static void *parser_malloc(ploader_context_t *context, size_t size) {
+#endif
 	void *ptr;
 	
 	if ((ptr = malloc(size)) == NULL) {
 		resource_error(context);
 	}
+#ifdef HAVE_DMALLOC_H
+	dmalloc_message("parser_malloc() = %p from %s:%u", ptr, __FILE__, line);
+#endif
 	return ptr;
 }
+
+#ifdef HAVE_DMALLOC_H
+#define parser_malloc(a, b) parser_malloc(a, b, __LINE__)
+#endif
 
 /**
  * Makes a copy of the specified string. The memory is allocated using malloc.
@@ -259,14 +270,25 @@ static void *parser_malloc(ploader_context_t *context, size_t size) {
  * @param src the source string to be copied
  * @return copy of the string, or NULL if memory allocation failed
  */
+ #ifdef HAVE_DMALLOC_H
+static char *parser_strdup(ploader_context_t *context, const char *src, int line) {
+ #else
 static char *parser_strdup(ploader_context_t *context, const char *src) {
+#endif
 	char *dst;
-	
+
 	if ((dst = parser_malloc(context, sizeof(char) * (strlen(src) + 1))) != NULL) {
 		strcpy(dst, src);
 	}
+#ifdef HAVE_DMALLOC_H
+	dmalloc_message("parser_strdup() = %p from %s:%u", dst, __FILE__, line);
+#endif	
 	return dst;
 }
+
+#ifdef HAVE_DMALLOC_H
+#define parser_strdup(a, b) parser_strdup(a, b, __LINE__)
+#endif
 
 /**
  * Concatenates the specified strings into a new string. The memory for the concatenated
