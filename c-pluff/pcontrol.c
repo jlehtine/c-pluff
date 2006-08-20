@@ -37,7 +37,7 @@ struct registered_plugin_t {
 	cp_plugin_t *plugin;
 	
 	/** Use count for plug-in information */
-	int use_count;
+	unsigned int use_count;
 	
 	/** The current state of the plug-in */
 	cp_plugin_state_t state;
@@ -145,7 +145,7 @@ void CP_LOCAL cpi_destroy_plugins(void) {
 
 /* Plug-in control */
 
-int CP_LOCAL cpi_install_plugin(cp_plugin_t *plugin) {
+int CP_LOCAL cpi_install_plugin(const cp_plugin_t *plugin, unsigned int use_count) {
 	registered_plugin_t *rp;
 	int status = CP_OK;
 	cp_plugin_event_t event;
@@ -169,6 +169,7 @@ int CP_LOCAL cpi_install_plugin(cp_plugin_t *plugin) {
 	
 		/* Initialize plug-in state */
 		memset(rp, 0, sizeof(registered_plugin_t));
+		rp->use_count = use_count;
 		rp->plugin = plugin;
 		rp->state = CP_PLUGIN_INSTALLED;
 		rp->imported = NULL;
@@ -186,6 +187,19 @@ int CP_LOCAL cpi_install_plugin(cp_plugin_t *plugin) {
 			free(rp);
 			status = CP_ERR_RESOURCE;
 			break;
+		}
+		if (use_count != 0) {
+			if (!hash_alloc_insert(used_plugins, rp->plugin, rp)) {
+				hnode_t *node;
+				
+				node = hash_lookup(plugins, plugin->identifier);
+				assert(node != NULL);
+				hash_delete_free(plugins, node);
+				list_destroy(rp->importing);
+				free(rp);
+				status = CP_ERR_RESOURCE;
+				break;
+			}
 		}
 		
 		/* Plug-in installed */

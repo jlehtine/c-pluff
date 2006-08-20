@@ -1,10 +1,10 @@
 <plugin name="Test Plugin" id="testplugin" version="1.0" provider-name="Johannes Lehtinen">
   <extension-point name="Test Extension Point" id="testpoint"/>
   <extension point="testplugin.testpoint" id="testextension" name="Test Extension">
-    <foo>
+    <foo bar="next">
       Testi
       <bar>
-        <bluh>Toinen testi</bluh>
+        <bluh scope="innermost" second="2">Toinen testi</bluh>
       </bar>
     </foo>
     <test>

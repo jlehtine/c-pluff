@@ -166,7 +166,7 @@ struct cp_cfg_element_t {
 	CP_API_CONST char *name;
 
 	/** Number of attributes */
-	int num_atts;
+	unsigned int num_atts;
 	
 	/**
 	 * Attribute name, value pairs (alternating, UTF-8 encoded)
@@ -179,8 +179,11 @@ struct cp_cfg_element_t {
 	/** The parent, or NULL if root node */
  	CP_API_CONST cp_cfg_element_t *parent;
  	
+ 	/** The index among siblings (0-based) */
+ 	unsigned int index;
+ 	
  	/** Number of children */
- 	int num_children;
+ 	unsigned int num_children;
 
 	/** Children */
 	CP_API_CONST cp_cfg_element_t *children;
@@ -227,7 +230,7 @@ struct cp_plugin_import_t {
 	/** Version match rule */
 	cp_version_match_t match;
 	
-	/** Whether this import is optional */
+	/** Whether this import is optional (1 for optional, 0 for mandatory) */
 	int optional;
 };
 
@@ -252,7 +255,7 @@ struct cp_plugin_t {
 	CP_API_CONST char *path;
 	
 	/** Number of imports */
-	int num_imports;
+	unsigned int num_imports;
 	
 	/** Imports */
 	CP_API_CONST cp_plugin_import_t *imports;
@@ -267,13 +270,13 @@ struct cp_plugin_t {
     CP_API_CONST char *stop_func_name;
 
 	/** Number of extension points provided by this plug-in */
-	int num_ext_points;
+	unsigned int num_ext_points;
 	
 	/** Extension points provided by this plug-in */
 	CP_API_CONST cp_ext_point_t *ext_points;
 	
 	/** Number of extensions provided by this plugin */
-	int num_extensions;
+	unsigned int num_extensions;
 	
 	/** Extensions provided by this plug-in */
 	CP_API_CONST cp_extension_t *extensions;
@@ -429,15 +432,17 @@ void CP_API cp_remove_event_listener(cp_event_listener_t event_listener);
 int CP_API cp_rescan_plugins(const char *dir, int flags);
 
 /**
- * Loads a plug-in from the specified path. The plug-in is added to the list of
- * installed plug-ins. If loading fails then NULL is returned.
+ * Loads a plug-in from the specified path and returns static information about
+ * the loaded plug-in. The plug-in is added to the list of installed plug-ins.
+ * If loading fails then NULL is returned. The caller must release the returned
+ * information by calling cp_release_plugin_info as soon as it does not need
+ * the information anymore.
  * 
  * @param path the installation path of the plug-in
- * @param id the pointer to the identifier of the loaded plug-in is copied to
- *     the location pointed to by this pointer if this pointer is non-NULL
- * @return CP_OK (0) on success, an error code on failure
+ * @param error filled with an error code, if non-NULL
+ * @return pointer to the information structure or NULL if error occurs
  */
-int CP_API cp_load_plugin(const char *path, char **id);
+const cp_plugin_t * CP_API cp_load_plugin(const char *path, int *error);
 
 /**
  * Starts a plug-in. The plug-in is first resolved, if necessary, and all

@@ -47,9 +47,10 @@ void CP_LOCAL cpi_destroy_plugins(void);
  * Installs a plug-in.
  * 
  * @param plugin the plug-in to be installed
+ * @param usage the initial usage count for plug-in information structure
  * @return CP_OK (0) on success, an error code on failure
  */
-int CP_LOCAL cpi_install_plugin(cp_plugin_t *plugin);
+int CP_LOCAL cpi_install_plugin(const cp_plugin_t *plugin, unsigned int use_count);
 
 /**
  * Frees any resources allocated for a plug-in description.

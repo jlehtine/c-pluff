@@ -40,29 +40,23 @@ static void print_configuration(int indentation, const cp_cfg_element_t *conf) {
 		printf("children:\n");
 		for (i = 0; i < conf->num_children; i++) {
 			print_indent(indentation + 2);
-			printf("%d:\n", i+1);
+			printf("%d:\n", conf->children[i].index + 1);
 			print_configuration(indentation + 4, conf->children + i);
 		}
 	}
 }
 
 int main(int argc, char *argv[]) {
-	char *id;
 	int i;
 	
 	if (cp_init(error_handler) != CP_OK) {
 		exit(1);
 	}
 	if (argc > 1) {
+		const cp_plugin_t *plugin;
+		
 		printf("Loading plug-in from %s.\n", argv[1]);
-		if (cp_load_plugin(argv[1], &id) == CP_OK) {
-			const cp_plugin_t *plugin;
-			
-			printf("Loaded plug-in %s:\n", strnull(id));
-			if ((plugin = cp_get_plugin(id, NULL)) == NULL) {
-				fprintf(stderr, "Failed to get plug-in %s.\n", id);
-				exit(1);
-			}
+		if ((plugin = cp_load_plugin(argv[1], NULL)) != NULL) {
 			printf("  name: %s\n", strnull(plugin->name));
 			printf("  identifier: %s\n", strnull(plugin->identifier));
 			printf("  version: %s\n", strnull(plugin->version));
