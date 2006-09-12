@@ -5,8 +5,8 @@
 
 /* General purpose utility functions */
 
-#ifndef _PTRSET_H_
-#define _PTRSET_H_
+#ifndef _UTIL_H_
+#define _UTIL_H_
 
 #include "cpluff.h"
 #include "core.h"
@@ -16,6 +16,7 @@
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus*/
+
 
 /* ------------------------------------------------------------------------
  * Function declarations
@@ -72,4 +73,4 @@ int CP_LOCAL cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
 }
 #endif /*__cplusplus */
 
-#endif /*_PTRSET_H_*/
+#endif /*_UTIL_H_*/

@@ -17,7 +17,7 @@
 #else /*CP_BUILD*/
 #define CP_API __declspec(dllimport)
 #endif /*CP_BUILD*/
-#elif __GNUC__ > 5 || (__GNUC__ == 5 && __GNUC_MINOR__ >= 3)
+#elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
 #define CP_API __attribute__ ((visibility ("default")))
 #else /* Not restricting link time visibility of non-API symbols */
 #define CP_API
@@ -67,6 +67,9 @@ extern "C" {
 
 /** An error in a plug-in runtime */
 #define CP_ERR_RUNTIME 8
+
+/** A blocking operation failed to prevent a deadlock */
+#define CP_ERR_DEADLOCK 9
 
 
 /* Flags for cp_rescan_plugins */
@@ -128,6 +131,7 @@ typedef struct cp_ext_point_t cp_ext_point_t;
 typedef struct cp_cfg_element_t cp_cfg_element_t;
 typedef struct cp_extension_t cp_extension_t;
 typedef struct cp_plugin_t cp_plugin_t;
+typedef struct cp_context_t cp_context_t;
 
 
 /* Plug-in data structures */
@@ -239,6 +243,9 @@ struct cp_plugin_import_t {
  */
 struct cp_plugin_t {
 	
+	/** The associated plug-in context (loading context) */
+	CP_API_CONST cp_context_t *context;
+	
 	/** Human-readable, possibly localized, plug-in name (UTF-8) */
 	CP_API_CONST char *name;
 	
@@ -319,28 +326,43 @@ typedef struct cp_plugin_event_t {
  * An error handler function called when a recoverable error occurs. An error
  * handler function should return promptly and it must not register or
  * unregister error handlers. The error message is localized and the encoding
- * depends on the locale.
+ * depends on the locale. Attempts at changing plug-in state within the error
+ * handler function may fail to prevent deadlocks.
+ * 
+ * @param context the associated plug-in context (NULL during context creation)
+ * @param msg the localized error message
  */
-typedef void (*cp_error_handler_t)(const char *msg);
+typedef void (*cp_error_handler_t)(cp_context_t *context, const char *msg);
 
 /**
  * An event listener function called synchronously after a plugin state change.
  * An event listener function should return promptly and it must not register
- * or unregister event listeners.
+ * or unregister event listeners. Attempts at changing plug-in state within the event
+ * listener function may fail to prevent deadlocks.
+ * 
+ * @param context the associated plug-in context
+ * @param event te plug-in state change event
  */
-typedef void (*cp_event_listener_t)(const cp_plugin_event_t *event);
+typedef void (*cp_event_listener_t)(cp_context_t *context, const cp_plugin_event_t *event);
 
 /**
  * A start function called to start a plug-in. The start function must return
  * non-zero on success and zero on failure. If the start fails then the
- * stop function (if any) is called to clean up plug-in state.
+ * stop function (if any) is called to clean up plug-in state. Attempts at changing
+ * plug-in state within the start function may fail to prevent deadlocks.
+ * 
+ * @param context the associated plug-in context
+ * @return non-zero on success, or zero on failure
  */
-typedef int (*cp_start_t)(void);
+typedef int (*cp_start_t)(cp_context_t *context);
 
 /**
- * A stop function called to stop a plugin.
+ * A stop function called to stop a plugin. Attempts at changing
+ * plug-in state within the stop function may fail to prevent deadlocks.
+ * 
+ * @param context the associated plug-in context
  */
-typedef void (*cp_stop_t)(void);
+typedef void (*cp_stop_t)(cp_context_t *context);
 
 
 /* ------------------------------------------------------------------------
@@ -351,98 +373,143 @@ typedef void (*cp_stop_t)(void);
 /* Initialization and destroy functions */
 
 /**
- * Initializes the C-Pluff framework. The framework must be initialized before
- * trying to use it. This function does nothing if the framework has already
- * been initialized but the framework will be uninitialized only after the
- * corresponding number of calls to cpluff_destroy. This behavior is not
- * thread-safe, however.
+ * Creates a new plug-in context which is an instance of the C-Pluff plug-in framework.
+ * Plug-ins are loaded and installed into a specific context. An application
+ * may have more than one plug-in context but the plug-ins that interact with
+ * each other should be placed in the same context. The resources associated with
+ * the context are released by calling cp_destroy_context when the context is not
+ * needed anymore.
  * 
  * @param error_handler an initial error handler, or NULL if none
- * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
+ * @param error pointer to the location where error code or CP_OK is stored, or NULL
+ * @return the newly created plugin context, or NULL on failure
  */
-int CP_API cp_init(cp_error_handler_t error_handler);
+cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *error);
 
 /**
- * Stops and unloads all plug-ins and releases all resources allocated by
- * the C-Pluff framework. Framework functionality and data structures are not
- * available after calling this function. If cpluff_init has been called
- * multiple times then the actual uninitialization takes place only
- * after corresponding number of calls to cpluff_destroy. This behavior is not
- * thread-safe, however. The framework may be reinitialized by calling
- * cpluff_init function.
+ * Destroys the specified plug-in context and releases the associated resources.
+ * Stops and unloads all plug-ins in the context. The context and the associated
+ * data structures such as plug-in information must not be accessed after calling
+ * this function.
+ * 
+ * @param context the context to be destroyed
  */
-void CP_API cp_destroy(void);
+void CP_API cp_destroy_context(cp_context_t *context);
 
 
 /* Functions for error handling */
 
 /**
- * Adds an error handler function that will be called by the plug-in
- * framework when an error occurs. For example, failures to start and register
- * plug-ins are reported to the registered error handlers. Error messages are
- * localized, if possible. There can be several registered error handlers.
+ * Registers an error handler function with a plug-in context. The handler is called
+ * synchronously when an error occurs. For example, failures to start and register
+ * plug-ins are reported to the registered error handlers. There can be several
+ * error handlers registered with the same context.
  * 
+ * @param context the plug-in context
  * @param error_handler the error handler to be added
- * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
+ * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources, or CP_ERR_DEADLOCK
+ * 		if called from an error handler
  */
-int CP_API cp_add_error_handler(cp_error_handler_t error_handler);
+int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_handler);
 
 /**
- * Removes an error handler. This function does nothing if the specified error
- * handler has not been registered.
+ * Removes an error handler from a plug-in context.
  * 
+ * @param context the plug-in context
  * @param error_handler the error handler to be removed
+ * @return CP_OK (0) on success, CP_ERR_UNKNOWN if the error handler is unknown,
+ * 		or CP_ERR_DEADLOCK if called from an error handler
  */
-void CP_API cp_remove_error_handler(cp_error_handler_t error_handler);
+int CP_API cp_remove_error_handler(cp_context_t *context, cp_error_handler_t error_handler);
 
 
 /* Functions for registering plug-in event listeners */
 
 /**
- * Adds an event listener which will be called on plug-in state changes.
- * The event listener is called synchronously immediately after plug-in state
- * has changed. There can be several registered listeners.
+ * Registers an event listener with a plug-in context. The event listener is called
+ * synchronously immediately after a plug-in state change. There can be several
+ * listeners registered with the same context.
  * 
+ * @param context the plug-in context
  * @param event_listener the event_listener to be added
- * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources
+ * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources, or
+ * 		CP_ERR_DEADLOCK if called from an event listener
  */
-int CP_API cp_add_event_listener(cp_event_listener_t event_listener);
+int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t event_listener);
 
 /**
- * Removes an event listener. This function does nothing if the specified
- * listener has not been registered.
+ * Removes an event listener from a plug-in context.
  * 
+ * @param context the plug-in context
  * @param event_listener the event listener to be removed
+ * @return CP_OK (0) on success, CP_ERR_UNKNOWN if the event listener is unknown,
+ * 		or CP_ERR_DEADLOCK if called from an error handler
  */
-void CP_API cp_remove_event_listener(cp_event_listener_t event_listener);
+int CP_API cp_remove_event_listener(cp_context_t *context, cp_event_listener_t event_listener);
+
+
+/* Functions for configuring a plug-in context */
+
+/**
+ * Registers a directory of plug-ins with a plug-in context. The
+ * plug-in context will scan the directory when cp_rescan_plugins is called.
+ * 
+ * @param context the plug-in context
+ * @param dir the directory
+ * @return CP_OK (0) on success, or CP_ERR_RESOURCE if out of resources
+ */
+int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir);
+
+/**
+ * Unregisters a previously registered directory of plug-ins from a plug-in context.
+ * Does not delete the directory itself.
+ * 
+ * @param context the plug-in context
+ * @param dir the previously registered directory
+ * @param unload whether the plug-ins loaded from this directory should be unloaded
+ * @return CP_OK (0) on success, or error code on error
+ */
+int CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir, int unload);
+
+/**
+ * Sets the plug-in directories for the plug-in context. The plug-in directories
+ * will be scanned when cp_rescan_plugins is called.
+ * 
+ * @param context the plug-in context
+ * @param dirs NULL-terminated array of directories
+ * @param unload whether plug-ins loaded from the removed directories should be unloaded
+ * @return CP_OK (0) on success, or error code on error
+ */
+int CP_API cp_set_plugin_dirs(cp_context_t *context, const char * const *dirs, int unload);
 
 
 /* Functions for controlling plug-ins */
 
 /**
- * (Re)scans for plug-ins in the specified directory, re-installing updated
+ * (Re)scans for plug-ins in the registered plug-in directories, re-installing updated
  * (and downgraded) plug-ins, installing new plug-ins and uninstalling plug-ins
- * that do not exist anymore. The allowed operations is specified as a bitmask.
+ * that do not exist anymore. The allowed operations are specified as a bitmask.
  * This method can also be used to initially load the plug-ins.
  * 
- * @param dir the directory containing plug-ins
+ * @param context the plug-in context
  * @param flags a bitmask specifying allowed operations (CPLUFF_RESCAN_...)
  * @return CP_OK (0) on success, an error code on failure
  */
-int CP_API cp_rescan_plugins(const char *dir, int flags);
+int CP_API cp_rescan_plugins(cp_context_t *context, int flags);
 
 /**
  * Loads a plug-in from the specified path and returns static information about
- * the loaded plug-in. The plug-in is added to the list of installed plug-ins.
+ * the loaded plug-in. The plug-in is installed to the specified plug-in context.
  * If loading fails then NULL is returned. The caller must release the returned
  * information by calling cp_release_plugin_info as soon as it does not need
  * the information anymore.
  * 
+ * @param context the plug-in context
  * @param path the installation path of the plug-in
- * @param error filled with an error code, if non-NULL
+ * @param error pointer to the location for the returned error code, or NULL
  * @return pointer to the information structure or NULL if error occurs
  */
-const cp_plugin_t * CP_API cp_load_plugin(const char *path, int *error);
+const cp_plugin_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int *error);
 
 /**
  * Starts a plug-in. The plug-in is first resolved, if necessary, and all
@@ -452,10 +519,11 @@ const cp_plugin_t * CP_API cp_load_plugin(const char *path, int *error);
  * If the plug-in is stopping then this function blocks until the plug-in
  * has stopped and then starts the plug-in.
  * 
+ * @param context the plug-in context
  * @param id identifier of the plug-in to be started
  * @return CP_OK (0) on success, an error code on failure
  */
-int CP_API cp_start_plugin(const char *id);
+int CP_API cp_start_plugin(cp_context_t *context, const char *id);
 
 /**
  * Stops a plug-in. First stops any importing plug-ins that are currently
@@ -465,29 +533,35 @@ int CP_API cp_start_plugin(const char *id);
  * plug-in is starting then this function blocks until the plug-in has
  * started (or failed to start) and then stops the plug-in.
  * 
+ * @param context the plug-in context
  * @param id identifier of the plug-in to be stopped
  * @return CP_OK (0) on success, an error code on failure
  */
-int CP_API cp_stop_plugin(const char *id);
+int CP_API cp_stop_plugin(cp_context_t *context, const char *id);
 
 /**
  * Stops all active plug-ins.
+ * 
+ * @param context the plug-in context
  */
-void CP_API cp_stop_all_plugins(void);
+void CP_API cp_stop_all_plugins(cp_context_t *context);
 
 /**
  * Unloads a plug-in. The plug-in is first stopped if it is active.
  * 
+ * @param context the plug-in context
  * @param id identifier of the plug-in to be unloaded
  * @return CP_OK (0) on success, an error code on failure
  */
-int CP_API cp_unload_plugin(const char *id);
+int CP_API cp_unload_plugin(cp_context_t *context, const char *id);
 
 /**
  * Unloads all plug-ins. This effectively stops all plug-in activity and
  * releases the resources allocated by the plug-ins.
+ * 
+ * @param context the plug-in context
  */
-void CP_API cp_unload_all_plugins(void);
+void CP_API cp_unload_all_plugins(cp_context_t *context);
 
 
 /* Functions for accessing plug-ins */
@@ -497,11 +571,12 @@ void CP_API cp_unload_all_plugins(void);
  * release the information by calling cp_release_plugin_info as soon as
  * it does not need the information anymore.
  * 
+ * @param context the plug-in context
  * @param id identifier of the plug-in to be examined
  * @param error filled with an error code, if non-NULL
  * @return pointer to the information structure or NULL if error occurs
  */
-const cp_plugin_t * CP_API cp_get_plugin(const char *id, int *error);
+const cp_plugin_t * CP_API cp_get_plugin(cp_context_t *context, const char *id, int *error);
 
 /**
  * Releases a previously obtained plug-in information structure.

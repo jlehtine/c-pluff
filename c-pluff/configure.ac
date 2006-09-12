@@ -100,12 +100,15 @@ if test -z "$cp_threads" && test "$enable_threads" != no; then
   AC_MSG_WARN([multi-threading support not detected])
 fi
 
+if test -n "$cp_threads"; then
+  	AC_DEFINE([CP_THREADS], [], [Enable multi-threading support])
+fi
 case "$cp_threads" in
   Posix)
-    AC_DEFINE([CP_THREADS_POSIX], [], [Enable Posix thread support])
+    AC_DEFINE([CP_THREADS_POSIX], [], [Use Posix threads])
     ;;
   Windows)
-    AC_DEFINE([CP_THREADS_WINDOWS], [], [Enable Windows thread support])
+    AC_DEFINE([CP_THREADS_WINDOWS], [], [Use Windows threads])
     ;;
 esac
 

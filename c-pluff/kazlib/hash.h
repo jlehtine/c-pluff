@@ -22,7 +22,7 @@
 #define HASH_H
 
 /* Hide global symbols, added by JLe */
-#include "../core.h"
+#include "../defines.h"
 
 #include <limits.h>
 #ifdef KAZLIB_SIDEEFFECT_DEBUG

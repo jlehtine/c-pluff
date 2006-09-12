@@ -22,35 +22,18 @@ extern "C" {
 
 
 /* ------------------------------------------------------------------------
- * Data types
- * ----------------------------------------------------------------------*/
-
-
-
-/* ------------------------------------------------------------------------
  * Function declarations
  * ----------------------------------------------------------------------*/
 
 /**
- * Initializes the plug-in controlling component.
- * 
- * @return CP_OK (0) on success, an error code on failure
- */
-int CP_LOCAL cpi_init_plugins(void);
-
-/**
- * Destroys the plug-in controlling component.
- */
-void CP_LOCAL cpi_destroy_plugins(void);
-
-/**
  * Installs a plug-in.
  * 
+ * @param context the plug-in context
  * @param plugin the plug-in to be installed
  * @param usage the initial usage count for plug-in information structure
  * @return CP_OK (0) on success, an error code on failure
  */
-int CP_LOCAL cpi_install_plugin(const cp_plugin_t *plugin, unsigned int use_count);
+int CP_LOCAL cpi_install_plugin(cp_context_t *context, cp_plugin_t *plugin, unsigned int use_count);
 
 /**
  * Frees any resources allocated for a plug-in description.

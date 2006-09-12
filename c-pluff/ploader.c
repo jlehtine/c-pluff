@@ -133,7 +133,7 @@ struct ploader_context_t {
  * @param error_msg the error message
  * @param ... parameters for the error message
  */
-static void descriptor_errorf(ploader_context_t *context, int warn,
+static void descriptor_errorf(ploader_context_t *plcontext, int warn,
 	const char *error_msg, ...) {
 	va_list ap;
 	char message[128];
@@ -142,15 +142,16 @@ static void descriptor_errorf(ploader_context_t *context, int warn,
 	vsnprintf(message, sizeof(message), error_msg, ap);
 	va_end(ap);
 	message[127] = '\0';
-	cpi_errorf(warn
-				? _("Suspicious descriptor data in %s, line %d, column %d (%s).")
-				: _("Invalid descriptor data in %s, line %d, column %d (%s)."),
-		context->file,
-		XML_GetCurrentLineNumber(context->parser),
-		XML_GetCurrentColumnNumber(context->parser) + 1,
+	cpi_errorf(plcontext->plugin->context,
+		warn
+			? _("Suspicious descriptor data in %s, line %d, column %d (%s).")
+			: _("Invalid descriptor data in %s, line %d, column %d (%s)."),
+		plcontext->file,
+		XML_GetCurrentLineNumber(plcontext->parser),
+		XML_GetCurrentColumnNumber(plcontext->parser) + 1,
 		message);
 	if (!warn) {
-		context->error_count++;
+		plcontext->error_count++;
 	}
 }
 
@@ -160,14 +161,15 @@ static void descriptor_errorf(ploader_context_t *context, int warn,
  * 
  * @param context the parsing context
  */
-static void resource_error(ploader_context_t *context) {
-	if (context->resource_error_count == 0) {
-		cpi_errorf(_("Insufficient resources to parse descriptor data in %s, line %d, column %d."),
-			context->file,
-			XML_GetCurrentLineNumber(context->parser),
-			XML_GetCurrentColumnNumber(context->parser) + 1);
+static void resource_error(ploader_context_t *plcontext) {
+	if (plcontext->resource_error_count == 0) {
+		cpi_errorf(plcontext->plugin->context,
+			_("Insufficient resources to parse descriptor data in %s, line %d, column %d."),
+			plcontext->file,
+			XML_GetCurrentLineNumber(plcontext->parser),
+			XML_GetCurrentColumnNumber(plcontext->parser) + 1);
 	}
-	context->resource_error_count++;
+	plcontext->resource_error_count++;
 }
 
 /**
@@ -205,7 +207,7 @@ static const XML_Char * const *contains_str(const XML_Char * const *list,
  * @param opt_atts the optional attributes (NULL terminated list, or NULL)
  * @return whether the required attributes are present
  */
-static int check_attributes(ploader_context_t *context,
+static int check_attributes(ploader_context_t *plcontext,
 	const XML_Char *elem, const XML_Char * const *atts,
 	const XML_Char * const *req_atts, const XML_Char * const *opt_atts) {
 	const XML_Char * const *a;
@@ -217,13 +219,13 @@ static int check_attributes(ploader_context_t *context,
 		
 		if ((av = contains_str(atts, *a, 2)) != NULL) {
 			if ((*(av + 1))[0] == '\0') {
-				descriptor_errorf(context, 0,
+				descriptor_errorf(plcontext, 0,
 					_("required attribute \"%s\" for element \"%s\" has an empty value"),
 					*a, elem);
 				error = 1;
 			}
 		} else {
-			descriptor_errorf(context, 0,
+			descriptor_errorf(plcontext, 0,
 				_("required attribute \"%s\" missing for element \"%s\""),
 				*a, elem);
 			error = 1;
@@ -234,7 +236,7 @@ static int check_attributes(ploader_context_t *context,
 	for (; *atts != NULL; atts += 2) {
 		if (contains_str(req_atts, *atts, 1) == NULL
 			&& contains_str(opt_atts, *atts, 1) == NULL) {
-			descriptor_errorf(context, 1,
+			descriptor_errorf(plcontext, 1,
 				_("ignoring unknown attribute \"%s\" for element \"%s\""),
 				*atts, elem);
 		}
@@ -252,9 +254,9 @@ static int check_attributes(ploader_context_t *context,
  * @return pointer to the allocated memory, or NULL if memory allocation failed
  */
 #ifdef HAVE_DMALLOC_H
-static void *parser_malloc_dm(ploader_context_t *context, size_t size, int line) {
+static void *parser_malloc_dm(ploader_context_t *plcontext, size_t size, int line) {
 #else
-static void *parser_malloc(ploader_context_t *context, size_t size) {
+static void *parser_malloc(ploader_context_t *plcontext, size_t size) {
 #endif
 	void *ptr;
 
@@ -264,7 +266,7 @@ static void *parser_malloc(ploader_context_t *context, size_t size) {
 	ptr = malloc(size);
 #endif	
 	if (ptr == NULL) {
-		resource_error(context);
+		resource_error(plcontext);
 	}
 	return ptr;
 }
@@ -282,16 +284,16 @@ static void *parser_malloc(ploader_context_t *context, size_t size) {
  * @return copy of the string, or NULL if memory allocation failed
  */
  #ifdef HAVE_DMALLOC_H
-static char *parser_strdup_dm(ploader_context_t *context, const char *src, int line) {
+static char *parser_strdup_dm(ploader_context_t *plcontext, const char *src, int line) {
  #else
-static char *parser_strdup(ploader_context_t *context, const char *src) {
+static char *parser_strdup(ploader_context_t *plcontext, const char *src) {
 #endif
 	char *dst;
 
 #ifdef HAVE_DMALLOC_H
-	dst = parser_malloc_dm(context, sizeof(char) * (strlen(src) + 1), line);
+	dst = parser_malloc_dm(plcontext, sizeof(char) * (strlen(src) + 1), line);
 #else
-	dst = parser_malloc(context, sizeof(char) * (strlen(src) + 1));
+	dst = parser_malloc(plcontext, sizeof(char) * (strlen(src) + 1));
 #endif
 	if (dst != NULL) {
 		strcpy(dst, src);
@@ -312,14 +314,14 @@ static char *parser_strdup(ploader_context_t *context, const char *src) {
  * @param ... the strings to be concatenated, terminated by NULL
  * @return the concatenated string, or NULL if memory allocation failed
  */
-static char *parser_strscat(ploader_context_t *context, ...) {
+static char *parser_strscat(ploader_context_t *plcontext, ...) {
 	va_list ap;
 	const char *str;
 	char *dst;
 	size_t len;
 	
 	/* Calculate the length of the concatenated string */
-	va_start(ap, context);
+	va_start(ap, plcontext);
 	len = 0;
 	while ((str = va_arg(ap, const char *)) != NULL) {
 		len += strlen(str);
@@ -327,13 +329,13 @@ static char *parser_strscat(ploader_context_t *context, ...) {
 	va_end(ap);
 	
 	/* Allocate space for the concatenated string */
-	if ((dst = parser_malloc(context, sizeof(char) * (len + 1))) == NULL) {
+	if ((dst = parser_malloc(plcontext, sizeof(char) * (len + 1))) == NULL) {
 		return NULL;
 	}
 	
 	/* Copy the strings */
 	len = 0;
-	va_start(ap, context);
+	va_start(ap, plcontext);
 	while ((str = va_arg(ap, const char *)) != NULL) {
 		strcpy(dst + len, str);
 		len += strlen(str);
@@ -350,11 +352,11 @@ static char *parser_strscat(ploader_context_t *context, ...) {
  * @param context the parsing context
  * @param elem the element name
  */
-static void unexpected_element(ploader_context_t *context, const XML_Char *elem) {
-	context->saved_state = context->state;
-	context->state = PARSER_UNKNOWN;
-	context->depth = 0;
-	descriptor_errorf(context, 1, _("ignoring unexpected element %s and its contents"), elem);
+static void unexpected_element(ploader_context_t *plcontext, const XML_Char *elem) {
+	plcontext->saved_state = plcontext->state;
+	plcontext->state = PARSER_UNKNOWN;
+	plcontext->depth = 0;
+	descriptor_errorf(plcontext, 1, _("ignoring unexpected element %s and its contents"), elem);
 }
 
 /**
@@ -367,7 +369,7 @@ static void unexpected_element(ploader_context_t *context, const XML_Char *elem)
  * 			or NULL for none
  * @return the duplicated attribute array, or NULL if empty or failed
  */
-static char **parser_attsdup(ploader_context_t *context, const XML_Char * const *src,
+static char **parser_attsdup(ploader_context_t *plcontext, const XML_Char * const *src,
 	unsigned int *num_atts) {
 	char **atts = NULL, *attr_data = NULL;
 	unsigned int i;
@@ -382,8 +384,8 @@ static char **parser_attsdup(ploader_context_t *context, const XML_Char * const 
 	
 	/* Allocate necessary memory and copy attribute data */
 	if (num > 0) {
-		if ((atts = parser_malloc(context, num * sizeof(char *))) != NULL) {
-			if ((attr_data = parser_malloc(context, attr_size * sizeof(char))) != NULL) {
+		if ((atts = parser_malloc(plcontext, num * sizeof(char *))) != NULL) {
+			if ((attr_data = parser_malloc(plcontext, attr_size * sizeof(char))) != NULL) {
 				size_t offset;
 			
 				for (i = 0, offset = 0; i < num; i++) {
@@ -417,17 +419,17 @@ static char **parser_attsdup(ploader_context_t *context, const XML_Char * const 
  * @param atts the element attributes
  * @param parent the parent element
  */
-static void init_cfg_element(ploader_context_t *context, cp_cfg_element_t *ce,
+static void init_cfg_element(ploader_context_t *plcontext, cp_cfg_element_t *ce,
 	const XML_Char *name, const XML_Char * const *atts, cp_cfg_element_t *parent) {
 	
 	/* Initialize the configuration element */
 	memset(ce, 0, sizeof(cp_cfg_element_t));
-	ce->name = parser_strdup(context, name);
-	ce->atts = parser_attsdup(context, atts, &(ce->num_atts));
+	ce->name = parser_strdup(plcontext, name);
+	ce->atts = parser_attsdup(plcontext, atts, &(ce->num_atts));
 	ce->value = NULL;
-	context->value = NULL;
-	context->value_size = 0;
-	context->value_length = 0;
+	plcontext->value = NULL;
+	plcontext->value_size = 0;
+	plcontext->value_length = 0;
 	ce->parent = parent;
 	ce->children = NULL;	
 }
@@ -435,10 +437,10 @@ static void init_cfg_element(ploader_context_t *context, cp_cfg_element_t *ce,
 // TODO
 static void XMLCALL character_data_handler(
 	void *userData, const XML_Char *str, int len) {
-	ploader_context_t *context = userData;
+	ploader_context_t *plcontext = userData;
 	
 	/* Ignore leading whitespace */
-	if (context->value == NULL) {
+	if (plcontext->value == NULL) {
 		int i;
 		
 		for (i = 0; i < len; i++) {
@@ -454,30 +456,30 @@ static void XMLCALL character_data_handler(
 	}
 	
 	/* Allocate more memory for the character data if needed */
-	if (context->value_length + len >= context->value_size) {
+	if (plcontext->value_length + len >= plcontext->value_size) {
 		size_t ns;
 		char *nv;
 
-		ns = context->value_size;
-		while (context->value_length + len >= ns) {		
+		ns = plcontext->value_size;
+		while (plcontext->value_length + len >= ns) {		
 			if (ns == 0) {
 				ns = CP_CFG_ELEMENT_VALUE_INITSIZE;
 			} else {
 				ns = 2 * ns;
 			}
 		}
-		if ((nv = realloc(context->value, ns * sizeof(char))) != NULL) {
-			context->value = nv;
-			context->value_size = ns;
+		if ((nv = realloc(plcontext->value, ns * sizeof(char))) != NULL) {
+			plcontext->value = nv;
+			plcontext->value_size = ns;
 		} else {
-			resource_error(context);
+			resource_error(plcontext);
 			return;
 		}
 	}
 	
 	/* Copy character data */
-	strncpy(context->value + context->value_length, str, len * sizeof(char));
-	context->value_length += len;
+	strncpy(plcontext->value + plcontext->value_length, str, len * sizeof(char));
+	plcontext->value_length += len;
 }
 
 /**
@@ -499,85 +501,85 @@ static void XMLCALL start_element_handler(
 	static const XML_Char * const opt_ext_point_atts[] = { N_("schema"), NULL };
 	static const XML_Char * const req_extension_atts[] = { N_("point"), NULL };
 	static const XML_Char * const opt_extension_atts[] = { N_("id"), N_("name"), NULL };
-	ploader_context_t *context = userData;
+	ploader_context_t *plcontext = userData;
 	unsigned int i;
 
 	/* Process element start */
-	switch (context->state) {
+	switch (plcontext->state) {
 
 		case PARSER_BEGIN:
 			if (!strcmp(name, N_("plugin"))) {
-				context->state = PARSER_PLUGIN;
-				if (!check_attributes(context, name, atts,
+				plcontext->state = PARSER_PLUGIN;
+				if (!check_attributes(plcontext, name, atts,
 						req_plugin_atts, opt_plugin_atts)) {
 					break;
 				}
 				for (i = 0; atts[i] != NULL; i += 2) {
 					if (!strcmp(atts[i], N_("name"))) {
-						context->plugin->name
-							= parser_strdup(context, atts[i+1]);
+						plcontext->plugin->name
+							= parser_strdup(plcontext, atts[i+1]);
 					} else if (!strcmp(atts[i], N_("id"))) {
-						context->plugin->identifier
-							= parser_strdup(context, atts[i+1]);
+						plcontext->plugin->identifier
+							= parser_strdup(plcontext, atts[i+1]);
 					} else if (!strcmp(atts[i], N_("version"))) {
-						context->plugin->version
-							= parser_strdup(context, atts[i+1]);
+						plcontext->plugin->version
+							= parser_strdup(plcontext, atts[i+1]);
 					} else if (!strcmp(atts[i], N_("provider-name"))) {
-						context->plugin->provider_name
-							= parser_strdup(context, atts[i+1]);
+						plcontext->plugin->provider_name
+							= parser_strdup(plcontext, atts[i+1]);
 					}
 				}
 			} else {
-				unexpected_element(context, name);
+				unexpected_element(plcontext, name);
 			}
 			break;
 
 		case PARSER_PLUGIN:
 			if (!strcmp(name, N_("requires"))) {
-				context->state = PARSER_REQUIRES;
+				plcontext->state = PARSER_REQUIRES;
 			} else if (!strcmp(name, N_("runtime"))) {
-				if (check_attributes(context, name, atts,
+				if (check_attributes(plcontext, name, atts,
 						req_runtime_atts, opt_runtime_atts)) {
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], N_("library"))) {
-							context->plugin->lib_path
-								= parser_strdup(context, atts[i+1]);
+							plcontext->plugin->lib_path
+								= parser_strdup(plcontext, atts[i+1]);
 						} else if (!strcmp(atts[i], N_("start-func"))) {
-							context->plugin->start_func_name
-								= parser_strdup(context, atts[i+1]);
+							plcontext->plugin->start_func_name
+								= parser_strdup(plcontext, atts[i+1]);
 						} else if (!strcmp(atts[i], N_("stop-func"))) {
-							context->plugin->stop_func_name
-								= parser_strdup(context, atts[i+1]);
+							plcontext->plugin->stop_func_name
+								= parser_strdup(plcontext, atts[i+1]);
 						}
 					}
 				}
 			} else if (!strcmp(name, N_("extension-point"))) {
-				if (check_attributes(context, name, atts,
+				if (check_attributes(plcontext, name, atts,
 						req_ext_point_atts, opt_ext_point_atts)) {
 					cp_ext_point_t *ext_point;
 					
 					/* Allocate space for extension points, if necessary */
-					if (context->plugin->num_ext_points == context->ext_points_size) {
+					if (plcontext->plugin->num_ext_points == plcontext->ext_points_size) {
 						cp_ext_point_t *nep;
 						size_t ns;
 						
-						if (context->ext_points_size == 0) {
+						if (plcontext->ext_points_size == 0) {
 							ns = 4;
 						} else {
-							ns = context->ext_points_size * 2;
+							ns = plcontext->ext_points_size * 2;
 						}
-						if ((nep = realloc(context->plugin->ext_points,
+						if ((nep = realloc(plcontext->plugin->ext_points,
 								ns * sizeof(cp_ext_point_t))) == NULL) {
-							resource_error(context);
+							resource_error(plcontext);
 							break;
 						}
-						context->plugin->ext_points = nep;
-						context->ext_points_size = ns;
+						plcontext->plugin->ext_points = nep;
+						plcontext->ext_points_size = ns;
 					}
 					
 					/* Parse extension point specification */
-					ext_point = context->plugin->ext_points
-						+ context->plugin->num_ext_points;
+					ext_point = plcontext->plugin->ext_points
+						+ plcontext->plugin->num_ext_points;
 					memset(ext_point, 0, sizeof(cp_ext_point_t));
 					ext_point->name = NULL;
 					ext_point->local_id = NULL;
@@ -586,50 +588,50 @@ static void XMLCALL start_element_handler(
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], N_("name"))) {
 							ext_point->name
-								= parser_strdup(context, atts[i+1]);
+								= parser_strdup(plcontext, atts[i+1]);
 						} else if (!strcmp(atts[i], N_("id"))) {
 							ext_point->local_id
-								= parser_strdup(context, atts[i+1]);
+								= parser_strdup(plcontext, atts[i+1]);
 							ext_point->global_id
-								= parser_strscat(context,
-									context->plugin->identifier, N_("."), atts[i+1], NULL);
+								= parser_strscat(plcontext,
+									plcontext->plugin->identifier, N_("."), atts[i+1], NULL);
 						} else if (!strcmp(atts[i], N_("schema"))) {
 							ext_point->schema_path
-								= parser_strdup(context, atts[i+1]);
+								= parser_strdup(plcontext, atts[i+1]);
 						}
 					}
-					context->plugin->num_ext_points++;
+					plcontext->plugin->num_ext_points++;
 					
 				}
 			} else if (!(strcmp(name, N_("extension")))) {
-				context->state = PARSER_EXTENSION;
-				context->depth = 0;
-				if (check_attributes(context, name, atts,
+				plcontext->state = PARSER_EXTENSION;
+				plcontext->depth = 0;
+				if (check_attributes(plcontext, name, atts,
 						req_extension_atts, opt_extension_atts)) {
 					cp_extension_t *extension;
 				
 					/* Allocate space for extensions, if necessary */
-					if (context->plugin->num_extensions == context->extensions_size) {
+					if (plcontext->plugin->num_extensions == plcontext->extensions_size) {
 						cp_extension_t *ne;
 						size_t ns;
 						
-						if (context->extensions_size == 0) {
+						if (plcontext->extensions_size == 0) {
 							ns = 16;
 						} else {
-							ns = context->extensions_size * 2;
+							ns = plcontext->extensions_size * 2;
 						}
-						if ((ne = realloc(context->plugin->extensions,
+						if ((ne = realloc(plcontext->plugin->extensions,
 								ns * sizeof(cp_extension_t))) == NULL) {
-							resource_error(context);
+							resource_error(plcontext);
 							break;
 						}
-						context->plugin->extensions = ne;
-						context->extensions_size = ns;
+						plcontext->plugin->extensions = ne;
+						plcontext->extensions_size = ns;
 					}
 					
 					/* Parse extension attributes */
-					extension = context->plugin->extensions
-						+ context->plugin->num_extensions;
+					extension = plcontext->plugin->extensions
+						+ plcontext->plugin->num_extensions;
 					memset(extension, 0, sizeof(cp_extension_t));
 					extension->name = NULL;
 					extension->local_id = NULL;
@@ -639,71 +641,71 @@ static void XMLCALL start_element_handler(
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], N_("point"))) {
 							extension->ext_point_id
-								= parser_strdup(context, atts[i+1]);
+								= parser_strdup(plcontext, atts[i+1]);
 						} else if (!strcmp(atts[i], N_("id"))) {
 							extension->local_id
-								= parser_strdup(context, atts[i+1]);
+								= parser_strdup(plcontext, atts[i+1]);
 							extension->global_id
-								= parser_strscat(context,
-									context->plugin->identifier, N_("."), atts[i+1], NULL);
+								= parser_strscat(plcontext,
+									plcontext->plugin->identifier, N_("."), atts[i+1], NULL);
 						} else if (!strcmp(atts[i], N_("name"))) {
 							extension->name
-								= parser_strdup(context, atts[i+1]);
+								= parser_strdup(plcontext, atts[i+1]);
 						}
 					}
-					context->plugin->num_extensions++;
+					plcontext->plugin->num_extensions++;
 					
 					/* Initialize configuration parsing */
-					if ((extension->configuration = context->configuration
-						= parser_malloc(context, sizeof(cp_cfg_element_t))) != NULL) {
-						init_cfg_element(context, context->configuration, name, atts, NULL);
+					if ((extension->configuration = plcontext->configuration
+						= parser_malloc(plcontext, sizeof(cp_cfg_element_t))) != NULL) {
+						init_cfg_element(plcontext, plcontext->configuration, name, atts, NULL);
 					}
-					XML_SetCharacterDataHandler(context->parser, character_data_handler);
+					XML_SetCharacterDataHandler(plcontext->parser, character_data_handler);
 				}
 			} else {
-				unexpected_element(context, name);
+				unexpected_element(plcontext, name);
 			}
 			break;
 
 		case PARSER_REQUIRES:
 			if (!strcmp(name, N_("import"))) {
 
-				if (check_attributes(context, name, atts,
+				if (check_attributes(plcontext, name, atts,
 						req_import_atts, opt_import_atts)) {
 					cp_plugin_import_t *import = NULL;
 				
 					/* Allocate space for imports, if necessary */
-					if (context->plugin->num_imports == context->imports_size) {
+					if (plcontext->plugin->num_imports == plcontext->imports_size) {
 						cp_plugin_import_t *ni;
 						size_t ns;
 					
-						if (context->imports_size == 0) {
+						if (plcontext->imports_size == 0) {
 							ns = 16;
 						} else {
-							ns = context->imports_size * 2;
+							ns = plcontext->imports_size * 2;
 						}
-						if ((ni = realloc(context->plugin->imports,
+						if ((ni = realloc(plcontext->plugin->imports,
 								ns * sizeof(cp_plugin_import_t))) == NULL) {
-							resource_error(context);
+							resource_error(plcontext);
 							break;
 						}
-						context->plugin->imports = ni;
-						context->imports_size = ns;
+						plcontext->plugin->imports = ni;
+						plcontext->imports_size = ns;
 					}
 				
 					/* Parse import specification */
-					import = context->plugin->imports
-						+ context->plugin->num_imports;
+					import = plcontext->plugin->imports
+						+ plcontext->plugin->num_imports;
 					memset(import, 0, sizeof(cp_plugin_import_t));
 					import->plugin_id = NULL;
 					import->version = NULL;
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], N_("plugin"))) {
 							import->plugin_id
-								= parser_strdup(context, atts[i+1]);
+								= parser_strdup(plcontext, atts[i+1]);
 						} else if (!strcmp(atts[i], N_("version"))) {
 							import->version
-								= parser_strdup(context, atts[i+1]);
+								= parser_strdup(plcontext, atts[i+1]);
 						} else if (!strcmp(atts[i], N_("match"))) {
 							if (!strcmp(atts[i+1], N_("perfect"))) {
 								import->match = CP_MATCH_PERFECT;
@@ -714,7 +716,7 @@ static void XMLCALL start_element_handler(
 							} else if (!strcmp(atts[i+1], N_("greaterOrEqual"))) {
 								import->match = CP_MATCH_GREATEROREQUAL;
 							} else {
-								descriptor_errorf(context, 0, _("unknown version matching mode %s"), atts[i+1]);
+								descriptor_errorf(plcontext, 0, _("unknown version matching mode %s"), atts[i+1]);
 							}
 						} else if (!strcmp(atts[i], N_("optional"))) {
 							if (!strcmp(atts[i+1], N_("true"))
@@ -722,63 +724,63 @@ static void XMLCALL start_element_handler(
 								import->optional = 1;
 							} else if (strcmp(atts[i+1], N_("false"))
 								&& strcmp(atts[i+1], N_("0"))) {
-								descriptor_errorf(context, 0, _("unknown boolean value %s"), atts[i+1]);
+								descriptor_errorf(plcontext, 0, _("unknown boolean value %s"), atts[i+1]);
 							}
 						}
 					}
 					if (import->match != CP_MATCH_NONE
 						&& (import->version == NULL || import->version[0] == '\0')) {
-						descriptor_errorf(context, 0, _("unable to match unspecified or empty version"));
+						descriptor_errorf(plcontext, 0, _("unable to match unspecified or empty version"));
 					}
 				}
 			} else {
-				unexpected_element(context, name);
+				unexpected_element(plcontext, name);
 			}
 			break;
 
 		case PARSER_EXTENSION:
-			context->depth++;
-			if (context->configuration != NULL && context->skippedCEs == 0) {
+			plcontext->depth++;
+			if (plcontext->configuration != NULL && plcontext->skippedCEs == 0) {
 				cp_cfg_element_t *ce;
 				
 				/* Allocate more space for children, if necessary */
-				if (context->configuration->num_children == context->configuration->index) {
+				if (plcontext->configuration->num_children == plcontext->configuration->index) {
 					cp_cfg_element_t *nce;
 					size_t ns;
 						
-					if (context->configuration->index == 0) {
+					if (plcontext->configuration->index == 0) {
 						ns = 16;
 					} else {
-						ns = context->configuration->index * 2;
+						ns = plcontext->configuration->index * 2;
 					}
-					if ((nce = realloc(context->configuration->children,
+					if ((nce = realloc(plcontext->configuration->children,
 							ns * sizeof(cp_cfg_element_t))) == NULL) {
-						context->skippedCEs++;
-						resource_error(context);
+						plcontext->skippedCEs++;
+						resource_error(plcontext);
 						break;
 					}
-					context->configuration->children = nce;
-					context->configuration->index = ns;
+					plcontext->configuration->children = nce;
+					plcontext->configuration->index = ns;
 				}
 				
 				/* Save possible value */
-				if (context->value != NULL) {
-					context->value[context->value_length] = '\0';
-					context->configuration->value = context->value;
+				if (plcontext->value != NULL) {
+					plcontext->value[plcontext->value_length] = '\0';
+					plcontext->configuration->value = plcontext->value;
 				}
 				
-				ce = context->configuration->children + context->configuration->num_children;
-				init_cfg_element(context, ce, name, atts, context->configuration);
-				context->configuration->num_children++;
-				context->configuration = ce;
+				ce = plcontext->configuration->children + plcontext->configuration->num_children;
+				init_cfg_element(plcontext, ce, name, atts, plcontext->configuration);
+				plcontext->configuration->num_children++;
+				plcontext->configuration = ce;
 			}
 			break;
 			
 		case PARSER_UNKNOWN:
-			context->depth++;
+			plcontext->depth++;
 			break;
 		default:
-			unexpected_element(context, name);
+			unexpected_element(plcontext, name);
 			break;
 	}
 }
@@ -791,41 +793,41 @@ static void XMLCALL start_element_handler(
  */
 static void XMLCALL end_element_handler(
 	void *userData, const XML_Char *name) {
-	ploader_context_t *context = userData;
+	ploader_context_t *plcontext = userData;
 	
 	/* Process element end */
-	switch (context->state) {
+	switch (plcontext->state) {
 
 		case PARSER_PLUGIN:
 			if (!strcmp(name, N_("plugin"))) {
 				
 				/* Readjust memory allocated for extension points, if necessary */
-				if (context->ext_points_size != context->plugin->num_ext_points) {
+				if (plcontext->ext_points_size != plcontext->plugin->num_ext_points) {
 					cp_ext_point_t *nep;
 					
-					if ((nep = realloc(context->plugin->ext_points,
-							context->plugin->num_ext_points *
+					if ((nep = realloc(plcontext->plugin->ext_points,
+							plcontext->plugin->num_ext_points *
 								sizeof(cp_ext_point_t))) != NULL
-						|| context->plugin->num_ext_points == 0) {
-						context->plugin->ext_points = nep;
-						context->ext_points_size = context->plugin->num_ext_points;
+						|| plcontext->plugin->num_ext_points == 0) {
+						plcontext->plugin->ext_points = nep;
+						plcontext->ext_points_size = plcontext->plugin->num_ext_points;
 					}
 				}
 				
 				/* Readjust memory allocated for extensions, if necessary */
-				if (context->extensions_size != context->plugin->num_extensions) {
+				if (plcontext->extensions_size != plcontext->plugin->num_extensions) {
 					cp_extension_t *ne;
 					
-					if ((ne = realloc(context->plugin->extensions,
-							context->plugin->num_extensions *
+					if ((ne = realloc(plcontext->plugin->extensions,
+							plcontext->plugin->num_extensions *
 								sizeof(cp_extension_t))) != NULL
-						|| context->plugin->num_extensions == 0) {
-						context->plugin->extensions = ne;
-						context->extensions_size = context->plugin->num_extensions;
+						|| plcontext->plugin->num_extensions == 0) {
+						plcontext->plugin->extensions = ne;
+						plcontext->extensions_size = plcontext->plugin->num_extensions;
 					}					
 				}
 				
-				context->state = PARSER_END;
+				plcontext->state = PARSER_END;
 			}
 			break;
 
@@ -833,109 +835,109 @@ static void XMLCALL end_element_handler(
 			if (!strcmp(name, N_("requires"))) {
 				
 				/* Readjust memory allocated for imports, if necessary */
-				if (context->imports_size != context->plugin->num_imports) {
+				if (plcontext->imports_size != plcontext->plugin->num_imports) {
 					cp_plugin_import_t *ni;
 					
-					if ((ni = realloc(context->plugin->imports,
-							context->plugin->num_imports *
+					if ((ni = realloc(plcontext->plugin->imports,
+							plcontext->plugin->num_imports *
 								sizeof(cp_plugin_import_t))) != NULL
-						|| context->plugin->num_imports == 0) {
-						context->plugin->imports = ni;
-						context->imports_size = context->plugin->num_imports;
+						|| plcontext->plugin->num_imports == 0) {
+						plcontext->plugin->imports = ni;
+						plcontext->imports_size = plcontext->plugin->num_imports;
 					}
 				}
 				
-				context->state = PARSER_PLUGIN;
+				plcontext->state = PARSER_PLUGIN;
 			}
 			break;
 
 		case PARSER_UNKNOWN:
-			if (context->depth-- == 0) {
-				context->state = context->saved_state;
+			if (plcontext->depth-- == 0) {
+				plcontext->state = plcontext->saved_state;
 			}
 			break;
 
 		case PARSER_EXTENSION:
-			if (context->skippedCEs > 0) {
-				context->skippedCEs--;
-			} else if (context->configuration != NULL) {
+			if (plcontext->skippedCEs > 0) {
+				plcontext->skippedCEs--;
+			} else if (plcontext->configuration != NULL) {
 				
 				/* Readjust memory allocated for children, if necessary */
-				if (context->configuration->index != context->configuration->num_children) {
+				if (plcontext->configuration->index != plcontext->configuration->num_children) {
 					cp_cfg_element_t *nce;
 					
-					if ((nce = realloc(context->configuration->children,
-							context->configuration->num_children *
+					if ((nce = realloc(plcontext->configuration->children,
+							plcontext->configuration->num_children *
 								sizeof(cp_cfg_element_t))) != NULL
-						|| context->configuration->num_children == 0) {
-						context->configuration->children = nce;
+						|| plcontext->configuration->num_children == 0) {
+						plcontext->configuration->children = nce;
 					}
 				}
 				
-				if (context->configuration->parent != NULL) {
-					context->configuration->index = context->configuration->parent->num_children - 1;
+				if (plcontext->configuration->parent != NULL) {
+					plcontext->configuration->index = plcontext->configuration->parent->num_children - 1;
 				} else {
-					context->configuration->index = 0;
+					plcontext->configuration->index = 0;
 				}
-				if (context->value != NULL) {
-					char *v = context->value;
+				if (plcontext->value != NULL) {
+					char *v = plcontext->value;
 					int i;
 					
 					/* Ignore trailing whitespace */
-					for (i = context->value_length - 1; i >= 0; i--) {
+					for (i = plcontext->value_length - 1; i >= 0; i--) {
 						if (v[i] != ' ' && v[i] != '\n' && v[i] != '\r' && v[i] != '\t') {
 							break;
 						}
 					}
 					if (i  < 0) {
-						free(context->value);
-						context->value = NULL;
-						context->value_length = 0;
-						context->value_size = 0;
+						free(plcontext->value);
+						plcontext->value = NULL;
+						plcontext->value_length = 0;
+						plcontext->value_size = 0;
 					} else {
-						context->value_length = i + 1;
+						plcontext->value_length = i + 1;
 					}
 				}
-				if (context->value != NULL) {
+				if (plcontext->value != NULL) {
 					
 					/* Readjust memory allocated for value, if necessary */
-					if (context->value_size > context->value_length + 1) {
+					if (plcontext->value_size > plcontext->value_length + 1) {
 						char *nv;
 						
-						if ((nv = realloc(context->value, (context->value_length + 1) * sizeof(char))) != NULL) {
-							context->value = nv;
+						if ((nv = realloc(plcontext->value, (plcontext->value_length + 1) * sizeof(char))) != NULL) {
+							plcontext->value = nv;
 						}
 					}
 					
-					context->value[context->value_length] = '\0';
-					context->configuration->value = context->value;
-					context->value = NULL;
-					context->value_size = 0;
-					context->value_length = 0;
+					plcontext->value[plcontext->value_length] = '\0';
+					plcontext->configuration->value = plcontext->value;
+					plcontext->value = NULL;
+					plcontext->value_size = 0;
+					plcontext->value_length = 0;
 				}
-				context->configuration = context->configuration->parent;
+				plcontext->configuration = plcontext->configuration->parent;
 				
 				/* Restore possible value */
-				if (context->configuration != NULL
-					&& context->configuration->value != NULL) {
-					context->value = context->configuration->value;
-					context->value_length = strlen(context->value);
-					context->value_size = CP_CFG_ELEMENT_VALUE_INITSIZE;
-					while (context->value_size < context->value_length + 1) {
-						context->value_size *= 2;
+				if (plcontext->configuration != NULL
+					&& plcontext->configuration->value != NULL) {
+					plcontext->value = plcontext->configuration->value;
+					plcontext->value_length = strlen(plcontext->value);
+					plcontext->value_size = CP_CFG_ELEMENT_VALUE_INITSIZE;
+					while (plcontext->value_size < plcontext->value_length + 1) {
+						plcontext->value_size *= 2;
 					}
 				}
 				
 			}			
-			if (context->depth-- == 0) {
+			if (plcontext->depth-- == 0) {
 				assert(!strcmp(name, N_("extension")));
-				context->state = PARSER_PLUGIN;
-				XML_SetCharacterDataHandler(context->parser, NULL);
+				plcontext->state = PARSER_PLUGIN;
+				XML_SetCharacterDataHandler(plcontext->parser, NULL);
 			}
 			break;
 			
 		default:
-			descriptor_errorf(context, 0, _("unexpected closing tag for %s"),
+			descriptor_errorf(plcontext, 0, _("unexpected closing tag for %s"),
 				name);
 			return;
 	}
@@ -944,17 +946,18 @@ static void XMLCALL end_element_handler(
 /**
  * Loads a plug-in from the specified path.
  * 
+ * @param context the loading plug-in context
  * @param path the plug-in path
  * @param plugin where to store the pointer to the loaded plug-in
  * @return CP_OK (0) on success, an error code on failure
  */
-static int load_plugin(const char *path, cp_plugin_t **plugin) {
+static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **plugin) {
 	char *file = NULL;
 	const char *postfix = CP_PATHSEP_STR N_("plugin.xml");
 	int status = CP_OK;
 	int fd = -1;
 	XML_Parser parser = NULL;
-	ploader_context_t *context = NULL;
+	ploader_context_t *plcontext = NULL;
 
 	do {
 		int path_len;
@@ -1003,33 +1006,34 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 			end_element_handler);
 		
 		/* Initialize the parsing context */
-		if ((context = malloc(sizeof(ploader_context_t))) == NULL) {
+		if ((plcontext = malloc(sizeof(ploader_context_t))) == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
-		memset(context, 0, sizeof(ploader_context_t));
-		if ((context->plugin = malloc(sizeof(cp_plugin_t))) == NULL) {
+		memset(plcontext, 0, sizeof(ploader_context_t));
+		if ((plcontext->plugin = malloc(sizeof(cp_plugin_t))) == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
-		context->configuration = NULL;
-		context->value = NULL;
-		context->parser = parser;
-		context->file = file;
-		context->state = PARSER_BEGIN;
-		memset(context->plugin, 0, sizeof(cp_plugin_t));
-		context->plugin->name = NULL;
-		context->plugin->identifier = NULL;
-		context->plugin->version = NULL;
-		context->plugin->provider_name = NULL;
-		context->plugin->path = NULL;
-		context->plugin->imports = NULL;
-		context->plugin->lib_path = NULL;
-		context->plugin->start_func_name = NULL;
-		context->plugin->stop_func_name = NULL;
-		context->plugin->ext_points = NULL;
-		context->plugin->extensions = NULL;
-		XML_SetUserData(parser, context);
+		plcontext->configuration = NULL;
+		plcontext->value = NULL;
+		plcontext->parser = parser;
+		plcontext->file = file;
+		plcontext->state = PARSER_BEGIN;
+		memset(plcontext->plugin, 0, sizeof(cp_plugin_t));
+		plcontext->plugin->context = context;
+		plcontext->plugin->name = NULL;
+		plcontext->plugin->identifier = NULL;
+		plcontext->plugin->version = NULL;
+		plcontext->plugin->provider_name = NULL;
+		plcontext->plugin->path = NULL;
+		plcontext->plugin->imports = NULL;
+		plcontext->plugin->lib_path = NULL;
+		plcontext->plugin->start_func_name = NULL;
+		plcontext->plugin->stop_func_name = NULL;
+		plcontext->plugin->ext_points = NULL;
+		plcontext->plugin->extensions = NULL;
+		XML_SetUserData(parser, plcontext);
 
 		/* Parse the plug-in descriptor */
 		while (1) {
@@ -1053,13 +1057,14 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 
 			/* Parse the data */
 			if (!(i = XML_ParseBuffer(parser, bytes_read, bytes_read == 0))) {
-				cpi_errorf(_("XML parsing error in %s, line %d, column %d (%s)."),
+				cpi_errorf(context,
+					_("XML parsing error in %s, line %d, column %d (%s)."),
 					file,
 					XML_GetErrorLineNumber(parser),
 					XML_GetErrorColumnNumber(parser) + 1,
 					XML_ErrorString(XML_GetErrorCode(parser)));
 			}
-			if (!i || context->state == PARSER_ERROR) {
+			if (!i || plcontext->state == PARSER_ERROR) {
 				status = CP_ERR_MALFORMED;
 				break;
 			}
@@ -1069,10 +1074,10 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 			}
 		}
 		if (status == CP_OK) {
-			if (context->state != PARSER_END || context->error_count > 0) {
+			if (plcontext->state != PARSER_END || plcontext->error_count > 0) {
 				status = CP_ERR_MALFORMED;
 			}
-			if (context->resource_error_count > 0) {
+			if (plcontext->resource_error_count > 0) {
 				status = CP_ERR_RESOURCE;
 			}
 		}
@@ -1082,7 +1087,7 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 
 		/* Initialize the plug-in path */
 		*(file + path_len) = '\0';
-		context->plugin->path = file;
+		plcontext->plugin->path = file;
 		file = NULL;
 		
 	} while (0);
@@ -1090,13 +1095,16 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 	/* Report possible errors */
 	switch (status) {
 		case CP_ERR_MALFORMED:
-			cpi_errorf(_("Encountered a malformed descriptor while loading a plug-in from %s."), path);
+			cpi_errorf(context,
+				_("Encountered a malformed descriptor while loading a plug-in from %s."), path);
 			break;
 		case CP_ERR_IO:
-			cpi_errorf(_("An I/O error occurred while loading a plug-in from %s."), path);
+			cpi_errorf(context,
+				_("An I/O error occurred while loading a plug-in from %s."), path);
 			break;
 		case CP_ERR_RESOURCE:
-			cpi_errorf(_("Insufficient resources to load a plug-in from %s."), path);
+			cpi_errorf(context,
+				_("Insufficient resources to load a plug-in from %s."), path);
 			break;
 	}
 
@@ -1106,15 +1114,15 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 			free(file);
 			file = NULL;
 		}
-		if (context != NULL && context->plugin != NULL) {
-			cpi_free_plugin(context->plugin);
-			context->plugin = NULL;
+		if (plcontext != NULL && plcontext->plugin != NULL) {
+			cpi_free_plugin(plcontext->plugin);
+			plcontext->plugin = NULL;
 		}
 	}
 
 	/* Otherwise, set plug-in pointer */
 	else {
-		(*plugin) = context->plugin;
+		(*plugin) = plcontext->plugin;
 	}
 	
 	/* Release data allocated for parsing */
@@ -1124,18 +1132,18 @@ static int load_plugin(const char *path, cp_plugin_t **plugin) {
 	if (fd != -1) {
 		close(fd);
 	}
-	if (context != NULL) {
-		if (context->value != NULL) {
-			free(context->value);
+	if (plcontext != NULL) {
+		if (plcontext->value != NULL) {
+			free(plcontext->value);
 		}
-		free(context);
-		context = NULL;
+		free(plcontext);
+		plcontext = NULL;
 	}
 
 	return status;
 }
 
-const cp_plugin_t * CP_API cp_load_plugin(const char *path, int *error) {
+const cp_plugin_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int *error) {
 	cp_plugin_t *plugin = NULL;
 	int status;
 
@@ -1143,13 +1151,13 @@ const cp_plugin_t * CP_API cp_load_plugin(const char *path, int *error) {
 	do {
 
 		/* Load the plug-in */
-		status = load_plugin(path, &plugin);
+		status = load_plugin(context, path, &plugin);
 		if (status != CP_OK) {
 			break;
 		}
 
 		/* Register the plug-in */
-		status = cpi_install_plugin(plugin, 1);
+		status = cpi_install_plugin(context, plugin, 1);
 		if (status != CP_OK) {
 			break;
 		}
@@ -1172,8 +1180,7 @@ const cp_plugin_t * CP_API cp_load_plugin(const char *path, int *error) {
 	return plugin;
 }
 
-int CP_API cp_rescan_plugins(const char *dir, int flags) {
-	assert(dir != NULL);
+int CP_API cp_rescan_plugins(cp_context_t *context, int flags) {
 	/* TODO */
 	return CP_ERR_UNSPECIFIED;
 }

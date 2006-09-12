@@ -3,6 +3,8 @@
  * Copyright 2005-2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
+/* TODO: Rename to context.c */
+
 /*
  * C-Pluff core functionality and variables
  */
@@ -11,14 +13,16 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <stdarg.h>
-#if defined(CP_THREADS_POSIX)
+#include <string.h>
+#ifdef CP_THREADS_POSIX
 #include <pthread.h>
-#elif defined(CP_THREADS_WINDOWS)
+#endif
+#ifdef CP_THREADS_WINDOWS
 #include <windows.h>
 #endif
 #include "cpluff.h"
 #include "core.h"
-#include "pcontrol.h"
+#include "util.h"
 #include "kazlib/list.h"
 
 /* ------------------------------------------------------------------------
@@ -27,19 +31,31 @@
 
 /**
  * A holder structure for error handler pointers. For ISO C conformance
- * (to avoid conversions between function and object pointers).
+ * (to avoid conversions between function and object pointers) and to pass
+ * context information.
  */
 typedef struct eh_holder_t {
 	cp_error_handler_t error_handler;
+	cp_context_t *context;
 } eh_holder_t;
 
 /**
  * A holder structure for event listener pointers. For ISO C conformance
- * (to avoid conversions between function and object pointers).
+ * (to avoid conversions between function and object pointers) and to pass
+ * context information.
  */
 typedef struct el_holder_t {
 	cp_event_listener_t event_listener;
+	cp_context_t *context;
 } el_holder_t;
+
+/**
+ * A holder structure for error handler parameters.
+ */
+typedef struct eh_params_t {
+	cp_context_t *context;
+	char *msg;
+} eh_params_t;
 
 
 /* ------------------------------------------------------------------------
@@ -100,12 +116,12 @@ static void process_error(list_t *list, lnode_t *node, void *msg);
  * 
  * @param list the list being processed
  * @param node the node being processed
- * @param event the event being delivered
+ * @param event the event
  */
 static void process_event(list_t *list, lnode_t *node, void *event);
 
 
-#if defined(CP_THREADS_POSIX) || defined(CP_THREADS_WINDOWS)
+#ifdef CP_THREADS
 
 /**
  * Locks the data mutex.
@@ -138,31 +154,21 @@ static char *get_win_errormsg(DWORD error, char *buffer, size_t size);
  * Variables
  * ----------------------------------------------------------------------*/
 
-/** Initialization count */
-static int init_count = 0;
-
-/** Installed error handlers */
-static list_t *error_handlers = NULL;
-
-/** Installed event listeners */
-static list_t *event_listeners = NULL;
+/** Whether gettext has been initialized */
+static int gettext_initialized = 0;
 
 /* Recursive mutex implementation for data access */
 #if defined(CP_THREADS_POSIX)
-
 static pthread_mutex_t data_mutex = PTHREAD_MUTEX_INITIALIZER;
 static pthread_cond_t data_cond = PTHREAD_COND_INITIALIZER;
 static unsigned int data_lock_count = 0;
 static pthread_t data_thread;
-
 #elif defined(CP_THREADS_WINDOWS)
-
 static HANDLE data_mutex = NULL;
 static HANDLE data_event = NULL;
 static unsigned int data_wait_count = 0;
 static unsigned int data_lock_count = 0;
 static DWORD data_thread;
-
 #endif
 
 
@@ -203,31 +209,55 @@ static int comp_el_holder(const void *h1, const void *h2) {
 
 static void process_error(list_t *list, lnode_t *node, void *msg) {
 	eh_holder_t *h = lnode_get(node);
-	h->error_handler(msg);
+	h->error_handler(h->context, msg);
 }
 
 static void process_event(list_t *list, lnode_t *node, void *event) {
 	el_holder_t *h = lnode_get(node);
-	h->event_listener(event);
+	h->event_listener(h->context, event);
 }
 
 
 /* Initialization and destroy */
 
-int CP_API cp_init(cp_error_handler_t error_handler) {
+cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *error) {
+	cp_context_t *context = NULL;
 	int status = CP_OK;
 
-	/* Check if already initialized */
-	if (init_count++ > 0) {
-		return status;
-	}
-	
 	/* Initialize internal state */
 	do {
 	
 		/* Gettext initialization */
-		bindtextdomain(PACKAGE, CP_DATADIR "/locale");
+		// TODO: threading
+		if (!gettext_initialized) {
+			gettext_initialized = 1;
+			bindtextdomain(PACKAGE, CP_DATADIR "/locale");
+		}
+		
+		/* Allocate memory for the context */
+		if ((context = malloc(sizeof(cp_context_t))) == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}		
 	
+		/* Initialize data structures as necessary */
+		memset(context, 0, sizeof(cp_context_t));
+		context->error_handlers = list_create(LISTCOUNT_T_MAX);
+		context->event_listeners = list_create(LISTCOUNT_T_MAX);
+		context->plugins = hash_create(HASHCOUNT_T_MAX,
+			(int (*)(const void *, const void *)) strcmp, NULL);
+		context->started_plugins = list_create(LISTCOUNT_T_MAX);
+		context->used_plugins = hash_create(HASHCOUNT_T_MAX,
+			cpi_comp_ptr, cpi_hashfunc_ptr);
+		if (context->error_handlers == NULL
+			|| context->event_listeners == NULL
+			|| context->plugins == NULL
+			|| context->started_plugins == NULL
+			|| context->used_plugins == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+
 #ifdef CP_THREADS_WINDOWS
 		/* Initialize IPC resources */
 		if ((data_mutex = CreateMutex(NULL, FALSE, NULL)) != NULL) {
@@ -237,67 +267,78 @@ int CP_API cp_init(cp_error_handler_t error_handler) {
 			if (error_handler != NULL) {
 				char buffer[256];
 				DWORD ec = GetLastError();				
-				cpi_herrorf(error_handler, _("IPC resources could not be initialized due to error %ld: %s"), (long) ec, get_win_errormsg(ec, buffer, sizeof(buffer));
+				cpi_herrorf(NULL, error_handler, _("IPC resources could not be initialized due to error %ld: %s"), (long) ec, get_win_errormsg(ec, buffer, sizeof(buffer));
 			}
 			status = CP_ERR_RESOURCE;
 			break;
 		}
 #endif
 	
-		/* Initialize data structures as necessary */
-		if ((error_handlers = list_create(LISTCOUNT_T_MAX)) != NULL) {
-			event_listeners = list_create(LISTCOUNT_T_MAX);		
-		}
-		if (event_listeners == NULL) {
-			cpi_herror(error_handler, _("Internal data structures could not be initialized due to insufficient resources."));
-			status = CP_ERR_RESOURCE;
-			break;
-		}
-
 		/* Register initial error handler */
 		if (error_handler != NULL) {
-			status = cp_add_error_handler(error_handler);
-			if (status != CP_OK) {
-				cpi_herror(error_handler, _("The initial error handler could not be registered due to insufficient resources."));
+			if (cp_add_error_handler(context, error_handler) != CP_OK) {
+				status = CP_ERR_RESOURCE;
 				break;
 			}
 		}
 		
-		/* Initialize plug-in controlling component */
-		status = cpi_init_plugins();
-		
 	} while (0);
 	
+	/* Report failure */
+	switch (status) {
+		
+		case CP_ERR_RESOURCE:
+			cpi_herror(NULL, error_handler, _("Plug-in context could not be created due to insufficient system resources."));
+			break;
+	}
+	
 	/* Rollback initialization on failure */
-	if (status != CP_OK) {
-		cp_destroy();
+	if (status != CP_OK && context != NULL) {
+		cp_destroy_context(context);
+		context = NULL;
 	}
 
 	/* Return the final status */
-	return status;
+	if (error != NULL) {
+		*error = status;
+	}
+	
+	/* Return the context (or NULL on failure) */
+	return context;
 }
 
-void CP_API cp_destroy(void) {
+void CP_API cp_destroy_context(cp_context_t *context) {
 
-	/* Check if still to be kept initialized */
-	if (--init_count > 0) {
-		return;
+	/* Unload all plug-ins */
+	if (context->plugins != NULL && !hash_isempty(context->plugins)) {
+		cp_unload_all_plugins(context);
 	}
-	assert(init_count == 0);
-	
-	/* Destroy plug-in controlling component */
-	cpi_destroy_plugins();
 	
 	/* Release data structures */
-	if (error_handlers != NULL) {
-		list_process(error_handlers, NULL, process_free_eh_holder);
-		list_destroy(error_handlers);
-		error_handlers = NULL;
+	if (context->plugins != NULL) {
+		assert(hash_isempty(context->plugins));
+		hash_destroy(context->plugins);
+		context->plugins = NULL;
 	}
-	if (event_listeners != NULL) {
-		list_process(event_listeners, NULL, process_free_el_holder);
-		list_destroy(event_listeners);
-		event_listeners = NULL;
+	if (context->started_plugins != NULL) {
+		assert(list_isempty(context->started_plugins));
+		list_destroy(context->started_plugins);
+		context->started_plugins = NULL;
+	}
+	if (context->used_plugins != NULL) {
+		hash_free_nodes(context->used_plugins);
+		hash_destroy(context->used_plugins);
+		context->used_plugins = NULL;
+	}
+	if (context->error_handlers != NULL) {
+		list_process(context->error_handlers, NULL, process_free_eh_holder);
+		list_destroy(context->error_handlers);
+		context->error_handlers = NULL;
+	}
+	if (context->event_listeners != NULL) {
+		list_process(context->event_listeners, NULL, process_free_el_holder);
+		list_destroy(context->event_listeners);
+		context->event_listeners = NULL;
 	}
 
 #ifdef CP_THREADS_WINDOWS
@@ -317,51 +358,52 @@ void CP_API cp_destroy(void) {
 
 /* Error handling */
 
-int CP_API cp_add_error_handler(cp_error_handler_t error_handler) {
+int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_handler) {
 	int status = CP_ERR_RESOURCE;
 	eh_holder_t *holder;
 	lnode_t *node;
 	
 	assert(error_handler != NULL);
 	
-	cpi_acquire_data();
+	cpi_lock_context(context);
 	if ((holder = malloc(sizeof(eh_holder_t))) != NULL) {
 		holder->error_handler = error_handler;
 		if ((node = lnode_create(holder)) != NULL) {
-			list_append(error_handlers, node);
+			list_append(context->error_handlers, node);
 			status = CP_OK;
 		} else {
 			free(holder);
 		}
 	}
-	cpi_release_data();
+	cpi_unlock_context(context);
 	if (status != CP_OK) {
-		cpi_error(_("An error handler could not be registered due to insufficient resources."));
+		cpi_error(context,_("An error handler could not be registered due to insufficient system resources."));
 	}
 	return status;
 }
 
-void CP_API cp_remove_error_handler(cp_error_handler_t error_handler) {
+int CP_API cp_remove_error_handler(cp_context_t *context, cp_error_handler_t error_handler) {
 	eh_holder_t holder;
 	lnode_t *node;
 	
 	holder.error_handler = error_handler;
-	cpi_acquire_data();
-	node = list_find(error_handlers, &holder, comp_eh_holder);
+	cpi_lock_context(context);
+	node = list_find(context->error_handlers, &holder, comp_eh_holder);
 	if (node != NULL) {
-		process_free_eh_holder(error_handlers, node, NULL);
+		process_free_eh_holder(context->error_handlers, node, NULL);
 	}
-	cpi_release_data();
+	cpi_unlock_context(context);
+	return CP_OK;
 }
 
-void CP_LOCAL cpi_error(const char *msg) {
+void CP_LOCAL cpi_error(cp_context_t *context, const char *msg) {
 	assert(msg != NULL);
-	cpi_acquire_data();
-	list_process(error_handlers, (void *) msg, process_error);
-	cpi_release_data();
+	cpi_lock_context(context);
+	list_process(context->error_handlers, (void *) msg, process_error);
+	cpi_unlock_context(context);
 }
 
-void CP_LOCAL cpi_errorf(const char *msg, ...) {
+void CP_LOCAL cpi_errorf(cp_context_t *context, const char *msg, ...) {
 	va_list params;
 	char fmsg[256];
 	
@@ -370,17 +412,17 @@ void CP_LOCAL cpi_errorf(const char *msg, ...) {
 	vsnprintf(fmsg, sizeof(fmsg), msg, params);
 	va_end(params);
 	fmsg[sizeof(fmsg)/sizeof(char) - 1] = '\0';
-	cpi_error(fmsg);
+	cpi_error(context, fmsg);
 }
 
-void CP_LOCAL cpi_herror(cp_error_handler_t error_handler, const char *msg) {
+void CP_LOCAL cpi_herror(cp_context_t *context, cp_error_handler_t error_handler, const char *msg) {
 	assert(msg != NULL);
 	if (error_handler != NULL) {
-		error_handler(msg);
+		error_handler(context, msg);
 	}
 }
 
-void CP_LOCAL cpi_herrorf(cp_error_handler_t error_handler, const char *msg, ...) {
+void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handler, const char *msg, ...) {
 	va_list params;
 	char fmsg[256];
 	
@@ -389,61 +431,62 @@ void CP_LOCAL cpi_herrorf(cp_error_handler_t error_handler, const char *msg, ...
 	vsnprintf(fmsg, sizeof(fmsg), msg, params);
 	va_end(params);
 	fmsg[sizeof(fmsg)/sizeof(char) - 1] = '\0';
-	cpi_herror(error_handler, msg);
+	cpi_herror(context, error_handler, msg);
 }
 
 
 /* Event listeners */
 
-int CP_API cp_add_event_listener(cp_event_listener_t event_listener) {
+int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t event_listener) {
 	int status = CP_ERR_RESOURCE;
 	el_holder_t *holder;
 	lnode_t *node;
 
 	assert(event_listener != NULL);
 	
-	cpi_acquire_data();
+	cpi_lock_context(context);
 	if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
 		holder->event_listener = event_listener;
 		if ((node = lnode_create(holder)) != NULL) {
-			list_append(event_listeners, node);
+			list_append(context->event_listeners, node);
 			status = CP_OK;
 		} else {
 			free(holder);
 		}
 	}
-	cpi_release_data();
+	cpi_unlock_context(context);
 	if (status != CP_OK) {
-		cpi_error(_("An event listener could not be registered due to insufficient resources."));
+		cpi_error(context, _("An event listener could not be registered due to insufficient system resources."));
 	}
 	return status;
 }
 
-void CP_API cp_remove_event_listener(cp_event_listener_t event_listener) {
+int CP_API cp_remove_event_listener(cp_context_t *context, cp_event_listener_t event_listener) {
 	el_holder_t holder;
 	lnode_t *node;
 	
 	holder.event_listener = event_listener;
-	cpi_acquire_data();
-	node = list_find(event_listeners, &holder, comp_el_holder);
+	cpi_lock_context(context);
+	node = list_find(context->event_listeners, &holder, comp_el_holder);
 	if (node != NULL) {
-		process_free_el_holder(event_listeners, node, NULL);
+		process_free_el_holder(context->event_listeners, node, NULL);
 	}
-	cpi_release_data();
+	cpi_unlock_context(context);
+	return CP_OK;
 }
 
-void CP_LOCAL cpi_deliver_event(const cp_plugin_event_t *event) {
+void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *event) {
 	assert(event != NULL);
 	assert(event->plugin_id != NULL);
-	cpi_acquire_data();
-	list_process(event_listeners, (void *) event, process_event);
-	cpi_release_data();
+	cpi_lock_context(context);
+	list_process(context->event_listeners, (void *) event, process_event);
+	cpi_unlock_context(context);
 }
 
 
 /* Locking */
 
-void CP_LOCAL cpi_acquire_data(void) {
+void CP_LOCAL cpi_lock_context(cp_context_t *context) {
 #if defined(CP_THREADS_POSIX)
 	pthread_t self = pthread_self();
 	lock_mutex();
@@ -486,7 +529,7 @@ void CP_LOCAL cpi_acquire_data(void) {
 #endif
 }
 
-void CP_LOCAL cpi_release_data(void) {
+void CP_LOCAL cpi_unlock_context(cp_context_t *context) {
 #if defined(CP_THREADS_POSIX)
 	lock_mutex();
 	assert(pthread_equal(pthread_self(), data_thread));

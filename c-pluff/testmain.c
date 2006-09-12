@@ -8,8 +8,6 @@
 #include <assert.h>
 #include "cpluff.h"
 
-static void error_handler(const char *msg);
-
 static const char *strnull(const char *str) {
 	return (str != NULL ? str : "<NULL>");
 }
@@ -46,17 +44,23 @@ static void print_configuration(int indentation, const cp_cfg_element_t *conf) {
 	}
 }
 
+static void error_handler(cp_context_t *context, const char *msg) {
+	fputs(msg, stderr);
+	fputc('\n', stderr);
+}
+
 int main(int argc, char *argv[]) {
+	cp_context_t *context;
 	int i;
 	
-	if (cp_init(error_handler) != CP_OK) {
+	if ((context = cp_create_context(error_handler, NULL)) == NULL) {
 		exit(1);
 	}
 	if (argc > 1) {
 		const cp_plugin_t *plugin;
 		
 		printf("Loading plug-in from %s.\n", argv[1]);
-		if ((plugin = cp_load_plugin(argv[1], NULL)) != NULL) {
+		if ((plugin = cp_load_plugin(context, argv[1], NULL)) != NULL) {
 			printf("  name: %s\n", strnull(plugin->name));
 			printf("  identifier: %s\n", strnull(plugin->identifier));
 			printf("  version: %s\n", strnull(plugin->version));
@@ -97,11 +101,6 @@ int main(int argc, char *argv[]) {
 			cp_release_plugin(plugin);
 		}
 	}
-	cp_destroy();
+	cp_destroy_context(context);
 	return 0;
-}
-
-static void error_handler(const char *msg) {
-	fputs(msg, stderr);
-	fputc('\n', stderr);
 }

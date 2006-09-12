@@ -66,97 +66,23 @@ struct registered_plugin_t {
 
 
 /* ------------------------------------------------------------------------
- * Variables
- * ----------------------------------------------------------------------*/
-
-/** Maps plug-in identifiers to plug-in state structures */
-static hash_t *plugins = NULL;
-
-/** List of started plug-ins in the order they were started */
-static list_t *started_plugins = NULL;
-
-/** Hash of in-use registered plug-ins by plugin pointer */
-static hash_t *used_plugins = NULL;
-
-
-/* ------------------------------------------------------------------------
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-/* Initiliazation and destruction */
-
-int CP_LOCAL cpi_init_plugins(void) {
-	int status = CP_OK;
-	
-	do {
-	
-		/* Initialize data structures */
-		plugins = hash_create(HASHCOUNT_T_MAX,
-			(int (*)(const void *, const void *)) strcmp, NULL);
-		if (plugins == NULL) {
-			status = CP_ERR_RESOURCE;
-			break;
-		}
-		started_plugins = list_create(LISTCOUNT_T_MAX);
-		if (started_plugins == NULL) {
-			status = CP_ERR_RESOURCE;
-			break;
-		}
-		used_plugins = hash_create(HASHCOUNT_T_MAX,
-			cpi_comp_ptr, cpi_hashfunc_ptr);
-		if (used_plugins == NULL) {
-			status = CP_ERR_RESOURCE;
-			break;
-		}
-		
-	} while (0);
-	if (status != CP_OK) {
-		cpi_destroy_plugins();
-		cpi_error(_("Initialization of internal data structures failed due to insufficient resources."));
-	}
-	return status;
-}
-
-void CP_LOCAL cpi_destroy_plugins(void) {
-	
-	/* Unload all plug-ins */
-	if (plugins != NULL && !hash_isempty(plugins)) {
-		cp_unload_all_plugins();
-	}
-	
-	/* Release data structures */
-	if (plugins != NULL) {
-		assert(hash_isempty(plugins));
-		hash_destroy(plugins);
-		plugins = NULL;
-	}
-	if (started_plugins != NULL) {
-		assert(list_isempty(started_plugins));
-		list_destroy(started_plugins);
-		started_plugins = NULL;
-	}
-	if (used_plugins != NULL) {
-		hash_free_nodes(used_plugins);
-		hash_destroy(used_plugins);
-		used_plugins = NULL;
-	}
-}
-
-
 /* Plug-in control */
 
-int CP_LOCAL cpi_install_plugin(const cp_plugin_t *plugin, unsigned int use_count) {
+int CP_LOCAL cpi_install_plugin(cp_context_t *context, cp_plugin_t *plugin, unsigned int use_count) {
 	registered_plugin_t *rp;
 	int status = CP_OK;
 	cp_plugin_event_t event;
 
 	assert(plugin != NULL);
 	
-	cpi_acquire_data();
+	cpi_lock_context(context);
 	do {
 
 		/* Check that there is no conflicting plug-in already loaded */
-		if (hash_lookup(plugins, plugin->identifier) != NULL) {
+		if (hash_lookup(context->plugins, plugin->identifier) != NULL) {
 			status = CP_ERR_CONFLICT;
 			break;
 		}
@@ -182,19 +108,19 @@ int CP_LOCAL cpi_install_plugin(const cp_plugin_t *plugin, unsigned int use_coun
 			status = CP_ERR_RESOURCE;
 			break;
 		}
-		if (!hash_alloc_insert(plugins, plugin->identifier, rp)) {
+		if (!hash_alloc_insert(context->plugins, plugin->identifier, rp)) {
 			list_destroy(rp->importing);
 			free(rp);
 			status = CP_ERR_RESOURCE;
 			break;
 		}
 		if (use_count != 0) {
-			if (!hash_alloc_insert(used_plugins, rp->plugin, rp)) {
+			if (!hash_alloc_insert(context->used_plugins, rp->plugin, rp)) {
 				hnode_t *node;
 				
-				node = hash_lookup(plugins, plugin->identifier);
+				node = hash_lookup(context->plugins, plugin->identifier);
 				assert(node != NULL);
-				hash_delete_free(plugins, node);
+				hash_delete_free(context->plugins, node);
 				list_destroy(rp->importing);
 				free(rp);
 				status = CP_ERR_RESOURCE;
@@ -206,23 +132,26 @@ int CP_LOCAL cpi_install_plugin(const cp_plugin_t *plugin, unsigned int use_coun
 		event.plugin_id = plugin->identifier;
 		event.old_state = CP_PLUGIN_UNINSTALLED;
 		event.new_state = rp->state;
-		cpi_deliver_event(&event);
+		cpi_deliver_event(context, &event);
 
 	} while (0);
-	cpi_release_data();
+	cpi_unlock_context(context);
 
 	switch (status) {
 		case CP_OK:
 			break;
 		case CP_ERR_CONFLICT:
-			cpi_errorf(_("Plug-in %s could not be installed because a plug-in with the same identifier is already installed."), 
+			cpi_errorf(context,
+				_("Plug-in %s could not be installed because a plug-in with the same identifier is already installed."), 
 				plugin->identifier);
 			break;
 		case CP_ERR_RESOURCE:
-			cpi_errorf(_("Plug-in %s could not be installed due to insufficient resources."), plugin->identifier);
+			cpi_errorf(context,
+				_("Plug-in %s could not be installed due to insufficient resources."), plugin->identifier);
 			break;
 		default:
-			cpi_errorf(_("Could not register plug-in %s."), plugin->identifier);
+			cpi_errorf(context,
+				_("Could not register plug-in %s."), plugin->identifier);
 			break;
 	}
 	return status;
@@ -268,12 +197,13 @@ static void unresolve_preliminary_plugin(registered_plugin_t *plugin) {
  * circular dependencies are only preliminary resolved (listeners are
  * not informed).
  * 
+ * @param context the plug-in context
  * @param plugin the plug-in to be resolved
  * @param preliminary list of preliminarily resolved plug-ins
  * @return CP_OK (0) or CP_OK_PRELIMINARY (1) on success, an error code on failure
  */
 static int resolve_plugin_rec
-(registered_plugin_t *plugin, list_t *preliminary) {
+(cp_context_t *context, registered_plugin_t *plugin, list_t *preliminary) {
 	int i;
 	int status = CP_OK;
 	
@@ -306,7 +236,7 @@ static int resolve_plugin_rec
 		int rc;
 		
 		/* Lookup the plug-in */
-		node = hash_lookup(plugins, plugin->plugin->imports[i].plugin_id);
+		node = hash_lookup(context->plugins, plugin->plugin->imports[i].plugin_id);
 		if (node != NULL) {
 			ip = hnode_get(node);
 		} else {
@@ -317,7 +247,7 @@ static int resolve_plugin_rec
 		
 		/* Try to resolve the plugin */
 		if (ip != NULL) {
-			rc = resolve_plugin_rec(ip, preliminary);
+			rc = resolve_plugin_rec(context, ip, preliminary);
 		} else {
 			rc = CP_OK;
 		}
@@ -337,11 +267,13 @@ static int resolve_plugin_rec
 		/* Otherwise check if the failed import was mandatory */
 		else if (!(plugin->plugin->imports[i].optional)) {
 			if (plugin == NULL) {
-				cpi_errorf(_("Plug-in %s could not be resolved because it depends on plug-in %s which is not installed."),
+				cpi_errorf(context,
+					_("Plug-in %s could not be resolved because it depends on plug-in %s which is not installed."),
 					plugin->plugin->identifier,
 					plugin->plugin->imports[i].plugin_id);
 			} else {
-				cpi_errorf(_("Plug-in %s could not be resolved because it depends on plug-in %s which could not be resolved."),
+				cpi_errorf(context,
+					_("Plug-in %s could not be resolved because it depends on plug-in %s which could not be resolved."),
 					plugin->plugin->identifier,
 					plugin->plugin->imports[i].plugin_id);
 			}
@@ -365,7 +297,8 @@ static int resolve_plugin_rec
 		
 		/* Report possible resource allocation problem */
 		if (status == CP_ERR_RESOURCE) {
-			cpi_errorf(_("Could not resolve plug-in %s due to insufficient resources."), plugin->plugin->identifier);
+			cpi_errorf(context,
+				_("Could not resolve plug-in %s due to insufficient resources."), plugin->plugin->identifier);
 		}
 	
 		/* 
@@ -376,7 +309,8 @@ static int resolve_plugin_rec
 			registered_plugin_t *ip = lnode_get(node);
 			unresolve_preliminary_plugin(ip);
 			if (cpi_ptrset_remove(preliminary, ip)) {
-				cpi_errorf(_("Preliminarily resolved plug-in %s failed to fully resolve because of failed circular dependencies."),
+				cpi_errorf(context,
+					_("Preliminarily resolved plug-in %s failed to fully resolve because of failed circular dependencies."),
 					ip->plugin->identifier);
 			}
 			assert(!cpi_ptrset_contains(plugin->importing, ip));
@@ -401,7 +335,7 @@ static int resolve_plugin_rec
 		event.plugin_id = plugin->plugin->identifier;
 		event.old_state = plugin->state;
 		event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
-		cpi_deliver_event(&event);
+		cpi_deliver_event(context, &event);
 	}
 	
 	return status;
@@ -411,10 +345,11 @@ static int resolve_plugin_rec
  * Resolves a plug-in. Resolves all dependencies of a plug-in and loads
  * the plug-in runtime library.
  * 
+ * @param context the plug-in context
  * @param plugin the plug-in to be resolved
  * @return CP_OK (0) on success, an error code on failure
  */
-static int resolve_plugin(registered_plugin_t *plugin) {
+static int resolve_plugin(cp_context_t *context, registered_plugin_t *plugin) {
 	list_t *preliminary;
 	int status;
 	lnode_t *node;
@@ -429,12 +364,13 @@ static int resolve_plugin(registered_plugin_t *plugin) {
 	/* Create a list for preliminarily resolved plug-ins */
 	preliminary = list_create(LISTCOUNT_T_MAX);
 	if (preliminary == NULL) {
-		cpi_errorf(_("Could not resolve plug-in %s due to insufficient resources."), plugin->plugin->identifier);
+		cpi_errorf(context,
+			_("Could not resolve plug-in %s due to insufficient resources."), plugin->plugin->identifier);
 		return CP_ERR_RESOURCE;
 	}
 	
 	/* Resolve this plug-in recursively */
-	status = resolve_plugin_rec(plugin, preliminary);
+	status = resolve_plugin_rec(context, plugin, preliminary);
 	
 	/* All plug-ins left in the preliminary list are successfully resolved */
 	while((node = list_first(preliminary)) != NULL) {
@@ -445,7 +381,7 @@ static int resolve_plugin(registered_plugin_t *plugin) {
 		event.plugin_id = rp->plugin->identifier;
 		event.old_state = CP_PLUGIN_INSTALLED;
 		event.new_state = rp->state;
-		cpi_deliver_event(&event);
+		cpi_deliver_event(context, &event);
 		list_delete(preliminary, node);
 		lnode_destroy(node);
 	}
@@ -459,10 +395,11 @@ static int resolve_plugin(registered_plugin_t *plugin) {
 /**
  * Starts a plug-in.
  * 
+ * @param context the plug-in context
  * @param plugin the plug-in to be started
  * @return CP_OK (0) on success, an error code on failure
  */
-static int start_plugin(registered_plugin_t *plugin) {
+static int start_plugin(cp_context_t *context, registered_plugin_t *plugin) {
 	int status;
 	cp_plugin_event_t event;
 	lnode_t *node;
@@ -473,7 +410,7 @@ static int start_plugin(registered_plugin_t *plugin) {
 	}
 	
 	/* Make sure the plug-in is resolved */
-	status = resolve_plugin(plugin);
+	status = resolve_plugin(context, plugin);
 	if (status != CP_OK) {
 		return status;
 	}
@@ -483,34 +420,36 @@ static int start_plugin(registered_plugin_t *plugin) {
 	event.plugin_id = plugin->plugin->identifier;
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_STARTING;
-	cpi_deliver_event(&event);
+	cpi_deliver_event(context, &event);
 		
 	/* Allocate space for the list node */
 	node = lnode_create(plugin);
 	if (node == NULL) {
-		cpi_errorf(_("Could not start plug-in %s due to insufficient resources."),
+		cpi_errorf(context,
+			_("Could not start plug-in %s due to insufficient resources."),
 			plugin->plugin->identifier);
 		return CP_ERR_RESOURCE;
 	}
 		
 	/* Start the plug-in */
 	if (plugin->start_func != NULL) {
-		if (!plugin->start_func()) {
+		if (!plugin->start_func(context)) {
 			
 			/* Report error */
-			cpi_errorf(_("Plug-in %s failed to start due to runtime error."),
+			cpi_errorf(context,
+				_("Plug-in %s failed to start due to runtime error."),
 				plugin->plugin->identifier);
 				
 			/* Roll back plug-in state */
 			event.old_state = plugin->state;
 			event.new_state = plugin->state = CP_PLUGIN_STOPPING;
-			cpi_deliver_event(&event);
+			cpi_deliver_event(context, &event);
 			if (plugin->stop_func != NULL) {
-				plugin->stop_func();
+				plugin->stop_func(context);
 			}
 			event.old_state = plugin->state;
 			event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
-			cpi_deliver_event(&event);
+			cpi_deliver_event(context, &event);
 			
 			/* Release the list node */
 			lnode_destroy(node);
@@ -520,15 +459,15 @@ static int start_plugin(registered_plugin_t *plugin) {
 	}
 		
 	/* Plug-in started */
-	list_append(started_plugins, node);
+	list_append(context->started_plugins, node);
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_ACTIVE;
-	cpi_deliver_event(&event);
+	cpi_deliver_event(context, &event);
 	
 	return CP_OK;
 }
 
-int CP_API cp_start_plugin(const char *id) {
+int CP_API cp_start_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	registered_plugin_t *plugin;
 	int status = CP_OK;
@@ -536,15 +475,15 @@ int CP_API cp_start_plugin(const char *id) {
 	assert(id != NULL);
 
 	/* Look up and start the plug-in */
-	cpi_acquire_data();
-	node = hash_lookup(plugins, id);
+	cpi_lock_context(context);
+	node = hash_lookup(context->plugins, id);
 	if (node != NULL) {
 		plugin = hnode_get(node);
-		status = start_plugin(plugin);
+		status = start_plugin(context, plugin);
 	} else {
 		status = CP_ERR_UNKNOWN;
 	}
-	cpi_release_data();
+	cpi_unlock_context(context);
 
 	return status;
 }
@@ -556,6 +495,7 @@ int CP_API cp_start_plugin(const char *id) {
  */
 static void stop_plugin(registered_plugin_t *plugin) {
 	cp_plugin_event_t event;
+	cp_context_t *context = plugin->plugin->context;
 	
 	/* Check if already stopped */
 	if (plugin->state < CP_PLUGIN_ACTIVE) {
@@ -567,21 +507,21 @@ static void stop_plugin(registered_plugin_t *plugin) {
 	event.plugin_id = plugin->plugin->identifier;
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_STOPPING;
-	cpi_deliver_event(&event);
+	cpi_deliver_event(context, &event);
 		
 	/* Stop the plug-in */
 	if (plugin->stop_func != NULL) {
-		plugin->stop_func();
+		plugin->stop_func(context);
 	}
 		
 	/* Plug-in stopped */
-	cpi_ptrset_remove(started_plugins, plugin);
+	cpi_ptrset_remove(context->started_plugins, plugin);
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
-	cpi_deliver_event(&event);
+	cpi_deliver_event(context, &event);
 }
 
-int CP_API cp_stop_plugin(const char *id) {
+int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	registered_plugin_t *plugin;
 	int status = CP_OK;
@@ -589,31 +529,31 @@ int CP_API cp_stop_plugin(const char *id) {
 	assert(id != NULL);
 
 	/* Look up and stop the plug-in */
-	cpi_acquire_data();
-	node = hash_lookup(plugins, id);
+	cpi_lock_context(context);
+	node = hash_lookup(context->plugins, id);
 	if (node != NULL) {
 		plugin = hnode_get(node);
 		stop_plugin(plugin);
 	} else {
 		status = CP_ERR_UNKNOWN;
 	}
-	cpi_release_data();
+	cpi_unlock_context(context);
 
 	return status;
 }
 
-void CP_API cp_stop_all_plugins(void) {
+void CP_API cp_stop_all_plugins(cp_context_t *context) {
 	lnode_t *node;
 	
 	/* Stop the active plug-ins in the reverse order they were started */
-	cpi_acquire_data();
-	while ((node = list_last(started_plugins)) != NULL) {
+	cpi_lock_context(context);
+	while ((node = list_last(context->started_plugins)) != NULL) {
 		registered_plugin_t *plugin;
 		
 		plugin = lnode_get(node);
 		stop_plugin(plugin);
 	}
-	cpi_release_data();
+	cpi_unlock_context(context);
 }
 
 /**
@@ -672,7 +612,7 @@ static void unresolve_plugin(registered_plugin_t *plugin) {
 	event.plugin_id = plugin->plugin->identifier;
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_INSTALLED;
-	cpi_deliver_event(&event);
+	cpi_deliver_event(plugin->plugin->context, &event);
 }
 
 // TODO
@@ -790,10 +730,10 @@ static void unload_plugin(hnode_t *node) {
 	event.plugin_id = plugin->plugin->identifier;
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_UNINSTALLED;
-	cpi_deliver_event(&event);
+	cpi_deliver_event(plugin->plugin->context, &event);
 	
 	/* Unregister the plug-in */
-	hash_delete_free(plugins, node);
+	hash_delete_free(plugin->plugin->context->plugins, node);
 
 	/* Free the plug-in data structures if they are not needed anymore */
 	if (plugin->use_count == 0) {
@@ -802,41 +742,41 @@ static void unload_plugin(hnode_t *node) {
 	
 }
 
-int CP_API cp_unload_plugin(const char *id) {
+int CP_API cp_unload_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	int status = CP_OK;
 
 	assert(id != NULL);
 
 	/* Look up and unload the plug-in */
-	cpi_acquire_data();
-	node = hash_lookup(plugins, id);
+	cpi_lock_context(context);
+	node = hash_lookup(context->plugins, id);
 	if (node != NULL) {
 		unload_plugin(node);
 	} else {
 		status = CP_ERR_UNKNOWN;
 	}
-	cpi_release_data();
+	cpi_unlock_context(context);
 
 	return status;
 }
 
-void CP_API cp_unload_all_plugins(void) {
+void CP_API cp_unload_all_plugins(cp_context_t *context) {
 	hscan_t scan;
 	hnode_t *node;
 	
-	cpi_acquire_data();
-	cp_stop_all_plugins();
+	cpi_lock_context(context);
+	cp_stop_all_plugins(context);
 	do {
-		hash_scan_begin(&scan, plugins);
+		hash_scan_begin(&scan, context->plugins);
 		if ((node = hash_scan_next(&scan)) != NULL) {
 			unload_plugin(node);
 		}
 	} while (node != NULL);
-	cpi_release_data();
+	cpi_unlock_context(context);
 }
 
-const cp_plugin_t * CP_API cp_get_plugin(const char *id, int *error) {
+const cp_plugin_t * CP_API cp_get_plugin(cp_context_t *context, const char *id, int *error) {
 	hnode_t *node;
 	const cp_plugin_t *plugin;
 	int status = CP_OK;
@@ -844,15 +784,15 @@ const cp_plugin_t * CP_API cp_get_plugin(const char *id, int *error) {
 	assert(id != NULL);
 
 	/* Look up the plug-in and return information */
-	cpi_acquire_data();
-	node = hash_lookup(plugins, id);
+	cpi_lock_context(context);
+	node = hash_lookup(context->plugins, id);
 	if (node != NULL) {
 		registered_plugin_t *rp = hnode_get(node);
 		
-		if (!hash_alloc_insert(used_plugins, rp->plugin, rp)) {
+		if (!hash_alloc_insert(context->used_plugins, rp->plugin, rp)) {
 			plugin = NULL;
 			status = CP_ERR_RESOURCE;
-			cpi_error(_("Insufficient resources to return plug-in information."));
+			cpi_error(context, _("Insufficient resources to return plug-in information."));
 		} else {
 			rp->use_count++;
 			plugin = rp->plugin;
@@ -861,7 +801,7 @@ const cp_plugin_t * CP_API cp_get_plugin(const char *id, int *error) {
 		plugin = NULL;
 		status = CP_ERR_UNKNOWN;
 	}
-	cpi_release_data();
+	cpi_unlock_context(context);
 
 	if (error != NULL) {
 		*error = status;
@@ -876,21 +816,22 @@ void CP_API cp_release_plugin(const cp_plugin_t *plugin) {
 	assert(plugin != NULL);
 	
 	/* Look up the plug-in and return information */
-	cpi_acquire_data();
-	node = hash_lookup(used_plugins, plugin);
+	cpi_lock_context(plugin->context);
+	node = hash_lookup(plugin->context->used_plugins, plugin);
 	if (node == NULL) {
-		cpi_errorf(_("Attempt to release plug-in %s which is not in use."),
+		cpi_errorf(plugin->context,
+			_("Attempt to release plug-in %s which is not in use."),
 			plugin->identifier);
 		return;
 	}
 	rp = (registered_plugin_t *) hnode_get(node);
 	rp->use_count--;
 	if (rp->use_count == 0) {
-		hash_delete_free(used_plugins, node);
+		hash_delete_free(plugin->context->used_plugins, node);
 		if (rp->state == CP_PLUGIN_UNINSTALLED) {
 			free_registered_plugin(rp);
 		}
 	}
-	cpi_release_data();
+	cpi_unlock_context(plugin->context);
 }
 
