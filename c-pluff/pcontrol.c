@@ -16,7 +16,7 @@
 #include <dlfcn.h>
 #endif
 #include "cpluff.h"
-#include "core.h"
+#include "context.h"
 #include "pcontrol.h"
 #include "util.h"
 #include "kazlib/list.h"

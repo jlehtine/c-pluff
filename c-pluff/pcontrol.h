@@ -6,7 +6,7 @@
 #ifndef _PLUGIN_H_
 #define _PLUGIN_H_
 
-#include "core.h"
+#include "context.h"
 
 #ifdef __cplusplus
 extern "C" {

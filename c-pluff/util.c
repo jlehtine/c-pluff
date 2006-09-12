@@ -4,7 +4,7 @@
  *-----------------------------------------------------------------------*/
 
 #include <stdio.h>
-#include "core.h"
+#include "defines.h"
 #include "util.h"
 #include "kazlib/list.h"
 

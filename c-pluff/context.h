@@ -3,10 +3,8 @@
  * Copyright 2005-2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/* TODO: Rename to context.h */
-
 /*
- * Core internal declarations
+ * Plug-in context declarations
  */
 
 #ifndef CORE_H_

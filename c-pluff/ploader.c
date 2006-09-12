@@ -18,7 +18,7 @@
 #include <unistd.h>
 #include <expat.h>
 #include "cpluff.h"
-#include "core.h"
+#include "context.h"
 #include "pcontrol.h"
 
 

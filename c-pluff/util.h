@@ -9,7 +9,7 @@
 #define _UTIL_H_
 
 #include "cpluff.h"
-#include "core.h"
+#include "defines.h"
 #include "kazlib/list.h"
 #include "kazlib/hash.h"
 

@@ -3,10 +3,8 @@
  * Copyright 2005-2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/* TODO: Rename to context.c */
-
 /*
- * C-Pluff core functionality and variables
+ * Plug-in context implementation
  */
 
 #include <stdio.h>
