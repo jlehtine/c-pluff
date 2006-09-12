@@ -12,12 +12,12 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = po
 
 lib_LTLIBRARIES = libcpluff.la
-libcpluff_la_SOURCES = ploader.c pcontrol.c core.c util.c kazlib/list.c kazlib/hash.c
+libcpluff_la_SOURCES = ploader.c pcontrol.c context.c util.c kazlib/list.c kazlib/hash.c
 libcpluff_la_CPPFLAGS = -DCP_BUILD -DCP_DATADIR="\"$(datadir)\""
 libcpluff_la_LDFLAGS = -version-info $(APIVERSION)
 
 include_HEADERS = cpluff.h
-noinst_HEADERS = core.h pcontrol.h util.h
+noinst_HEADERS = context.h pcontrol.h util.h
 
 noinst_PROGRAMS = testmain
 testmain_SOURCES = testmain.c

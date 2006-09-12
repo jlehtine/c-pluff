@@ -19,7 +19,7 @@
 #include <windows.h>
 #endif
 #include "cpluff.h"
-#include "core.h"
+#include "context.h"
 #include "util.h"
 #include "kazlib/list.h"
 
