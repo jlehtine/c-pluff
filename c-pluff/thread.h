@@ -5,16 +5,11 @@
 
 /* Generic multi-threading support */
 
-#ifndef _THREAD_H_
-#define _THREAD_H_
+#ifndef THREAD_H_
+#define THREAD_H_
 #ifdef CP_THREADS
 
-#ifdef CP_THREADS_POSIX
-#include <pthread.h>
-#endif
-#ifdef CP_THREADS_WINDOWS
-#include <windows.h>
-#endif
+#include "defines.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,33 +20,8 @@ extern "C" {
  * Data types
  * ----------------------------------------------------------------------*/
 
-/* Building block types */
-#if defined(CP_THREADS_POSIX)
-typedef cpi_os_mutex_t pthread_mutex_t;
-typedef cpi_os_thread_t pthread_t;
-#elif defined(CP_THREADS_WINDOWS)
-typedef cpi_os_mutex_t HANDLE;
-typedef cpi_os_thread_t DWORD;
-#else
-#error Unsupported multi-threading environment
-#endif
-
-/* Mutex type */
-typedef struct cpi_mutex_t {
-
-	/** The current lock count */
-	int lock_count;
-	
-	/** The underlying operating system mutex */
-	cpi_os_mutex_t os_mutex;
-	
-	/** The locking thread if currently locked */
-	cpi_os_thread_t os_thread;
-	
-} cpi_mutex_t;
-
-/* Condition variable type */
-typedef struct cpi_cond_t cpi_cond_t;
+/* A generic mutex implementation */
+typedef struct cpi_mutex_t cpi_mutex_t;
 
 
 /* ------------------------------------------------------------------------
@@ -61,40 +31,52 @@ typedef struct cpi_cond_t cpi_cond_t;
 /* Mutex functions */
 
 /**
- * Initializes a mutex. The mutex is initially available.
+ * Creates a mutex. The mutex is initially available.
  * 
- * @param mutex the mutex
- * @return CP_OK on success, error code on failure
+ * @return the created mutex or NULL if no resources available
  */
-int CP_LOCAL cpi_init_mutex(cpi_mutex_t *mutex);
+cpi_mutex_t * CP_LOCAL cpi_create_mutex(void);
 
 /**
  * Destroys the specified mutex.
  * 
  * @param mutex the mutex
- * @return CP_OK on success, error code on failure
  */
-int CP_LOCAL cpi_destroy_mutex(cpi_mutex_t *mutex);
+void CP_LOCAL cpi_destroy_mutex(cpi_mutex_t *mutex);
 
 /**
  * Waits for the specified mutex to become available and locks it.
+ * If the calling thread has already locked the mutex then the
+ * lock count of the mutex is increased.
  * 
  * @param mutex the mutex
- * @return CP_OK on success, error code on failure
  */
-int CP_LOCAL cpi_lock_mutex(cpi_mutex_t *mutex);
+void CP_LOCAL cpi_lock_mutex(cpi_mutex_t *mutex);
 
 /**
  * Unlocks the specified mutex which must have been previously locked
- * by this thread.
+ * by this thread. If there has been several calls to cpi_lock_mutex
+ * by the same thread then the mutex is unlocked only after corresponding
+ * number of unlock requests.
  * 
  * @param mutex the mutex
- * @return CP_OK on success, error code on failure
  */
-int CP_LOCAL cpi_unlock_mutex(cpi_mutex_t *mutex);
+void CP_LOCAL cpi_unlock_mutex(cpi_mutex_t *mutex);
 
+#if !defined(NDEBUG)
+
+/**
+ * Returns whether the mutex is currently locked. This function
+ * is only intended to be used for assertions. The returned state
+ * reflects the state of the mutex only at the time of inspection.
+ */
+int CP_LOCAL cpi_is_mutex_locked(cpi_mutex_t *mutex);
+
+#endif
 
 /* Condition variable functions */
+
+#if 0
 
 /**
  * Initializes a condition variable.
@@ -112,10 +94,11 @@ int CP_LOCAL cpi_init_cond(cpi_cond_t *cond);
  */
 int CP_LOCAL cpi_destroy_cond(cpi_cond_t *cond);
 
+#endif
 
 #ifdef __cplusplus
 }
 #endif /*__cplusplus */
 
 #endif /*CP_THREADS*/
-#endif /*_THREAD_H_*/
+#endif /*THREAD_H_*/

@@ -53,6 +53,7 @@ int main(int argc, char *argv[]) {
 	cp_context_t *context;
 	int i;
 	
+	cp_init();
 	if ((context = cp_create_context(error_handler, NULL)) == NULL) {
 		exit(1);
 	}

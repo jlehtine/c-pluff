@@ -12,16 +12,13 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
-#ifdef CP_THREADS_POSIX
-#include <pthread.h>
-#endif
-#ifdef CP_THREADS_WINDOWS
-#include <windows.h>
-#endif
-#include "cpluff.h"
-#include "context.h"
-#include "util.h"
 #include "kazlib/list.h"
+#include "cpluff.h"
+#include "util.h"
+#include "context.h"
+#ifdef CP_THREADS
+#include "thread.h"
+#endif
 
 /* ------------------------------------------------------------------------
  * Data types
@@ -119,57 +116,6 @@ static void process_error(list_t *list, lnode_t *node, void *msg);
 static void process_event(list_t *list, lnode_t *node, void *event);
 
 
-#ifdef CP_THREADS
-
-/**
- * Locks the data mutex.
- */
-static void lock_mutex(void);
-
-/**
- * Unlocks the data mutex.
- */
-static void unlock_mutex(void);
-
-#endif
-
-#ifdef CP_THREADS_WINDOWS
-
-/**
- * Returns the system error message corresponding to the specified Windows
- * error code.
- * 
- * @param error the system error code
- * @param buffer buffer for the error message
- * @param size the size of buffer in bytes
- * @return the filled buffer
- */
-static char *get_win_errormsg(DWORD error, char *buffer, size_t size);
-
-#endif
-
-/* ------------------------------------------------------------------------
- * Variables
- * ----------------------------------------------------------------------*/
-
-/** Whether gettext has been initialized */
-static int gettext_initialized = 0;
-
-/* Recursive mutex implementation for data access */
-#if defined(CP_THREADS_POSIX)
-static pthread_mutex_t data_mutex = PTHREAD_MUTEX_INITIALIZER;
-static pthread_cond_t data_cond = PTHREAD_COND_INITIALIZER;
-static unsigned int data_lock_count = 0;
-static pthread_t data_thread;
-#elif defined(CP_THREADS_WINDOWS)
-static HANDLE data_mutex = NULL;
-static HANDLE data_event = NULL;
-static unsigned int data_wait_count = 0;
-static unsigned int data_lock_count = 0;
-static DWORD data_thread;
-#endif
-
-
 /* ------------------------------------------------------------------------
  * Function definitions
  * ----------------------------------------------------------------------*/
@@ -225,13 +171,6 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 	/* Initialize internal state */
 	do {
 	
-		/* Gettext initialization */
-		// TODO: threading
-		if (!gettext_initialized) {
-			gettext_initialized = 1;
-			bindtextdomain(PACKAGE, CP_DATADIR "/locale");
-		}
-		
 		/* Allocate memory for the context */
 		if ((context = malloc(sizeof(cp_context_t))) == NULL) {
 			status = CP_ERR_RESOURCE;
@@ -240,6 +179,7 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 	
 		/* Initialize data structures as necessary */
 		memset(context, 0, sizeof(cp_context_t));
+		context->mutex = cpi_create_mutex();
 		context->error_handlers = list_create(LISTCOUNT_T_MAX);
 		context->event_listeners = list_create(LISTCOUNT_T_MAX);
 		context->plugins = hash_create(HASHCOUNT_T_MAX,
@@ -247,7 +187,8 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 		context->started_plugins = list_create(LISTCOUNT_T_MAX);
 		context->used_plugins = hash_create(HASHCOUNT_T_MAX,
 			cpi_comp_ptr, cpi_hashfunc_ptr);
-		if (context->error_handlers == NULL
+		if (context->mutex == NULL
+			|| context->error_handlers == NULL
 			|| context->event_listeners == NULL
 			|| context->plugins == NULL
 			|| context->started_plugins == NULL
@@ -256,22 +197,6 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 			break;
 		}
 
-#ifdef CP_THREADS_WINDOWS
-		/* Initialize IPC resources */
-		if ((data_mutex = CreateMutex(NULL, FALSE, NULL)) != NULL) {
-			data_event = CreateEvent(NULL, TRUE, FALSE, NULL);
-		}
-		if (data_event == NULL) {
-			if (error_handler != NULL) {
-				char buffer[256];
-				DWORD ec = GetLastError();				
-				cpi_herrorf(NULL, error_handler, _("IPC resources could not be initialized due to error %ld: %s"), (long) ec, get_win_errormsg(ec, buffer, sizeof(buffer));
-			}
-			status = CP_ERR_RESOURCE;
-			break;
-		}
-#endif
-	
 		/* Register initial error handler */
 		if (error_handler != NULL) {
 			if (cp_add_error_handler(context, error_handler) != CP_OK) {
@@ -283,11 +208,8 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 	} while (0);
 	
 	/* Report failure */
-	switch (status) {
-		
-		case CP_ERR_RESOURCE:
-			cpi_herror(NULL, error_handler, _("Plug-in context could not be created due to insufficient system resources."));
-			break;
+	if (status != CP_OK) {
+		cpi_herror(NULL, error_handler, _("Plug-in context could not be created due to insufficient system resources."));
 	}
 	
 	/* Rollback initialization on failure */
@@ -306,6 +228,12 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 }
 
 void CP_API cp_destroy_context(cp_context_t *context) {
+
+#ifdef CP_THREADS
+	assert(!cpi_is_mutex_locked(context->mutex));
+#else
+	assert(!context->locked);
+#endif
 
 	/* Unload all plug-ins */
 	if (context->plugins != NULL && !hash_isempty(context->plugins)) {
@@ -338,19 +266,12 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 		list_destroy(context->event_listeners);
 		context->event_listeners = NULL;
 	}
-
-#ifdef CP_THREADS_WINDOWS
-	/* Release IPC resources */
-	if (data_event != NULL) {
-		CloseHandle(data_event);
-		data_event = NULL;
-	}
-	if (data_mutex != NULL) {
-		CloseHandle(data_mutex);
-		data_mutex = NULL;
-	}
-#endif
 	
+	/* Release mutex */
+	if (context->mutex != NULL) {
+		cpi_destroy_mutex(context->mutex);
+	}
+
 }
 
 
@@ -364,7 +285,9 @@ int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_
 	assert(error_handler != NULL);
 	
 	cpi_lock_context(context);
-	if ((holder = malloc(sizeof(eh_holder_t))) != NULL) {
+	if (context->error_handlers_frozen) {
+		status = CP_ERR_DEADLOCK;
+	} else if ((holder = malloc(sizeof(eh_holder_t))) != NULL) {
 		holder->error_handler = error_handler;
 		if ((node = lnode_create(holder)) != NULL) {
 			list_append(context->error_handlers, node);
@@ -374,8 +297,18 @@ int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_
 		}
 	}
 	cpi_unlock_context(context);
-	if (status != CP_OK) {
-		cpi_error(context,_("An error handler could not be registered due to insufficient system resources."));
+	switch (status) {
+		case CP_OK:
+			break;
+		case CP_ERR_RESOURCE:
+			cpi_error(context, _("An error handler could not be registered due to insufficient system resources."));
+			break;
+		case CP_ERR_DEADLOCK:
+			cpi_error(context, _("An error handler can not be registered from within an error handler invocation."));
+			break;
+		default:
+			cpi_error(context, _("An error handler could not be registered."));
+			break;
 	}
 	return status;
 }
@@ -383,21 +316,43 @@ int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_
 int CP_API cp_remove_error_handler(cp_context_t *context, cp_error_handler_t error_handler) {
 	eh_holder_t holder;
 	lnode_t *node;
+	int status = CP_OK;
 	
 	holder.error_handler = error_handler;
 	cpi_lock_context(context);
-	node = list_find(context->error_handlers, &holder, comp_eh_holder);
-	if (node != NULL) {
-		process_free_eh_holder(context->error_handlers, node, NULL);
+	if (context->error_handlers_frozen) {
+		status = CP_ERR_DEADLOCK;
+	} else {
+		node = list_find(context->error_handlers, &holder, comp_eh_holder);
+		if (node != NULL) {
+			process_free_eh_holder(context->error_handlers, node, NULL);
+		} else {
+			status = CP_ERR_UNKNOWN;
+		}
 	}
 	cpi_unlock_context(context);
-	return CP_OK;
+	switch (status) {
+		case CP_OK:
+			break;
+		case CP_ERR_DEADLOCK:
+			cpi_error(context, _("An error handler can not be removed from within an error handler invocation."));
+			break;
+		case CP_ERR_UNKNOWN:
+			cpi_error(context, _("Could not remove an unknown error handler."));
+			break;
+		default:
+			cpi_error(context, _("Could not remove an error handler."));
+			break;
+	}
+	return status;
 }
 
 void CP_LOCAL cpi_error(cp_context_t *context, const char *msg) {
 	assert(msg != NULL);
 	cpi_lock_context(context);
+	context->error_handlers_frozen++;
 	list_process(context->error_handlers, (void *) msg, process_error);
+	context->error_handlers_frozen--;
 	cpi_unlock_context(context);
 }
 
@@ -443,7 +398,9 @@ int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t even
 	assert(event_listener != NULL);
 	
 	cpi_lock_context(context);
-	if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
+	if (context->event_listeners_frozen) {
+		status = CP_ERR_DEADLOCK;
+	} else if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
 		holder->event_listener = event_listener;
 		if ((node = lnode_create(holder)) != NULL) {
 			list_append(context->event_listeners, node);
@@ -453,8 +410,18 @@ int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t even
 		}
 	}
 	cpi_unlock_context(context);
-	if (status != CP_OK) {
-		cpi_error(context, _("An event listener could not be registered due to insufficient system resources."));
+	switch (status) {
+		case CP_OK:
+			break;
+		case CP_ERR_RESOURCE:
+			cpi_error(context, _("An event listener could not be registered due to insufficient system resources."));
+			break;
+		case CP_ERR_DEADLOCK:
+			cpi_error(context, _("An event listener can not be registered from within an event listener invocation."));
+			break;
+		default:
+			cpi_error(context, _("An event listener could not be registered."));
+			break;
 	}
 	return status;
 }
@@ -462,156 +429,67 @@ int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t even
 int CP_API cp_remove_event_listener(cp_context_t *context, cp_event_listener_t event_listener) {
 	el_holder_t holder;
 	lnode_t *node;
+	int status = CP_OK;
 	
 	holder.event_listener = event_listener;
 	cpi_lock_context(context);
-	node = list_find(context->event_listeners, &holder, comp_el_holder);
-	if (node != NULL) {
-		process_free_el_holder(context->event_listeners, node, NULL);
+	if (context->event_listeners_frozen) {
+		status = CP_ERR_DEADLOCK;
+	} else {
+		node = list_find(context->event_listeners, &holder, comp_el_holder);
+		if (node != NULL) {
+			process_free_el_holder(context->event_listeners, node, NULL);
+		} else {
+			status = CP_ERR_UNKNOWN;
+		}
 	}
 	cpi_unlock_context(context);
-	return CP_OK;
+	switch (status) {
+		case CP_OK:
+			break;
+		case CP_ERR_DEADLOCK:
+			cpi_error(context, _("An event listener can not be removed from within an event listener invocation."));
+			break;
+		case CP_ERR_UNKNOWN:
+			cpi_error(context, _("Could not remove an unknown event listener."));
+			break;
+		default:
+			cpi_error(context, _("Could not remove an event listener."));
+			break;
+	}
+	return status;
 }
 
 void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *event) {
 	assert(event != NULL);
 	assert(event->plugin_id != NULL);
 	cpi_lock_context(context);
+	context->event_listeners_frozen++;
 	list_process(context->event_listeners, (void *) event, process_event);
+	context->event_listeners_frozen--;
 	cpi_unlock_context(context);
 }
 
 
 /* Locking */
 
+#if defined(CP_THREADS) || !defined(NDEBUG)
+
 void CP_LOCAL cpi_lock_context(cp_context_t *context) {
-#if defined(CP_THREADS_POSIX)
-	pthread_t self = pthread_self();
-	lock_mutex();
-	while (data_lock_count > 0 && !pthread_equal(self, data_thread)) {
-		pthread_cond_wait(&data_cond, &data_mutex);
-	}
-	data_thread = self;
-	data_lock_count++;
-	unlock_mutex();
-#elif defined(CP_THREADS_WINDOWS)
-	DWORD self = GetCurrentThreadId();
-	lock_mutex();
-	while (data_lock_count > 0 && data_thread != self) {
-		DWORD ec;
-		data_wait_count++;
-		unlock_mutex();
-		if ((ec = WaitForSingleObject(data_event, INFINITE)) != WAIT_OBJECT_0) {
-			char buffer[256];
-			ec = GetLastError();
-			fprintf(stderr,
-				_(PACKAGE_NAME ": FATAL: Could not wait for an event due to error %ld: %s\n"),
-				(long) ec, get_win_errormsg(ec, buffer, sizeof(buffer)));
-			exit(1);
-		}
-		lock_mutex();
-		data_wait_count--;
-		if (data_wait_count == 0) {
-			if (!ResetEvent(data_event)) {
-				char buffer[256];
-				ec = GetLastError();
-				fprintf(stderr, _(PACKAGE_NAME ": FATAL: Could not reset an event due to error %ld: %s\n"),
-					(long) ec, get_win_errormsg(ec, buffer, sizeof(buffer)));
-				exit(1);
-			}
-		}
-	}
-	data_thread = self;
-	data_lock_count++;
-	unlock_mutex();
+#if defined(CP_THREADS)
+	cpi_lock_mutex(context->mutex);
+#elif !defined(NDEBUG)
+	context->locked++;
 #endif
 }
 
 void CP_LOCAL cpi_unlock_context(cp_context_t *context) {
-#if defined(CP_THREADS_POSIX)
-	lock_mutex();
-	assert(pthread_equal(pthread_self(), data_thread));
-	assert(data_lock_count > 0);
-	data_lock_count--;
-	if (data_lock_count == 0) {
-		pthread_cond_broadcast(&data_cond);
-	}
-	unlock_mutex();
-#elif defined(CP_THREADS_WINDOWS)
-	lock_mutex();
-	assert(data_thread == GetCurrentThreadId());
-	assert(data_lock_count > 0);
-	data_lock_count--;
-	if (data_lock_count == 0 && data_wait_count > 0) {
-		if (!SetEvent(data_event)) {
-			char buffer[256];
-			DWORD ec = GetLastError();
-			fprintf(stderr, _(PACKAGE_NAME " FATAL: Could not signal an event due to error %ld: %s\n"),
-				(long) ec, get_win_errormsg(ec, buffer, sizeof(buffer)));
-			exit(1);
-		}
-	}
-	unlock_mutex();
+#if defined(CP_THREADS)
+	cpi_unlock_mutex(context->mutex);
+#elif !defined(NDEBUG)
+	assert(context->locked > 0);
+	context->locked--;
 #endif
 }
-
-#if defined(CP_THREADS_POSIX) || defined(CP_THREADS_WINDOWS)
-
-static void lock_mutex(void) {
-#if defined(CP_THREADS_POSIX)
-	int ec;
-	if ((ec = pthread_mutex_lock(&data_mutex))) {
-		fprintf(stderr,
-			_(PACKAGE_NAME ": FATAL: Could not lock a mutex due to error %d.\n"), ec);
-		exit(1);
-	}
-#elif defined(CP_THREADS_WINDOWS)
-	DWORD ec;
-	if ((ec = WaitForSingleObject(data_mutex, INFINITE)) != WAIT_OBJECT_0) {
-		char buffer[256];
-		ec = GetLastError();
-		fprintf(stderr,
-			_(PACKAGE_NAME ": FATAL: Could not lock a mutex due to error %ld: %s\n"),
-			(long) ec, get_win_errormsg(ec, buffer, sizeof(buffer)));
-		exit(1);
-	}
-#endif
-}
-
-static void unlock_mutex(void) {
-#if defined(CP_THREADS_POSIX)
-	int ec;
-	if ((ec = pthread_mutex_unlock(&data_mutex))) {
-		fprintf(stderr,
-			_(PACKAGE_NAME ": FATAL: Could not unlock a mutex due to error %d.\n"), ec);
-		exit(1);
-	}
-#elif defined(CP_THREADS_WINDOWS)
-	if (!ReleaseMutex(data_mutex)) {
-		char buffer[256];
-		DWORD ec = GetLastError();
-		fprintf(stderr, _(PACKAGE_NAME ": FATAL: Could not release a mutex due to error %ld: %s\n"),
-			(long) ec, get_win_errormsg(ec, buffer, sizeof(buffer)));
-		exit(1);
-	}
-#endif
-}
-
-#ifdef CP_THREADS_WINDOWS
-static void get_win_errormsg(DWORD error, char *buffer, size_t size) {
-	if (!FormatMessageA(FORMAT_MESSAGE_IGNORE_INSERTS
-		| FORMAT_MESSAGE_SYSTEM,
-		NULL,
-		error,
-		0,
-		buffer,
-		size / sizeof(char),
-		NULL)) {
-		strncpy(buffer, _("unknown error"), size);
-	}
-	buffer[size/sizeof(char) - 1] = '\0';
-	return buffer;
-}
-#endif /*CP_THREADS_WINDOWS*/
 
 #endif

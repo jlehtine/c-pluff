@@ -15,12 +15,12 @@
 #ifdef HAVE_DLOPEN
 #include <dlfcn.h>
 #endif
+#include "kazlib/list.h"
+#include "kazlib/hash.h"
 #include "cpluff.h"
 #include "context.h"
 #include "pcontrol.h"
 #include "util.h"
-#include "kazlib/list.h"
-#include "kazlib/hash.h"
 
 
 /* ------------------------------------------------------------------------
@@ -151,7 +151,7 @@ int CP_LOCAL cpi_install_plugin(cp_context_t *context, cp_plugin_t *plugin, unsi
 			break;
 		default:
 			cpi_errorf(context,
-				_("Could not register plug-in %s."), plugin->identifier);
+				_("Could not install plug-in %s."), plugin->identifier);
 			break;
 	}
 	return status;

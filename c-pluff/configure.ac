@@ -111,6 +111,8 @@ case "$cp_threads" in
     AC_DEFINE([CP_THREADS_WINDOWS], [], [Use Windows threads])
     ;;
 esac
+AM_CONDITIONAL([THREADS_POSIX], test "$cp_threads" = Posix)
+AM_CONDITIONAL([THREADS_WINDOWS], test "$cp_threads" = Windows)
 
 # Debugging support
 # -----------------

@@ -3,8 +3,8 @@
  * Copyright 2005-2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-#ifndef _PLUGIN_H_
-#define _PLUGIN_H_
+#ifndef PCONTROL_H_
+#define PCONTROL_H_
 
 #include "context.h"
 
@@ -54,4 +54,4 @@ void CP_LOCAL cpi_free_cfg_element(cp_cfg_element_t *cfg_element);
 }
 #endif /*__cplusplus */
 
-#endif /*_PLUGIN_H_*/
+#endif /*PCONTROL_H_*/

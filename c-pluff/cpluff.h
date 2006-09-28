@@ -7,8 +7,8 @@
  * The public API header file
  */
 
-#ifndef _CPLUFF_H_
-#define _CPLUFF_H_
+#ifndef CPLUFF_H_
+#define CPLUFF_H_
 
 /* Define CP_API to declare API functions */
 #ifdef _MSC_EXTENSIONS
@@ -65,10 +65,10 @@ extern "C" {
 /** Plug-in dependencies could not be satisfied */
 #define CP_ERR_DEPENDENCY 7
 
-/** An error in a plug-in runtime */
+/** An error in a plug-in runtime or plug-in framework runtime */
 #define CP_ERR_RUNTIME 8
 
-/** A blocking operation failed to prevent a deadlock */
+/** An operation failed to prevent a deadlock */
 #define CP_ERR_DEADLOCK 9
 
 
@@ -373,6 +373,13 @@ typedef void (*cp_stop_t)(cp_context_t *context);
 /* Initialization and destroy functions */
 
 /**
+ * Initializes the plug-in framework. This function must be called
+ * before calling any other plug-in framework functions. This function is
+ * not thread-safe but it may be called multiple times.
+ */
+void CP_API cp_init(void);
+
+/**
  * Creates a new plug-in context which is an instance of the C-Pluff plug-in framework.
  * Plug-ins are loaded and installed into a specific context. An application
  * may have more than one plug-in context but the plug-ins that interact with
@@ -422,6 +429,18 @@ int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_
  */
 int CP_API cp_remove_error_handler(cp_context_t *context, cp_error_handler_t error_handler);
 
+/**
+ * Sets the fatal error handler called on non-recoverable errors. The default error
+ * handler prints the error message out to standard error and aborts the program.
+ * Fatal error handler is called with NULL context. If the user specified error handler
+ * returns, the framework will abort the program. Setting NULL error handler will
+ * restore the default handler. This method is typically called as part of the client
+ * program initialization and it is not thread-safe.
+ * 
+ * @param error_handler the fatal error handler
+ */
+void CP_API cp_set_fatal_error_handler(cp_error_handler_t error_handler);
+
 
 /* Functions for registering plug-in event listeners */
 
@@ -443,7 +462,7 @@ int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t even
  * @param context the plug-in context
  * @param event_listener the event listener to be removed
  * @return CP_OK (0) on success, CP_ERR_UNKNOWN if the event listener is unknown,
- * 		or CP_ERR_DEADLOCK if called from an error handler
+ * 		or CP_ERR_DEADLOCK if called from an event listener
  */
 int CP_API cp_remove_event_listener(cp_context_t *context, cp_event_listener_t event_listener);
 
@@ -590,4 +609,4 @@ void CP_API cp_release_plugin(const cp_plugin_t *plugin);
 } /*extern "C"*/
 #endif /*__cplusplus*/
 
-#endif /*_CPLUFF_H_*/
+#endif /*CPLUFF_H_*/

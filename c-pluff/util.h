@@ -5,13 +5,13 @@
 
 /* General purpose utility functions */
 
-#ifndef _UTIL_H_
-#define _UTIL_H_
+#ifndef UTIL_H_
+#define UTIL_H_
 
-#include "cpluff.h"
-#include "defines.h"
 #include "kazlib/list.h"
 #include "kazlib/hash.h"
+#include "cpluff.h"
+#include "defines.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -69,8 +69,18 @@ int CP_LOCAL cpi_ptrset_remove(list_t *set, const void *ptr);
 int CP_LOCAL cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
 
 
+/* For error handling */
+
+/**
+ * Reports a fatal error. This method does not return.
+ * 
+ * @param msg the formatted error message
+ * @param ... parameters
+ */
+void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
+
 #ifdef __cplusplus
 }
 #endif /*__cplusplus */
 
-#endif /*_UTIL_H_*/
+#endif /*UTIL_H_*/

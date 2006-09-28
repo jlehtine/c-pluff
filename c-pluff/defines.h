@@ -10,6 +10,13 @@
 #ifndef DEFINES_H_
 #define DEFINES_H_
 
+#ifdef HAVE_GETTEXT
+#include <libintl.h>
+#endif
+#ifdef HAVE_DMALLOC_H
+#include <dmalloc.h>
+#endif
+
 
 /* ------------------------------------------------------------------------
  * Defines
@@ -50,6 +57,11 @@
 #else
 #define CP_PURE
 #endif
-
+// TODO version
+#ifdef __GNUC__
+#define CP_NORETURN __attribute__((noreturn))
+#else
+#define CP_NORETURN
+#endif
 
 #endif /*DEFINES_H_*/

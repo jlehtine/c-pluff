@@ -13,6 +13,12 @@ SUBDIRS = po
 
 lib_LTLIBRARIES = libcpluff.la
 libcpluff_la_SOURCES = ploader.c pcontrol.c context.c util.c kazlib/list.c kazlib/hash.c
+if THREADS_POSIX
+libcpluff_la_SOURCES += thread_posix.c
+endif
+if THREADS_WINDOWS
+libcpluff_la_SOURCES += thread_windows.c
+endif
 libcpluff_la_CPPFLAGS = -DCP_BUILD -DCP_DATADIR="\"$(datadir)\""
 libcpluff_la_LDFLAGS = -version-info $(APIVERSION)
 

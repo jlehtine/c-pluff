@@ -7,23 +7,20 @@
  * Plug-in context declarations
  */
 
-#ifndef CORE_H_
-#define CORE_H_
+#ifndef CONTEXT_H_
+#define CONTEXT_H_
 
 
 /* ------------------------------------------------------------------------
  * Inclusions
  * ----------------------------------------------------------------------*/
 
-#ifdef HAVE_GETTEXT
-#include <libintl.h>
-#endif
-#include "defines.h"
-#include "cpluff.h"
 #include "kazlib/list.h"
 #include "kazlib/hash.h"
-#ifdef HAVE_DMALLOC_H
-#include <dmalloc.h>
+#include "defines.h"
+#include "cpluff.h"
+#ifdef CP_THREADS
+#include "thread.h"
 #endif
 
 
@@ -38,9 +35,15 @@ extern "C" {
 
 /* Plug-in context */
 struct cp_context_t {
-	
+
+#if defined(CP_THREADS)
+
 	/** Mutex for accessing plug-in context */
-	/*cpi_mutex_t mutex;*/
+	cpi_mutex_t *mutex;
+	
+#elif !defined(NDEBUG)
+	int locked;
+#endif
 	
 	/** Installed error handlers */
 	list_t *error_handlers;
@@ -76,10 +79,10 @@ struct cp_context_t {
 
 /* Locking data structures for exclusive access */
 
+#if defined(CP_THREADS) || !defined(NDEBUG)
+
 /**
- * Acquires exclusive access to a plug-in context. This method must not be
- * called from a thread that already has acquired exclusive access but has
- * not released the data.
+ * Acquires exclusive access to a plug-in context.
  * 
  * @param context the plug-in context
  */
@@ -91,6 +94,13 @@ void CP_LOCAL cpi_lock_context(cp_context_t *context);
  * @param context the plug-in context
  */
 void CP_LOCAL cpi_unlock_context(cp_context_t *context);
+
+#else
+
+#define cpi_lock_context(dummy) do {} while (0)
+#define cpi_unlock_context(dummy) do {} while (0)
+
+#endif
 
 
 /* Processing errors */
@@ -150,4 +160,4 @@ void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *
 }
 #endif /*__cplusplus*/
 
-#endif /*CORE_H_*/
+#endif /*CONTEXT_H_*/
