@@ -42,6 +42,9 @@ struct registered_plugin_t {
 	/** The current state of the plug-in */
 	cp_plugin_state_t state;
 	
+	/** Whether the plug-in state has been locked */
+	int state_locked;
+	
 	/** The set of imported plug-ins, or NULL if not resolved */
 	list_t *imported;
 	
@@ -160,25 +163,26 @@ int CP_LOCAL cpi_install_plugin(cp_context_t *context, cp_plugin_t *plugin, unsi
 /**
  * Unresolves a preliminarily resolved plug-in.
  * 
- * @param plug-in the plug-in to be unresolved
+ * @param context the plug-in context
+ * @param plugin the plug-in to be unresolved
+ * @param failed the failed plug-in
+ * @param preliminary list of preliminary resolved plug-ins
  */
-static void unresolve_preliminary_plugin(registered_plugin_t *plugin) {
+static void unresolve_preliminary_plugin(cp_context_t *context,
+registered_plugin_t *plugin, registered_plugin_t *failed,
+list_t *preliminary) {
 	lnode_t *node;
-	
-	/* Break circular dependencies */
-	if (plugin->active_operation) {
-		return;
-	}
 
-	/* Unresolve plug-ins which import this plug-in */
-	plugin->active_operation = 1;
-	while ((node = list_first(plugin->importing)) != NULL) {
-		registered_plugin_t *ip = lnode_get(node);
-		unresolve_preliminary_plugin(ip);
-	}
-	plugin->active_operation = 0;
-		
+	assert(cpi_ptrset_contains(preliminary, plugin));
+
+	/* Error message */
+	cpi_errorf(context,
+		_("Plug-in %s could not be resolved because it depends on plug-in %s which could not be resolved."),
+		plugin->plugin->identifier,
+		failed->plugin->identifier);
+	
 	/* Remove references to imported plug-ins */
+	assert(plugin->imported != NULL);
 	while ((node = list_first(plugin->imported)) != NULL) {
 		registered_plugin_t *ip = lnode_get(node);
 		cpi_ptrset_remove(ip->importing, plugin);
@@ -188,24 +192,30 @@ static void unresolve_preliminary_plugin(registered_plugin_t *plugin) {
 	list_destroy(plugin->imported);
 	plugin->imported = NULL;
 		
-	/* Update plug-in state */
-	plugin->state = CP_PLUGIN_INSTALLED;	
+	/* Unresolve plug-ins which import this plug-in */
+	while ((node = list_first(plugin->importing)) != NULL) {
+		registered_plugin_t *ip = lnode_get(node);
+		unresolve_preliminary_plugin(context, ip, plugin, preliminary);
+	}
 }
 
 /**
  * Recursively resolves a plug-in and its dependencies. Plug-ins with
- * circular dependencies are only preliminary resolved (listeners are
- * not informed).
+ * circular dependencies are only preliminary resolved (state is locked
+ * but not updated).
  * 
  * @param context the plug-in context
  * @param plugin the plug-in to be resolved
+ * @param seen list of seen plug-ins
  * @param preliminary list of preliminarily resolved plug-ins
  * @return CP_OK (0) or CP_OK_PRELIMINARY (1) on success, an error code on failure
  */
 static int resolve_plugin_rec
-(cp_context_t *context, registered_plugin_t *plugin, list_t *preliminary) {
+(cp_context_t *context, registered_plugin_t *plugin, list_t *seen,
+list_t *preliminary) {
 	int i;
 	int status = CP_OK;
+	int error_reported = 0;
 	
 	/* Check if already resolved */
 	if (plugin->state >= CP_PLUGIN_RESOLVED) {
@@ -213,106 +223,122 @@ static int resolve_plugin_rec
 	}
 	assert(plugin->state == CP_PLUGIN_INSTALLED);
 	
-	/* Check if being resolved (due to circular dependency) */
-	if (plugin->active_operation) {
+	/* Check if already seen */
+	if (cpi_ptrset_contains(seen, plugin)) {
 		return CP_OK_PRELIMINARY;
-	}	
-
-	/* Allocate space for the import information */
-	assert(plugin->imported == NULL);
-	plugin->imported = list_create(LISTCOUNT_T_MAX);
-	if (plugin->imported == NULL) {
-		status = CP_ERR_RESOURCE;
 	}
 	
-	/* Check that all imported plug-ins are present and resolved */
-	plugin->active_operation = 1;
-	for (i = 0;
-		(status == CP_OK || status == CP_OK_PRELIMINARY)
-			&& i < plugin->plugin->num_imports;
-		i++) {
-		registered_plugin_t *ip;
-		hnode_t *node;
-		int rc;
-		
-		/* Lookup the plug-in */
-		node = hash_lookup(context->plugins, plugin->plugin->imports[i].plugin_id);
-		if (node != NULL) {
-			ip = hnode_get(node);
-		} else {
-			ip = NULL;
-		}
-		
-		/* TODO: Check plug-in version */
-		
-		/* Try to resolve the plugin */
-		if (ip != NULL) {
-			rc = resolve_plugin_rec(context, ip, preliminary);
-		} else {
-			rc = CP_OK;
-		}
-		
-		/* If import was succesful, register the dependency */
-		if (ip != NULL && (rc == CP_OK || rc == CP_OK_PRELIMINARY)) {
-			if (!cpi_ptrset_add(plugin->imported, ip)) {
-				status = CP_ERR_RESOURCE;
-			} else if (!cpi_ptrset_add(ip->importing, plugin)) {
-				status = CP_ERR_RESOURCE;
-			}
-			if (rc == CP_OK_PRELIMINARY) {
-				status = CP_OK_PRELIMINARY;
-			}
-		}
-		
-		/* Otherwise check if the failed import was mandatory */
-		else if (!(plugin->plugin->imports[i].optional)) {
-			if (plugin == NULL) {
-				cpi_errorf(context,
-					_("Plug-in %s could not be resolved because it depends on plug-in %s which is not installed."),
-					plugin->plugin->identifier,
-					plugin->plugin->imports[i].plugin_id);
-			} else {
-				cpi_errorf(context,
-					_("Plug-in %s could not be resolved because it depends on plug-in %s which could not be resolved."),
-					plugin->plugin->identifier,
-					plugin->plugin->imports[i].plugin_id);
-			}
-			status = CP_ERR_DEPENDENCY;
-		}
-		
+	/* Check if state locked */
+	if (plugin->state_locked) {
+		return CP_ERR_DEADLOCK;
 	}
 
-	/* Update state but postpone listener update on preliminary success */
-	if (status == CP_OK_PRELIMINARY) {
-		if (cpi_ptrset_add(preliminary, plugin)) {
-			plugin->state = CP_PLUGIN_RESOLVED;
-		} else {
+	do {
+	
+		/* Put the plug-in into seen list and lock it */
+		if (!cpi_ptrset_add(seen, plugin)) {
 			status = CP_ERR_RESOURCE;
+			break;
 		}
-	}
+		plugin->state_locked = 1;
+
+		/* Allocate space for the import information */
+		plugin->imported = list_create(LISTCOUNT_T_MAX);
+		if (plugin->imported == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+	
+		/* Check that all imported plug-ins are present and resolved */
+		for (i = 0;	i < plugin->plugin->num_imports; i++) {
+			registered_plugin_t *ip;
+			hnode_t *node;
+			int rc;
+		
+			/* Lookup the plug-in */
+			node = hash_lookup(context->plugins, plugin->plugin->imports[i].plugin_id);
+			if (node != NULL) {
+				ip = hnode_get(node);
+			} else {
+				ip = NULL;
+			}
+			
+			/* TODO: Check plug-in version */
+		
+			/* Try to resolve the plugin */
+			if (ip != NULL) {
+				rc = resolve_plugin_rec(context, ip, seen, preliminary);
+			} else {
+				rc = CP_OK;
+			}
+		
+			/* If import was succesful, register the dependency */
+			if (ip != NULL && (rc == CP_OK || rc == CP_OK_PRELIMINARY)) {
+				if (!cpi_ptrset_add(plugin->imported, ip)
+					|| !cpi_ptrset_add(ip->importing, plugin)) {
+					status = CP_ERR_RESOURCE;
+					break;
+				}
+				if (rc == CP_OK_PRELIMINARY) {
+					status = CP_OK_PRELIMINARY;
+				}
+			}
+		
+			/* Otherwise check if the failed import was mandatory */
+			else if (!(plugin->plugin->imports[i].optional)) {
+				if (plugin == NULL) {
+					cpi_errorf(context,
+						_("Plug-in %s could not be resolved because it depends on plug-in %s which is not installed."),
+						plugin->plugin->identifier,
+						plugin->plugin->imports[i].plugin_id);
+					status = CP_ERR_DEPENDENCY;
+				} else {
+					cpi_errorf(context,
+						_("Plug-in %s could not be resolved because it depends on plug-in %s which could not be resolved."),
+						plugin->plugin->identifier,
+						plugin->plugin->imports[i].plugin_id);
+					status = rc;
+				}
+				error_reported = 1;
+				break;
+			}
+		
+		}
+		if (status != CP_OK && status != CP_OK_PRELIMINARY) {
+			break;
+		}
+
+		/* Update state and inform listeners on definite success */
+		if (status == CP_OK) {
+			cp_plugin_event_t event;
+		
+			event.plugin_id = plugin->plugin->identifier;
+			event.old_state = plugin->state;
+			event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
+			cpi_deliver_event(context, &event);
+		}
+	
+		/* Postpone updates on preliminary success */
+		else {
+			if (!cpi_ptrset_add(preliminary, plugin)) {
+				status = CP_ERR_RESOURCE;
+				break;
+			}
+		}
+		
+	} while (0);
 	
 	/* Clean up on failure */
 	if (status != CP_OK && status != CP_OK_PRELIMINARY) {
 		lnode_t *node;
-		
-		/* Report possible resource allocation problem */
-		if (status == CP_ERR_RESOURCE) {
-			cpi_errorf(context,
-				_("Could not resolve plug-in %s due to insufficient resources."), plugin->plugin->identifier);
-		}
-	
+
 		/* 
 		 * Unresolve plug-ins which import this plug-in (if there were
 		 * circular dependencies while resolving this plug-in)
 		 */
 		while ((node = list_first(plugin->importing)) != NULL) {
 			registered_plugin_t *ip = lnode_get(node);
-			unresolve_preliminary_plugin(ip);
-			if (cpi_ptrset_remove(preliminary, ip)) {
-				cpi_errorf(context,
-					_("Preliminarily resolved plug-in %s failed to fully resolve because of failed circular dependencies."),
-					ip->plugin->identifier);
-			}
+			unresolve_preliminary_plugin(context, ip, plugin, preliminary);
 			assert(!cpi_ptrset_contains(plugin->importing, ip));
 		}
 		
@@ -325,17 +351,26 @@ static int resolve_plugin_rec
 		}
 		list_destroy(plugin->imported);
 		plugin->imported = NULL;
-	}	
-	plugin->active_operation = 0;
-	
-	/* Update state and inform listeners on definite success */
-	if (status == CP_OK) {
-		cp_plugin_event_t event;
+
+		/* Unlock plug-in state */
+		plugin->state_locked = 0;
+
+		/* Remove plug-in from the seen list */
+		cpi_ptrset_remove(seen, plugin);
 		
-		event.plugin_id = plugin->plugin->identifier;
-		event.old_state = plugin->state;
-		event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
-		cpi_deliver_event(context, &event);
+		/* Report errors */
+		/* TODO */
+		if (!error_reported) {
+			switch (status) {
+				case CP_ERR_RESOURCE:
+					cpi_errorf(context, _("Plug-in %s could not be resolved due to insufficient resources."), plugin->plugin->identifier);
+					break;
+				default:
+					cpi_errorf(context, _("Plug-in %s could not be resolved."), plugin->plugin->identifier);
+					break;
+			}
+		}
+	
 	}
 	
 	return status;
@@ -350,45 +385,74 @@ static int resolve_plugin_rec
  * @return CP_OK (0) on success, an error code on failure
  */
 static int resolve_plugin(cp_context_t *context, registered_plugin_t *plugin) {
-	list_t *preliminary;
-	int status;
-	lnode_t *node;
+	list_t *seen = NULL, *preliminary = NULL;
+	int status = CP_OK;
 	
+	assert(context != NULL);
 	assert(plugin != NULL);
 	
 	/* Check if already resolved */
 	if (plugin->state >= CP_PLUGIN_RESOLVED) {
 		return CP_OK;
 	}
+
+	do {
+		lnode_t *node;
+
+		/* Create plug-in collections */
+		seen = list_create(LISTCOUNT_T_MAX);
+		preliminary = list_create(LISTCOUNT_T_MAX);
+		if (seen == NULL || preliminary == NULL) {
+			status = CP_ERR_RESOURCE;
+			cpi_errorf(context, _("The plug-in %s could not be resolved due to insufficient resources."), plugin->plugin->identifier);
+			break;
+		}
+
+		/* Resolve this plug-in recursively */
+		status = resolve_plugin_rec(context, plugin, seen, preliminary);
+		if (status == CP_OK_PRELIMINARY) {
+			status = CP_OK;
+		}
 	
-	/* Create a list for preliminarily resolved plug-ins */
-	preliminary = list_create(LISTCOUNT_T_MAX);
-	if (preliminary == NULL) {
-		cpi_errorf(context,
-			_("Could not resolve plug-in %s due to insufficient resources."), plugin->plugin->identifier);
-		return CP_ERR_RESOURCE;
-	}
-	
-	/* Resolve this plug-in recursively */
-	status = resolve_plugin_rec(context, plugin, preliminary);
-	
-	/* All plug-ins left in the preliminary list are successfully resolved */
-	while((node = list_first(preliminary)) != NULL) {
-		registered_plugin_t *rp;
-		cp_plugin_event_t event;
+		/* Plug-ins in the preliminary list are now resolved */
+		if (status == CP_OK) {
+			
+			while((node = list_first(preliminary)) != NULL) {
+				registered_plugin_t *rp;
+				cp_plugin_event_t event;
 		
-		rp = lnode_get(node);
-		event.plugin_id = rp->plugin->identifier;
-		event.old_state = CP_PLUGIN_INSTALLED;
-		event.new_state = rp->state;
-		cpi_deliver_event(context, &event);
-		list_delete(preliminary, node);
-		lnode_destroy(node);
+				rp = lnode_get(node);
+				event.plugin_id = rp->plugin->identifier;
+				event.old_state = rp->state;
+				event.new_state = rp->state = CP_PLUGIN_RESOLVED;
+				cpi_deliver_event(context, &event);
+				list_delete(preliminary, node);
+				lnode_destroy(node);
+			}
+		}
+		
+		/* The state of seen plug-ins may now be unlocked */
+		while ((node = list_first(seen)) != NULL) {
+			registered_plugin_t *rp;
+			
+			rp = lnode_get(node);
+			rp->state_locked = 0;
+			list_delete(seen, node);
+			lnode_destroy(node);
+		}
+
+	} while (0);
+
+	/* Release data structures */
+	if (seen != NULL) {
+		assert(list_isempty(seen));
+		list_destroy(seen);
 	}
-	if (status == CP_OK_PRELIMINARY) {
-		status = CP_OK;
+	if (preliminary != NULL) {
+		list_destroy_nodes(preliminary);
+		list_destroy(preliminary);
 	}
-	
+
 	return status;
 }
 
