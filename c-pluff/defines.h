@@ -23,7 +23,7 @@
  * ----------------------------------------------------------------------*/
 
 /* Define CP_LOCAL to hide internal symbols */
-#ifdef _MSC_EXTENSIONS
+#if defined(_MSC_EXTENSIONS) || defined(__MINGW32__)
 #define CP_LOCAL
 #elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
 #define CP_LOCAL __attribute__ ((visibility ("hidden")))

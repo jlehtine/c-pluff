@@ -11,12 +11,14 @@
 #define CPLUFF_H_
 
 /* Define CP_API to declare API functions */
-#ifdef _MSC_EXTENSIONS
-#ifdef CP_BUILD
+#if defined(_MSC_EXTENSIONS) || defined(__MINGW32__)
+#if defined(CP_BUILD) && defined(DLL_EXPORT)
 #define CP_API __declspec(dllexport)
-#else /*CP_BUILD*/
+#elif !defined(CP_BUILD) && !defined(CP_STATIC)
 #define CP_API __declspec(dllimport)
-#endif /*CP_BUILD*/
+#else
+#define CP_API
+#endif
 #elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
 #define CP_API __attribute__ ((visibility ("default")))
 #else /* Not restricting link time visibility of non-API symbols */
@@ -374,8 +376,8 @@ typedef void (*cp_stop_t)(cp_context_t *context);
 
 /**
  * Initializes the plug-in framework. This function must be called
- * before calling any other plug-in framework functions. This function is
- * not thread-safe but it may be called multiple times.
+ * before calling any other plug-in framework functions. This function may be
+ * called multiple times but it is not thread-safe.
  */
 void CP_API cp_init(void);
 

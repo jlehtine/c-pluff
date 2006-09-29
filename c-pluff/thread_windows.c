@@ -10,6 +10,7 @@
 #include <windows.h>
 #include "cpluff.h"
 #include "thread.h"
+#include "util.h"
 
 /* Generic multi-threading support, Windows implementation */
 
@@ -40,6 +41,8 @@ struct cpi_mutex_t {
  * ----------------------------------------------------------------------*/
 
 cpi_mutex_t * CP_LOCAL cpi_create_mutex(void) {
+	cpi_mutex_t *mutex;
+	
 	if ((mutex = malloc(sizeof(cpi_mutex_t))) == NULL) {
 		return NULL;
 	}
@@ -68,9 +71,9 @@ void CP_LOCAL cpi_destroy_mutex(cpi_mutex_t *mutex) {
 	free(mutex);
 }
 
-static void get_win_errormsg(DWORD error, char *buffer, size_t size) {
+static char *get_win_errormsg(DWORD error, char *buffer, size_t size) {
 	if (!FormatMessageA(FORMAT_MESSAGE_IGNORE_INSERTS
-		| FORMAT_MESSAGE_SYSTEM,
+		| FORMAT_MESSAGE_FROM_SYSTEM,
 		NULL,
 		error,
 		0,
@@ -138,7 +141,7 @@ void CP_LOCAL cpi_lock_mutex(cpi_mutex_t *mutex) {
 }
 
 void CP_LOCAL cpi_unlock_mutex(cpi_mutex_t *mutex) {
-	DWORD self = GetCurrentThread();
+	DWORD self = GetCurrentThreadId();
 	
 	assert(mutex != NULL);
 	lock_mutex(mutex->os_mutex);
