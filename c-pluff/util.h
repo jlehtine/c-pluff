@@ -79,6 +79,28 @@ int CP_LOCAL cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
  */
 void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
 
+
+/* For version strings */
+
+/**
+ * Checks the version string for validity.
+ * 
+ * @param v the version string to be checked
+ * @return non-zero if the version string is valid, zero otherwise
+ */
+int CP_LOCAL cpi_version_isvalid(const char *v) CP_PURE;
+
+/**
+ * Compares two version strings. If either of the version strings is invalid
+ * the result is undetermined.
+ * 
+ * @param v1 the first version string
+ * @param v2 the second version string
+ * @param nc the number of version string components to compare (1-4)
+ * @return negative if v1 < v2, zero if v1 = v2 or positive if v1 > v2
+ */
+int CP_LOCAL cpi_version_cmp(const char *v1, const char *v2, int nc) CP_PURE;
+
 #ifdef __cplusplus
 }
 #endif /*__cplusplus */

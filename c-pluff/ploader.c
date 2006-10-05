@@ -18,6 +18,7 @@
 #include <unistd.h>
 #include <expat.h>
 #include "cpluff.h"
+#include "util.h"
 #include "context.h"
 #include "pcontrol.h"
 
@@ -704,6 +705,9 @@ static void XMLCALL start_element_handler(
 							import->plugin_id
 								= parser_strdup(plcontext, atts[i+1]);
 						} else if (!strcmp(atts[i], N_("version"))) {
+							if (!cpi_version_isvalid(atts[i+1])) {
+								descriptor_errorf(plcontext, 0, _("invalid version string: %s"), atts[i+1]);
+							}
 							import->version
 								= parser_strdup(plcontext, atts[i+1]);
 						} else if (!strcmp(atts[i], N_("match"))) {
@@ -716,7 +720,7 @@ static void XMLCALL start_element_handler(
 							} else if (!strcmp(atts[i+1], N_("greaterOrEqual"))) {
 								import->match = CP_MATCH_GREATEROREQUAL;
 							} else {
-								descriptor_errorf(plcontext, 0, _("unknown version matching mode %s"), atts[i+1]);
+								descriptor_errorf(plcontext, 0, _("unknown version matching mode: %s"), atts[i+1]);
 							}
 						} else if (!strcmp(atts[i], N_("optional"))) {
 							if (!strcmp(atts[i+1], N_("true"))

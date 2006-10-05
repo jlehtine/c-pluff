@@ -254,7 +254,8 @@ list_t *preliminary) {
 		for (i = 0;	i < plugin->plugin->num_imports; i++) {
 			registered_plugin_t *ip;
 			hnode_t *node;
-			int rc;
+			int rc = CP_OK;
+			int vermismatch = 0;
 		
 			/* Lookup the plug-in */
 			node = hash_lookup(context->plugins, plugin->plugin->imports[i].plugin_id);
@@ -264,44 +265,82 @@ list_t *preliminary) {
 				ip = NULL;
 			}
 			
-			/* TODO: Check plug-in version */
+			/* Check plug-in version */
+			if (ip != NULL && plugin->plugin->imports[i].version != NULL) {
+				const char *iv = ip->plugin->version;
+				const char *rv = plugin->plugin->imports[i].version;
+				
+				switch (plugin->plugin->imports[i].match) {
+					case CP_MATCH_NONE:
+						break;
+					case CP_MATCH_PERFECT:
+						vermismatch = (cpi_version_cmp(iv, rv, 4) != 0);
+						break;
+					case CP_MATCH_EQUIVALENT:
+						vermismatch = (cpi_version_cmp(iv, rv, 2) != 0
+							|| cpi_version_cmp(iv, rv, 4) < 0);
+						break;
+					case CP_MATCH_COMPATIBLE:
+						vermismatch = (cpi_version_cmp(iv, rv, 1) != 0
+							|| cpi_version_cmp(iv, rv, 4) < 0);
+						break;
+					case CP_MATCH_GREATEROREQUAL:
+						vermismatch = (cpi_version_cmp(iv, rv, 4) < 0);
+						break;
+					default:
+						cpi_fatalf(_("Encountered unimplemented version match type."));
+						break;
+				}
+			}
+		
+			/* Check for version mismatch */
+			if (vermismatch) {
+				cpi_errorf(context,
+					_("Plug-in %s could not be resolved because of version incompatibility with plug-in %s."),
+					plugin->plugin->identifier,
+					plugin->plugin->imports[i].plugin_id);
+				error_reported = 1;
+				status = CP_ERR_DEPENDENCY;
+				break;
+			}
 		
 			/* Try to resolve the plugin */
 			if (ip != NULL) {
 				rc = resolve_plugin_rec(context, ip, seen, preliminary);
-			} else {
-				rc = CP_OK;
+				
+				/* If import was succesful, register the dependency */
+				if (rc == CP_OK || rc == CP_OK_PRELIMINARY) {
+					if (!cpi_ptrset_add(plugin->imported, ip)
+						|| !cpi_ptrset_add(ip->importing, plugin)) {
+						status = CP_ERR_RESOURCE;
+						break;
+					}
+					if (rc == CP_OK_PRELIMINARY) {
+						status = CP_OK_PRELIMINARY;
+					}
+				}				
+				
 			}
-		
-			/* If import was succesful, register the dependency */
-			if (ip != NULL && (rc == CP_OK || rc == CP_OK_PRELIMINARY)) {
-				if (!cpi_ptrset_add(plugin->imported, ip)
-					|| !cpi_ptrset_add(ip->importing, plugin)) {
-					status = CP_ERR_RESOURCE;
-					break;
-				}
-				if (rc == CP_OK_PRELIMINARY) {
-					status = CP_OK_PRELIMINARY;
-				}
-			}
-		
-			/* Otherwise check if the failed import was mandatory */
-			else if (!(plugin->plugin->imports[i].optional)) {
-				if (plugin == NULL) {
+
+			/* Handle failure if import was mandatory */
+			if (!plugin->plugin->imports[i].optional) {
+				if (ip == NULL) {
 					cpi_errorf(context,
 						_("Plug-in %s could not be resolved because it depends on plug-in %s which is not installed."),
 						plugin->plugin->identifier,
 						plugin->plugin->imports[i].plugin_id);
+					error_reported = 1;
 					status = CP_ERR_DEPENDENCY;
-				} else {
+					break;
+				} else if (rc != CP_OK && rc != CP_OK_PRELIMINARY) {
 					cpi_errorf(context,
 						_("Plug-in %s could not be resolved because it depends on plug-in %s which could not be resolved."),
 						plugin->plugin->identifier,
 						plugin->plugin->imports[i].plugin_id);
+					error_reported = 1;
 					status = rc;
+					break;
 				}
-				error_reported = 1;
-				break;
 			}
 		
 		}
@@ -740,14 +779,12 @@ static int unresolve_plugin(cp_context_t *context, registered_plugin_t *plugin) 
 	return CP_OK;
 }
 
-// TODO
 static void free_plugin_import_content(cp_plugin_import_t *import) {
 	assert(import != NULL);
 	free(import->plugin_id);
 	free(import->version);
 }
 
-// TODO
 static void free_ext_point_content(cp_ext_point_t *ext_point) {
 	free(ext_point->name);
 	free(ext_point->local_id);
@@ -755,7 +792,6 @@ static void free_ext_point_content(cp_ext_point_t *ext_point) {
 	free(ext_point->schema_path);
 }
 
-// TODO
 static void free_extension_content(cp_extension_t *extension) {
 	free(extension->name);
 	free(extension->local_id);
@@ -763,7 +799,6 @@ static void free_extension_content(cp_extension_t *extension) {
 	free(extension->ext_point_id);
 }
 
-// TODO
 static void free_cfg_element_content(cp_cfg_element_t *ce) {
 	int i;
 
