@@ -564,8 +564,9 @@ int CP_API cp_stop_plugin(cp_context_t *context, const char *id);
  * Stops all active plug-ins.
  * 
  * @param context the plug-in context
+ * @return CP_OK (0) on success, an error code on failure
  */
-void CP_API cp_stop_all_plugins(cp_context_t *context);
+int CP_API cp_stop_all_plugins(cp_context_t *context);
 
 /**
  * Unloads a plug-in. The plug-in is first stopped if it is active.
@@ -581,8 +582,9 @@ int CP_API cp_unload_plugin(cp_context_t *context, const char *id);
  * releases the resources allocated by the plug-ins.
  * 
  * @param context the plug-in context
+ * @return CP_OK (0) on success, an error code on failure
  */
-void CP_API cp_unload_all_plugins(cp_context_t *context);
+int CP_API cp_unload_all_plugins(cp_context_t *context);
 
 
 /* Functions for accessing plug-ins */
