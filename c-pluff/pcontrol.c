@@ -950,9 +950,20 @@ int CP_API cp_unload_all_plugins(cp_context_t *context) {
 	return status;
 }
 
-const cp_plugin_t * CP_API cp_get_plugin(cp_context_t *context, const char *id, int *error) {
+static cp_plugin_t *get_plugin(cp_context_t *context, registered_plugin_t *rp, int *error) {
+	if (!hash_alloc_insert(context->used_plugins, rp->plugin, rp)) {
+		*error = CP_ERR_RESOURCE;
+		cpi_error(context, _("Insufficient resources to return plug-in information."));
+		return NULL;
+	} else {
+		rp->use_count++;
+		return rp->plugin;
+	}
+}
+
+cp_plugin_t * CP_API cp_get_plugin(cp_context_t *context, const char *id, int *error) {
 	hnode_t *node;
-	const cp_plugin_t *plugin;
+	cp_plugin_t *plugin = NULL;
 	int status = CP_OK;
 
 	assert(id != NULL);
@@ -962,17 +973,8 @@ const cp_plugin_t * CP_API cp_get_plugin(cp_context_t *context, const char *id, 
 	node = hash_lookup(context->plugins, id);
 	if (node != NULL) {
 		registered_plugin_t *rp = hnode_get(node);
-		
-		if (!hash_alloc_insert(context->used_plugins, rp->plugin, rp)) {
-			plugin = NULL;
-			status = CP_ERR_RESOURCE;
-			cpi_error(context, _("Insufficient resources to return plug-in information."));
-		} else {
-			rp->use_count++;
-			plugin = rp->plugin;
-		}
+		plugin = get_plugin(context, rp, &status);
 	} else {
-		plugin = NULL;
 		status = CP_ERR_UNKNOWN;
 	}
 	cpi_unlock_context(context);
@@ -983,7 +985,7 @@ const cp_plugin_t * CP_API cp_get_plugin(cp_context_t *context, const char *id, 
 	return plugin;
 }
 
-void CP_API cp_release_plugin(const cp_plugin_t *plugin) {
+void CP_API cp_release_plugin(cp_plugin_t *plugin) {
 	registered_plugin_t *rp;
 	hnode_t *node;
 	
@@ -1009,3 +1011,64 @@ void CP_API cp_release_plugin(const cp_plugin_t *plugin) {
 	cpi_unlock_context(plugin->context);
 }
 
+cp_plugin_t ** CP_API cp_get_plugins(cp_context_t *context, int *error, int *num) {
+	cp_plugin_t **plugins = NULL;
+	int i, n;
+	int status = CP_OK;
+	
+	cpi_lock_context(context);
+	do {
+		hscan_t scan;
+		hnode_t *node;
+		
+		/* Allocate space for pointer array */
+		n = hash_count(context->plugins);
+		if ((plugins = malloc(sizeof(cp_plugin_t *) * (n + 1))) == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+		for (i = 0; i <= n; i++) {
+			plugins[i] = NULL;
+		}
+		
+		/* Get plug-in information structures */
+		hash_scan_begin(&scan, context->plugins);
+		i = 0;
+		while ((node = hash_scan_next(&scan)) != NULL) {
+			assert(i < n);
+			if ((plugins[i] = get_plugin(context, hnode_get(node), &status)) == NULL) {
+				break;
+			}
+			i++;
+		}
+		
+	} while (0);
+	cpi_unlock_context(context);
+	
+	/* Release resources on error */
+	if (status != CP_OK) {
+		if (plugins != NULL) {
+			cp_release_plugins(plugins);
+			plugins = NULL;
+		}
+	}
+	
+	assert(status != CP_OK || n == 0 || plugins[n - 1] != NULL);
+	if (error != NULL) {
+		*error = status;
+	}
+	if (num != NULL && status == CP_OK) {
+		*num = n;
+	}
+	return plugins;
+}
+
+void CP_API cp_release_plugins(cp_plugin_t **plugins) {
+	int i;
+	
+	assert(plugins != NULL);
+	for (i = 0; plugins[i] != NULL; i++) {
+		cp_release_plugin(plugins[i]);
+	}
+	free(plugins);
+}

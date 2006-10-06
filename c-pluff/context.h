@@ -56,6 +56,9 @@ struct cp_context_t {
 	
 	/** Whether event listeners list is frozen */
 	int event_listeners_frozen;
+	
+	/** List of registered plug-in directories */
+	list_t *plugin_dirs;
 
 	/** Maps plug-in identifiers to plug-in state structures */
 	hash_t *plugins;

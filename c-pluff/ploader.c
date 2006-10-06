@@ -1147,9 +1147,9 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 	return status;
 }
 
-const cp_plugin_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int *error) {
+cp_plugin_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int *error) {
 	cp_plugin_t *plugin = NULL;
-	int status;
+	int status = CP_OK;
 
 	assert(path != NULL);
 	do {
@@ -1184,8 +1184,7 @@ const cp_plugin_t * CP_API cp_load_plugin(cp_context_t *context, const char *pat
 	return plugin;
 }
 
-int CP_API cp_rescan_plugins(cp_context_t *context, int flags) {
+int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 	/* TODO */
 	return CP_ERR_UNSPECIFIED;
 }
-

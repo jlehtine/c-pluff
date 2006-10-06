@@ -25,13 +25,6 @@
 #define CP_API
 #endif
 
-/* Define CP_API_CONST to declare const API data (outside implementation) */
-#ifdef CP_BUILD
-#define CP_API_CONST
-#else /*CP_BUILD*/
-#define CP_API_CONST const
-#endif /*CP_BUILD*/
-
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus*/
@@ -74,44 +67,32 @@ extern "C" {
 #define CP_ERR_DEADLOCK 9
 
 
-/* Flags for cp_rescan_plugins */
+/* Flags for cp_load_plugins */
 
-/** Setting this flag enables installation of new plug-ins */
-#define CP_RESCAN_INSTALL 0x01
-
-/** Settings this flag enables upgrades of installed plug-ins */
-#define CP_RESCAN_UPGRADE 0x02
-
-/** Setting this flag enables downgrades of installed plug-ins */
-#define CP_RESCAN_DOWNGRADE 0x04
-
-/** Setting this flag enables uninstallation of removed plug-ins */
-#define CP_RESCAN_UNINSTALL 0x08
+/** 
+ * This flag enables upgrades of installed plug-ins by unloading
+ * the old version and installing the new version
+ */
+#define CP_LP_UPGRADE 0x01
 
 /**
- * Setting this flag causes all services to be stopped if there are any
- * changes to the currently installed plug-ins
+ * This flag causes all plug-ins to be stopped if any
+ * plug-ins are to be upgraded
  */
-#define CP_RESCAN_STOP_ALL 0x10
+#define CP_LP_STOP_ALL_ON_UPGRADE 0x02
+
+/**
+ * This flag causes all plug-ins to be stopped if any
+ * plugins are to be installed (also if new version is to be installed
+ * as part of an upgrade)
+ */
+#define CP_LP_STOP_ALL_ON_INSTALL 0x04
 
 /**
  * Setting this flag causes the currently active plug-ins to be restarted
- * (if they were stopped) after all changes to the plug-ins have been made
+ * after all changes to the plug-ins have been made (if they were stopped)
  */
-#define CP_RESCAN_RESTART_ACTIVE 0x20
-
-/**
- * This bitmask corresponds to incremental loading of plug-ins. New plug-ins
- * are installed and installed ones are upgraded if possible but no plug-ins
- * are uninstalled or downgraded.
- */
-#define CP_RESCAN_INCREMENTAL 0x03
-
-/** This bitmask corresponds to full rescan */
-#define CP_RESCAN_FULL 0x0f
-
-/** This bitmask corresponds to full rescan and full restart */
-#define CP_RESCAN_FULL_RESTART 0x3f
+#define CP_LP_RESTART_ACTIVE 0x08
 
 
 /* ------------------------------------------------------------------------
@@ -148,19 +129,19 @@ struct cp_ext_point_t {
 	 * Human-readable, possibly localized, extension point name or NULL
 	 * if not available (UTF-8)
 	 */
-	CP_API_CONST char *name;
+	char *name;
 	
 	/**
 	 * Local identifier uniquely identifying the extension point within the
 	 * providing plug-in (UTF-8)
 	 */
-	CP_API_CONST char *local_id;
+	char *local_id;
 	
 	/** Unique identifier of the extension point (UTF-8) */
-	CP_API_CONST char *global_id;
+	char *global_id;
 
 	/** Path to the extension schema definition or NULL if none. */
-	CP_API_CONST char *schema_path;
+	char *schema_path;
 };
 
 /**
@@ -169,7 +150,7 @@ struct cp_ext_point_t {
 struct cp_cfg_element_t {
 	
 	/** Name of the configuration element (UTF-8) */
-	CP_API_CONST char *name;
+	char *name;
 
 	/** Number of attributes */
 	unsigned int num_atts;
@@ -177,13 +158,13 @@ struct cp_cfg_element_t {
 	/**
 	 * Attribute name, value pairs (alternating, UTF-8 encoded)
 	 */
-	CP_API_CONST char * CP_API_CONST *atts;
+	char **atts;
 	
 	/** The value (text contents) of this configuration element (UTF-8) */
-	CP_API_CONST char *value;
+	char *value;
 	
 	/** The parent, or NULL if root node */
- 	CP_API_CONST cp_cfg_element_t *parent;
+ 	cp_cfg_element_t *parent;
  	
  	/** The index among siblings (0-based) */
  	unsigned int index;
@@ -192,7 +173,7 @@ struct cp_cfg_element_t {
  	unsigned int num_children;
 
 	/** Children */
-	CP_API_CONST cp_cfg_element_t *children;
+	cp_cfg_element_t *children;
 };
 
 /**
@@ -204,22 +185,22 @@ struct cp_extension_t {
 	 * Human-readable, possibly localized, extension name or NULL if not
 	 * available (UTF-8)
 	 **/
-	CP_API_CONST char *name;
+	char *name;
 	
 	/**
 	 * Local identifier uniquely identifying the extension within the
 	 * providing plug-in or NULL if not available (UTF-8)
 	 */
-	CP_API_CONST char *local_id;
+	char *local_id;
 
     /** Unique identifier of the extension or NULL if not available (UTF-8) */
-    CP_API_CONST char *global_id;
+    char *global_id;
 	 
 	/** Unique identifier of the extension point (UTF-8) */
-	CP_API_CONST char *ext_point_id;
+	char *ext_point_id;
 	
 	/** Extension configuration (starting with the extension element) */
-	CP_API_CONST cp_cfg_element_t *configuration;
+	cp_cfg_element_t *configuration;
 };
 
 /**
@@ -228,10 +209,10 @@ struct cp_extension_t {
 struct cp_plugin_import_t {
 	
 	/** Identifier of the imported plug-in (UTF-8) */
-	CP_API_CONST char *plugin_id;
+	char *plugin_id;
 	
 	/** Version to be matched, or NULL if none (UTF-8) */
-	CP_API_CONST char *version;
+	char *version;
 	
 	/** Version match rule */
 	cp_version_match_t match;
@@ -246,49 +227,49 @@ struct cp_plugin_import_t {
 struct cp_plugin_t {
 	
 	/** The associated plug-in context (loading context) */
-	CP_API_CONST cp_context_t *context;
+	cp_context_t *context;
 	
 	/** Human-readable, possibly localized, plug-in name (UTF-8) */
-	CP_API_CONST char *name;
+	char *name;
 	
 	/** Unique identifier (UTF-8) */
-	CP_API_CONST char *identifier;
+	char *identifier;
 	
 	/** Version string (UTF-8) */
-	CP_API_CONST char *version;
+	char *version;
 	
 	/** Provider name, possibly localized (UTF-8) */
-	CP_API_CONST char *provider_name;
+	char *provider_name;
 	
 	/** Absolute path of the plugin directory, or NULL if not known */
-	CP_API_CONST char *path;
+	char *path;
 	
 	/** Number of imports */
 	unsigned int num_imports;
 	
 	/** Imports */
-	CP_API_CONST cp_plugin_import_t *imports;
+	cp_plugin_import_t *imports;
 
     /** The relative path of plug-in runtime library, or empty if none */
-    CP_API_CONST char *lib_path;
+    char *lib_path;
     
     /** The name of the start function, or empty if none */
-    CP_API_CONST char *start_func_name;
+    char *start_func_name;
     
     /** The name of the stop function, or empty if none */
-    CP_API_CONST char *stop_func_name;
+    char *stop_func_name;
 
 	/** Number of extension points provided by this plug-in */
 	unsigned int num_ext_points;
 	
 	/** Extension points provided by this plug-in */
-	CP_API_CONST cp_ext_point_t *ext_points;
+	cp_ext_point_t *ext_points;
 	
 	/** Number of extensions provided by this plugin */
 	unsigned int num_extensions;
 	
 	/** Extensions provided by this plug-in */
-	CP_API_CONST cp_extension_t *extensions;
+	cp_extension_t *extensions;
 
 };
 
@@ -311,7 +292,7 @@ typedef enum cp_plugin_state_t {
 typedef struct cp_plugin_event_t {
 	
 	/** The identifier of the affected plug-in in UTF-8 encoding */
-	CP_API_CONST char *plugin_id;
+	char *plugin_id;
 	
 	/** Old state of the plug-in */
 	cp_plugin_state_t old_state;
@@ -474,63 +455,66 @@ int CP_API cp_remove_event_listener(cp_context_t *context, cp_event_listener_t e
 /**
  * Registers a directory of plug-ins with a plug-in context. The
  * plug-in context will scan the directory when cp_rescan_plugins is called.
+ * Returns CP_OK if the directory has already been registered.
  * 
  * @param context the plug-in context
  * @param dir the directory
- * @return CP_OK (0) on success, or CP_ERR_RESOURCE if out of resources
+ * @return CP_OK (0) on success, or CP_ERR_RESOURCE if insufficient resources
  */
 int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir);
 
 /**
  * Unregisters a previously registered directory of plug-ins from a plug-in context.
- * Does not delete the directory itself.
+ * Does not delete the directory itself. Plug-ins loaded from the removed
+ * directory are not affected until cp_rescan_plugins is called. Does nothing
+ * if the directory has not been registered.
  * 
  * @param context the plug-in context
  * @param dir the previously registered directory
- * @param unload whether the plug-ins loaded from this directory should be unloaded
- * @return CP_OK (0) on success, or error code on error
  */
-int CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir, int unload);
-
-/**
- * Sets the plug-in directories for the plug-in context. The plug-in directories
- * will be scanned when cp_rescan_plugins is called.
- * 
- * @param context the plug-in context
- * @param dirs NULL-terminated array of directories
- * @param unload whether plug-ins loaded from the removed directories should be unloaded
- * @return CP_OK (0) on success, or error code on error
- */
-int CP_API cp_set_plugin_dirs(cp_context_t *context, const char * const *dirs, int unload);
+void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir);
 
 
 /* Functions for controlling plug-ins */
 
 /**
- * (Re)scans for plug-ins in the registered plug-in directories, re-installing updated
- * (and downgraded) plug-ins, installing new plug-ins and uninstalling plug-ins
- * that do not exist anymore. The allowed operations are specified as a bitmask.
- * This method can also be used to initially load the plug-ins.
- * 
- * @param context the plug-in context
- * @param flags a bitmask specifying allowed operations (CPLUFF_RESCAN_...)
- * @return CP_OK (0) on success, an error code on failure
- */
-int CP_API cp_rescan_plugins(cp_context_t *context, int flags);
-
-/**
  * Loads a plug-in from the specified path and returns static information about
- * the loaded plug-in. The plug-in is installed to the specified plug-in context.
- * If loading fails then NULL is returned. The caller must release the returned
- * information by calling cp_release_plugin_info as soon as it does not need
- * the information anymore.
+ * the loaded plug-in. The plug-in is installed to the specified plug-in
+ * context. If operation fails then NULL is returned. The caller must
+ * release the returned information by calling cp_release_plugin_info as soon
+ * as it does not need the information anymore.
  * 
  * @param context the plug-in context
  * @param path the installation path of the plug-in
  * @param error pointer to the location for the returned error code, or NULL
  * @return pointer to the information structure or NULL if error occurs
  */
-const cp_plugin_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int *error);
+cp_plugin_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int *error);
+
+/**
+ * Scans for plug-ins in the registered plug-in directories, installing
+ * new plug-ins and upgrading installed plug-ins. This function can be used to
+ * initially load the plug-ins and to later rescan for new plug-ins.
+ * 
+ * When several versions of the same plug-in is available the most recent
+ * version will be installed. The upgrade behavior depends on the specified
+ * flags. If CP_LP_UPGRADE is set then upgrades to installed plug-ins are
+ * allowed. The old version is unloaded and the new version installed instead.
+ * If CP_LP_STOP_ALL_ON_UPGRADE is set then all active plug-ins are stopped
+ * if any plug-ins are to be upgraded. If CP_LP_STOP_ALL_ON_INSTALL is set then
+ * all active plug-ins are stopped if any plug-ins are to be installed or
+ * upgraded. Finally, if CP_LP_RESTART_ACTIVE is set all currently active
+ * plug-ins will be restarted after the changes (if they were stopped).
+ * 
+ * When removing plug-in files from the plug-in directories, the
+ * plug-ins to be removed must be first unloaded. Therefore this function
+ * does not check for removed plug-ins.
+ * 
+ * @param context the plug-in context
+ * @param flags the bitmask of flags (CP_LP_...)
+ * @return CP_OK (0) on success, an error code on failure
+ */
+int CP_API cp_load_plugins(cp_context_t *context, int flags);
 
 /**
  * Starts a plug-in. The plug-in is first resolved, if necessary, and all
@@ -591,22 +575,44 @@ int CP_API cp_unload_all_plugins(cp_context_t *context);
 
 /**
  * Returns static information about the specified plug-in. The caller must
- * release the information by calling cp_release_plugin_info as soon as
- * it does not need the information anymore.
+ * release the information by calling cp_release_plugin when the information
+ * is not needed anymore.
  * 
  * @param context the plug-in context
  * @param id identifier of the plug-in to be examined
  * @param error filled with an error code, if non-NULL
  * @return pointer to the information structure or NULL if error occurs
  */
-const cp_plugin_t * CP_API cp_get_plugin(cp_context_t *context, const char *id, int *error);
+cp_plugin_t * CP_API cp_get_plugin(cp_context_t *context, const char *id, int *error);
 
 /**
- * Releases a previously obtained plug-in information structure.
+ * Releases a previously obtained plug-in information structure. The
+ * information must not be accessed after it has been released.
  * 
  * @param plugin the plug-in information structure to be released
  */
-void CP_API cp_release_plugin(const cp_plugin_t *plugin);
+void CP_API cp_release_plugin(cp_plugin_t *plugin);
+
+/**
+ * Returns static information about the installed plug-ins. The caller must
+ * release the information by calling cp_release_plugins when the
+ * information is not needed anymore.
+ * 
+ * @param context the plug-in context
+ * @param error filled with an error code, if non-NULL
+ * @param num filled with the number of returned plug-ins, if non-NULL
+ * @return pointer to a NULL-terminated list of pointers to plug-in information
+ * 			or NULL if error occurs
+ */
+cp_plugin_t ** CP_API cp_get_plugins(cp_context_t *context, int *error, int *num);
+
+/**
+ * Releases a previously obtained plug-in information. The information must
+ * not be accessed after it has been released.
+ * 
+ * @param plugins the plug-in information to be released
+ */
+void CP_API cp_release_plugins(cp_plugin_t **plugins);
 
 
 #ifdef __cplusplus

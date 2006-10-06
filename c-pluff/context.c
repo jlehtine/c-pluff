@@ -123,6 +123,13 @@ static void process_event(list_t *list, lnode_t *node, void *event);
 
 /* Generic */
 
+static void process_free_ptr(list_t *list, lnode_t *node, void *dummy) {
+	void *ptr = lnode_get(node);
+	list_delete(list, node);
+	lnode_destroy(node);
+	free(ptr);
+}
+
 static void process_free_eh_holder(list_t *list, lnode_t *node, void *dummy) {
 	eh_holder_t *h = lnode_get(node);
 	list_delete(list, node);
@@ -179,17 +186,23 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 	
 		/* Initialize data structures as necessary */
 		memset(context, 0, sizeof(cp_context_t));
+#ifdef CP_THREADS
 		context->mutex = cpi_create_mutex();
+#endif
 		context->error_handlers = list_create(LISTCOUNT_T_MAX);
 		context->event_listeners = list_create(LISTCOUNT_T_MAX);
+		context->plugin_dirs = list_create(LISTCOUNT_T_MAX);
 		context->plugins = hash_create(HASHCOUNT_T_MAX,
 			(int (*)(const void *, const void *)) strcmp, NULL);
 		context->started_plugins = list_create(LISTCOUNT_T_MAX);
 		context->used_plugins = hash_create(HASHCOUNT_T_MAX,
 			cpi_comp_ptr, cpi_hashfunc_ptr);
-		if (context->mutex == NULL
-			|| context->error_handlers == NULL
+		if (context->error_handlers == NULL
+#ifdef CP_THREADS
+			|| context->mutex == NULL
+#endif
 			|| context->event_listeners == NULL
+			|| context->plugin_dirs == NULL
 			|| context->plugins == NULL
 			|| context->started_plugins == NULL
 			|| context->used_plugins == NULL) {
@@ -230,7 +243,7 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 void CP_API cp_destroy_context(cp_context_t *context) {
 
 #ifdef CP_THREADS
-	assert(!cpi_is_mutex_locked(context->mutex));
+	assert(context->mutex == NULL || !cpi_is_mutex_locked(context->mutex));
 #else
 	assert(!context->locked);
 #endif
@@ -256,6 +269,11 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 		hash_destroy(context->used_plugins);
 		context->used_plugins = NULL;
 	}
+	if (context->plugin_dirs != NULL) {
+		list_process(context->plugin_dirs, NULL, process_free_ptr);
+		list_destroy(context->plugin_dirs);
+		context->plugin_dirs = NULL;
+	}
 	if (context->error_handlers != NULL) {
 		list_process(context->error_handlers, NULL, process_free_eh_holder);
 		list_destroy(context->error_handlers);
@@ -268,9 +286,11 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 	}
 	
 	/* Release mutex */
+#ifdef CP_THREADS
 	if (context->mutex != NULL) {
 		cpi_destroy_mutex(context->mutex);
 	}
+#endif
 
 }
 
@@ -467,6 +487,81 @@ void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *
 	context->event_listeners_frozen++;
 	list_process(context->event_listeners, (void *) event, process_event);
 	context->event_listeners_frozen--;
+	cpi_unlock_context(context);
+}
+
+
+/* Plug-in directories */
+
+int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
+	char *d = NULL;
+	lnode_t *node = NULL;
+	int status = CP_OK;
+	
+	assert(dir != NULL);
+	
+	cpi_lock_context(context);
+	do {
+	
+		/* Check if directory has already been registered */
+		if (list_find(context->plugin_dirs, dir, (int (*)(const void *, const void *)) strcmp) != NULL) {
+			break;
+		}
+	
+		/* Allocate resources */
+		d = malloc(sizeof(char) * (strlen(dir) + 1));
+		node = lnode_create(d);
+		if (d == NULL || node == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+	
+		/* Register directory */
+		strcpy(d, dir);
+		list_append(context->plugin_dirs, node);
+		
+	} while (0);
+	cpi_unlock_context(context);
+
+	/* Release resources on failure */
+	if (status != CP_OK) {	
+		if (d != NULL) {
+			free(d);
+		}
+		if (node != NULL) {
+			lnode_destroy(node);
+		}
+	}
+	
+	/* Report errors */
+	switch (status) {
+		case CP_OK:
+			break;
+		case CP_ERR_RESOURCE:
+			cpi_errorf(context, _("Could not add plug-in directory %s due to insufficient system resources."), dir);
+			break;
+		default:
+			cpi_errorf(context, _("Could not add plug-in directory %s."), dir);
+			break;
+	}
+
+	return status;
+}
+
+void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
+	char *d;
+	lnode_t *node;
+	
+	assert(dir != NULL);
+	
+	cpi_lock_context(context);
+	node = list_find(context->plugin_dirs, dir, (int (*)(const void *, const void *)) strcmp);
+	if (node != NULL) {
+		d = lnode_get(node);
+		list_delete(context->plugin_dirs, node);
+		lnode_destroy(node);
+		free(d);
+	}
 	cpi_unlock_context(context);
 }
 
