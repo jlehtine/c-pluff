@@ -74,28 +74,6 @@ int CP_LOCAL cpi_is_mutex_locked(cpi_mutex_t *mutex);
 
 #endif
 
-/* Condition variable functions */
-
-#if 0
-
-/**
- * Initializes a condition variable.
- * 
- * @param cond the condition variable
- * @return CP_OK on success, error code on failure
- */
-int CP_LOCAL cpi_init_cond(cpi_cond_t *cond);
-
-/**
- * Destroys the specified condition variable.
- * 
- * @param cond the condition variable
- * @return CP_OK on success, error code on failure
- */
-int CP_LOCAL cpi_destroy_cond(cpi_cond_t *cond);
-
-#endif
-
 #ifdef __cplusplus
 }
 #endif /*__cplusplus */
