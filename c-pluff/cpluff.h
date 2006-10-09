@@ -11,7 +11,7 @@
 #define CPLUFF_H_
 
 /* Define CP_API to declare API functions */
-#if defined(_MSC_EXTENSIONS) || defined(__MINGW32__)
+#if defined(__WIN32__)
 #if defined(CP_BUILD) && defined(DLL_EXPORT)
 #define CP_API __declspec(dllexport)
 #elif !defined(CP_BUILD) && !defined(CP_STATIC)

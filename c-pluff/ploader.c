@@ -16,7 +16,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include <dirent.h>
 #include <expat.h>
+#include <errno.h>
 #include "cpluff.h"
 #include "util.h"
 #include "context.h"
@@ -27,25 +29,15 @@
  * Constants
  * ----------------------------------------------------------------------*/
 
-/* Path separator characters to be used */
-
-#ifdef __WIN32__
-
-#define CP_PATHSEP_CHAR '\\'
-#define CP_PATHSEP_STR N_("\\")
-
-#else /*__WIN32__*/
-
-#define CP_PATHSEP_CHAR '/'
-#define CP_PATHSEP_STR N_("/")
-
-#endif /*__WIN32__*/
-
 /** XML parser buffer size (in bytes) */
 #define CP_XML_PARSER_BUFFER_SIZE 4096
 
 /** Initial configuration element value size */
 #define CP_CFG_ELEMENT_VALUE_INITSIZE 64
+
+/** Plugin descriptor name */
+#define CP_PLUGIN_DESCRIPTOR N_("plugin.xml")
+
 
 /* ------------------------------------------------------------------------
  * Internal data types
@@ -957,7 +949,6 @@ static void XMLCALL end_element_handler(
  */
 static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **plugin) {
 	char *file = NULL;
-	const char *postfix = CP_PATHSEP_STR N_("plugin.xml");
 	int status = CP_OK;
 	int fd = -1;
 	XML_Parser parser = NULL;
@@ -972,16 +963,17 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 			status = CP_ERR_IO;
 			break;
 		}
-		if (path[path_len-1] == CP_PATHSEP_CHAR) {
+		if (path[path_len - 1] == CP_PATHSEP_CHAR) {
 			path_len--;
 		}
-		file = malloc((path_len + strlen(postfix) + 1) * sizeof(char));
+		file = malloc((path_len + strlen(CP_PLUGIN_DESCRIPTOR) + 2) * sizeof(char));
 		if (file == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
 		strcpy(file, path);
-		strcpy(file + path_len, postfix);
+		file[path_len] = CP_PATHSEP_CHAR;
+		strcpy(file + path_len + 1, CP_PLUGIN_DESCRIPTOR);
 
 		/* Open the file */
 		{
@@ -1185,6 +1177,133 @@ cp_plugin_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int
 }
 
 int CP_API cp_load_plugins(cp_context_t *context, int flags) {
-	/* TODO */
-	return CP_ERR_UNSPECIFIED;
+	hash_t *avail_plugins = NULL;
+	char *pdir_path = NULL;
+	int pdir_path_size = 0;
+	int status = CP_OK;
+	
+	cpi_lock_context(context);
+	do {
+		lnode_t *dir_node;
+	
+		/* Create a hash for available plug-ins */
+		if ((avail_plugins = hash_create(HASHCOUNT_T_MAX, (int (*)(const void *, const void *)) strcmp, NULL)) == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+	
+		/* Scan plug-in directories for available plug-ins */
+		dir_node = list_first(context->plugin_dirs);
+		while (dir_node != NULL) {
+			char *dir_path;
+			DIR *dir;
+			
+			dir_path = lnode_get(dir_node);
+			dir = opendir(dir_path);
+			if (dir != NULL) {
+				int dir_path_len;
+				struct dirent *de;
+				
+				dir_path_len = strlen(dir_path);
+				if (dir_path[dir_path_len - 1] == CP_PATHSEP_CHAR) {
+					dir_path_len--;
+				}
+				while ((de = readdir(dir)) != NULL) {
+					int pdir_path_len = dir_path_len + 1 + strlen(de->d_name);
+					cp_plugin_t *plugin;
+					int s;
+					hnode_t *hnode;
+
+					/* Allocate memory for plug-in descriptor path */
+					if (pdir_path_size <= pdir_path_len) {
+						char *new_pdir_path;
+						
+						if (pdir_path_size == 0) {
+							pdir_path_size = 128;
+						}
+						while (pdir_path_size <= pdir_path_len) {
+							pdir_path_size *= 2;
+						}
+						new_pdir_path = realloc(pdir_path, pdir_path_size * sizeof(char));
+						if (new_pdir_path == NULL) {
+							cpi_errorf(context, _("Could not check possible plug-in location %s%c%s due to insufficient system resources."), dir_path, CP_PATHSEP_CHAR, de->d_name);
+							status = CP_ERR_RESOURCE;
+							/* continue loading plug-ins from other directories */
+							continue;
+						}
+						pdir_path = new_pdir_path;
+					}
+					
+					/* Construct plug-in descriptor path */
+					strcpy(pdir_path, dir_path);
+					dir_path[dir_path_len] = CP_PATHSEP_CHAR;
+					strcpy(pdir_path + dir_path_len + 1, de->d_name);
+						
+					/* Try to load a plug-in */
+					s = load_plugin(context, pdir_path, &plugin);
+					if (s != CP_OK) {
+						status = s;
+						/* continue loading plug-ins from other directories */
+						continue;
+					}
+					
+					/* Insert plug-in to the list of available plug-ins */
+					if ((hnode = hash_lookup(avail_plugins, plugin->identifier)) != NULL) {
+						cp_plugin_t *plugin2 = hnode_get(hnode);						
+						if (cpi_version_cmp(plugin2->version, plugin->version, 4) < 0) {
+							hash_delete_free(avail_plugins, hnode);
+							cpi_free_plugin(plugin2);
+							hnode = NULL;
+						}
+					}
+					if (hnode == NULL) {
+						if (!hash_alloc_insert(avail_plugins, plugin->identifier, plugin)) {
+							cpi_errorf(context, _("Plug-in %s version %s could not be loaded due to insufficient resources."), plugin->identifier, plugin->version);
+							cpi_free_plugin(plugin);
+							status = CP_ERR_RESOURCE;
+							/* continue loading plug-ins from other directories */
+							continue;
+						}
+					}
+					
+				}
+				if (errno) {
+					cpi_errorf(context, _("Could not read plug-in directory %s: %s"), dir_path, strerror(errno));
+					status = CP_ERR_IO;
+					/* continue loading plug-ins from other directories */
+				}
+				closedir(dir);
+			} else {
+				cpi_errorf(context, _("Could not open plug-in directory %s: %s"), dir_path, strerror(errno));
+				status = CP_ERR_IO;
+				/* continue loading plug-ins from other directories */
+			}
+			
+			dir_node = list_next(context->plugin_dirs, dir_node);
+		}
+		
+		/* Install/upgrade plug-ins */
+		// TODO
+		
+	} while (0);
+	cpi_unlock_context(context);
+
+	/* Release resources */
+	if (pdir_path != NULL) {
+		free(pdir_path);
+	}
+	if (avail_plugins != NULL) {
+		hscan_t hscan;
+		hnode_t *hnode;
+		
+		hash_scan_begin(&hscan, avail_plugins);
+		while ((hnode = hash_scan_next(&hscan)) != NULL) {
+			cp_plugin_t *p = hnode_get(hnode);
+			hash_scan_delfree(avail_plugins, hnode);
+			cpi_free_plugin(p);
+		}
+		hash_destroy(avail_plugins);
+	}
+	
+	return status;
 }

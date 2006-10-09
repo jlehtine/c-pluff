@@ -520,13 +520,13 @@ static int start_plugin(cp_context_t *context, registered_plugin_t *plugin) {
 	if (status != CP_OK) {
 		return status;
 	}
-	assert(plugin->state == CP_PLUGIN_RESOLVED);
 		
 	/* Check if state locked */
 	if (plugin->state_locked) {
 		cpi_errorf(context, _("Plug-in %s could not be started due to conflicting ongoing operation."), plugin->plugin->identifier);
 		return CP_ERR_DEADLOCK;
 	}
+	assert(plugin->state == CP_PLUGIN_RESOLVED);
 	
 	do {
 	

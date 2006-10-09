@@ -23,7 +23,7 @@
  * ----------------------------------------------------------------------*/
 
 /* Define CP_LOCAL to hide internal symbols */
-#if defined(_MSC_EXTENSIONS) || defined(__MINGW32__)
+#if defined(__WIN32__)
 #define CP_LOCAL
 #elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
 #define CP_LOCAL __attribute__ ((visibility ("hidden")))
@@ -42,6 +42,7 @@
 #define textdomain(Domain)
 #define bindtextdomain(Package, Directory)
 #endif /*HAVE_GETTEXT*/
+
 
 /* Additional defines for function attributes (under GCC). */
 #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 5)
@@ -63,5 +64,16 @@
 #else
 #define CP_NORETURN
 #endif
+
+
+/* Path separator characters to be used */
+#ifdef __WIN32__
+#define CP_PATHSEP_CHAR '\\'
+#define CP_PATHSEP_STR N_("\\")
+#else /*__WIN32__*/
+#define CP_PATHSEP_CHAR '/'
+#define CP_PATHSEP_STR N_("/")
+#endif /*__WIN32__*/
+
 
 #endif /*DEFINES_H_*/
