@@ -25,6 +25,10 @@ libcpluff_la_LDFLAGS = -version-info $(APIVERSION) -no-undefined
 include_HEADERS = cpluff.h
 noinst_HEADERS = context.h pcontrol.h util.h
 
-noinst_PROGRAMS = testmain
-testmain_SOURCES = testmain.c
-testmain_LDADD = libcpluff.la
+noinst_PROGRAMS = testploader testpcontrol
+
+testploader_SOURCES = testploader.c
+testploader_LDADD = libcpluff.la
+
+testpcontrol_SOURCES = testpcontrol.c
+testpcontrol_LDADD = libcpluff.la -lreadline

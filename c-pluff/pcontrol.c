@@ -951,7 +951,8 @@ int CP_API cp_unload_all_plugins(cp_context_t *context) {
 }
 
 static cp_plugin_t *get_plugin(cp_context_t *context, registered_plugin_t *rp, int *error) {
-	if (!hash_alloc_insert(context->used_plugins, rp->plugin, rp)) {
+	if (rp->use_count == 0
+		&& !hash_alloc_insert(context->used_plugins, rp->plugin, rp)) {
 		*error = CP_ERR_RESOURCE;
 		cpi_error(context, _("Insufficient resources to return plug-in information."));
 		return NULL;

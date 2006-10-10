@@ -66,9 +66,6 @@ struct cp_context_t {
 	/** List of started plug-ins in the order they were started */
 	list_t *started_plugins;
 	
-	/** Whether starting of plug-ins is denied */
-	int plugin_starts_denied;
-
 	/** Hash of in-use registered plug-ins by plugin pointer */
 	hash_t *used_plugins;
 	

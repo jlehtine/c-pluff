@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
 		exit(1);
 	}
 	if (argc > 1) {
-		const cp_plugin_t *plugin;
+		cp_plugin_t *plugin;
 		
 		printf("Loading plug-in from %s.\n", argv[1]);
 		if ((plugin = cp_load_plugin(context, argv[1], NULL)) != NULL) {

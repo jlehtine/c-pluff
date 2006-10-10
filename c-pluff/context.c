@@ -247,6 +247,14 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 	}
 	
 	/* Release data structures */
+	if (context->used_plugins != NULL) {
+		if (!hash_isempty(context->used_plugins)) {
+			cpi_error(context, _("Some resources were not released at context destruction."));
+		}
+		hash_free_nodes(context->used_plugins);
+		hash_destroy(context->used_plugins);
+		context->used_plugins = NULL;
+	}
 	if (context->plugins != NULL) {
 		assert(hash_isempty(context->plugins));
 		hash_destroy(context->plugins);
@@ -256,11 +264,6 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 		assert(list_isempty(context->started_plugins));
 		list_destroy(context->started_plugins);
 		context->started_plugins = NULL;
-	}
-	if (context->used_plugins != NULL) {
-		hash_free_nodes(context->used_plugins);
-		hash_destroy(context->used_plugins);
-		context->used_plugins = NULL;
 	}
 	if (context->plugin_dirs != NULL) {
 		list_process(context->plugin_dirs, NULL, cpi_process_free_ptr);
