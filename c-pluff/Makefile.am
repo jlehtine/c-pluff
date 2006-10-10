@@ -7,7 +7,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libcpluff po
+SUBDIRS = libcpluff console po
 
 noinst_PROGRAMS = testploader testpcontrol
 

@@ -21,6 +21,9 @@ AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.14.4])
 AM_ICONV
 
+# Copyright defines
+AC_DEFINE([CP_COPYRIGHT], ["Copyright 2006 Johannes Lehtinen"], [C-Pluff copyright string])
+
 # C/C++ compiler settings
 # -------------------
 AC_LANG([C])
@@ -115,19 +118,37 @@ esac
 AM_CONDITIONAL([THREADS_POSIX], test "$cp_threads" = Posix)
 AM_CONDITIONAL([THREADS_WINDOWS], test "$cp_threads" = Windows)
 
-# Debugging support
-# -----------------
-AC_ARG_ENABLE([debug],
-  AS_HELP_STRING([--enable-debug], [enable debugging and assertion checks]))
-if ! test "$enable_debug" = yes; then
-  CPPFLAGS="$CPPFLAGS -DNDEBUG"
+# Check for Expat XML parsing library
+# -----------------------------------
+AC_CHECK_HEADER([expat.h],, AC_MSG_ERROR([Expat header file is required]))
+AC_CHECK_LIB([expat], [XML_ParseBuffer],, AC_MSG_ERROR([Expat library is required]))
+
+# Check for dynamic loader library
+# --------------------------------
+#AC_CHECK_HEADER([dlfcn.h],, AC_MSG_ERROR([Dynamic linking loader header files are required]))
+#AC_CHECK_LIB([dl], [dlopen],, AC_MSG_ERROR([Dynamic linking loader library is required]))
+
+# Check for GNU readline library
+# ------------------------------
+AC_ARG_WITH([readline],
+  AS_HELP_STRING([--without-readline],
+    [do not use GNU readline library]))
+if test "$with_readline" != no; then
+  have_readline=yes
+  if test "$with_readline" = yes; then
+    AC_CHECK_HEADER([readline/readline.h],
+      AC_CHECK_LIB([readline], [add_history], [],
+        AC_MSG_ERROR([GNU readline library is required for requested readline support])),
+      AC_MSG_ERROR([GNU readline headers are required for requested readline support]))
+  else
+    AC_CHECK_HEADER([readline/readline.h],
+      AC_CHECK_LIB([readline], [add_history], [], have_readline=no),
+      have_readline=no)
+  fi
+else
+  have_readline=no
 fi
-AC_ARG_ENABLE([gcc-warnings],
-  AS_HELP_STRING([--enable-gcc-warnings],
-    [enable default set of GCC compiler warnings]))
-if test "$enable_gcc_warnings" = yes; then
-  CFLAGS="$CFLAGS -Wall -pedantic -std=c99"
-fi
+AM_CONDITIONAL([HAVE_READLINE], test "$have_readline" = yes)
 
 # Check if dmalloc usage requested
 # --------------------------------
@@ -142,19 +163,23 @@ if test "$with_dmalloc" = yes; then
   AC_DEFINE([DMALLOC_FUNC_CHECK], [], [Use additional dmalloc checks])
 fi
 
-# Check for Expat XML parsing library
-# -----------------------------------
-AC_CHECK_HEADER([expat.h],, AC_MSG_ERROR([Expat header file is required]))
-AC_CHECK_LIB([expat], [XML_ParseBuffer],, AC_MSG_ERROR([Expat library is required]))
-
-# Check for dynamic loader library
-# --------------------------------
-#AC_CHECK_HEADER([dlfcn.h],, AC_MSG_ERROR([Dynamic linking loader header files are required]))
-#AC_CHECK_LIB([dl], [dlopen],, AC_MSG_ERROR([Dynamic linking loader library is required]))
+# Debugging support
+# -----------------
+AC_ARG_ENABLE([debug],
+  AS_HELP_STRING([--enable-debug], [enable debugging and assertion checks]))
+if ! test "$enable_debug" = yes; then
+  CPPFLAGS="$CPPFLAGS -DNDEBUG"
+fi
+AC_ARG_ENABLE([gcc-warnings],
+  AS_HELP_STRING([--enable-gcc-warnings],
+    [enable default set of GCC compiler warnings]))
+if test "$enable_gcc_warnings" = yes; then
+  CFLAGS="$CFLAGS -Wall -pedantic -std=c99"
+fi
 
 # Output Makefiles
 # ----------------
-AC_CONFIG_FILES([Makefile libcpluff/Makefile po/Makefile.in])
+AC_CONFIG_FILES([Makefile libcpluff/Makefile console/Makefile po/Makefile.in])
 AC_OUTPUT
 
 
@@ -175,6 +200,7 @@ case "$DEFS" in
     ;;
 esac
 AC_MSG_NOTICE([  localization support:           $val])
+AC_MSG_NOTICE([  use GNU readline library:       $have_readline])
 if test "$enable_debug" = yes; then
   val=yes
 else
