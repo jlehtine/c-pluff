@@ -15,8 +15,8 @@
 #ifdef HAVE_DLOPEN
 #include <dlfcn.h>
 #endif
-#include "kazlib/list.h"
-#include "kazlib/hash.h"
+#include "../kazlib/list.h"
+#include "../kazlib/hash.h"
 #include "cpluff.h"
 #include "context.h"
 #include "pcontrol.h"

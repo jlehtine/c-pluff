@@ -15,8 +15,8 @@
  * Inclusions
  * ----------------------------------------------------------------------*/
 
-#include "kazlib/list.h"
-#include "kazlib/hash.h"
+#include "../kazlib/list.h"
+#include "../kazlib/hash.h"
 #include "defines.h"
 #include "cpluff.h"
 #ifdef CP_THREADS

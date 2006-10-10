@@ -22,7 +22,7 @@
 #define LIST_H
 
 /* Hide global symbols, added by JLe */
-#include "../defines.h"
+#include "../libcpluff/defines.h"
 
 #include <limits.h>
 

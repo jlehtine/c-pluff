@@ -8,8 +8,8 @@
 #ifndef UTIL_H_
 #define UTIL_H_
 
-#include "kazlib/list.h"
-#include "kazlib/hash.h"
+#include "../kazlib/list.h"
+#include "../kazlib/hash.h"
 #include "cpluff.h"
 #include "defines.h"
 

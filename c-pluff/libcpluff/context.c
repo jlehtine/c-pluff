@@ -12,7 +12,7 @@
 #include <assert.h>
 #include <stdarg.h>
 #include <string.h>
-#include "kazlib/list.h"
+#include "../kazlib/list.h"
 #include "cpluff.h"
 #include "util.h"
 #include "context.h"

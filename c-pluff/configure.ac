@@ -11,7 +11,7 @@ AC_INIT([C-Pluff], [0.1], [johannes.lehtinen@iki.fi], [c-pluff])
 AC_COPYRIGHT([Copyright 2005 Johannes Lehtinen
 This configure script is free software; Johannes Lehtinen gives unlimited
 permission to copy, distribute and modify it.])
-AC_CONFIG_SRCDIR([cpluff.h])
+AC_CONFIG_SRCDIR([libcpluff/cpluff.h])
 AC_CONFIG_AUX_DIR([auxliary])
 
 # Automake initialization
@@ -154,7 +154,7 @@ AC_CHECK_LIB([expat], [XML_ParseBuffer],, AC_MSG_ERROR([Expat library is require
 
 # Output Makefiles
 # ----------------
-AC_CONFIG_FILES([Makefile po/Makefile.in])
+AC_CONFIG_FILES([Makefile libcpluff/Makefile po/Makefile.in])
 AC_OUTPUT
 
 

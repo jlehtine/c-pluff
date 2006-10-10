@@ -8,7 +8,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <assert.h>
-#include "kazlib/list.h"
+#include "../kazlib/list.h"
 #include "cpluff.h"
 #include "defines.h"
 #include "util.h"
