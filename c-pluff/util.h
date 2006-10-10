@@ -69,6 +69,19 @@ int CP_LOCAL cpi_ptrset_remove(list_t *set, const void *ptr);
 int CP_LOCAL cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
 
 
+/* Other list processing utility functions */
+
+/**
+ * Processes a node of the list by freeing the associated pointer and
+ * deleting the node.
+ * 
+ * @param list the list being processed
+ * @param node the list node being processed
+ * @param dummy a dummy argument to comply with prototype
+ */
+void CP_LOCAL cpi_process_free_ptr(list_t *list, lnode_t *node, void *dummy);
+
+
 /* For error handling */
 
 /**
@@ -100,6 +113,26 @@ int CP_LOCAL cpi_version_isvalid(const char *v) CP_PURE;
  * @return negative if v1 < v2, zero if v1 = v2 or positive if v1 > v2
  */
 int CP_LOCAL cpi_version_cmp(const char *v1, const char *v2, int nc) CP_PURE;
+
+
+/* Miscellaneous utility functions */
+
+/**
+ * Makes a duplicate of the specified string. The required memory is allocated
+ * using malloc.
+ * 
+ * @param str the string to be duplicated
+ */
+#ifdef HAVE_DMALLOC_H
+char * CP_LOCAL cpi_strdup_dm(const char *src, const char *file, int line);
+#else
+char * CP_LOCAL cpi_strdup(const char *src);
+#endif
+
+#ifdef HAVE_DMALLOC_H
+#define cpi_strdup(a) cpi_strdup_dm((a), __FILE__, __LINE__)
+#endif
+
 
 #ifdef __cplusplus
 }

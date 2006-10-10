@@ -265,7 +265,7 @@ static void *parser_malloc(ploader_context_t *plcontext, size_t size) {
 }
 
 #ifdef HAVE_DMALLOC_H
-#define parser_malloc(a, b) parser_malloc_dm(a, b, __LINE__)
+#define parser_malloc(a, b) parser_malloc_dm((a), (b), __LINE__)
 #endif
 
 /**
@@ -276,9 +276,9 @@ static void *parser_malloc(ploader_context_t *plcontext, size_t size) {
  * @param src the source string to be copied
  * @return copy of the string, or NULL if memory allocation failed
  */
- #ifdef HAVE_DMALLOC_H
+#ifdef HAVE_DMALLOC_H
 static char *parser_strdup_dm(ploader_context_t *plcontext, const char *src, int line) {
- #else
+#else
 static char *parser_strdup(ploader_context_t *plcontext, const char *src) {
 #endif
 	char *dst;
@@ -295,7 +295,7 @@ static char *parser_strdup(ploader_context_t *plcontext, const char *src) {
 }
 
 #ifdef HAVE_DMALLOC_H
-#define parser_strdup(a, b) parser_strdup_dm(a, b, __LINE__)
+#define parser_strdup(a, b) parser_strdup_dm((a), (b), __LINE__)
 #endif
 
 /**
@@ -1178,13 +1178,18 @@ cp_plugin_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int
 
 int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 	hash_t *avail_plugins = NULL;
+	list_t *started_plugins = NULL;
+	cp_plugin_t **plugins = NULL;
 	char *pdir_path = NULL;
 	int pdir_path_size = 0;
+	int plugins_stopped = 0;
 	int status = CP_OK;
 	
 	cpi_lock_context(context);
 	do {
-		lnode_t *dir_node;
+		lnode_t *lnode;
+		hscan_t hscan;
+		hnode_t *hnode;
 	
 		/* Create a hash for available plug-ins */
 		if ((avail_plugins = hash_create(HASHCOUNT_T_MAX, (int (*)(const void *, const void *)) strcmp, NULL)) == NULL) {
@@ -1193,12 +1198,12 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 		}
 	
 		/* Scan plug-in directories for available plug-ins */
-		dir_node = list_first(context->plugin_dirs);
-		while (dir_node != NULL) {
+		lnode = list_first(context->plugin_dirs);
+		while (lnode != NULL) {
 			char *dir_path;
 			DIR *dir;
 			
-			dir_path = lnode_get(dir_node);
+			dir_path = lnode_get(lnode);
 			dir = opendir(dir_path);
 			if (dir != NULL) {
 				int dir_path_len;
@@ -1279,11 +1284,106 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 				/* continue loading plug-ins from other directories */
 			}
 			
-			dir_node = list_next(context->plugin_dirs, dir_node);
+			lnode = list_next(context->plugin_dirs, lnode);
+		}
+		
+		/* Copy the list of started plug-ins, if necessary */
+		if ((flags & CP_LP_RESTART_ACTIVE)
+			&& (flags & (CP_LP_UPGRADE | CP_LP_STOP_ALL_ON_INSTALL))) {
+			int s, i;
+
+			if ((plugins = cp_get_plugins(context, &s, NULL)) == NULL) {
+				status = s;
+				break;
+			}
+			if ((started_plugins = list_create(LISTCOUNT_T_MAX)) == NULL) {
+				status = CP_ERR_RESOURCE;
+				break;
+			}
+			for (i = 0; plugins[i] != NULL; i++) {
+				cp_plugin_state_t state;
+				
+				state = cp_get_plugin_state(context, plugins[i]->identifier);
+				if (state == CP_PLUGIN_STARTING || state == CP_PLUGIN_ACTIVE) {
+					char *pid;
+				
+					if ((pid = cpi_strdup(plugins[i]->identifier)) == NULL) {
+						status = CP_ERR_RESOURCE;
+						break;
+					}
+					if ((lnode = lnode_create(pid)) == NULL) {
+						free(pid);
+						status = CP_ERR_RESOURCE;
+						break;
+					}
+					list_append(started_plugins, lnode);
+				}
+			}
+			cp_release_plugins(plugins);
+			plugins = NULL;
 		}
 		
 		/* Install/upgrade plug-ins */
-		// TODO
+		hash_scan_begin(&hscan, avail_plugins);
+		while ((hnode = hash_scan_next(&hscan)) != NULL) {
+			cp_plugin_t *plugin;
+			cp_plugin_state_t state;
+			int s;
+			
+			plugin = hnode_get(hnode);
+			state = cp_get_plugin_state(context, plugin->identifier);
+			
+			/* Unload the installed plug-in if it is to be upgraded */
+			if (state >= CP_PLUGIN_INSTALLED
+				&& (flags & CP_LP_UPGRADE)) {
+				if ((flags & (CP_LP_STOP_ALL_ON_UPGRADE | CP_LP_STOP_ALL_ON_INSTALL))
+					&& !plugins_stopped) {
+					plugins_stopped = 1;
+					s = cp_stop_all_plugins(context);
+					if (s != CP_OK) {
+						status = s;
+						break;
+					}
+				}
+				s = cp_unload_plugin(context, plugin->identifier);
+				if (s != CP_OK) {
+					status = s;
+					break;
+				}
+				state = CP_PLUGIN_UNINSTALLED;
+				assert(cp_get_plugin_state(context, plugin->identifier) == state);
+			}
+			
+			/* Install the plug-in, if to be installed */
+			if (state == CP_PLUGIN_UNINSTALLED) {
+				if ((flags & CP_LP_STOP_ALL_ON_INSTALL) && !plugins_stopped) {
+					plugins_stopped = 1;
+					s = cp_stop_all_plugins(context);
+					if (s != CP_OK) {
+						status = s;
+						break;
+					}
+				}
+				cpi_install_plugin(context, plugin, 0);
+				hash_scan_delfree(avail_plugins, hnode);
+			}
+		}
+		
+		/* Restart stopped plug-ins if necessary */
+		if (started_plugins != NULL) {
+			lnode = list_first(started_plugins);
+			while (lnode != NULL) {
+				char *pid;
+				int s;
+				
+				pid = lnode_get(lnode);
+				s = cp_start_plugin(context, pid);
+				if (s != CP_OK) {
+					status = s;
+				}
+				lnode = list_next(started_plugins, lnode);
+			}
+		}
 		
 	} while (0);
 	cpi_unlock_context(context);
@@ -1303,6 +1403,25 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 			cpi_free_plugin(p);
 		}
 		hash_destroy(avail_plugins);
+	}
+	if (started_plugins != NULL) {
+		list_process(started_plugins, NULL, cpi_process_free_ptr);
+		list_destroy(started_plugins);
+	}
+	if (plugins != NULL) {
+		cp_release_plugins(plugins);
+	}
+
+	/* Error handling */
+	switch (status) {
+		case CP_OK:
+			break;
+		case CP_ERR_RESOURCE:
+			cpi_error(context, _("Could not load plug-ins due to insufficient system resources."));
+			break;
+		default:
+			cpi_error(context, _("Could not load plug-ins."));
+			break;
 	}
 	
 	return status;

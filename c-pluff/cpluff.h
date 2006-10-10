@@ -76,13 +76,13 @@ extern "C" {
 #define CP_LP_UPGRADE 0x01
 
 /**
- * This flag causes all plug-ins to be stopped if any
+ * This flag causes all plug-ins to be stopped before any
  * plug-ins are to be upgraded
  */
 #define CP_LP_STOP_ALL_ON_UPGRADE 0x02
 
 /**
- * This flag causes all plug-ins to be stopped if any
+ * This flag causes all plug-ins to be stopped before any
  * plugins are to be installed (also if new version is to be installed
  * as part of an upgrade)
  */
@@ -607,13 +607,22 @@ void CP_API cp_release_plugin(cp_plugin_t *plugin);
 cp_plugin_t ** CP_API cp_get_plugins(cp_context_t *context, int *error, int *num);
 
 /**
- * Releases a previously obtained plug-in information. The information must
- * not be accessed after it has been released.
+ * Releases a previously obtained plug-in information list. The
+ * information must not be accessed after it has been released.
  * 
  * @param plugins the plug-in information to be released
  */
 void CP_API cp_release_plugins(cp_plugin_t **plugins);
 
+/**
+ * Returns the current state of the specified plug-in. Returns
+ * CP_PLUGIN_UNINSTALLED if the specified plug-in identifier is unknown.
+ * 
+ * @param context the plug-in context
+ * @param id the plug-in identifier
+ * @return the current state of the plug-in
+ */
+cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *context, const char *id);
 
 #ifdef __cplusplus
 } /*extern "C"*/

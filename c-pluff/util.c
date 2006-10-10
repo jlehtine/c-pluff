@@ -81,6 +81,13 @@ int CP_LOCAL cpi_ptrset_contains(list_t *set, const void *ptr) {
 	return list_find(set, ptr, cpi_comp_ptr) != NULL;
 }
 
+void CP_LOCAL cpi_process_free_ptr(list_t *list, lnode_t *node, void *dummy) {
+	void *ptr = lnode_get(node);
+	list_delete(list, node);
+	lnode_destroy(node);
+	free(ptr);
+}
+
 void CP_LOCAL cpi_abortf(const char *msg, ...) {
 	va_list params;
 	char fmsg[256];
@@ -192,4 +199,23 @@ int CP_LOCAL cpi_version_cmp(const char *v1, const char *v2, int nc) {
 		return 0;
 	}
 	return strcmp(v1 + i1, v2 + i2);
+}
+
+#ifdef HAVE_DMALLOC_H
+char * CP_LOCAL cpi_strdup_dm(const char *src, const char *file, int line) {
+#else
+char * CP_LOCAL cpi_strdup(const char *src) {
+#endif
+	char *dst;
+	size_t size = sizeof(char) * (strlen(src) + 1);
+
+#ifdef HAVE_DMALLOC_H
+	dst = dmalloc_malloc(file, line, size, DMALLOC_FUNC_MALLOC, 0, 0);
+#else
+	dst = malloc(size);
+#endif
+	if (dst != NULL) {
+		strcpy(dst, src);
+	}
+	return dst;
 }

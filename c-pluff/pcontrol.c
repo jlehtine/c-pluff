@@ -1072,3 +1072,17 @@ void CP_API cp_release_plugins(cp_plugin_t **plugins) {
 	}
 	free(plugins);
 }
+
+cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *context, const char *id) {
+	cp_plugin_state_t state = CP_PLUGIN_UNINSTALLED;
+	hnode_t *hnode;
+	
+	/* Look up the plug-in state */
+	cpi_lock_context(context);
+	if ((hnode = hash_lookup(context->plugins, id)) != NULL) {
+		registered_plugin_t *rp = hnode_get(hnode);
+		state = rp->state;
+	}
+	cpi_unlock_context(context);
+	return state;
+}

@@ -123,13 +123,6 @@ static void process_event(list_t *list, lnode_t *node, void *event);
 
 /* Generic */
 
-static void process_free_ptr(list_t *list, lnode_t *node, void *dummy) {
-	void *ptr = lnode_get(node);
-	list_delete(list, node);
-	lnode_destroy(node);
-	free(ptr);
-}
-
 static void process_free_eh_holder(list_t *list, lnode_t *node, void *dummy) {
 	eh_holder_t *h = lnode_get(node);
 	list_delete(list, node);
@@ -270,7 +263,7 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 		context->used_plugins = NULL;
 	}
 	if (context->plugin_dirs != NULL) {
-		list_process(context->plugin_dirs, NULL, process_free_ptr);
+		list_process(context->plugin_dirs, NULL, cpi_process_free_ptr);
 		list_destroy(context->plugin_dirs);
 		context->plugin_dirs = NULL;
 	}
