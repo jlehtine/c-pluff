@@ -305,6 +305,7 @@ int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_
 		status = CP_ERR_DEADLOCK;
 	} else if ((holder = malloc(sizeof(eh_holder_t))) != NULL) {
 		holder->error_handler = error_handler;
+		holder->context = context;
 		if ((node = lnode_create(holder)) != NULL) {
 			list_append(context->error_handlers, node);
 			status = CP_OK;
@@ -418,6 +419,7 @@ int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t even
 		status = CP_ERR_DEADLOCK;
 	} else if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
 		holder->event_listener = event_listener;
+		holder->context = context;
 		if ((node = lnode_create(holder)) != NULL) {
 			list_append(context->event_listeners, node);
 			status = CP_OK;

@@ -8,9 +8,27 @@
 /* Use some definitions from libcpluff sources */
 #include "../libcpluff/defines.h"
 
+
+/* ------------------------------------------------------------------------
+ * Global variables
+ * ----------------------------------------------------------------------*/
+
+/* Whether this version is linked with the GNU readline library */
+extern const int have_readline;
+
+/* The available commands */
+extern const char *commands[];
+
+
 /* ------------------------------------------------------------------------
  * Function declarations
  * ----------------------------------------------------------------------*/
+
+/**
+ * Initializes command line reading. Must be called once to initialize
+ * everything before using cmdline_input.
+ */
+void cmdline_init(void);
 
 /**
  * Returns a command line entered by the user. Uses the specified prompt.

@@ -31,7 +31,7 @@ static int gettext_initialized = 0;
 void CP_API cp_init(void) {
 	if (!gettext_initialized) {
 		gettext_initialized = 1;
-		bindtextdomain(PACKAGE, CP_DATADIR "/locale");
+		bindtextdomain(PACKAGE, CP_DATADIR CP_PATHSEP_STR "locale");
 	}
 }
 

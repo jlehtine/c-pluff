@@ -11,6 +11,8 @@
 
 #define CMDLINE_SIZE 256
 
+void cmdline_init(void) {}
+
 char *cmdline_input(const char *prompt) {
 	static char cmdline[CMDLINE_SIZE];
 	int i, success = 0;

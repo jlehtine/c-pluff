@@ -954,6 +954,8 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 	XML_Parser parser = NULL;
 	ploader_context_t *plcontext = NULL;
 
+	assert(context != NULL);
+	assert(path != NULL);
 	do {
 		int path_len;
 
@@ -1143,6 +1145,7 @@ cp_plugin_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int
 	cp_plugin_t *plugin = NULL;
 	int status = CP_OK;
 
+	assert(context != NULL);
 	assert(path != NULL);
 	do {
 

@@ -18,4 +18,4 @@ cpluff_console_LDADD = ../libcpluff/libcpluff.la
 if HAVE_READLINE
 cpluff_console_LDADD += -lreadline
 endif
-cpluff_console_CPPFLAGS = -DCP_DATADIR="\"$(datadir)\""
+cpluff_console_CPPFLAGS = -DCP_DATADIR="\"$(datadir)\"" -DCP_PKGDATADIR="\"$(pkgdatadir)\""
