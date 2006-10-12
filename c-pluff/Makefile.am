@@ -8,11 +8,3 @@
 ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = libcpluff console po
-
-noinst_PROGRAMS = testploader testpcontrol
-
-testploader_SOURCES = testploader.c
-testploader_LDADD = libcpluff/libcpluff.la
-
-testpcontrol_SOURCES = testpcontrol.c
-testpcontrol_LDADD = libcpluff/libcpluff.la -lreadline
