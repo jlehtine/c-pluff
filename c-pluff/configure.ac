@@ -5,10 +5,18 @@ dnl --------------------------------------------------------------------------
 dnl
 dnl Process this file with autoconf to produce a configure script.
 
+dnl Version information
+dnl -------------------
+dnl Use API version/revision 0 for inofficial versions and snapshots.
+define(RELEASE_VERSION, 0)
+define(API_CURRENT, 0)
+define(API_REVISION, 0)
+define(API_AGE, 0)
+
 # Autoconf initialization
 # -----------------------
-AC_INIT([C-Pluff], [0], [johannes.lehtinen@iki.fi], [cpluff])
-AC_COPYRIGHT([Copyright 2005 Johannes Lehtinen
+AC_INIT([C-Pluff], RELEASE_VERSION, [johannes.lehtinen@iki.fi], [cpluff])
+AC_COPYRIGHT([Copyright 2006 Johannes Lehtinen
 This configure script is free software; Johannes Lehtinen gives unlimited
 permission to copy, distribute and modify it.])
 AC_CONFIG_SRCDIR([libcpluff/cpluff.h.in])
@@ -18,9 +26,9 @@ AC_CONFIG_HEADERS([libcpluff/config.h])
 # API version information
 # -----------------------
 # Use 0 for inofficial versions and snapshots
-CP_API_CURRENT=0
-CP_API_REVISION=0
-CP_API_AGE=0
+CP_API_CURRENT=API_CURRENT
+CP_API_REVISION=API_REVISION
+CP_API_AGE=API_AGE
 AC_SUBST([CP_API_CURRENT])
 AC_SUBST([CP_API_REVISION])
 AC_SUBST([CP_API_AGE])
