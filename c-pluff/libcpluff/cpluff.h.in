@@ -34,6 +34,21 @@ extern "C" {
  * Constants
  * ----------------------------------------------------------------------*/
 
+/* Version constants for build time checks */
+
+/** The C-Pluff release version string for the header files */
+#define CP_RELEASE_VERSION "@PACKAGE_VERSION@"
+
+/** The C-Pluff API version (integer) */
+#define CP_API_VERSION @CP_API_CURRENT@
+
+/** The C-Pluff API revision (integer) */
+#define CP_API_REVISION @CP_API_REVISION@
+
+/** The C-Pluff API backwards compatibility age (integer) */
+#define CP_API_AGE @CP_API_AGE@
+
+
 /* Error codes for operations that might fail */
 
 /** Operation performed successfully */
@@ -352,13 +367,50 @@ typedef void (*cp_stop_t)(cp_context_t *context);
  * Function declarations
  * ----------------------------------------------------------------------*/
 
+/* Information functions */
+
+/**
+ * Returns the host type this binary was built for.
+ * 
+ * @return the canonical host type
+ */
+char * CP_API cp_get_host(void);
+
+/**
+ * Returns the release version string of the library.
+ *
+ * @return the release version
+ */ 
+char * CP_API cp_get_release_version(void);
+
+/**
+ * Returns the version of the library API.
+ *
+ * @return the version of the library API
+ */
+int CP_API cp_get_api_version(void);
+
+/**
+ * Returns the revision of the library API.
+ *
+ * @return the revision of the library API
+ */
+int CP_API cp_get_api_revision(void);
+
+/**
+ * Returns the backward compatibility age of the library API.
+ *
+ * @return the backward compatibility age of the library API
+ */
+int CP_API cp_get_api_age(void);
+
 
 /* Initialization and destroy functions */
 
 /**
  * Initializes the plug-in framework. This function must be called
- * before calling any other plug-in framework functions. This function may be
- * called multiple times but it is not thread-safe.
+ * before calling any if the plug-in framework functions declared below.
+ * This function may be called multiple times but it is not thread-safe.
  */
 void CP_API cp_init(void);
 

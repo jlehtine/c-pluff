@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
-#include "cpluff.h"
+#include "libcpluff/cpluff.h"
 
 static const char *strnull(const char *str) {
 	return (str != NULL ? str : "<NULL>");

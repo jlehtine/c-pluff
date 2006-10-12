@@ -966,7 +966,7 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 			status = CP_ERR_IO;
 			break;
 		}
-		if (path[path_len - 1] == CP_PATHSEP_CHAR) {
+		if (path[path_len - 1] == CP_FNAMESEP_CHAR) {
 			path_len--;
 		}
 		file = malloc((path_len + strlen(CP_PLUGIN_DESCRIPTOR) + 2) * sizeof(char));
@@ -975,7 +975,7 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 			break;
 		}
 		strcpy(file, path);
-		file[path_len] = CP_PATHSEP_CHAR;
+		file[path_len] = CP_FNAMESEP_CHAR;
 		strcpy(file + path_len + 1, CP_PLUGIN_DESCRIPTOR);
 
 		/* Open the file */
@@ -1214,7 +1214,7 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 				struct dirent *de;
 				
 				dir_path_len = strlen(dir_path);
-				if (dir_path[dir_path_len - 1] == CP_PATHSEP_CHAR) {
+				if (dir_path[dir_path_len - 1] == CP_FNAMESEP_CHAR) {
 					dir_path_len--;
 				}
 				while ((de = readdir(dir)) != NULL) {
@@ -1235,7 +1235,7 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 						}
 						new_pdir_path = realloc(pdir_path, pdir_path_size * sizeof(char));
 						if (new_pdir_path == NULL) {
-							cpi_errorf(context, _("Could not check possible plug-in location %s%c%s due to insufficient system resources."), dir_path, CP_PATHSEP_CHAR, de->d_name);
+							cpi_errorf(context, _("Could not check possible plug-in location %s%c%s due to insufficient system resources."), dir_path, CP_FNAMESEP_CHAR, de->d_name);
 							status = CP_ERR_RESOURCE;
 							/* continue loading plug-ins from other directories */
 							continue;
@@ -1245,7 +1245,7 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 					
 					/* Construct plug-in descriptor path */
 					strcpy(pdir_path, dir_path);
-					dir_path[dir_path_len] = CP_PATHSEP_CHAR;
+					dir_path[dir_path_len] = CP_FNAMESEP_CHAR;
 					strcpy(pdir_path + dir_path_len + 1, de->d_name);
 						
 					/* Try to load a plug-in */

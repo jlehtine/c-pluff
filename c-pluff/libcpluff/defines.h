@@ -69,14 +69,4 @@
 #endif
 
 
-/* Path separator characters to be used */
-#ifdef __WIN32__
-#define CP_PATHSEP_CHAR '\\'
-#define CP_PATHSEP_STR N_("\\")
-#else /*__WIN32__*/
-#define CP_PATHSEP_CHAR '/'
-#define CP_PATHSEP_STR N_("/")
-#endif /*__WIN32__*/
-
-
 #endif /*DEFINES_H_*/

@@ -7,13 +7,23 @@ dnl Process this file with autoconf to produce a configure script.
 
 # Autoconf initialization
 # -----------------------
-AC_INIT([C-Pluff], [0.1], [johannes.lehtinen@iki.fi], [cpluff])
+AC_INIT([C-Pluff], [0], [johannes.lehtinen@iki.fi], [cpluff])
 AC_COPYRIGHT([Copyright 2005 Johannes Lehtinen
 This configure script is free software; Johannes Lehtinen gives unlimited
 permission to copy, distribute and modify it.])
-AC_CONFIG_SRCDIR([libcpluff/cpluff.h])
+AC_CONFIG_SRCDIR([libcpluff/cpluff.h.in])
 AC_CONFIG_AUX_DIR([auxliary])
 AC_CONFIG_HEADERS([libcpluff/config.h])
+
+# API version information
+# -----------------------
+# Use 0 for inofficial versions and snapshots
+CP_API_CURRENT=0
+CP_API_REVISION=0
+CP_API_AGE=0
+AC_SUBST([CP_API_CURRENT])
+AC_SUBST([CP_API_REVISION])
+AC_SUBST([CP_API_AGE])
 
 # Automake initialization
 # -----------------------
@@ -175,9 +185,24 @@ if test "$enable_gcc_warnings" = yes; then
   CFLAGS="$CFLAGS -Wall -pedantic -std=c99"
 fi
 
+# File name separator character
+# ------------------------
+AC_MSG_CHECKING([which file name separator to use])
+case "$host" in
+  *-*-mingw32* | *-*-windows*)
+  	cp_fnamesep='\\'
+  	;;
+  *)
+  	cp_fnamesep='/'
+  	;;
+esac
+AC_MSG_RESULT(['$cp_fnamesep'])
+AC_DEFINE_UNQUOTED([CP_FNAMESEP_CHAR], ['$cp_fnamesep'], [File name separator character])
+AC_DEFINE_UNQUOTED([CP_FNAMESEP_STR], ["$cp_fnamesep"], [File name separator string])
+
 # Output Makefiles
 # ----------------
-AC_CONFIG_FILES([Makefile libcpluff/Makefile console/Makefile po/Makefile.in])
+AC_CONFIG_FILES([Makefile libcpluff/cpluff.h libcpluff/Makefile console/Makefile po/Makefile.in])
 AC_OUTPUT
 
 
@@ -185,6 +210,8 @@ AC_OUTPUT
 # -------------------------------
 AC_MSG_NOTICE([-----------------------------------------------------------])
 AC_MSG_NOTICE([C-Pluff configuration])
+AC_MSG_NOTICE([  release version:                $PACKAGE_VERSION])
+AC_MSG_NOTICE([  API version:                    $CP_API_CURRENT:$CP_API_REVISION:$CP_API_AGE])
 if test -n "$cp_threads"; then
   val="yes ($cp_threads)"
 else
@@ -204,6 +231,7 @@ if test "$enable_debug" = yes; then
 else
   val=no;
 fi
+AC_MSG_NOTICE([  path separator character:       '$cp_pathsep'])
 AC_MSG_NOTICE([  debugging and assertion checks: $val])
 if test "$with_dmalloc" = yes; then
   val="yes (dmalloc)"

@@ -38,7 +38,6 @@ static int next_context = 0;
 
 /** The available command names */
 const char *commands[] = {
-	N_("license"),
 	N_("help"),
 	N_("create-context"),
 	N_("select-context"),
@@ -336,7 +335,8 @@ int main(int argc, char *argv[]) {
 	cp_init();
 	
 	/* Display startup information */
-	printf(_("%s\n"), PACKAGE_STRING);
+	printf(_("%s console %s [%d:%d:%d]\n"), PACKAGE_NAME, PACKAGE_VERSION, CP_API_VERSION, CP_API_REVISION, CP_API_AGE);
+	printf(_("%s library %s [%d:%d:%d] for %s\n"), PACKAGE_NAME, cp_get_release_version(), cp_get_api_version(), cp_get_api_revision(), cp_get_api_age(), cp_get_host());
 	fputs(_("Type \"help\" for help on available commands.\n"), stdout);
 
 	/* Command line loop */
