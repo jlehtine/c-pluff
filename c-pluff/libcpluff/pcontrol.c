@@ -18,6 +18,7 @@
 #include "../kazlib/list.h"
 #include "../kazlib/hash.h"
 #include "cpluff.h"
+#include "defines.h"
 #include "context.h"
 #include "pcontrol.h"
 #include "util.h"

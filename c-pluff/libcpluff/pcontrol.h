@@ -6,6 +6,7 @@
 #ifndef PCONTROL_H_
 #define PCONTROL_H_
 
+#include "defines.h"
 #include "context.h"
 
 #ifdef __cplusplus

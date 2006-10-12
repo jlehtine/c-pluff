@@ -17,8 +17,8 @@
 
 #include "../kazlib/list.h"
 #include "../kazlib/hash.h"
-#include "defines.h"
 #include "cpluff.h"
+#include "defines.h"
 #ifdef CP_THREADS
 #include "thread.h"
 #endif

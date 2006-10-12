@@ -9,6 +9,7 @@
 #include <assert.h>
 #include <windows.h>
 #include "cpluff.h"
+#include "defines.h"
 #include "thread.h"
 #include "util.h"
 

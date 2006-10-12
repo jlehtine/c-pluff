@@ -8,8 +8,8 @@
 #include <string.h>
 #include <assert.h>
 #include <pthread.h>
-#include "defines.h"
 #include "cpluff.h"
+#include "defines.h"
 #include "thread.h"
 #include "util.h"
 

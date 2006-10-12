@@ -10,6 +10,9 @@
 #ifndef DEFINES_H_
 #define DEFINES_H_
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
 #ifdef HAVE_GETTEXT
 #include <libintl.h>
 #endif

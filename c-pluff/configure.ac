@@ -7,12 +7,13 @@ dnl Process this file with autoconf to produce a configure script.
 
 # Autoconf initialization
 # -----------------------
-AC_INIT([C-Pluff], [0.1], [johannes.lehtinen@iki.fi], [c-pluff])
+AC_INIT([C-Pluff], [0.1], [johannes.lehtinen@iki.fi], [cpluff])
 AC_COPYRIGHT([Copyright 2005 Johannes Lehtinen
 This configure script is free software; Johannes Lehtinen gives unlimited
 permission to copy, distribute and modify it.])
 AC_CONFIG_SRCDIR([libcpluff/cpluff.h])
 AC_CONFIG_AUX_DIR([auxliary])
+AC_CONFIG_HEADERS([libcpluff/config.h])
 
 # Automake initialization
 # -----------------------
@@ -20,9 +21,6 @@ AM_INIT_AUTOMAKE([foreign])
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.14.4])
 AM_ICONV
-
-# Copyright defines
-AC_DEFINE([CP_COPYRIGHT], ["Copyright 2006 Johannes Lehtinen"], [C-Pluff copyright string])
 
 # C/C++ compiler settings
 # -------------------
@@ -105,14 +103,14 @@ if test -z "$cp_threads" && test "$enable_threads" != no; then
 fi
 
 if test -n "$cp_threads"; then
-  	AC_DEFINE([CP_THREADS], [], [Enable multi-threading support])
+  	AC_DEFINE([CP_THREADS], [], [Define to enable multi-threading support])
 fi
 case "$cp_threads" in
   Posix)
-    AC_DEFINE([CP_THREADS_POSIX], [], [Use Posix threads])
+    AC_DEFINE([CP_THREADS_POSIX], [], [Define to use Posix threads])
     ;;
   Windows)
-    AC_DEFINE([CP_THREADS_WINDOWS], [], [Use Windows threads])
+    AC_DEFINE([CP_THREADS_WINDOWS], [], [Define to use Windows threads])
     ;;
 esac
 AM_CONDITIONAL([THREADS_POSIX], test "$cp_threads" = Posix)
@@ -160,7 +158,7 @@ if test "$with_dmalloc" = yes; then
     AC_MSG_WARN([Dmalloc header files not found (not including)]))
   AC_CHECK_LIB([dmalloc${cp_threads+th}], [malloc],,
     AC_MSG_ERROR([Dmalloc library is required for requested dmalloc support]))
-  AC_DEFINE([DMALLOC_FUNC_CHECK], [], [Use additional dmalloc checks])
+  AC_DEFINE([DMALLOC_FUNC_CHECK], [], [Define to use additional dmalloc checks])
 fi
 
 # Debugging support

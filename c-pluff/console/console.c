@@ -124,67 +124,12 @@ static void cmd_help(int argc, char *argv[]) {
 	), stdout);
 }
 
-static void print_copyright(void) {
-	fputs(N_(PACKAGE_STRING ", " CP_COPYRIGHT "\n"), stdout);
-}
-
 static void unrecognized_arguments(void) {
 	fputs(_("ERROR: Unrecognized arguments.\n"), stderr);
 }
 
 static void no_active_context(void) {
 	fputs(_("ERROR: There is no active plug-in context.\n"), stderr);
-}
-
-static void cmd_license(int argc, char *argv[]) {
-	char *lfname = NULL;
-	FILE *lf;
-	
-	if (argc == 1) {
-		lfname = CP_PKGDATADIR CP_PATHSEP_STR N_("copyright.txt");
-	} else if (argc == 2) {
-		if (!strcmp(argv[1], "LGPL") || !strcmp(argv[1], "lgpl")) {
-			lfname = CP_PKGDATADIR CP_PATHSEP_STR N_("LGPL.txt");
-		}
-	}
-	if (lfname == NULL) {
-		unrecognized_arguments();
-		return;
-	}
-		
-	if ((lf = fopen(lfname, N_("r"))) == NULL) {
-		fprintf(stderr, _("ERROR: Could not open license file %s: "), lfname);
-		perror(NULL);
-	} else {
-		char *linesenv;
-		int lines = 0, counter = 0;
-		int c;
-			
-		if ((linesenv = getenv("LINES")) != NULL) {
-			lines = atoi(linesenv);
-		}
-		if (lines < 5 || lines > 500) {
-			lines = 25;
-		}
-		lines--;
-		while ((c = getc(lf)) != EOF) {
-			if (c != 12) {
-				putchar(c);
-			}
-			if (c == '\n') {
-				if (++counter >= lines) {
-					fputs(_("--- Press enter to continue ---"), stdout);
-					fflush(stdout);
-					while ((c = getchar()) != '\n' && c != EOF);
-					if (c != '\n') {
-						putchar('\n');
-					}
-					counter = 0;
-				}
-			}
-		}
-		fclose(lf);
-	}
 }
 
 static void error_handler(cp_context_t *context, const char *msg) {
@@ -391,9 +336,8 @@ int main(int argc, char *argv[]) {
 	cp_init();
 	
 	/* Display startup information */
-	print_copyright();
-	printf(_("%s is free software and it comes with absolutely no warranty.\n"), PACKAGE_NAME);
-	fputs(_("Type \"license\" for more information or \"help\" for help.\n"), stdout);
+	printf(_("%s\n"), PACKAGE_STRING);
+	fputs(_("Type \"help\" for help on available commands.\n"), stdout);
 
 	/* Command line loop */
 	cmdline_init();
@@ -427,8 +371,6 @@ int main(int argc, char *argv[]) {
 		/* Choose command */
 		if (!strcmp(argv[0], "exit") || !strcmp(argv[0], "quit")) {
 			cmd_exit(argc, argv);
-		} else if (!strcmp(argv[0], "license")) {
-			cmd_license(argc, argv);
 		} else if (!strcmp(argv[0], "help")) {
 			cmd_help(argc, argv);
 		} else if (!strcmp(argv[0], "create-context")) {

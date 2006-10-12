@@ -20,6 +20,7 @@
 #include <expat.h>
 #include <errno.h>
 #include "cpluff.h"
+#include "defines.h"
 #include "util.h"
 #include "context.h"
 #include "pcontrol.h"

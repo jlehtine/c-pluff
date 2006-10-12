@@ -14,6 +14,7 @@
 #include <string.h>
 #include "../kazlib/list.h"
 #include "cpluff.h"
+#include "defines.h"
 #include "util.h"
 #include "context.h"
 #ifdef CP_THREADS
