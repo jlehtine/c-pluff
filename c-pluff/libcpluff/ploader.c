@@ -1204,7 +1204,7 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 		/* Scan plug-in directories for available plug-ins */
 		lnode = list_first(context->plugin_dirs);
 		while (lnode != NULL) {
-			char *dir_path;
+			const char *dir_path;
 			DIR *dir;
 			
 			dir_path = lnode_get(lnode);
@@ -1217,64 +1217,68 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 				if (dir_path[dir_path_len - 1] == CP_FNAMESEP_CHAR) {
 					dir_path_len--;
 				}
+				errno = 0;
 				while ((de = readdir(dir)) != NULL) {
-					int pdir_path_len = dir_path_len + 1 + strlen(de->d_name);
-					cp_plugin_t *plugin;
-					int s;
-					hnode_t *hnode;
+					if (de->d_name[0] != '\0' && de->d_name[0] != '.') {
+						int pdir_path_len = dir_path_len + 1 + strlen(de->d_name);
+						cp_plugin_t *plugin;
+						int s;
+						hnode_t *hnode;
 
-					/* Allocate memory for plug-in descriptor path */
-					if (pdir_path_size <= pdir_path_len) {
-						char *new_pdir_path;
+						/* Allocate memory for plug-in descriptor path */
+						if (pdir_path_size <= pdir_path_len) {
+							char *new_pdir_path;
 						
-						if (pdir_path_size == 0) {
-							pdir_path_size = 128;
+							if (pdir_path_size == 0) {
+								pdir_path_size = 128;
+							}
+							while (pdir_path_size <= pdir_path_len) {
+								pdir_path_size *= 2;
+							}
+							new_pdir_path = realloc(pdir_path, pdir_path_size * sizeof(char));
+							if (new_pdir_path == NULL) {
+								cpi_errorf(context, _("Could not check possible plug-in location %s%c%s due to insufficient system resources."), dir_path, CP_FNAMESEP_CHAR, de->d_name);
+								status = CP_ERR_RESOURCE;
+								/* continue loading plug-ins from other directories */
+								continue;
+							}
+							pdir_path = new_pdir_path;
 						}
-						while (pdir_path_size <= pdir_path_len) {
-							pdir_path_size *= 2;
-						}
-						new_pdir_path = realloc(pdir_path, pdir_path_size * sizeof(char));
-						if (new_pdir_path == NULL) {
-							cpi_errorf(context, _("Could not check possible plug-in location %s%c%s due to insufficient system resources."), dir_path, CP_FNAMESEP_CHAR, de->d_name);
-							status = CP_ERR_RESOURCE;
+					
+						/* Construct plug-in descriptor path */
+						strcpy(pdir_path, dir_path);
+						pdir_path[dir_path_len] = CP_FNAMESEP_CHAR;
+						strcpy(pdir_path + dir_path_len + 1, de->d_name);
+							
+						/* Try to load a plug-in */
+						s = load_plugin(context, pdir_path, &plugin);
+						if (s != CP_OK) {
+							status = s;
 							/* continue loading plug-ins from other directories */
 							continue;
 						}
-						pdir_path = new_pdir_path;
-					}
 					
-					/* Construct plug-in descriptor path */
-					strcpy(pdir_path, dir_path);
-					dir_path[dir_path_len] = CP_FNAMESEP_CHAR;
-					strcpy(pdir_path + dir_path_len + 1, de->d_name);
+						/* Insert plug-in to the list of available plug-ins */
+						if ((hnode = hash_lookup(avail_plugins, plugin->identifier)) != NULL) {
+							cp_plugin_t *plugin2 = hnode_get(hnode);						
+							if (cpi_version_cmp(plugin2->version, plugin->version, 4) < 0) {
+								hash_delete_free(avail_plugins, hnode);
+								cpi_free_plugin(plugin2);
+								hnode = NULL;
+							}
+						}
+						if (hnode == NULL) {
+							if (!hash_alloc_insert(avail_plugins, plugin->identifier, plugin)) {
+								cpi_errorf(context, _("Plug-in %s version %s could not be loaded due to insufficient resources."), plugin->identifier, plugin->version);
+								cpi_free_plugin(plugin);
+								status = CP_ERR_RESOURCE;
+								/* continue loading plug-ins from other directories */
+								continue;
+							}
+						}
 						
-					/* Try to load a plug-in */
-					s = load_plugin(context, pdir_path, &plugin);
-					if (s != CP_OK) {
-						status = s;
-						/* continue loading plug-ins from other directories */
-						continue;
 					}
-					
-					/* Insert plug-in to the list of available plug-ins */
-					if ((hnode = hash_lookup(avail_plugins, plugin->identifier)) != NULL) {
-						cp_plugin_t *plugin2 = hnode_get(hnode);						
-						if (cpi_version_cmp(plugin2->version, plugin->version, 4) < 0) {
-							hash_delete_free(avail_plugins, hnode);
-							cpi_free_plugin(plugin2);
-							hnode = NULL;
-						}
-					}
-					if (hnode == NULL) {
-						if (!hash_alloc_insert(avail_plugins, plugin->identifier, plugin)) {
-							cpi_errorf(context, _("Plug-in %s version %s could not be loaded due to insufficient resources."), plugin->identifier, plugin->version);
-							cpi_free_plugin(plugin);
-							status = CP_ERR_RESOURCE;
-							/* continue loading plug-ins from other directories */
-							continue;
-						}
-					}
-					
+					errno = 0;
 				}
 				if (errno) {
 					cpi_errorf(context, _("Could not read plug-in directory %s: %s"), dir_path, strerror(errno));
