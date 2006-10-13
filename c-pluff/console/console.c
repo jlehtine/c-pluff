@@ -329,14 +329,25 @@ static void cmd_load_plugin(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
+	const cp_implementation_info_t *ii;
 	char *prompt_no_context, *prompt_context;
 
 	/* Initialize C-Pluff library (also initializes gettext) */
 	cp_init();
 	
 	/* Display startup information */
+	ii = cp_get_implementation_info();
 	printf(_("%s console %s [%d:%d:%d]\n"), PACKAGE_NAME, PACKAGE_VERSION, CP_API_VERSION, CP_API_REVISION, CP_API_AGE);
-	printf(_("%s library %s [%d:%d:%d] for %s\n"), PACKAGE_NAME, cp_get_release_version(), cp_get_api_version(), cp_get_api_revision(), cp_get_api_age(), cp_get_host());
+	if (ii->multi_threading_type != NULL) {
+		printf(_("%s library %s [%d:%d:%d] for %s with %s threads\n"),
+			PACKAGE_NAME, ii->release_version, ii->api_version,
+			ii->api_revision, ii->api_age, ii->host_type,
+			ii->multi_threading_type);
+	} else {
+		printf(_("%s library %s [%d:%d:%d] for %s without threads\n"),
+			PACKAGE_NAME, ii->release_version, ii->api_version,
+			ii->api_revision, ii->api_age, ii->host_type);
+	}
 	fputs(_("Type \"help\" for help on available commands.\n"), stdout);
 
 	/* Command line loop */

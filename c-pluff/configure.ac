@@ -120,7 +120,7 @@ if test -z "$cp_threads" && test "$enable_threads" != no; then
 fi
 
 if test -n "$cp_threads"; then
-  	AC_DEFINE([CP_THREADS], [], [Define to enable multi-threading support])
+  	AC_DEFINE_UNQUOTED([CP_THREADS], ["$cp_threads"], [Multi-threading support type])
 fi
 case "$cp_threads" in
   Posix)

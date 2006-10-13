@@ -23,29 +23,22 @@ static cp_error_handler_t fatal_error_handler = NULL;
 /** Whether gettext has been initialized */
 static int gettext_initialized = 0;
 
+/** Implementation information */
+static cp_implementation_info_t implementation_info = {
+	CP_RELEASE_VERSION,
+	CP_API_VERSION,
+	CP_API_REVISION,
+	CP_API_AGE,
+	CP_HOST,
+	CP_THREADS
+};
 
 /* ------------------------------------------------------------------------
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-char * CP_API cp_get_host(void) {
-	return CP_HOST;
-}
-
-char * CP_API cp_get_release_version(void) {
-	return CP_RELEASE_VERSION;
-}
-
-int CP_API cp_get_api_version(void) {
-	return CP_API_VERSION;
-}
-
-int CP_API cp_get_api_revision(void) {
-	return CP_API_REVISION;
-}
-
-int CP_API cp_get_api_age(void) {
-	return CP_API_AGE;
+cp_implementation_info_t * CP_API cp_get_implementation_info(void) {
+	return &implementation_info;
 }
 
 void CP_API cp_init(void) {

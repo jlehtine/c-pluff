@@ -114,6 +114,29 @@ extern "C" {
  * Data types
  * ----------------------------------------------------------------------*/
 
+/** Contains information about the library implementation */
+typedef struct cp_implementation_info_t {
+
+	/* The release version */
+	char *release_version;
+	
+	/* The version of the library API */
+	int api_version;
+	
+	/* The revision of the library API */
+	int api_revision;
+	
+	/* The backwards compatibility age of the library API */
+	int api_age;
+  
+	/* The canonical host type */
+	char *host_type;
+	
+	/* The type of multi-threading support, or NULL for none */
+	char *multi_threading_type;
+	
+} cp_implementation_info_t;
+
 /** Possible version match rules */
 typedef enum cp_version_match_t {
 	CP_MATCH_NONE,
@@ -370,39 +393,11 @@ typedef void (*cp_stop_t)(cp_context_t *context);
 /* Information functions */
 
 /**
- * Returns the host type this binary was built for.
- * 
- * @return the canonical host type
- */
-char * CP_API cp_get_host(void);
-
-/**
- * Returns the release version string of the library.
+ * Returns static information about the library implementation.
  *
- * @return the release version
- */ 
-char * CP_API cp_get_release_version(void);
-
-/**
- * Returns the version of the library API.
- *
- * @return the version of the library API
+ * @return static information about the library implementation
  */
-int CP_API cp_get_api_version(void);
-
-/**
- * Returns the revision of the library API.
- *
- * @return the revision of the library API
- */
-int CP_API cp_get_api_revision(void);
-
-/**
- * Returns the backward compatibility age of the library API.
- *
- * @return the backward compatibility age of the library API
- */
-int CP_API cp_get_api_age(void);
+cp_implementation_info_t * CP_API cp_get_implementation_info(void);
 
 
 /* Initialization and destroy functions */
