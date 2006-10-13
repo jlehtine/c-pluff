@@ -7,13 +7,20 @@
  * Plug-in control functionality
  */
 
+#ifdef HAVE_CONFIG_H
+#include "config.h"
+#endif
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
 #include <string.h>
 #include <stddef.h>
-#ifdef HAVE_DLOPEN
+#ifdef HAVE_LIBDL
 #include <dlfcn.h>
+#endif
+#ifdef HAVE_LIBLTDL
+#include <ltdl.h>
 #endif
 #include "../kazlib/list.h"
 #include "../kazlib/hash.h"
@@ -53,7 +60,12 @@ struct registered_plugin_t {
 	list_t *importing;
 	
 	/** The runtime library handle, or NULL if not resolved */
+#ifdef HAVE_LIBDL
 	void *runtime_lib;
+#endif
+#ifdef HAVE_LIBLTDL
+	lt_dlhandle runtime_lib;
+#endif
 	
 	/** The start function, or NULL if none or not resolved */
 	cp_start_t start_func;
@@ -762,8 +774,11 @@ static int unresolve_plugin(cp_context_t *context, registered_plugin_t *plugin) 
 	plugin->start_func = NULL;
 	plugin->stop_func = NULL;
 	if (plugin->runtime_lib != NULL) {
-#ifdef HAVE_DLOPEN
+#ifdef HAVE_LIBDL
 		dlclose(plugin->runtime_lib);
+#endif
+#ifdef HAVE_LIBLTDL
+		lt_dlclose(plugin->runtime_lib);
 #endif
 		plugin->runtime_lib = NULL;
 	}

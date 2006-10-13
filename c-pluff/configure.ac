@@ -133,15 +133,29 @@ esac
 AM_CONDITIONAL([THREADS_POSIX], test "$cp_threads" = Posix)
 AM_CONDITIONAL([THREADS_WINDOWS], test "$cp_threads" = Windows)
 
+# Check for the Posix dlopen facility
+# -----------------------------------
+AC_ARG_WITH([dlopen],
+  AS_HELP_STRING([--without-dlopen],
+    [do not use the Posix dlopen facility]))
+if test "$with_dlopen" != no; then
+  have_dlopen=yes
+  AC_CHECK_HEADER([dlfcn.h], AC_CHECK_LIB([dl], [dlopen],, have_dlopen=no), have_dlopen=no)
+else
+  have_dlopen=no
+fi
+
+# Check for GNU Libtool libltdl library
+# -------------------------------------
+if ! test "$have_dlopen" = yes; then
+  AC_CHECK_HEADER([ltdl.h],, AC_MSG_ERROR([Either the Posix dlopen facility or GNU Libtool libltdl is required]))
+  AC_CHECK_LIB([ltdl], [lt_dlopen],, AC_MSG_ERROR([Either the Posix dlopen facility or GNU Libtool libltdl is required]))
+fi
+
 # Check for Expat XML parsing library
 # -----------------------------------
 AC_CHECK_HEADER([expat.h],, AC_MSG_ERROR([Expat header file is required]))
 AC_CHECK_LIB([expat], [XML_ParseBuffer],, AC_MSG_ERROR([Expat library is required]))
-
-# Check for dynamic loader library
-# --------------------------------
-#AC_CHECK_HEADER([dlfcn.h],, AC_MSG_ERROR([Dynamic linking loader header files are required]))
-#AC_CHECK_LIB([dl], [dlopen],, AC_MSG_ERROR([Dynamic linking loader library is required]))
 
 # Check for GNU readline library
 # ------------------------------
@@ -225,6 +239,12 @@ else
   val=no
 fi
 AC_MSG_NOTICE([  multi-threading support:        $val])
+if test "$have_dlopen" = yes; then
+  val=dlopen
+else
+  val=libltdl
+fi
+AC_MSG_NOTICE([  dlopening mechanism:            $val])
 val=no
 case "$DEFS" in
   *-DHAVE_GETTEXT=1*)
@@ -238,7 +258,7 @@ if test "$enable_debug" = yes; then
 else
   val=no;
 fi
-AC_MSG_NOTICE([  path separator character:       '$cp_pathsep'])
+AC_MSG_NOTICE([  file name separator character:  '$cp_fnamesep'])
 AC_MSG_NOTICE([  debugging and assertion checks: $val])
 if test "$with_dmalloc" = yes; then
   val="yes (dmalloc)"

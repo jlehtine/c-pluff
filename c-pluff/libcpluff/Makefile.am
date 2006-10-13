@@ -4,7 +4,7 @@
 # This Makefile is free software; Johannes Lehtinen gives unlimited
 # permission to copy, distribute and modify it.
 
-CP_API_VERSION = @CP_API_CURRENT@:@CP_API_REVISION@:@CP_API_AGE@
+CP_API_VERSION = $(CP_API_CURRENT):$(CP_API_REVISION):$(CP_API_AGE)
 
 lib_LTLIBRARIES = libcpluff.la
 libcpluff_la_SOURCES = ploader.c pcontrol.c context.c cpluff.c util.c ../kazlib/list.c ../kazlib/hash.c
