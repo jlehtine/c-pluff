@@ -21,15 +21,15 @@ static char *cp_console_compl_cmdgen(const char *text, int state) {
 		counter = 0;
 		textlen = strlen(text);
 	}
-	while (commands[counter] != NULL && strncmp(text, commands[counter], textlen)) {
+	while (commands[counter].name != NULL && strncmp(text, commands[counter].name, textlen)) {
 		counter++;
 	}
-	if (commands[counter] == NULL) {
+	if (commands[counter].name == NULL) {
 		return NULL;
 	} else {
-		buffer = malloc(sizeof(char) * (strlen(commands[counter]) + 1));
+		buffer = malloc(sizeof(char) * (strlen(commands[counter].name) + 1));
 		if (buffer != NULL) {
-			strcpy(buffer, commands[counter]);
+			strcpy(buffer, commands[counter].name);
 		}
 		counter++;
 		return buffer;

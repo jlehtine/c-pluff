@@ -10,6 +10,28 @@
 
 
 /* ------------------------------------------------------------------------
+ * Data types
+ * ----------------------------------------------------------------------*/
+
+/** Type for command implementations */
+typedef void (*command_func_t)(int argc, char *argv[]);
+
+/** Type for command information */
+typedef struct command_info_t {
+	
+	/** The name of the command */
+	char *name;
+	
+	/** The description for the command */
+	char *description;
+	
+	/** The command implementation */
+	command_func_t implementation;
+	
+} command_info_t;
+
+
+/* ------------------------------------------------------------------------
  * Global variables
  * ----------------------------------------------------------------------*/
 
@@ -17,7 +39,7 @@
 extern const int have_readline;
 
 /* The available commands */
-extern const char *commands[];
+extern const command_info_t commands[];
 
 
 /* ------------------------------------------------------------------------
