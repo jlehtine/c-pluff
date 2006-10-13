@@ -1,5 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE schema PUBLIC "-//W3C//DTD XMLSCHEMA 200102//EN" "http://www.w3.org/2001/XMLSchema.dtd">
+<!--
+Copyright 2006 Johannes Lehtinen
+This plugin.xsd file is free software; Johannes Lehtinen gives unlimited
+permission to copy, distribute and modify it.
+-->
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 	<xs:element name="plugin">
 		<xs:complexType>

@@ -1,9 +1,8 @@
-# --------------------------------------------------------------------------
-# C-Pluff, a plug-in framework for C
-# Copyright 2005-2006 Johannes Lehtinen
-# --------------------------------------------------------------------------
-#
-# Process this file with automake to produce a real makefile.
+## Process this file with automake to produce Makefile.in.
+
+# Copyright 2006 Johannes Lehtinen
+# This Makefile is free software; Johannes Lehtinen gives unlimited
+# permission to copy, distribute and modify it.
 
 CP_API_VERSION = @CP_API_CURRENT@:@CP_API_REVISION@:@CP_API_AGE@
 

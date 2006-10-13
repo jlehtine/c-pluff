@@ -1,9 +1,8 @@
-dnl --------------------------------------------------------------------------
-dnl C-Pluff, a plug-in framework for C
-dnl Copyright 2005-2006 Johannes Lehtinen
-dnl --------------------------------------------------------------------------
-dnl
 dnl Process this file with autoconf to produce a configure script.
+dnl
+dnl Copyright 2006 Johannes Lehtinen
+dnl This configure.ac script is free software; Johannes Lehtinen gives
+dnl unlimited permission to copy, distribute and modify it.
 
 dnl Version information
 dnl -------------------

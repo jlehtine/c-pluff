@@ -18,10 +18,15 @@
  * $Name: kazlib_1_20 $
  */
 
+/*
+ * Modified by Johannes Lehtinen in 2006.
+ * Included the definition of CP_LOCAL macro and used it in declarations and
+ * definitions to hide Kazlib symbols when building a shared C-Pluff library.
+ */
+
 #ifndef LIST_H
 #define LIST_H
 
-/* Hide global symbols, added by JLe */
 #include "../libcpluff/defines.h"
 
 #include <limits.h>
