@@ -37,7 +37,6 @@ AC_SUBST([CP_API_AGE])
 AM_INIT_AUTOMAKE([foreign])
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.14.4])
-AM_ICONV
 
 # C/C++ compiler settings
 # -------------------
@@ -53,6 +52,10 @@ AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 
 CPPFLAGS="$CPPFLAGS -I."
+
+# Define shared library extension
+# -------------------------------
+AC_DEFINE_UNQUOTED([CP_SHREXT], ["$shrext_cmds"], [Shared library extension])
 
 # Thread support checks
 # ---------------------
@@ -133,23 +136,32 @@ esac
 AM_CONDITIONAL([THREADS_POSIX], test "$cp_threads" = Posix)
 AM_CONDITIONAL([THREADS_WINDOWS], test "$cp_threads" = Windows)
 
-# Check for the Posix dlopen facility
-# -----------------------------------
+# Check for the dlopen mechanism (Posix dlopen or GNU Libtool libltdl)
+# --------------------------------------------------------------------
 AC_ARG_WITH([dlopen],
-  AS_HELP_STRING([--without-dlopen],
-    [do not use the Posix dlopen facility]))
-if test "$with_dlopen" != no; then
-  have_dlopen=yes
-  AC_CHECK_HEADER([dlfcn.h], AC_CHECK_LIB([dl], [dlopen],, have_dlopen=no), have_dlopen=no)
-else
-  have_dlopen=no
+  AS_HELP_STRING([--with-dlopen],
+    [use the Posix dlopen facility]))
+AC_ARG_WITH([libltdl],
+  AS_HELP_STRING([--with-libltdl],
+    [use the GNU Libtool libltdl]))
+if test "$with_dlopen" = yes && test "$with_libltdl" = yes; then
+  AC_MSG_ERROR([Can not use both Posix dlopen and GNU Libtool libltdl])
 fi
-
-# Check for GNU Libtool libltdl library
-# -------------------------------------
-if ! test "$have_dlopen" = yes; then
-  AC_CHECK_HEADER([ltdl.h],, AC_MSG_ERROR([Either the Posix dlopen facility or GNU Libtool libltdl is required]))
-  AC_CHECK_LIB([ltdl], [lt_dlopen],, AC_MSG_ERROR([Either the Posix dlopen facility or GNU Libtool libltdl is required]))
+dlmechanism=none
+if test "$with_dlopen" != no; then
+  dlmechanism=dlopen
+  AC_CHECK_HEADER([dlfcn.h],
+    AC_CHECK_LIB([dl], [dlopen],, dlmechanism=none),
+    dlmechanism=none)
+fi
+if test "$dlmechanism" = none && test "$with_libltdl" != no; then
+  dlmechanism=libltdl
+  AC_CHECK_HEADER([ltdl.h],
+    AC_CHECK_LIB([ltdl], [lt_dlopen],, dlmechanism=none),
+    dlmechanism=none)
+fi
+if test "$dlmechanism" = none; then
+  AC_MSG_ERROR([Either the Posix dlopen facility or GNU Libtool libltdl is required])
 fi
 
 # Check for Expat XML parsing library
@@ -157,25 +169,18 @@ fi
 AC_CHECK_HEADER([expat.h],, AC_MSG_ERROR([Expat header file is required]))
 AC_CHECK_LIB([expat], [XML_ParseBuffer],, AC_MSG_ERROR([Expat library is required]))
 
-# Check for GNU readline library
-# ------------------------------
+# Check for the GNU Readline Library
+# ----------------------------------
 AC_ARG_WITH([readline],
-  AS_HELP_STRING([--without-readline],
-    [do not use GNU readline library]))
+  AS_HELP_STRING([--with-readline],
+    [use the GNU Readline Library]))
+have_readline=no
 if test "$with_readline" != no; then
-  have_readline=yes
-  if test "$with_readline" = yes; then
-    AC_CHECK_HEADER([readline/readline.h],
-      AC_CHECK_LIB([readline], [add_history], [],
-        AC_MSG_ERROR([GNU readline library is required for requested readline support])),
-      AC_MSG_ERROR([GNU readline headers are required for requested readline support]))
-  else
-    AC_CHECK_HEADER([readline/readline.h],
-      AC_CHECK_LIB([readline], [add_history], [], have_readline=no),
-      have_readline=no)
+  AC_CHECK_HEADER([readline/readline.h],
+    AC_CHECK_LIB([readline], [add_history], have_readline=yes))
+  if test "$with_readline" = yes && test "$have_readline" != yes; then
+    AC_MSG_ERROR([GNU readline requested but headers or library not found])
   fi
-else
-  have_readline=no
 fi
 AM_CONDITIONAL([HAVE_READLINE], test "$have_readline" = yes)
 
@@ -239,12 +244,7 @@ else
   val=no
 fi
 AC_MSG_NOTICE([  multi-threading support:        $val])
-if test "$have_dlopen" = yes; then
-  val=dlopen
-else
-  val=libltdl
-fi
-AC_MSG_NOTICE([  dlopening mechanism:            $val])
+AC_MSG_NOTICE([  dlopening mechanism:            $dlmechanism])
 val=no
 case "$DEFS" in
   *-DHAVE_GETTEXT=1*)

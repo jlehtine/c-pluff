@@ -279,7 +279,7 @@ struct cp_plugin_t {
 	/** Provider name, possibly localized (UTF-8) */
 	char *provider_name;
 	
-	/** Absolute path of the plugin directory, or NULL if not known */
+	/** Path of the plugin directory, or NULL if not known */
 	char *path;
 	
 	/** Number of imports */
@@ -288,13 +288,13 @@ struct cp_plugin_t {
 	/** Imports */
 	cp_plugin_import_t *imports;
 
-    /** The relative path of plug-in runtime library, or empty if none */
+    /** The relative path of plug-in runtime library, or NULL if none */
     char *lib_path;
     
-    /** The name of the start function, or empty if none */
+    /** The name of the start function, or NULL if none */
     char *start_func_name;
     
-    /** The name of the stop function, or empty if none */
+    /** The name of the stop function, or NULL if none */
     char *stop_func_name;
 
 	/** Number of extension points provided by this plug-in */

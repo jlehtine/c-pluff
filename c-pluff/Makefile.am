@@ -16,7 +16,8 @@ check-copyright:
 		echo "(if $(COPYRIGHT_HOLDER) is a copyright holder for them):"; \
 		find $(top_srcdir) -type f \
 			\( -name '*.c' -or -name '*.h' -or -name '*.am' -or \
-				-name 'configure.ac' -or -name '*.h.in' -or -name '*.xsd' \) \
+				-name 'configure.ac' -or -name '*.h.in' -or -name '*.xsd' \
+				-or -name '*.pot' \) \
 			! -exec sh -c "grep -q -E \"Copyright (\`date -r '{}' '+%Y'\`|`date '+%Y'`) $(COPYRIGHT_HOLDER)\" '{}'" \; \
 			-print )
 

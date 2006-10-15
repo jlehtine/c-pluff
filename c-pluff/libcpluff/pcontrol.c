@@ -32,6 +32,28 @@
 
 
 /* ------------------------------------------------------------------------
+ * Defines
+ * ----------------------------------------------------------------------*/
+
+#if defined(HAVE_LIBDL) && defined(HAVE_LIBLTDL)
+#error Can not use both Posix dlopen support and GNU Libtool libltdl support.
+#endif
+
+#ifdef HAVE_LIBDL
+#define DLOPEN(name) dlopen((name), RTLD_LAZY | RTLD_GLOBAL)
+#define DLSYM(handle, symbol) dlsym((handle), (symbol))
+#define DLCLOSE(handle) dlclose(handle)
+#define DLHANDLE void *
+#endif
+
+#ifdef HAVE_LIBLTDL
+#define DLOPEN(name) lt_dlopen(name)
+#define DLSYM(handle, symbol) lt_dlsym((handle), (symbol))
+#define DLCLOSE(handle) lt_dlclose(handle)
+#define DLHANDLE lt_dlhandle
+#endif
+
+/* ------------------------------------------------------------------------
  * Data types
  * ----------------------------------------------------------------------*/
 
@@ -60,24 +82,14 @@ struct registered_plugin_t {
 	list_t *importing;
 	
 	/** The runtime library handle, or NULL if not resolved */
-#ifdef HAVE_LIBDL
-	void *runtime_lib;
-#endif
-#ifdef HAVE_LIBLTDL
-	lt_dlhandle runtime_lib;
-#endif
+	DLHANDLE runtime_lib;
 	
 	/** The start function, or NULL if none or not resolved */
 	cp_start_t start_func;
 	
 	/** The stop function, or NULL if none or not resolved */
 	cp_stop_t stop_func;
-	
-	/**
-	 * Whether there is currently an active operation on this plug-in (to
-	 * break loops in the dependency graph)
-	 */
-	int active_operation;
+
 };
 
 
@@ -174,6 +186,20 @@ int CP_LOCAL cpi_install_plugin(cp_context_t *context, cp_plugin_t *plugin, unsi
 }
 
 /**
+ * Unresolves the plug-in runtime information.
+ * 
+ * @param plugin the plug-in to unresolve
+ */
+static void unresolve_plugin_runtime(registered_plugin_t *plugin) {
+	plugin->start_func = NULL;
+	plugin->stop_func = NULL;
+	if (plugin->runtime_lib != NULL) {
+		DLCLOSE(plugin->runtime_lib);
+		plugin->runtime_lib = NULL;
+	}	
+}
+
+/**
  * Unresolves a preliminarily resolved plug-in.
  * 
  * @param context the plug-in context
@@ -210,6 +236,74 @@ list_t *preliminary) {
 		registered_plugin_t *ip = lnode_get(node);
 		unresolve_preliminary_plugin(context, ip, plugin, preliminary);
 	}
+	
+	/* Unresolve the plug-in runtime */
+	unresolve_plugin_runtime(plugin);
+}
+
+/**
+ * Resolves the plug-in runtime library.
+ * 
+ * @param context the plug-in context
+ * @param plugin the plugin
+ */
+static int resolve_plugin_runtime(cp_context_t *context, registered_plugin_t *plugin) {
+	char *rlpath = NULL;
+	int status = CP_OK;
+	
+	assert(plugin->runtime_lib == NULL);
+	if (plugin->plugin->lib_path == NULL) {
+		return CP_OK;
+	}
+	
+	do {
+		int ppath_len, lpath_len;
+	
+		/* Construct a path to plug-in runtime library */
+		ppath_len = strlen(plugin->plugin->path);
+		lpath_len = strlen(plugin->plugin->lib_path);
+		if ((rlpath = malloc(sizeof(char) *
+			(ppath_len + lpath_len + strlen(CP_SHREXT) + 2))) == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+		strcpy(rlpath, plugin->plugin->path);
+		rlpath[ppath_len] = CP_FNAMESEP_CHAR;
+		strcpy(rlpath + ppath_len + 1, plugin->plugin->lib_path);
+		strcpy(rlpath + ppath_len + 1 + lpath_len, CP_SHREXT);
+		
+		/* Open the plug-in runtime library */
+		plugin->runtime_lib = DLOPEN(rlpath);
+		if (plugin->runtime_lib == NULL) {
+			status = CP_ERR_RUNTIME;
+			break;
+		}
+		
+		/* Resolve start and stop functions */
+		if (plugin->plugin->start_func_name != NULL) {
+			plugin->start_func = (cp_start_t) DLSYM(plugin->runtime_lib, plugin->plugin->start_func_name);
+			if (plugin->start_func == NULL) {
+				status = CP_ERR_RUNTIME;
+				break;
+			}
+		}
+		if (plugin->plugin->stop_func_name != NULL) {
+			plugin->stop_func = (cp_stop_t) DLSYM(plugin->runtime_lib, plugin->plugin->stop_func_name);
+			if (plugin->stop_func == NULL) {
+				status = CP_ERR_RUNTIME;
+				break;
+			}
+		}
+
+	} while (0);
+	
+	/* Release resources */
+	free(rlpath);
+	if (status != CP_OK) {
+		unresolve_plugin_runtime(plugin);
+	}
+	
+	return status;
 }
 
 /**
@@ -361,6 +455,12 @@ list_t *preliminary) {
 			break;
 		}
 
+		/* Resolve the plug-in runtime */
+		if ((i = resolve_plugin_runtime(context, plugin)) != CP_OK) {
+			status = i;
+			break;
+		}
+		
 		/* Update state and inform listeners on definite success */
 		if (status == CP_OK) {
 			cp_plugin_event_t event;
@@ -394,6 +494,9 @@ list_t *preliminary) {
 			unresolve_preliminary_plugin(context, ip, plugin, preliminary);
 			assert(!cpi_ptrset_contains(plugin->importing, ip));
 		}
+
+		/* Unresolve the plug-in runtime */
+		unresolve_plugin_runtime(plugin);
 		
 		/* Remove references to imported plug-ins */
 		while ((node = list_first(plugin->imported)) != NULL) {
@@ -471,8 +574,7 @@ static int resolve_plugin(cp_context_t *context, registered_plugin_t *plugin) {
 	
 		/* Plug-ins in the preliminary list are now resolved */
 		if (status == CP_OK) {
-			
-			while((node = list_first(preliminary)) != NULL) {
+			while ((node = list_first(preliminary)) != NULL) {
 				registered_plugin_t *rp;
 				cp_plugin_event_t event;
 		
@@ -481,6 +583,18 @@ static int resolve_plugin(cp_context_t *context, registered_plugin_t *plugin) {
 				event.old_state = rp->state;
 				event.new_state = rp->state = CP_PLUGIN_RESOLVED;
 				cpi_deliver_event(context, &event);
+				list_delete(preliminary, node);
+				lnode_destroy(node);
+			}
+		}
+		
+		/* On error unresolve plug-in runtimes of preliminary resolved plug-ins */
+		else {
+			while ((node = list_last(preliminary)) != NULL) {
+				registered_plugin_t *rp;
+				
+				rp = lnode_get(node);
+				unresolve_plugin_runtime(rp);
 				list_delete(preliminary, node);
 				lnode_destroy(node);
 			}
@@ -654,7 +768,7 @@ static int stop_plugin(registered_plugin_t *plugin) {
 	
 	/* Check if state locked */
 	if (plugin->state_locked) {
-		cpi_errorf(context, _("Plug-in %s could notbe stopped due to conflicting ongoing operation."), plugin->plugin->identifier);
+		cpi_errorf(context, _("Plug-in %s could not be stopped due to conflicting ongoing operation."), plugin->plugin->identifier);
 		return CP_ERR_DEADLOCK;
 	}
 	
@@ -723,18 +837,25 @@ int CP_API cp_stop_all_plugins(cp_context_t *context) {
 }
 
 /**
- * Unresolves a plug-in.
- * 
+ * Unresolves a plug-in recursively (unresolving the dependent plug-ins first).
+ *
  * @param context the plug-in context
  * @param plug-in the plug-in to be unresolved
+ * @param seen the list of seen plug-ins, or NULL for first call
  * @return CP_OK (0) on success, error code on failure
  */
-static int unresolve_plugin(cp_context_t *context, registered_plugin_t *plugin) {
-	cp_plugin_event_t event;
+static int unresolve_plugin_rec(cp_context_t *context, registered_plugin_t *plugin, list_t *seen) {
 	lnode_t *node;
-
+	int status = CP_OK;
+	int error_reported = 0;
+	
 	/* Check if already unresolved */
 	if (plugin->state <= CP_PLUGIN_INSTALLED) {
+		return CP_OK;
+	}
+	
+	/* Break a possible dependency loop */
+	if (cpi_ptrset_contains(seen, plugin)) {
 		return CP_OK;
 	}
 	
@@ -748,51 +869,132 @@ static int unresolve_plugin(cp_context_t *context, registered_plugin_t *plugin) 
 		return CP_ERR_DEADLOCK;
 	}
 
-	/* Lock the plug-in state */
-	plugin->state_locked = 1;
-	
-	/* Unresolve plug-ins which import this plug-in */
-	plugin->active_operation = 1;
-	while ((node = list_first(plugin->importing)) != NULL) {
-		registered_plugin_t *ip = lnode_get(node);
-		unresolve_plugin(context, ip);
-		assert(!cpi_ptrset_contains(plugin->importing, ip));
-	}
-	plugin->active_operation = 0;
+	do {
+
+		/* Lock the plug-in state */
+		plugin->state_locked = 1;
 		
-	/* Remove references to imported plug-ins */
-	while ((node = list_first(plugin->imported)) != NULL) {
-		registered_plugin_t *ip = lnode_get(node);
-		cpi_ptrset_remove(ip->importing, plugin);
-		list_delete(plugin->imported, node);
-		lnode_destroy(node);
+		/* Put this node into seen list */
+		if (!cpi_ptrset_add(seen, plugin)) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+	
+		/* Unresolve plug-ins which import this plug-in */
+		node = list_first(plugin->importing);
+		while (status == CP_OK && node != NULL) {
+			registered_plugin_t *ip;
+			
+			assert(seen != NULL);
+			ip = lnode_get(node);
+			status = unresolve_plugin_rec(context, ip, seen);
+			if (status != CP_OK) {
+				cpi_errorf(context, _("Plug-in %s could not be unresolved because a dependent plug-in %s could not be unresolved."), plugin->plugin->identifier, ip->plugin->identifier);
+				error_reported = 1;
+			}
+			node = list_next(plugin->imported, node);
+		}
+		if (status != CP_OK) {
+			break;
+		}
+
+	} while (0);
+
+	/* Release plug-in state and remove from seen list on failure */
+	if (status != CP_OK) {
+		plugin->state_locked = 0;
+		cpi_ptrset_remove(seen, plugin);
 	}
-	list_destroy(plugin->imported);
-	plugin->imported = NULL;
-	
-	/* Reset pointers */
-	plugin->start_func = NULL;
-	plugin->stop_func = NULL;
-	if (plugin->runtime_lib != NULL) {
-#ifdef HAVE_LIBDL
-		dlclose(plugin->runtime_lib);
-#endif
-#ifdef HAVE_LIBLTDL
-		lt_dlclose(plugin->runtime_lib);
-#endif
-		plugin->runtime_lib = NULL;
+
+	/* Error handling */
+	if (status != CP_OK && !error_reported) {
+		switch (status) {
+			case CP_ERR_RESOURCE:
+				cpi_errorf(context, _("Could not unresolve plug-in %s due to insufficient system resources."), plugin->plugin->identifier);
+				break;
+			default:
+				cpi_errorf(context, _("Could not unresolve plug-in %s."), plugin->plugin->identifier);
+				break;
+		}
 	}
 	
-	/* Inform the listeners */
-	event.plugin_id = plugin->plugin->identifier;
-	event.old_state = plugin->state;
-	event.new_state = plugin->state = CP_PLUGIN_INSTALLED;
-	cpi_deliver_event(plugin->plugin->context, &event);
+	return status;
+}
+
+/**
+ * Unresolves a plug-in.
+ * 
+ * @param context the plug-in context
+ * @param plug-in the plug-in to be unresolved
+ * @return CP_OK (0) on success, error code on failure
+ */
+static int unresolve_plugin(cp_context_t *context, registered_plugin_t *plugin) {
+	list_t *seen = NULL;
+	lnode_t *node;
+	int status = CP_OK;
+
+	do {
+
+		/* Construct the seen list */
+		if ((seen = list_create(LISTCOUNT_T_MAX)) == NULL) {
+			cpi_errorf(context, _("Could not unresolve plug-in %s due to insufficient system resources."), plugin->plugin->identifier);
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+
+		/* Recursively obtain list of plug-ins to be unresolved */
+		status = unresolve_plugin_rec(context, plugin, seen);
+
+	} while (0);
+
+	/* Process seen plug-ins, if successful */
+	if (status == CP_OK) {
+		node = list_last(seen);
+		while (node != NULL) {
+			cp_plugin_event_t event;
+			registered_plugin_t *plugin;
+			lnode_t *in;
+		
+			plugin = lnode_get(node);
+
+			/* Remove references to imported plug-ins */
+			while ((in = list_first(plugin->imported)) != NULL) {
+				registered_plugin_t *ip = lnode_get(in);
+				cpi_ptrset_remove(ip->importing, plugin);
+				list_delete(plugin->imported, in);
+				lnode_destroy(in);
+			}
+			list_destroy(plugin->imported);
+			plugin->imported = NULL;
 	
-	/* Release plug-in state */
-	plugin->state_locked = 0;
+			/* Unresolve the plug-in runtime */
+			unresolve_plugin_runtime(plugin);
 	
-	return CP_OK;
+			/* Inform the listeners */
+			event.plugin_id = plugin->plugin->identifier;
+			event.old_state = plugin->state;
+			event.new_state = plugin->state = CP_PLUGIN_INSTALLED;
+			cpi_deliver_event(plugin->plugin->context, &event);
+		
+			node = list_prev(seen, node);
+		}
+
+	}
+	
+	/* Unlock the node states and release the seen list */
+	if (seen != NULL) {
+		while ((node = list_first(seen)) != NULL) {
+			registered_plugin_t *plugin;
+		
+			plugin = lnode_get(node);
+			plugin->state_locked = 0;
+			list_delete(seen, node);
+			lnode_destroy(node);
+		}
+		list_destroy(seen);
+	}
+	
+	return status;
 }
 
 static void free_plugin_import_content(cp_plugin_import_t *import) {
@@ -844,6 +1046,9 @@ void CP_LOCAL cpi_free_plugin(cp_plugin_t *plugin) {
 		free_plugin_import_content(plugin->imports + i);
 	}
 	free(plugin->imports);
+	free(plugin->lib_path);
+	free(plugin->start_func_name);
+	free(plugin->stop_func_name);
 	for (i = 0; i < plugin->num_ext_points; i++) {
 		free_ext_point_content(plugin->ext_points + i);
 	}
