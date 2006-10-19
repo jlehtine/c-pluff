@@ -20,8 +20,8 @@
 /** Fatal error handler, or NULL for default */
 static cp_error_handler_t fatal_error_handler = NULL;
 
-/** Whether gettext has been initialized */
-static int gettext_initialized = 0;
+/** Number of initializations */
+static int initialized = 0;
 
 /** Implementation information */
 static cp_implementation_info_t implementation_info = {
@@ -42,10 +42,15 @@ cp_implementation_info_t * CP_API cp_get_implementation_info(void) {
 }
 
 void CP_API cp_init(void) {
-	if (!gettext_initialized) {
-		gettext_initialized = 1;
+	if (!initialized) {
 		bindtextdomain(PACKAGE, CP_DATADIR CP_FNAMESEP_STR "locale");
 	}
+	initialized++;
+}
+
+void CP_API cp_destroy(void) {
+	assert(initialized > 0);
+	initialized--;
 }
 
 void CP_API cp_set_fatal_error_handler(cp_error_handler_t error_handler) {

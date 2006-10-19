@@ -19,7 +19,7 @@
 #else
 #define CP_API
 #endif
-#elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
+#elif defined(CP_BUILD) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3))
 #define CP_API __attribute__ ((visibility ("default")))
 #else /* Not restricting link time visibility of non-API symbols */
 #define CP_API
@@ -34,7 +34,7 @@ extern "C" {
  * Constants
  * ----------------------------------------------------------------------*/
 
-/* Version constants for build time checks */
+/* Version constants for compile time checks */
 
 /** The C-Pluff release version string for the header files */
 #define CP_RELEASE_VERSION "@PACKAGE_VERSION@"
@@ -164,21 +164,24 @@ typedef struct cp_context_t cp_context_t;
 struct cp_ext_point_t {
 	
 	/**
-	 * Human-readable, possibly localized, extension point name or NULL
-	 * if not available (UTF-8)
+	 * Human-readable, possibly localized extension point name or NULL
+	 * if not available
 	 */
 	char *name;
 	
 	/**
 	 * Local identifier uniquely identifying the extension point within the
-	 * providing plug-in (UTF-8)
+	 * providing plug-in
 	 */
 	char *local_id;
 	
-	/** Unique identifier of the extension point (UTF-8) */
+	/** Unique identifier of the extension point */
 	char *global_id;
 
-	/** Path to the extension schema definition or NULL if none. */
+	/**
+	 * Path to the extension schema definition (relative to the plug-in directory)
+	 * or NULL if none.
+	 */
 	char *schema_path;
 };
 
@@ -187,18 +190,18 @@ struct cp_ext_point_t {
  */
 struct cp_cfg_element_t {
 	
-	/** Name of the configuration element (UTF-8) */
+	/** Name of the configuration element */
 	char *name;
 
 	/** Number of attributes */
 	unsigned int num_atts;
 	
 	/**
-	 * Attribute name, value pairs (alternating, UTF-8 encoded)
+	 * Attribute name, value pairs (alternating, values possibly localized)
 	 */
 	char **atts;
 	
-	/** The value (text contents) of this configuration element (UTF-8) */
+	/** The value (text contents) of this configuration element, possibly localized */
 	char *value;
 	
 	/** The parent, or NULL if root node */
@@ -221,20 +224,20 @@ struct cp_extension_t {
 	
 	/** 
 	 * Human-readable, possibly localized, extension name or NULL if not
-	 * available (UTF-8)
+	 * available
 	 **/
 	char *name;
 	
 	/**
 	 * Local identifier uniquely identifying the extension within the
-	 * providing plug-in or NULL if not available (UTF-8)
+	 * providing plug-in or NULL if not available
 	 */
 	char *local_id;
 
-    /** Unique identifier of the extension or NULL if not available (UTF-8) */
+    /** Unique identifier of the extension or NULL if not available */
     char *global_id;
 	 
-	/** Unique identifier of the extension point (UTF-8) */
+	/** Unique identifier of the extension point */
 	char *ext_point_id;
 	
 	/** Extension configuration (starting with the extension element) */
@@ -246,10 +249,10 @@ struct cp_extension_t {
  */
 struct cp_plugin_import_t {
 	
-	/** Identifier of the imported plug-in (UTF-8) */
+	/** Identifier of the imported plug-in */
 	char *plugin_id;
 	
-	/** Version to be matched, or NULL if none (UTF-8) */
+	/** Version to be matched, or NULL if none */
 	char *version;
 	
 	/** Version match rule */
@@ -264,19 +267,19 @@ struct cp_plugin_import_t {
  */
 struct cp_plugin_t {
 	
-	/** The associated plug-in context (loading context) */
+	/** The associated plug-in context */
 	cp_context_t *context;
 	
-	/** Human-readable, possibly localized, plug-in name (UTF-8) */
+	/** Human-readable, possibly localized plug-in name */
 	char *name;
 	
-	/** Unique identifier (UTF-8) */
+	/** Unique identifier */
 	char *identifier;
 	
-	/** Version string (UTF-8) */
+	/** Version string */
 	char *version;
 	
-	/** Provider name, possibly localized (UTF-8) */
+	/** Human-readable, possibly localized provider name */
 	char *provider_name;
 	
 	/** Path of the plugin directory, or NULL if not known */
@@ -288,7 +291,10 @@ struct cp_plugin_t {
 	/** Imports */
 	cp_plugin_import_t *imports;
 
-    /** The relative path of plug-in runtime library, or NULL if none */
+    /**
+     * The plug-in runtime library path, relative to the plug-in directory,
+     * or NULL if none
+     */
     char *lib_path;
     
     /** The name of the start function, or NULL if none */
@@ -329,7 +335,7 @@ typedef enum cp_plugin_state_t {
  */
 typedef struct cp_plugin_event_t {
 	
-	/** The identifier of the affected plug-in in UTF-8 encoding */
+	/** The identifier of the affected plug-in */
 	char *plugin_id;
 	
 	/** Old state of the plug-in */
@@ -346,12 +352,12 @@ typedef struct cp_plugin_event_t {
 /** 
  * An error handler function called when a recoverable error occurs. An error
  * handler function should return promptly and it must not register or
- * unregister error handlers. The error message is localized and the encoding
- * depends on the locale. Attempts at changing plug-in state within the error
+ * unregister error handlers. The error message may be localized.
+ * Attempts at changing plug-in state within the error
  * handler function may fail to prevent deadlocks.
  * 
  * @param context the associated plug-in context (NULL during context creation)
- * @param msg the localized error message
+ * @param msg the possibly localized error message
  */
 typedef void (*cp_error_handler_t)(cp_context_t *context, const char *msg);
 
@@ -404,10 +410,21 @@ cp_implementation_info_t * CP_API cp_get_implementation_info(void);
 
 /**
  * Initializes the plug-in framework. This function must be called
- * before calling any if the plug-in framework functions declared below.
+ * before calling any of the plug-in framework functions declared below.
  * This function may be called multiple times but it is not thread-safe.
+ *
+ * Additionally, to enable localization support, the main program should
+ * set the current locale using setlocale(LC_ALL, "") before calling cp_init.
  */
 void CP_API cp_init(void);
+
+/**
+ * Destroys the plug-in framework releasing any allocated resources. The plug-in
+ * framework is only destroyed after this function has been called as many times
+ * as cp_init. Plug-in framework functions declared below must not be called
+ * after the plug-in framework has been destroyed.
+ */
+void CP_API cp_destroy(void);
 
 /**
  * Creates a new plug-in context which is an instance of the C-Pluff plug-in framework.
@@ -506,7 +523,7 @@ int CP_API cp_remove_event_listener(cp_context_t *context, cp_event_listener_t e
  * 
  * @param context the plug-in context
  * @param dir the directory
- * @return CP_OK (0) on success, or CP_ERR_RESOURCE if insufficient resources
+ * @return CP_OK (0) on success, or CP_ERR_RESOURCE if insufficient system resources
  */
 int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir);
 

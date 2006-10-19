@@ -5,8 +5,32 @@
 
 /* Global declarations */
 
-/* Use some definitions from libcpluff sources */
-#include "../libcpluff/defines.h"
+#ifdef HAVE_CONFIG_H
+#include "../libcpluff/config.h"
+#endif
+#ifdef HAVE_GETTEXT
+#include <libintl.h>
+#endif
+#ifdef HAVE_DMALLOC_H
+#include <dmalloc.h>
+#endif
+
+
+/* ------------------------------------------------------------------------
+ * Defines
+ * ----------------------------------------------------------------------*/
+
+/* Gettext defines */
+#ifdef HAVE_GETTEXT
+#define _(String) gettext(String)
+#define gettext_noop(String) String
+#define N_(String) gettext_noop(String)
+#else
+#define _(String) (String)
+#define N_(String) String
+#define textdomain(Domain)
+#define bindtextdomain(Package, Directory)
+#endif
 
 
 /* ------------------------------------------------------------------------
@@ -30,16 +54,27 @@ typedef struct command_info_t {
 	
 } command_info_t;
 
+/** Type for flag information */
+typedef struct flag_info_t {
+	
+	/** The name of the flag */
+	char *name;
+	
+	/** The value of the flag */
+	int value;
+	
+} flag_info_t;
+
 
 /* ------------------------------------------------------------------------
  * Global variables
  * ----------------------------------------------------------------------*/
 
-/* Whether this version is linked with the GNU readline library */
-extern const int have_readline;
-
-/* The available commands */
+/** The available commands */
 extern const command_info_t commands[];
+
+/** The available load flags */
+extern const flag_info_t load_flags[];
 
 
 /* ------------------------------------------------------------------------

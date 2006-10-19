@@ -125,16 +125,8 @@ fi
 if test -n "$cp_threads"; then
   	AC_DEFINE_UNQUOTED([CP_THREADS], ["$cp_threads"], [Multi-threading support type])
 fi
-case "$cp_threads" in
-  Posix)
-    AC_DEFINE([CP_THREADS_POSIX], [], [Define to use Posix threads])
-    ;;
-  Windows)
-    AC_DEFINE([CP_THREADS_WINDOWS], [], [Define to use Windows threads])
-    ;;
-esac
-AM_CONDITIONAL([THREADS_POSIX], test "$cp_threads" = Posix)
-AM_CONDITIONAL([THREADS_WINDOWS], test "$cp_threads" = Windows)
+AM_CONDITIONAL([POSIX_THREADS], test "$cp_threads" = Posix)
+AM_CONDITIONAL([WINDOWS_THREADS], test "$cp_threads" = Windows)
 
 # Check for the dlopen mechanism (Posix dlopen or GNU Libtool libltdl)
 # --------------------------------------------------------------------
@@ -183,6 +175,11 @@ if test "$with_readline" != no; then
   fi
 fi
 AM_CONDITIONAL([HAVE_READLINE], test "$have_readline" = yes)
+
+# Check for nl_langinfo availability
+# ----------------------------------
+dnl AC_CHECK_HEADER([langinfo.h],
+dnl  AC_CHECK_FUNC(
 
 # Check if dmalloc usage requested
 # --------------------------------

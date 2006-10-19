@@ -76,7 +76,7 @@ static void lock_mutex(pthread_mutex_t *mutex) {
 	int ec;
 	
 	if ((ec = pthread_mutex_lock(mutex))) {
-		cpi_fatalf(_("Could not lock a mutex due to error %d"), ec);
+		cpi_fatalf(_("Could not lock a mutex due to error %d."), ec);
 	}
 }
 
@@ -84,7 +84,7 @@ static void unlock_mutex(pthread_mutex_t *mutex) {
 	int ec;
 	
 	if ((ec = pthread_mutex_unlock(mutex))) {
-		cpi_fatalf(_("Could not unlock a mutex due to error %d"), ec);
+		cpi_fatalf(_("Could not unlock a mutex due to error %d."), ec);
 	}
 }
 
@@ -98,7 +98,7 @@ void CP_LOCAL cpi_lock_mutex(cpi_mutex_t *mutex) {
 		int ec;
 		
 		if ((ec = pthread_cond_wait(&(mutex->os_cond_count), &(mutex->os_mutex)))) {
-			cpi_fatalf(_("Could not wait for a condition variable due to error %d"), ec);
+			cpi_fatalf(_("Could not wait for a condition variable due to error %d."), ec);
 		}
 	}
 	mutex->os_thread = self;
@@ -117,11 +117,11 @@ void CP_LOCAL cpi_unlock_mutex(cpi_mutex_t *mutex) {
 			int ec;
 			
 			if ((ec = pthread_cond_signal(&(mutex->os_cond_count)))) {
-				cpi_fatalf(_("Could not signal a condition variable due to error %d"), ec);
+				cpi_fatalf(_("Could not signal a condition variable due to error %d."), ec);
 			}
 		}
 	} else {
-		cpi_fatalf(_("Unauthorized attempt at unlocking a mutex"));
+		cpi_fatalf(_("Unauthorized attempt at unlocking a mutex."));
 	}
 	unlock_mutex(&(mutex->os_mutex));
 }

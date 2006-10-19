@@ -152,7 +152,7 @@ void CP_LOCAL cpi_unlock_mutex(cpi_mutex_t *mutex) {
 			set_event(mutex->os_cond_count);
 		}
 	} else {
-		cpi_fatalf(_("Unauthorized attempt at unlocking a mutex"));
+		cpi_fatalf(_("Unauthorized attempt at unlocking a mutex."));
 	}
 	unlock_mutex(mutex->os_mutex);
 }

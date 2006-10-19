@@ -175,7 +175,7 @@ int CP_LOCAL cpi_install_plugin(cp_context_t *context, cp_plugin_t *plugin, unsi
 			break;
 		case CP_ERR_RESOURCE:
 			cpi_errorf(context,
-				_("Plug-in %s could not be installed due to insufficient resources."), plugin->identifier);
+				_("Plug-in %s could not be installed due to insufficient system resources."), plugin->identifier);
 			break;
 		default:
 			cpi_errorf(context,
@@ -518,7 +518,7 @@ list_t *preliminary) {
 		if (!error_reported) {
 			switch (status) {
 				case CP_ERR_RESOURCE:
-					cpi_errorf(context, _("Plug-in %s could not be resolved due to insufficient resources."), plugin->plugin->identifier);
+					cpi_errorf(context, _("Plug-in %s could not be resolved due to insufficient system resources."), plugin->plugin->identifier);
 					break;
 				case CP_ERR_DEADLOCK:
 					cpi_errorf(context, _("Plug-in %s could not be resolved due to conflicting ongoing operation."), plugin->plugin->identifier);
@@ -562,7 +562,7 @@ static int resolve_plugin(cp_context_t *context, registered_plugin_t *plugin) {
 		preliminary = list_create(LISTCOUNT_T_MAX);
 		if (seen == NULL || preliminary == NULL) {
 			status = CP_ERR_RESOURCE;
-			cpi_errorf(context, _("The plug-in %s could not be resolved due to insufficient resources."), plugin->plugin->identifier);
+			cpi_errorf(context, _("Plug-in %s could not be resolved due to insufficient system resources."), plugin->plugin->identifier);
 			break;
 		}
 
@@ -712,7 +712,7 @@ static int start_plugin(cp_context_t *context, registered_plugin_t *plugin) {
 			break;
 		case CP_ERR_RESOURCE:
 			cpi_errorf(context,
-				_("Plug-in %s could not be started due to insufficient resources."),
+				_("Plug-in %s could not be started due to insufficient system resources."),
 				plugin->plugin->identifier);
 			break;
 		case CP_ERR_RUNTIME:
@@ -889,7 +889,7 @@ static int unresolve_plugin_rec(cp_context_t *context, registered_plugin_t *plug
 			ip = lnode_get(node);
 			status = unresolve_plugin_rec(context, ip, seen);
 			if (status != CP_OK) {
-				cpi_errorf(context, _("Plug-in %s could not be unresolved because a dependent plug-in %s could not be unresolved."), plugin->plugin->identifier, ip->plugin->identifier);
+				cpi_errorf(context, _("Plug-in %s could not be unresolved because dependent plug-in %s could not be unresolved."), plugin->plugin->identifier, ip->plugin->identifier);
 				error_reported = 1;
 			}
 			node = list_next(plugin->imported, node);
@@ -1175,7 +1175,7 @@ static cp_plugin_t *get_plugin(cp_context_t *context, registered_plugin_t *rp, i
 	if (rp->use_count == 0
 		&& !hash_alloc_insert(context->used_plugins, rp->plugin, rp)) {
 		*error = CP_ERR_RESOURCE;
-		cpi_error(context, _("Insufficient resources to return plug-in information."));
+		cpi_error(context, _("Could not return plug-in information due to insufficient system resources."));
 		return NULL;
 	} else {
 		rp->use_count++;

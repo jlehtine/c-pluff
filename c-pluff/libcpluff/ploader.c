@@ -37,7 +37,7 @@
 #define CP_CFG_ELEMENT_VALUE_INITSIZE 64
 
 /** Plugin descriptor name */
-#define CP_PLUGIN_DESCRIPTOR N_("plugin.xml")
+#define CP_PLUGIN_DESCRIPTOR "plugin.xml"
 
 
 /* ------------------------------------------------------------------------
@@ -150,7 +150,7 @@ static void descriptor_errorf(ploader_context_t *plcontext, int warn,
 }
 
 /**
- * Reports insufficient resources while parsing and increments the
+ * Reports insufficient system resources while parsing and increments the
  * resource error count.
  * 
  * @param context the parsing context
@@ -158,7 +158,7 @@ static void descriptor_errorf(ploader_context_t *plcontext, int warn,
 static void resource_error(ploader_context_t *plcontext) {
 	if (plcontext->resource_error_count == 0) {
 		cpi_errorf(plcontext->plugin->context,
-			_("Insufficient resources to parse descriptor data in %s, line %d, column %d."),
+			_("Insufficient system resources to parse descriptor data in %s, line %d, column %d."),
 			plcontext->file,
 			XML_GetCurrentLineNumber(plcontext->parser),
 			XML_GetCurrentColumnNumber(plcontext->parser) + 1);
@@ -214,13 +214,13 @@ static int check_attributes(ploader_context_t *plcontext,
 		if ((av = contains_str(atts, *a, 2)) != NULL) {
 			if ((*(av + 1))[0] == '\0') {
 				descriptor_errorf(plcontext, 0,
-					_("required attribute \"%s\" for element \"%s\" has an empty value"),
+					_("required attribute %s for element %s has an empty value"),
 					*a, elem);
 				error = 1;
 			}
 		} else {
 			descriptor_errorf(plcontext, 0,
-				_("required attribute \"%s\" missing for element \"%s\""),
+				_("required attribute %s missing for element %s"),
 				*a, elem);
 			error = 1;
 		}
@@ -231,7 +231,7 @@ static int check_attributes(ploader_context_t *plcontext,
 		if (contains_str(req_atts, *atts, 1) == NULL
 			&& contains_str(opt_atts, *atts, 1) == NULL) {
 			descriptor_errorf(plcontext, 1,
-				_("ignoring unknown attribute \"%s\" for element \"%s\""),
+				_("ignoring unknown attribute %s for element %s"),
 				*atts, elem);
 		}
 	}
@@ -485,16 +485,16 @@ static void XMLCALL character_data_handler(
  */
 static void XMLCALL start_element_handler(
 	void *userData, const XML_Char *name, const XML_Char **atts) {
-	static const XML_Char * const req_plugin_atts[] = { N_("name"), N_("id"), N_("version"), NULL };
-	static const XML_Char * const opt_plugin_atts[] = { N_("provider-name"), NULL };
-	static const XML_Char * const req_import_atts[] = { N_("plugin"), NULL };
-	static const XML_Char * const opt_import_atts[] = { N_("version"), N_("match"), N_("optional"), NULL };
-	static const XML_Char * const req_runtime_atts[] = { N_("library"), NULL };
-	static const XML_Char * const opt_runtime_atts[] = { N_("start-func"), N_("stop-func"), NULL };
-	static const XML_Char * const req_ext_point_atts[] = { N_("name"), N_("id"), NULL };
-	static const XML_Char * const opt_ext_point_atts[] = { N_("schema"), NULL };
-	static const XML_Char * const req_extension_atts[] = { N_("point"), NULL };
-	static const XML_Char * const opt_extension_atts[] = { N_("id"), N_("name"), NULL };
+	static const XML_Char * const req_plugin_atts[] = { "name", "id", "version", NULL };
+	static const XML_Char * const opt_plugin_atts[] = { "provider-name", NULL };
+	static const XML_Char * const req_import_atts[] = { "plugin", NULL };
+	static const XML_Char * const opt_import_atts[] = { "version", "match", "optional", NULL };
+	static const XML_Char * const req_runtime_atts[] = { "library", NULL };
+	static const XML_Char * const opt_runtime_atts[] = { "start-func", "stop-func", NULL };
+	static const XML_Char * const req_ext_point_atts[] = { "name", "id", NULL };
+	static const XML_Char * const opt_ext_point_atts[] = { "schema", NULL };
+	static const XML_Char * const req_extension_atts[] = { "point", NULL };
+	static const XML_Char * const opt_extension_atts[] = { "id", "name", NULL };
 	ploader_context_t *plcontext = userData;
 	unsigned int i;
 
@@ -502,23 +502,23 @@ static void XMLCALL start_element_handler(
 	switch (plcontext->state) {
 
 		case PARSER_BEGIN:
-			if (!strcmp(name, N_("plugin"))) {
+			if (!strcmp(name, "plugin")) {
 				plcontext->state = PARSER_PLUGIN;
 				if (!check_attributes(plcontext, name, atts,
 						req_plugin_atts, opt_plugin_atts)) {
 					break;
 				}
 				for (i = 0; atts[i] != NULL; i += 2) {
-					if (!strcmp(atts[i], N_("name"))) {
+					if (!strcmp(atts[i], "name")) {
 						plcontext->plugin->name
 							= parser_strdup(plcontext, atts[i+1]);
-					} else if (!strcmp(atts[i], N_("id"))) {
+					} else if (!strcmp(atts[i], "id")) {
 						plcontext->plugin->identifier
 							= parser_strdup(plcontext, atts[i+1]);
-					} else if (!strcmp(atts[i], N_("version"))) {
+					} else if (!strcmp(atts[i], "version")) {
 						plcontext->plugin->version
 							= parser_strdup(plcontext, atts[i+1]);
-					} else if (!strcmp(atts[i], N_("provider-name"))) {
+					} else if (!strcmp(atts[i], "provider-name")) {
 						plcontext->plugin->provider_name
 							= parser_strdup(plcontext, atts[i+1]);
 					}
@@ -529,25 +529,25 @@ static void XMLCALL start_element_handler(
 			break;
 
 		case PARSER_PLUGIN:
-			if (!strcmp(name, N_("requires"))) {
+			if (!strcmp(name, "requires")) {
 				plcontext->state = PARSER_REQUIRES;
-			} else if (!strcmp(name, N_("runtime"))) {
+			} else if (!strcmp(name, "runtime")) {
 				if (check_attributes(plcontext, name, atts,
 						req_runtime_atts, opt_runtime_atts)) {
 					for (i = 0; atts[i] != NULL; i += 2) {
-						if (!strcmp(atts[i], N_("library"))) {
+						if (!strcmp(atts[i], "library")) {
 							plcontext->plugin->lib_path
 								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], N_("start-func"))) {
+						} else if (!strcmp(atts[i], "start-func")) {
 							plcontext->plugin->start_func_name
 								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], N_("stop-func"))) {
+						} else if (!strcmp(atts[i], "stop-func")) {
 							plcontext->plugin->stop_func_name
 								= parser_strdup(plcontext, atts[i+1]);
 						}
 					}
 				}
-			} else if (!strcmp(name, N_("extension-point"))) {
+			} else if (!strcmp(name, "extension-point")) {
 				if (check_attributes(plcontext, name, atts,
 						req_ext_point_atts, opt_ext_point_atts)) {
 					cp_ext_point_t *ext_point;
@@ -580,16 +580,16 @@ static void XMLCALL start_element_handler(
 					ext_point->global_id = NULL;
 					ext_point->schema_path = NULL;
 					for (i = 0; atts[i] != NULL; i += 2) {
-						if (!strcmp(atts[i], N_("name"))) {
+						if (!strcmp(atts[i], "name")) {
 							ext_point->name
 								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], N_("id"))) {
+						} else if (!strcmp(atts[i], "id")) {
 							ext_point->local_id
 								= parser_strdup(plcontext, atts[i+1]);
 							ext_point->global_id
 								= parser_strscat(plcontext,
-									plcontext->plugin->identifier, N_("."), atts[i+1], NULL);
-						} else if (!strcmp(atts[i], N_("schema"))) {
+									plcontext->plugin->identifier, ".", atts[i+1], NULL);
+						} else if (!strcmp(atts[i], "schema")) {
 							ext_point->schema_path
 								= parser_strdup(plcontext, atts[i+1]);
 						}
@@ -597,7 +597,7 @@ static void XMLCALL start_element_handler(
 					plcontext->plugin->num_ext_points++;
 					
 				}
-			} else if (!(strcmp(name, N_("extension")))) {
+			} else if (!(strcmp(name, "extension"))) {
 				plcontext->state = PARSER_EXTENSION;
 				plcontext->depth = 0;
 				if (check_attributes(plcontext, name, atts,
@@ -633,16 +633,16 @@ static void XMLCALL start_element_handler(
 					extension->ext_point_id = NULL;
 					extension->configuration = NULL;
 					for (i = 0; atts[i] != NULL; i += 2) {
-						if (!strcmp(atts[i], N_("point"))) {
+						if (!strcmp(atts[i], "point")) {
 							extension->ext_point_id
 								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], N_("id"))) {
+						} else if (!strcmp(atts[i], "id")) {
 							extension->local_id
 								= parser_strdup(plcontext, atts[i+1]);
 							extension->global_id
 								= parser_strscat(plcontext,
-									plcontext->plugin->identifier, N_("."), atts[i+1], NULL);
-						} else if (!strcmp(atts[i], N_("name"))) {
+									plcontext->plugin->identifier, ".", atts[i+1], NULL);
+						} else if (!strcmp(atts[i], "name")) {
 							extension->name
 								= parser_strdup(plcontext, atts[i+1]);
 						}
@@ -662,7 +662,7 @@ static void XMLCALL start_element_handler(
 			break;
 
 		case PARSER_REQUIRES:
-			if (!strcmp(name, N_("import"))) {
+			if (!strcmp(name, "import")) {
 
 				if (check_attributes(plcontext, name, atts,
 						req_import_atts, opt_import_atts)) {
@@ -694,34 +694,34 @@ static void XMLCALL start_element_handler(
 					import->plugin_id = NULL;
 					import->version = NULL;
 					for (i = 0; atts[i] != NULL; i += 2) {
-						if (!strcmp(atts[i], N_("plugin"))) {
+						if (!strcmp(atts[i], "plugin")) {
 							import->plugin_id
 								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], N_("version"))) {
+						} else if (!strcmp(atts[i], "version")) {
 							if (!cpi_version_isvalid(atts[i+1])) {
 								descriptor_errorf(plcontext, 0, _("invalid version string: %s"), atts[i+1]);
 							}
 							import->version
 								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], N_("match"))) {
-							if (!strcmp(atts[i+1], N_("perfect"))) {
+						} else if (!strcmp(atts[i], "match")) {
+							if (!strcmp(atts[i+1], "perfect")) {
 								import->match = CP_MATCH_PERFECT;
-							} else if (!strcmp(atts[i+1], N_("equivalent"))) {
+							} else if (!strcmp(atts[i+1], "equivalent")) {
 								import->match = CP_MATCH_EQUIVALENT;
-							} else if (!strcmp(atts[i+1], N_("compatible"))) {
+							} else if (!strcmp(atts[i+1], "compatible")) {
 								import->match = CP_MATCH_COMPATIBLE;
-							} else if (!strcmp(atts[i+1], N_("greaterOrEqual"))) {
+							} else if (!strcmp(atts[i+1], "greaterOrEqual")) {
 								import->match = CP_MATCH_GREATEROREQUAL;
 							} else {
 								descriptor_errorf(plcontext, 0, _("unknown version matching mode: %s"), atts[i+1]);
 							}
-						} else if (!strcmp(atts[i], N_("optional"))) {
-							if (!strcmp(atts[i+1], N_("true"))
-								|| !strcmp(atts[i+1], N_("1"))) {
+						} else if (!strcmp(atts[i], "optional")) {
+							if (!strcmp(atts[i+1], "true")
+								|| !strcmp(atts[i+1], "1")) {
 								import->optional = 1;
-							} else if (strcmp(atts[i+1], N_("false"))
-								&& strcmp(atts[i+1], N_("0"))) {
-								descriptor_errorf(plcontext, 0, _("unknown boolean value %s"), atts[i+1]);
+							} else if (strcmp(atts[i+1], "false")
+								&& strcmp(atts[i+1], "0")) {
+								descriptor_errorf(plcontext, 0, _("unknown boolean value: %s"), atts[i+1]);
 							}
 						}
 					}
@@ -796,7 +796,7 @@ static void XMLCALL end_element_handler(
 	switch (plcontext->state) {
 
 		case PARSER_PLUGIN:
-			if (!strcmp(name, N_("plugin"))) {
+			if (!strcmp(name, "plugin")) {
 				
 				/* Readjust memory allocated for extension points, if necessary */
 				if (plcontext->ext_points_size != plcontext->plugin->num_ext_points) {
@@ -829,7 +829,7 @@ static void XMLCALL end_element_handler(
 			break;
 
 		case PARSER_REQUIRES:
-			if (!strcmp(name, N_("requires"))) {
+			if (!strcmp(name, "requires")) {
 				
 				/* Readjust memory allocated for imports, if necessary */
 				if (plcontext->imports_size != plcontext->plugin->num_imports) {
@@ -927,7 +927,7 @@ static void XMLCALL end_element_handler(
 				
 			}			
 			if (plcontext->depth-- == 0) {
-				assert(!strcmp(name, N_("extension")));
+				assert(!strcmp(name, "extension"));
 				plcontext->state = PARSER_PLUGIN;
 				XML_SetCharacterDataHandler(plcontext->parser, NULL);
 			}
@@ -1103,7 +1103,7 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 			break;
 		case CP_ERR_RESOURCE:
 			cpi_errorf(context,
-				_("Insufficient resources to load a plug-in from %s."), path);
+				_("Insufficient system resources to load a plug-in from %s."), path);
 			break;
 	}
 
@@ -1269,7 +1269,7 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 						}
 						if (hnode == NULL) {
 							if (!hash_alloc_insert(avail_plugins, plugin->identifier, plugin)) {
-								cpi_errorf(context, _("Plug-in %s version %s could not be loaded due to insufficient resources."), plugin->identifier, plugin->version);
+								cpi_errorf(context, _("Plug-in %s version %s could not be loaded due to insufficient system resources."), plugin->identifier, plugin->version);
 								cpi_free_plugin(plugin);
 								status = CP_ERR_RESOURCE;
 								/* continue loading plug-ins from other directories */
