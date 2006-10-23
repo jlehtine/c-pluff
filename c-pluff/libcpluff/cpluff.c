@@ -17,13 +17,13 @@
  * Variables
  * ----------------------------------------------------------------------*/
 
-/** Fatal error handler, or NULL for default */
+/// Fatal error handler, or NULL for default 
 static cp_error_handler_t fatal_error_handler = NULL;
 
-/** Number of initializations */
+/// Number of initializations 
 static int initialized = 0;
 
-/** Implementation information */
+/// Implementation information 
 static cp_implementation_info_t implementation_info = {
 	CP_RELEASE_VERSION,
 	CP_API_VERSION,

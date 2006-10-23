@@ -25,7 +25,7 @@
  * Definitions
  * ----------------------------------------------------------------------*/
 
-/** The maximum number of contexts supported */
+/// The maximum number of contexts supported 
 #define MAX_NUM_CONTEXTS 8
 
 
@@ -50,16 +50,16 @@ static void cmd_exit(int argc, char *argv[]);
  * Variables
  * ----------------------------------------------------------------------*/
 
-/** Known plug-in contexts */
+/// Known plug-in contexts 
 cp_context_t *contexts[MAX_NUM_CONTEXTS];
 
-/** The index of the currently active context or -1 if none */
+/// The index of the currently active context or -1 if none 
 static int active_context = -1;
 
-/** The index of the next created context, or -1 if no more room */
+/// The index of the next created context, or -1 if no more room 
 static int next_context = 0;
 
-/** The available commands */
+/// The available commands 
 const command_info_t commands[] = {
 	{ "help", N_("displays command help"), cmd_help },
 	{ "create-context", N_("creates a new plug-in context"), cmd_create_context },
@@ -76,7 +76,7 @@ const command_info_t commands[] = {
 	{ NULL, NULL, NULL }
 };
 
-/** The available load flags */
+/// The available load flags 
 const flag_info_t load_flags[] = {
 	{ "upgrade", CP_LP_UPGRADE },
 	{ "stop-all-on-upgrade", CP_LP_STOP_ALL_ON_UPGRADE },

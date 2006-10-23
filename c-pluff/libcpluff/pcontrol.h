@@ -18,7 +18,7 @@ extern "C" {
  * Constants
  * ----------------------------------------------------------------------*/
 
-/** Preliminarily OK */
+/// Preliminarily OK 
 #define CP_OK_PRELIMINARY 1
 
 

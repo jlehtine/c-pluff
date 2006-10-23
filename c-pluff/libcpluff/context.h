@@ -38,35 +38,35 @@ struct cp_context_t {
 
 #if defined(CP_THREADS)
 
-	/** Mutex for accessing plug-in context */
+	/// Mutex for accessing plug-in context 
 	cpi_mutex_t *mutex;
 	
 #elif !defined(NDEBUG)
 	int locked;
 #endif
 	
-	/** Installed error handlers */
+	/// Installed error handlers 
 	list_t *error_handlers;
 	
-	/** Whether error handlers list is frozen */
+	/// Whether error handlers list is frozen 
 	int error_handlers_frozen;
 
-	/** Installed event listeners */
+	/// Installed event listeners 
 	list_t *event_listeners;
 	
-	/** Whether event listeners list is frozen */
+	/// Whether event listeners list is frozen 
 	int event_listeners_frozen;
 	
-	/** List of registered plug-in directories */
+	/// List of registered plug-in directories 
 	list_t *plugin_dirs;
 
-	/** Maps plug-in identifiers to plug-in state structures */
+	/// Maps plug-in identifiers to plug-in state structures 
 	hash_t *plugins;
 
-	/** List of started plug-ins in the order they were started */
+	/// List of started plug-ins in the order they were started 
 	list_t *started_plugins;
 	
-	/** Hash of in-use registered plug-ins by plugin pointer */
+	/// Hash of in-use registered plug-ins by plugin pointer 
 	hash_t *used_plugins;
 	
 };

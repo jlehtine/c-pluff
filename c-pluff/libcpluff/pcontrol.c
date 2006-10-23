@@ -60,34 +60,34 @@
 // Forward type definitions 
 typedef struct registered_plugin_t registered_plugin_t;
 
-/** Stores the state of a registered plug-in. */
+/// Stores the state of a registered plug-in. 
 struct registered_plugin_t {
 	
-	/** Plug-in information */
+	/// Plug-in information 
 	cp_plugin_t *plugin;
 	
-	/** Use count for plug-in information */
+	/// Use count for plug-in information 
 	unsigned int use_count;
 	
-	/** The current state of the plug-in */
+	/// The current state of the plug-in 
 	cp_plugin_state_t state;
 	
-	/** Whether the plug-in state has been locked */
+	/// Whether the plug-in state has been locked 
 	int state_locked;
 	
-	/** The set of imported plug-ins, or NULL if not resolved */
+	/// The set of imported plug-ins, or NULL if not resolved 
 	list_t *imported;
 	
-	/** The set of plug-ins importing this plug-in */
+	/// The set of plug-ins importing this plug-in 
 	list_t *importing;
 	
-	/** The runtime library handle, or NULL if not resolved */
+	/// The runtime library handle, or NULL if not resolved 
 	DLHANDLE runtime_lib;
 	
-	/** The start function, or NULL if none or not resolved */
+	/// The start function, or NULL if none or not resolved 
 	cp_start_t start_func;
 	
-	/** The stop function, or NULL if none or not resolved */
+	/// The stop function, or NULL if none or not resolved 
 	cp_stop_t stop_func;
 
 };

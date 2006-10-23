@@ -22,16 +22,16 @@
 // A generic recursive mutex implementation 
 struct cpi_mutex_t {
 
-	/** The current lock count */
+	/// The current lock count 
 	int lock_count;
 	
-	/** The underlying operating system mutex */
+	/// The underlying operating system mutex 
 	HANDLE os_mutex;
 	
-	/** The condition variable for signaling availability */
+	/// The condition variable for signaling availability 
 	HANDLE os_cond_count;
 
-	/** The locking thread if currently locked */
+	/// The locking thread if currently locked 
 	DWORD os_thread;
 	
 };

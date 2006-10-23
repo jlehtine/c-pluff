@@ -29,13 +29,13 @@
  * Constants
  * ----------------------------------------------------------------------*/
 
-/** XML parser buffer size (in bytes) */
+/// XML parser buffer size (in bytes) 
 #define CP_XML_PARSER_BUFFER_SIZE 4096
 
-/** Initial configuration element value size */
+/// Initial configuration element value size 
 #define CP_CFG_ELEMENT_VALUE_INITSIZE 64
 
-/** Plugin descriptor name */
+/// Plugin descriptor name 
 #define CP_PLUGIN_DESCRIPTOR "plugin.xml"
 
 
@@ -45,7 +45,7 @@
 
 typedef struct ploader_context_t ploader_context_t;
 
-/** Parser states */
+/// Parser states 
 typedef enum parser_state_t {
 	PARSER_BEGIN,
 	PARSER_PLUGIN,
@@ -56,25 +56,25 @@ typedef enum parser_state_t {
 	PARSER_ERROR
 } parser_state_t;
 
-/** Plug-in loader context */
+/// Plug-in loader context 
 struct ploader_context_t {
 
-	/** The XML parser being used */
+	/// The XML parser being used 
 	XML_Parser parser;
 	
-	/** The file being parsed */
+	/// The file being parsed 
 	char *file;
 	
-	/** The plug-in being constructed */
+	/// The plug-in being constructed 
 	cp_plugin_t *plugin;
 	
-	/** The configuration element being constructed */
+	/// The configuration element being constructed 
 	cp_cfg_element_t *configuration;
 	
-	/** The current parser state */
+	/// The current parser state 
 	parser_state_t state;
 	
-	/** The saved parser state (used in PARSER_UNKNOWN) */
+	/// The saved parser state (used in PARSER_UNKNOWN) 
 	parser_state_t saved_state;
 	
 	/**
@@ -82,31 +82,31 @@ struct ploader_context_t {
 	 */
 	unsigned int depth;
 	
-	/** The number of skipped configuration elements */
+	/// The number of skipped configuration elements 
 	unsigned int skippedCEs;
 
-	/** Size of allocated imports table */
+	/// Size of allocated imports table 
 	size_t imports_size;
 	
-	/** Size of allocated extension points table */
+	/// Size of allocated extension points table 
 	size_t ext_points_size;
 	
-	/** Size of allocated extensions table */
+	/// Size of allocated extensions table 
 	size_t extensions_size;
 	
-	/** Buffer for a value being read */
+	/// Buffer for a value being read 
 	char *value;
 	
-	/** Size of allocated value field */
+	/// Size of allocated value field 
 	size_t value_size;
 	
-	/** Current length of value string */
+	/// Current length of value string 
 	size_t value_length;
 	
-	/** The number of parsing errors that have occurred */
+	/// The number of parsing errors that have occurred 
 	unsigned int error_count;
 	
-	/** The number of resource errors that have occurred */
+	/// The number of resource errors that have occurred 
 	unsigned int resource_error_count;
 };
 
