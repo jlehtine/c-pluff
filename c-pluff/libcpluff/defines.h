@@ -25,7 +25,7 @@
  * Defines
  * ----------------------------------------------------------------------*/
 
-/* Define CP_LOCAL to hide internal symbols */
+// Define CP_LOCAL to hide internal symbols 
 #if defined(__WIN32__)
 #define CP_LOCAL
 #elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
@@ -34,7 +34,7 @@
 #define CP_LOCAL
 #endif
 
-/* Gettext defines */
+// Gettext defines 
 #ifdef HAVE_GETTEXT
 #define _(String) dgettext(PACKAGE, String)
 #define gettext_noop(String) String
@@ -44,10 +44,10 @@
 #define N_(String) String
 #define textdomain(Domain)
 #define bindtextdomain(Package, Directory)
-#endif /*HAVE_GETTEXT*/
+#endif //HAVE_GETTEXT
 
 
-/* Additional defines for function attributes (under GCC). */
+// Additional defines for function attributes (under GCC). 
 #if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 5)
 #define CP_PRINTF(format_idx, arg_idx) \
 	__attribute__((format (printf, format_idx, arg_idx)))
@@ -69,4 +69,4 @@
 #endif
 
 
-#endif /*DEFINES_H_*/
+#endif //DEFINES_H_

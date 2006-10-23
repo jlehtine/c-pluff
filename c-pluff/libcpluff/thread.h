@@ -3,7 +3,7 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/* Generic multi-threading support */
+// Generic multi-threading support 
 
 #ifndef THREAD_H_
 #define THREAD_H_
@@ -13,14 +13,14 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif /*__cplusplus*/
+#endif //__cplusplus
 
 
 /* ------------------------------------------------------------------------
  * Data types
  * ----------------------------------------------------------------------*/
 
-/* A generic mutex implementation */
+// A generic mutex implementation 
 typedef struct cpi_mutex_t cpi_mutex_t;
 
 
@@ -28,7 +28,7 @@ typedef struct cpi_mutex_t cpi_mutex_t;
  * Function declarations
  * ----------------------------------------------------------------------*/
 
-/* Mutex functions */
+// Mutex functions 
 
 /**
  * Creates a mutex. The mutex is initially available.
@@ -76,7 +76,7 @@ int CP_LOCAL cpi_is_mutex_locked(cpi_mutex_t *mutex);
 
 #ifdef __cplusplus
 }
-#endif /*__cplusplus */
+#endif //__cplusplus 
 
-#endif /*CP_THREADS*/
-#endif /*THREAD_H_*/
+#endif //CP_THREADS
+#endif //THREAD_H_

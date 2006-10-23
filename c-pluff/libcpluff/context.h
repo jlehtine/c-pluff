@@ -26,14 +26,14 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif /*__cplusplus*/
+#endif //__cplusplus
 
 
 /* ------------------------------------------------------------------------
  * Data types
  * ----------------------------------------------------------------------*/
 
-/* Plug-in context */
+// Plug-in context 
 struct cp_context_t {
 
 #if defined(CP_THREADS)
@@ -77,7 +77,7 @@ struct cp_context_t {
  * ----------------------------------------------------------------------*/
 
 
-/* Locking data structures for exclusive access */
+// Locking data structures for exclusive access 
 
 #if defined(CP_THREADS) || !defined(NDEBUG)
 
@@ -103,7 +103,7 @@ void CP_LOCAL cpi_unlock_context(cp_context_t *context);
 #endif
 
 
-/* Processing errors */
+// Processing errors 
 
 /**
  * Delivers a plug-in framework error to registered error handlers.
@@ -145,7 +145,7 @@ void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handle
 	CP_PRINTF(3, 4);
 
 
-/* Delivering plug-in events */
+// Delivering plug-in events 
 
 /**
  * Delivers a plug-in event to registered event listeners.
@@ -158,6 +158,6 @@ void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *
 
 #ifdef __cplusplus
 }
-#endif /*__cplusplus*/
+#endif //__cplusplus
 
-#endif /*CONTEXT_H_*/
+#endif //CONTEXT_H_

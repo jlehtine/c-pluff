@@ -3,7 +3,7 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/* Core C-Pluff functions */
+// Core C-Pluff functions 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -61,20 +61,20 @@ void CP_LOCAL cpi_fatalf(const char *msg, ...) {
 	va_list params;
 	char fmsg[256];
 		
-	/* Format message */
+	// Format message 
 	assert(msg != NULL);
 	va_start(params, msg);
 	vsnprintf(fmsg, sizeof(fmsg), msg, params);
 	va_end(params);
 	fmsg[sizeof(fmsg)/sizeof(char) - 1] = '\0';
 
-	/* Call error handler or print the error message */
+	// Call error handler or print the error message 
 	if (fatal_error_handler != NULL) {
 		fatal_error_handler(NULL, fmsg);
 	} else {
 		fprintf(stderr, _(PACKAGE_NAME ": FATAL ERROR: %s\n"), fmsg);
 	}
 	
-	/* Abort if still alive */
+	// Abort if still alive 
 	abort();
 }

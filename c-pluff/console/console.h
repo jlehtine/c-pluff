@@ -3,7 +3,7 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/* Global declarations */
+// Global declarations 
 
 #ifdef HAVE_CONFIG_H
 #include "../libcpluff/config.h"
@@ -20,7 +20,7 @@
  * Defines
  * ----------------------------------------------------------------------*/
 
-/* Gettext defines */
+// Gettext defines 
 #ifdef HAVE_GETTEXT
 #define _(String) gettext(String)
 #define gettext_noop(String) String
@@ -100,4 +100,4 @@ char *cmdline_input(const char *prompt);
 #ifndef CONSOLE_H_
 #define CONSOLE_H_
 
-#endif /*CONSOLE_H_*/
+#endif //CONSOLE_H_

@@ -3,7 +3,7 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/* General purpose utility functions */
+// General purpose utility functions 
 
 #ifndef UTIL_H_
 #define UTIL_H_
@@ -15,14 +15,14 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif /*__cplusplus*/
+#endif //__cplusplus
 
 
 /* ------------------------------------------------------------------------
  * Function declarations
  * ----------------------------------------------------------------------*/
 
-/* For operating on smallish pointer sets implemented as lists */
+// For operating on smallish pointer sets implemented as lists 
 
 /**
  * Compares pointers.
@@ -69,7 +69,7 @@ int CP_LOCAL cpi_ptrset_remove(list_t *set, const void *ptr);
 int CP_LOCAL cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
 
 
-/* Other list processing utility functions */
+// Other list processing utility functions 
 
 /**
  * Processes a node of the list by freeing the associated pointer and
@@ -82,7 +82,7 @@ int CP_LOCAL cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
 void CP_LOCAL cpi_process_free_ptr(list_t *list, lnode_t *node, void *dummy);
 
 
-/* For error handling */
+// For error handling 
 
 /**
  * Reports a fatal error. This method does not return.
@@ -93,7 +93,7 @@ void CP_LOCAL cpi_process_free_ptr(list_t *list, lnode_t *node, void *dummy);
 void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
 
 
-/* For version strings */
+// For version strings 
 
 /**
  * Checks the version string for validity.
@@ -115,7 +115,7 @@ int CP_LOCAL cpi_version_isvalid(const char *v) CP_PURE;
 int CP_LOCAL cpi_version_cmp(const char *v1, const char *v2, int nc) CP_PURE;
 
 
-/* Miscellaneous utility functions */
+// Miscellaneous utility functions 
 
 /**
  * Makes a duplicate of the specified string. The required memory is allocated
@@ -136,6 +136,6 @@ char * CP_LOCAL cpi_strdup(const char *src);
 
 #ifdef __cplusplus
 }
-#endif /*__cplusplus */
+#endif //__cplusplus 
 
-#endif /*UTIL_H_*/
+#endif //UTIL_H_

@@ -3,7 +3,7 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/* Core console logic */
+// Core console logic 
 
 #ifdef HAVE_CONFIG_H
 #include "../libcpluff/config.h"
@@ -33,7 +33,7 @@
  * Function declarations
  * ----------------------------------------------------------------------*/
 
-/* Function declarations for command implementations */
+// Function declarations for command implementations 
 static void cmd_help(int argc, char *argv[]);
 static void cmd_create_context(int argc, char *argv[]);
 static void cmd_select_context(int argc, char *argv[]);
@@ -191,15 +191,15 @@ static int destroy_context(int ci) {
 static void cmd_exit(int argc, char *argv[]) {
 	int i;
 	
-	/* Destroy all plug-in contexts */
+	// Destroy all plug-in contexts 
 	for (i = 0; i < MAX_NUM_CONTEXTS; i++) {
 		destroy_context(i);
 	}
 	
-	/* Destroy C-Pluff framework */
+	// Destroy C-Pluff framework 
 	cp_destroy();
 	
-	/* Exit program */
+	// Exit program 
 	exit(0);
 }
 
@@ -274,7 +274,7 @@ static void cmd_create_context(int argc, char *argv[]) {
 		active_context = next_context;
 		noticef(_("Created plug-in context %d."), active_context);
 		
-		/* Find the index for the next context */
+		// Find the index for the next context 
 		i = next_context;
 		do {
 			if (++next_context >= MAX_NUM_CONTEXTS) {
@@ -348,15 +348,15 @@ static void cmd_destroy_context(int argc, char *argv[]) {
 		return;
 	}
 	
-	/* Destroy the context */
+	// Destroy the context 
 	destroy_context(ci);
 	
-	/* Choose the next index if necessary */
+	// Choose the next index if necessary 
 	if (next_context == -1) {
 		next_context = ci;
 	}
 	
-	/* Choose the new active context if necessary */
+	// Choose the new active context if necessary 
 	if (ci == active_context) {
 		do {
 			if (--active_context < 0) {
@@ -423,7 +423,7 @@ static void cmd_load_plugins(int argc, char *argv[]) {
 		return;
 	}
 	
-	/* Set flags */
+	// Set flags 
 	for (i = 1; i < argc; i++) {
 		int j;
 		
@@ -513,17 +513,17 @@ int main(int argc, char *argv[]) {
 	char *prompt_no_context, *prompt_context;
 	int i;
 
-	/* Gettext initialization */
+	// Gettext initialization 
 #ifdef HAVE_GETTEXT
 	setlocale(LC_ALL, "");
 	bindtextdomain(PACKAGE, CP_DATADIR CP_FNAMESEP_STR "locale");
 	textdomain(PACKAGE);
 #endif
 
-	/* Initialize C-Pluff library */
+	// Initialize C-Pluff library 
 	cp_init();
 	
-	/* Display startup information */
+	// Display startup information 
 	ii = cp_get_implementation_info();
 	noticef(
 		/* TRANSLATORS: This is the version string displayed on startup.
@@ -549,12 +549,12 @@ int main(int argc, char *argv[]) {
 	}
 	notice(_("Type \"help\" for help on available commands."));
 
-	/* Initialize context array */
+	// Initialize context array 
 	for (i = 0; i < MAX_NUM_CONTEXTS; i++) {
 		contexts[i] = NULL;
 	}
 
-	/* Command line loop */
+	// Command line loop 
 	cmdline_init();
 	prompt_no_context = _("[no context] > ");
 	prompt_context = _("[context %d] > ");
@@ -564,7 +564,7 @@ int main(int argc, char *argv[]) {
 		int argc;
 		char **argv;
 		
-		/* Get command line */
+		// Get command line 
 		if (active_context != -1) {
 			snprintf(prompt, sizeof(prompt), prompt_context, active_context);
 			prompt[sizeof(prompt)/sizeof(char) - 1] = '\0';
@@ -577,13 +577,13 @@ int main(int argc, char *argv[]) {
 			cmdline = "exit";
 		}
 		
-		/* Parse command line */
+		// Parse command line 
 		argc = cmdline_parse(cmdline, &argv);
 		if (argc <= 0) {
 			continue;
 		}
 		
-		/* Choose command */
+		// Choose command 
 		for (i = 0; commands[i].name != NULL; i++) {
 			if (!strcmp(argv[0], commands[i].name)) {
 				commands[i].implementation(argc, argv);

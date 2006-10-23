@@ -3,7 +3,7 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/* Basic command line input functionality */
+// Basic command line input functionality 
 
 #include <stdio.h>
 #include <string.h>

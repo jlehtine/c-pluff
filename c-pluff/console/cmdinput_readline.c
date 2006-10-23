@@ -3,7 +3,7 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/* GNU readline based command line input */
+// GNU readline based command line input 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -81,13 +81,13 @@ void cmdline_init(void) {
 char *cmdline_input(const char *prompt) {
 	static char *cmdline = NULL;
 	
-	/* Free previously returned command line, if any */
+	// Free previously returned command line, if any 
 	if (cmdline != NULL) {
 		free(cmdline);
 		cmdline = NULL;
 	}
 	
-	/* Obtain new command line and record it for history */
+	// Obtain new command line and record it for history 
 	cmdline = readline(prompt);
 	if (cmdline != NULL && *cmdline != '\0') {
 		add_history(cmdline);

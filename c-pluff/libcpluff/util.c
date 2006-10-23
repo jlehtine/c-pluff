@@ -3,7 +3,7 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/* Internal utility functions */
+// Internal utility functions 
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,7 +30,7 @@ hash_val_t CP_LOCAL cpi_hashfunc_ptr(const void *ptr) {
 int CP_LOCAL cpi_ptrset_add(list_t *set, void *ptr) {
 	
 
-	/* Only add the pointer if it is not already included */
+	// Only add the pointer if it is not already included 
 	if (cpi_ptrset_contains(set, ptr)) {
 		return 1;
 	} else {
@@ -50,7 +50,7 @@ int CP_LOCAL cpi_ptrset_add(list_t *set, void *ptr) {
 int CP_LOCAL cpi_ptrset_remove(list_t *set, const void *ptr) {
 	lnode_t *node;
 	
-	/* Find the pointer if it is in the set */
+	// Find the pointer if it is in the set 
 	node = list_find(set, ptr, cpi_comp_ptr);
 	if (node != NULL) {
 		list_delete(set, node);

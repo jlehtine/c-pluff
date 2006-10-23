@@ -13,13 +13,13 @@
 #include "thread.h"
 #include "util.h"
 
-/* Generic multi-threading support, Windows implementation */
+// Generic multi-threading support, Windows implementation 
 
 /* ------------------------------------------------------------------------
  * Data types
  * ----------------------------------------------------------------------*/
 
-/* A generic recursive mutex implementation */
+// A generic recursive mutex implementation 
 struct cpi_mutex_t {
 
 	/** The current lock count */

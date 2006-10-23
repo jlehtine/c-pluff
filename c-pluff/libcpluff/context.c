@@ -122,7 +122,7 @@ static void process_event(list_t *list, lnode_t *node, void *event);
  * ----------------------------------------------------------------------*/
 
 
-/* Generic */
+// Generic 
 
 static void process_free_eh_holder(list_t *list, lnode_t *node, void *dummy) {
 	eh_holder_t *h = lnode_get(node);
@@ -163,22 +163,22 @@ static void process_event(list_t *list, lnode_t *node, void *event) {
 }
 
 
-/* Initialization and destroy */
+// Initialization and destroy 
 
 cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *error) {
 	cp_context_t *context = NULL;
 	int status = CP_OK;
 
-	/* Initialize internal state */
+	// Initialize internal state 
 	do {
 	
-		/* Allocate memory for the context */
+		// Allocate memory for the context 
 		if ((context = malloc(sizeof(cp_context_t))) == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}		
 	
-		/* Initialize data structures as necessary */
+		// Initialize data structures as necessary 
 		memset(context, 0, sizeof(cp_context_t));
 #ifdef CP_THREADS
 		context->mutex = cpi_create_mutex();
@@ -204,7 +204,7 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 			break;
 		}
 
-		/* Register initial error handler */
+		// Register initial error handler 
 		if (error_handler != NULL) {
 			if (cp_add_error_handler(context, error_handler) != CP_OK) {
 				status = CP_ERR_RESOURCE;
@@ -214,23 +214,23 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 		
 	} while (0);
 	
-	/* Report failure */
+	// Report failure 
 	if (status != CP_OK) {
 		cpi_herror(NULL, error_handler, _("Plug-in context could not be created due to insufficient system resources."));
 	}
 	
-	/* Rollback initialization on failure */
+	// Rollback initialization on failure 
 	if (status != CP_OK && context != NULL) {
 		cp_destroy_context(context);
 		context = NULL;
 	}
 
-	/* Return the final status */
+	// Return the final status 
 	if (error != NULL) {
 		*error = status;
 	}
 	
-	/* Return the context (or NULL on failure) */
+	// Return the context (or NULL on failure) 
 	return context;
 }
 
@@ -242,12 +242,12 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 	assert(!context->locked);
 #endif
 
-	/* Unload all plug-ins */
+	// Unload all plug-ins 
 	if (context->plugins != NULL && !hash_isempty(context->plugins)) {
 		cp_unload_all_plugins(context);
 	}
 	
-	/* Release data structures */
+	// Release data structures 
 	if (context->used_plugins != NULL) {
 		if (!hash_isempty(context->used_plugins)) {
 			cpi_error(context, _("Some resources were not released at context destruction."));
@@ -282,7 +282,7 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 		context->event_listeners = NULL;
 	}
 	
-	/* Release mutex */
+	// Release mutex 
 #ifdef CP_THREADS
 	if (context->mutex != NULL) {
 		cpi_destroy_mutex(context->mutex);
@@ -292,7 +292,7 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 }
 
 
-/* Error handling */
+// Error handling 
 
 int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_handler) {
 	int status = CP_ERR_RESOURCE;
@@ -406,7 +406,7 @@ void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handle
 }
 
 
-/* Event listeners */
+// Event listeners 
 
 int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t event_listener) {
 	int status = CP_ERR_RESOURCE;
@@ -490,7 +490,7 @@ void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *
 }
 
 
-/* Plug-in directories */
+// Plug-in directories 
 
 int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	char *d = NULL;
@@ -502,12 +502,12 @@ int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	cpi_lock_context(context);
 	do {
 	
-		/* Check if directory has already been registered */
+		// Check if directory has already been registered 
 		if (list_find(context->plugin_dirs, dir, (int (*)(const void *, const void *)) strcmp) != NULL) {
 			break;
 		}
 	
-		/* Allocate resources */
+		// Allocate resources 
 		d = malloc(sizeof(char) * (strlen(dir) + 1));
 		node = lnode_create(d);
 		if (d == NULL || node == NULL) {
@@ -515,14 +515,14 @@ int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 			break;
 		}
 	
-		/* Register directory */
+		// Register directory 
 		strcpy(d, dir);
 		list_append(context->plugin_dirs, node);
 		
 	} while (0);
 	cpi_unlock_context(context);
 
-	/* Release resources on failure */
+	// Release resources on failure 
 	if (status != CP_OK) {	
 		if (d != NULL) {
 			free(d);
@@ -532,7 +532,7 @@ int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 		}
 	}
 	
-	/* Report errors */
+	// Report errors 
 	switch (status) {
 		case CP_OK:
 			break;
@@ -565,7 +565,7 @@ void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 }
 
 
-/* Locking */
+// Locking 
 
 #if defined(CP_THREADS) || !defined(NDEBUG)
 

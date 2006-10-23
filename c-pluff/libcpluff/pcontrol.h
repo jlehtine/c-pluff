@@ -11,7 +11,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif /*__cplusplus*/
+#endif //__cplusplus
 
 
 /* ------------------------------------------------------------------------
@@ -53,6 +53,6 @@ void CP_LOCAL cpi_free_cfg_element(cp_cfg_element_t *cfg_element);
 
 #ifdef __cplusplus
 }
-#endif /*__cplusplus */
+#endif //__cplusplus 
 
-#endif /*PCONTROL_H_*/
+#endif //PCONTROL_H_
