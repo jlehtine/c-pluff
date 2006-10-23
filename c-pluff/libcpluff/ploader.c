@@ -15,7 +15,6 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <dirent.h>
 #include <expat.h>
 #include <errno.h>
@@ -951,7 +950,7 @@ static void XMLCALL end_element_handler(
 static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **plugin) {
 	char *file = NULL;
 	int status = CP_OK;
-	int fd = -1;
+	FILE *fh = NULL;
 	XML_Parser parser = NULL;
 	ploader_context_t *plcontext = NULL;
 
@@ -979,19 +978,9 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 		strcpy(file + path_len + 1, CP_PLUGIN_DESCRIPTOR);
 
 		/* Open the file */
-		{
-			int mode = O_RDONLY;
-#ifdef O_BINARY
-			mode |= O_BINARY;
-#endif
-#ifdef O_SEQUENTIAL
-			mode |= O_SEQUENTIAL;
-#endif
-			fd = open(file, mode);
-			if (fd == -1) {
-				status = CP_ERR_IO;
-				break;
-			}
+		if ((fh = fopen(file, "rb")) == NULL) {
+			status = CP_ERR_IO;
+			break;
 		}
 
 		/* Initialize the XML parsing */
@@ -1048,8 +1037,8 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 			}
 			
 			/* Read data into buffer */
-			if ((bytes_read = read(fd, xml_buffer, CP_XML_PARSER_BUFFER_SIZE))
-				== -1) {
+			bytes_read = fread(xml_buffer, 1, CP_XML_PARSER_BUFFER_SIZE, fh);
+			if (ferror(fh)) {
 				status = CP_ERR_IO;
 				break;
 			}
@@ -1128,8 +1117,8 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 	if (parser != NULL) {
 		XML_ParserFree(parser);
 	}
-	if (fd != -1) {
-		close(fd);
+	if (fh != NULL) {
+		fclose(fh);
 	}
 	if (plcontext != NULL) {
 		if (plcontext->value != NULL) {
