@@ -409,7 +409,7 @@ static void cmd_load_plugin(int argc, char *argv[]) {
 		errorf(_("cp_load_plugin failed with error code %d."), status);
 	} else {
 		noticef(_("Loaded plug-in %s into plug-in context %d."), plugin->identifier, active_context);
-		cp_release_plugin_info(plugin);
+		cp_release_plugin_info(contexts[active_context], plugin);
 	}
 }
 
@@ -480,7 +480,7 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 				);
 			}
 		}
-		cp_release_plugin_infos(plugins);
+		cp_release_plugin_infos(contexts[active_context], plugins);
 	}
 }
 
@@ -504,7 +504,7 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 		noticef("  name = \"%s\",", plugin->name);
 		noticef("  identifier = \"%s\",", plugin->identifier);
 		noticef("  version = \"%s\",", plugin->version);
-		cp_release_plugin_info(plugin);
+		cp_release_plugin_info(contexts[active_context], plugin);
 	}
 }
 

@@ -218,9 +218,6 @@ struct cp_implementation_info_t {
  */
 struct cp_plugin_info_t {
 	
-	/** The associated plug-in context */
-	cp_context_t *context;
-	
 	/** Human-readable, possibly localized plug-in name */
 	char *name;
 	
@@ -826,9 +823,10 @@ cp_plugin_info_t * CP_API cp_get_plugin_info(cp_context_t *ctx, const char *id, 
  * Releases a previously obtained plug-in information structure. The
  * information must not be accessed after it has been released.
  * 
+ * @param ctx the plug-in context
  * @param plugin the plug-in information structure to be released
  */
-void CP_API cp_release_plugin_info(cp_plugin_info_t *plugin);
+void CP_API cp_release_plugin_info(cp_context_t *ctx, cp_plugin_info_t *plugin);
 
 /**
  * Returns static information about the installed plug-ins. The caller must
@@ -847,9 +845,10 @@ cp_plugin_info_t ** CP_API cp_get_plugin_infos(cp_context_t *ctx, int *error, in
  * Releases a previously obtained plug-in information list. The
  * information must not be accessed after it has been released.
  * 
+ * @param ctx the plug-in context
  * @param plugins the plug-in information to be released
  */
-void CP_API cp_release_plugin_infos(cp_plugin_info_t **plugins);
+void CP_API cp_release_plugin_infos(cp_context_t *ctx, cp_plugin_info_t **plugins);
 
 /**
  * Returns the current state of the specified plug-in. Returns

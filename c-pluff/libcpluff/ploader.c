@@ -59,6 +59,9 @@ typedef enum parser_state_t {
 /// Plug-in loader context 
 struct ploader_context_t {
 
+	/// The plug-in context
+	cp_context_t *context;
+
 	/// The XML parser being used 
 	XML_Parser parser;
 	
@@ -135,7 +138,7 @@ static void descriptor_errorf(ploader_context_t *plcontext, int warn,
 	vsnprintf(message, sizeof(message), error_msg, ap);
 	va_end(ap);
 	message[127] = '\0';
-	cpi_errorf(plcontext->plugin->context,
+	cpi_errorf(plcontext->context,
 		warn
 			? _("Suspicious descriptor data in %s, line %d, column %d (%s).")
 			: _("Invalid descriptor data in %s, line %d, column %d (%s)."),
@@ -156,7 +159,7 @@ static void descriptor_errorf(ploader_context_t *plcontext, int warn,
  */
 static void resource_error(ploader_context_t *plcontext) {
 	if (plcontext->resource_error_count == 0) {
-		cpi_errorf(plcontext->plugin->context,
+		cpi_errorf(plcontext->context,
 			_("Insufficient system resources to parse descriptor data in %s, line %d, column %d."),
 			plcontext->file,
 			XML_GetCurrentLineNumber(plcontext->parser),
@@ -1003,13 +1006,13 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_info_t
 			status = CP_ERR_RESOURCE;
 			break;
 		}
+		plcontext->context = context;
 		plcontext->configuration = NULL;
 		plcontext->value = NULL;
 		plcontext->parser = parser;
 		plcontext->file = file;
 		plcontext->state = PARSER_BEGIN;
 		memset(plcontext->plugin, 0, sizeof(cp_plugin_info_t));
-		plcontext->plugin->context = context;
 		plcontext->plugin->name = NULL;
 		plcontext->plugin->identifier = NULL;
 		plcontext->plugin->version = NULL;
@@ -1316,7 +1319,7 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 					list_append(started_plugins, lnode);
 				}
 			}
-			cp_release_plugin_infos(plugins);
+			cp_release_plugin_infos(context, plugins);
 			plugins = NULL;
 		}
 		
@@ -1406,7 +1409,7 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 		list_destroy(started_plugins);
 	}
 	if (plugins != NULL) {
-		cp_release_plugin_infos(plugins);
+		cp_release_plugin_infos(context, plugins);
 	}
 
 	// Error handling 
