@@ -66,7 +66,7 @@ struct ploader_context_t {
 	char *file;
 	
 	/// The plug-in being constructed 
-	cp_plugin_t *plugin;
+	cp_plugin_info_t *plugin;
 	
 	/// The configuration element being constructed 
 	cp_cfg_element_t *configuration;
@@ -947,7 +947,7 @@ static void XMLCALL end_element_handler(
  * @param plugin where to store the pointer to the loaded plug-in
  * @return CP_OK (0) on success, an error code on failure
  */
-static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **plugin) {
+static int load_plugin(cp_context_t *context, const char *path, cp_plugin_info_t **plugin) {
 	char *file = NULL;
 	int status = CP_OK;
 	FILE *fh = NULL;
@@ -999,7 +999,7 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 			break;
 		}
 		memset(plcontext, 0, sizeof(ploader_context_t));
-		if ((plcontext->plugin = malloc(sizeof(cp_plugin_t))) == NULL) {
+		if ((plcontext->plugin = malloc(sizeof(cp_plugin_info_t))) == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
@@ -1008,13 +1008,13 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 		plcontext->parser = parser;
 		plcontext->file = file;
 		plcontext->state = PARSER_BEGIN;
-		memset(plcontext->plugin, 0, sizeof(cp_plugin_t));
+		memset(plcontext->plugin, 0, sizeof(cp_plugin_info_t));
 		plcontext->plugin->context = context;
 		plcontext->plugin->name = NULL;
 		plcontext->plugin->identifier = NULL;
 		plcontext->plugin->version = NULL;
 		plcontext->plugin->provider_name = NULL;
-		plcontext->plugin->path = NULL;
+		plcontext->plugin->plugin_path = NULL;
 		plcontext->plugin->imports = NULL;
 		plcontext->plugin->lib_path = NULL;
 		plcontext->plugin->start_func_name = NULL;
@@ -1075,7 +1075,7 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 
 		// Initialize the plug-in path 
 		*(file + path_len) = '\0';
-		plcontext->plugin->path = file;
+		plcontext->plugin->plugin_path = file;
 		file = NULL;
 		
 	} while (0);
@@ -1131,8 +1131,8 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_t **pl
 	return status;
 }
 
-cp_plugin_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int *error) {
-	cp_plugin_t *plugin = NULL;
+cp_plugin_info_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int *error) {
+	cp_plugin_info_t *plugin = NULL;
 	int status = CP_OK;
 
 	assert(context != NULL);
@@ -1172,7 +1172,7 @@ cp_plugin_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int
 int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 	hash_t *avail_plugins = NULL;
 	list_t *started_plugins = NULL;
-	cp_plugin_t **plugins = NULL;
+	cp_plugin_info_t **plugins = NULL;
 	char *pdir_path = NULL;
 	int pdir_path_size = 0;
 	int plugins_stopped = 0;
@@ -1210,7 +1210,7 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 				while ((de = readdir(dir)) != NULL) {
 					if (de->d_name[0] != '\0' && de->d_name[0] != '.') {
 						int pdir_path_len = dir_path_len + 1 + strlen(de->d_name);
-						cp_plugin_t *plugin;
+						cp_plugin_info_t *plugin;
 						int s;
 						hnode_t *hnode;
 
@@ -1249,7 +1249,7 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 					
 						// Insert plug-in to the list of available plug-ins 
 						if ((hnode = hash_lookup(avail_plugins, plugin->identifier)) != NULL) {
-							cp_plugin_t *plugin2 = hnode_get(hnode);						
+							cp_plugin_info_t *plugin2 = hnode_get(hnode);						
 							if (cpi_version_cmp(plugin2->version, plugin->version, 4) < 0) {
 								hash_delete_free(avail_plugins, hnode);
 								cpi_free_plugin(plugin2);
@@ -1289,7 +1289,7 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 			&& (flags & (CP_LP_UPGRADE | CP_LP_STOP_ALL_ON_INSTALL))) {
 			int s, i;
 
-			if ((plugins = cp_get_plugins(context, &s, NULL)) == NULL) {
+			if ((plugins = cp_get_plugin_infos(context, &s, NULL)) == NULL) {
 				status = s;
 				break;
 			}
@@ -1316,14 +1316,14 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 					list_append(started_plugins, lnode);
 				}
 			}
-			cp_release_plugins(plugins);
+			cp_release_plugin_infos(plugins);
 			plugins = NULL;
 		}
 		
 		// Install/upgrade plug-ins 
 		hash_scan_begin(&hscan, avail_plugins);
 		while ((hnode = hash_scan_next(&hscan)) != NULL) {
-			cp_plugin_t *plugin;
+			cp_plugin_info_t *plugin;
 			cp_plugin_state_t state;
 			int s;
 			
@@ -1395,7 +1395,7 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 		
 		hash_scan_begin(&hscan, avail_plugins);
 		while ((hnode = hash_scan_next(&hscan)) != NULL) {
-			cp_plugin_t *p = hnode_get(hnode);
+			cp_plugin_info_t *p = hnode_get(hnode);
 			hash_scan_delfree(avail_plugins, hnode);
 			cpi_free_plugin(p);
 		}
@@ -1406,7 +1406,7 @@ int CP_API cp_load_plugins(cp_context_t *context, int flags) {
 		list_destroy(started_plugins);
 	}
 	if (plugins != NULL) {
-		cp_release_plugins(plugins);
+		cp_release_plugin_infos(plugins);
 	}
 
 	// Error handling 

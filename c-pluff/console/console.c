@@ -398,7 +398,7 @@ static void cmd_remove_plugin_dir(int argc, char *argv[]) {
 }
 
 static void cmd_load_plugin(int argc, char *argv[]) {
-	cp_plugin_t *plugin;
+	cp_plugin_info_t *plugin;
 	int status;
 		
 	if (argc != 2) {
@@ -409,7 +409,7 @@ static void cmd_load_plugin(int argc, char *argv[]) {
 		errorf(_("cp_load_plugin failed with error code %d."), status);
 	} else {
 		noticef(_("Loaded plug-in %s into plug-in context %d."), plugin->identifier, active_context);
-		cp_release_plugin(plugin);
+		cp_release_plugin_info(plugin);
 	}
 }
 
@@ -452,7 +452,7 @@ static void cmd_load_plugins(int argc, char *argv[]) {
 }
 
 static void cmd_list_plugins(int argc, char *argv[]) {
-	cp_plugin_t **plugins;
+	cp_plugin_info_t **plugins;
 	int status;
 	int i;
 
@@ -460,7 +460,7 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 		error(_("Usage: list-plugins"));
 	} else if (active_context == -1) {
 		no_active_context();
-	} else if ((plugins = cp_get_plugins(contexts[active_context], &status, NULL)) == NULL) {
+	} else if ((plugins = cp_get_plugin_infos(contexts[active_context], &status, NULL)) == NULL) {
 		errorf(_("cp_get_plugins failed with error code %d."), status);
 	} else {
 		noticef(_("Plug-ins loaded into context %d:"), active_context);
@@ -480,19 +480,19 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 				);
 			}
 		}
-		cp_release_plugins(plugins);
+		cp_release_plugin_infos(plugins);
 	}
 }
 
 static void cmd_show_plugin_info(int argc, char *argv[]) {
-	cp_plugin_t *plugin;
+	cp_plugin_info_t *plugin;
 	int status;
 	
 	if (argc != 2) {
 		error(_("Usage: show-plugin-info <plugin>"));
 	} else if (active_context == -1) {
 		no_active_context();
-	} else if ((plugin = cp_get_plugin(contexts[active_context], argv[1], &status)) == NULL) {
+	} else if ((plugin = cp_get_plugin_info(contexts[active_context], argv[1], &status)) == NULL) {
 		errorf(_("cp_get_plugin failed with error code %d."), status);
 	} else {
 		char buffer[16];
@@ -504,7 +504,7 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 		noticef("  name = \"%s\",", plugin->name);
 		noticef("  identifier = \"%s\",", plugin->identifier);
 		noticef("  version = \"%s\",", plugin->version);
-		cp_release_plugin(plugin);
+		cp_release_plugin_info(plugin);
 	}
 }
 

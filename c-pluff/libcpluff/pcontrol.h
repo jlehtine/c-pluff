@@ -34,14 +34,14 @@ extern "C" {
  * @param usage the initial usage count for plug-in information structure
  * @return CP_OK (0) on success, an error code on failure
  */
-int CP_LOCAL cpi_install_plugin(cp_context_t *context, cp_plugin_t *plugin, unsigned int use_count);
+int CP_LOCAL cpi_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin, unsigned int use_count);
 
 /**
  * Frees any resources allocated for a plug-in description.
  * 
  * @param plugin the plug-in to be freed
  */
-void CP_LOCAL cpi_free_plugin(cp_plugin_t *plugin);
+void CP_LOCAL cpi_free_plugin(cp_plugin_info_t *plugin);
 
 /**
  * Frees any resources allocated for a configuration element.
