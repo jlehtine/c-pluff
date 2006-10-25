@@ -254,6 +254,8 @@ void CP_API cp_release_info(void *info) {
 			hash_delete_free(dynamic_resources, node);
 			dr->dealloc_func(info);
 		}
+	} else {
+		fprintf(stderr, _("ERROR: Trying to release unknown resource %p using cp_release_info.\n"), info);
 	}
 	unlock_mutex();
 }
