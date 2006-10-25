@@ -142,9 +142,10 @@ void CP_LOCAL cpi_errorf(cp_context_t *context, const char *msg, ...) CP_PRINTF(
  * 
  * @param context the plug-in context
  * @param error_handler the error handler or NULL if none
+ * @param user_data the user data pointer supplied at registration
  * @param msg the error message
  */
-void CP_LOCAL cpi_herror(cp_context_t *context, cp_error_handler_t error_handler, const char *msg);
+void CP_LOCAL cpi_herror(cp_context_t *context, cp_error_handler_t error_handler, void *user_data, const char *msg);
 
 /**
  * Delivers a printf formatted plug-in framework error to the specified
@@ -152,11 +153,12 @@ void CP_LOCAL cpi_herror(cp_context_t *context, cp_error_handler_t error_handler
  * 
  * @param context the plug-in context
  * @param error_handler the error handler or NULL if none
+ * @param user_data the user data pointer supplied at registration
  * @param msg the formatted error message
  * @param ... parameters
  */
-void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handler, const char *msg, ...)
-	CP_PRINTF(3, 4);
+void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handler, void *user_data, const char *msg, ...)
+	CP_PRINTF(4, 5);
 
 
 // Delivering plug-in events 
@@ -178,13 +180,6 @@ void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *
  * @param plugin the plug-in to be freed
  */
 void CP_LOCAL cpi_free_plugin(cp_plugin_info_t *plugin);
-
-/**
- * Frees any resources allocated for a configuration element.
- * 
- * @param cfg_element the configuration element to be freed
- */
-void CP_LOCAL cpi_free_cfg_element(cp_cfg_element_t *cfg_element);
 
 
 // Dynamic resource management

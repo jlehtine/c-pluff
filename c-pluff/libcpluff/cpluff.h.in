@@ -501,9 +501,10 @@ struct cp_plugin_event_t {
  * 
  * @param ctx the associated plug-in context
  * @param event te plug-in state change event
+ * @param user_data the user data pointer supplied at listener registration
  * @see cp_add_event_listener
  */
-typedef void (*cp_event_listener_t)(cp_context_t *ctx, const cp_plugin_event_t *event);
+typedef void (*cp_event_listener_t)(cp_context_t *ctx, const cp_plugin_event_t *event, void *user_data);
 
 /**
  * A start function called to start a plug-in. The start function must return
@@ -537,10 +538,11 @@ typedef void (*cp_stop_t)(void);
  * 
  * @param ctx the associated plug-in context (NULL during context creation)
  * @param msg the possibly localized error message
+ * @param user_data user data pointer supplied at handler registration
  * @see cp_add_error_handler
  * @see cp_set_fatal_error_handler
  */
-typedef void (*cp_error_handler_t)(cp_context_t *ctx, const char *msg);
+typedef void (*cp_error_handler_t)(cp_context_t *ctx, const char *msg, void *user_data);
 
 /*@}*/
 /*@}*/
@@ -624,8 +626,9 @@ void CP_API cp_destroy(void);
  * restore the default handler.
  * 
  * @param error_handler the fatal error handler
+ * @param user_data user data pointer supplied to handler
  */
-void CP_API cp_set_fatal_error_handler(cp_error_handler_t error_handler);
+void CP_API cp_set_fatal_error_handler(cp_error_handler_t error_handler, void *user_data);
 
 /*@}*/
 
@@ -653,10 +656,11 @@ void CP_API cp_set_fatal_error_handler(cp_error_handler_t error_handler);
  * needed anymore.
  * 
  * @param error_handler an initial error handler, or NULL if none
+ * @param user_data user data pointer for the initial error handler, or NULL
  * @param error pointer to the location where error code or CP_OK is stored, or NULL
  * @return the newly created plugin context, or NULL on failure
  */
-cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *error);
+cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, void *user_data, int *error);
 
 /**
  * Destroys the specified plug-in context and releases the associated resources.
@@ -676,10 +680,11 @@ void CP_API cp_destroy_context(cp_context_t *ctx);
  * 
  * @param ctx the plug-in context
  * @param error_handler the error handler to be added
+ * @param useData user data pointer supplied to the error handler
  * @return CP_OK (zero) on success, CP_ERR_RESOURCE if out of resources, or CP_ERR_DEADLOCK
  * 		if called from an error handler
  */
-int CP_API cp_add_error_handler(cp_context_t *ctx, cp_error_handler_t error_handler);
+int CP_API cp_add_error_handler(cp_context_t *ctx, cp_error_handler_t error_handler, void *user_data);
 
 /**
  * Removes an error handler from a plug-in context.
@@ -698,10 +703,11 @@ int CP_API cp_remove_error_handler(cp_context_t *ctx, cp_error_handler_t error_h
  * 
  * @param ctx the plug-in context
  * @param event_listener the event_listener to be added
+ * @param user_data user data pointer supplied to the event listener
  * @return CP_OK (zero) on success, CP_ERR_RESOURCE if out of resources, or
  * 		CP_ERR_DEADLOCK if called from an event listener
  */
-int CP_API cp_add_event_listener(cp_context_t *ctx, cp_event_listener_t event_listener);
+int CP_API cp_add_event_listener(cp_context_t *ctx, cp_event_listener_t event_listener, void *user_data);
 
 /**
  * Removes an event listener from a plug-in context.

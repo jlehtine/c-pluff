@@ -26,23 +26,21 @@
  * ----------------------------------------------------------------------*/
 
 /**
- * A holder structure for error handler pointers. For ISO C conformance
- * (to avoid conversions between function and object pointers) and to pass
- * context information.
+ * A holder structure for error handler.
  */
 typedef struct eh_holder_t {
 	cp_error_handler_t error_handler;
 	cp_context_t *context;
+	void *user_data;
 } eh_holder_t;
 
 /**
- * A holder structure for event listener pointers. For ISO C conformance
- * (to avoid conversions between function and object pointers) and to pass
- * context information.
+ * A holder structure for event listener.
  */
 typedef struct el_holder_t {
 	cp_event_listener_t event_listener;
 	cp_context_t *context;
+	void *user_data;
 } el_holder_t;
 
 /**
@@ -154,18 +152,18 @@ static int comp_el_holder(const void *h1, const void *h2) {
 
 static void process_error(list_t *list, lnode_t *node, void *msg) {
 	eh_holder_t *h = lnode_get(node);
-	h->error_handler(h->context, msg);
+	h->error_handler(h->context, msg, h->user_data);
 }
 
 static void process_event(list_t *list, lnode_t *node, void *event) {
 	el_holder_t *h = lnode_get(node);
-	h->event_listener(h->context, event);
+	h->event_listener(h->context, event, h->user_data);
 }
 
 
 // Initialization and destroy 
 
-cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *error) {
+cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, void *user_data, int *error) {
 	cp_context_t *context = NULL;
 	int status = CP_OK;
 
@@ -203,7 +201,7 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 
 		// Register initial error handler 
 		if (error_handler != NULL) {
-			if (cp_add_error_handler(context, error_handler) != CP_OK) {
+			if (cp_add_error_handler(context, error_handler, user_data) != CP_OK) {
 				status = CP_ERR_RESOURCE;
 				break;
 			}
@@ -213,7 +211,7 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 	
 	// Report failure 
 	if (status != CP_OK) {
-		cpi_herror(NULL, error_handler, _("Plug-in context could not be created due to insufficient system resources."));
+		cpi_herror(NULL, error_handler, _("Plug-in context could not be created due to insufficient system resources."), user_data);
 	}
 	
 	// Rollback initialization on failure 
@@ -283,7 +281,7 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 
 // Error handling 
 
-int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_handler) {
+int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_handler, void *user_data) {
 	int status = CP_ERR_RESOURCE;
 	eh_holder_t *holder;
 	lnode_t *node;
@@ -296,6 +294,7 @@ int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_
 	} else if ((holder = malloc(sizeof(eh_holder_t))) != NULL) {
 		holder->error_handler = error_handler;
 		holder->context = context;
+		holder->user_data = user_data;
 		if ((node = lnode_create(holder)) != NULL) {
 			list_append(context->error_handlers, node);
 			status = CP_OK;
@@ -375,14 +374,14 @@ void CP_LOCAL cpi_errorf(cp_context_t *context, const char *msg, ...) {
 	cpi_error(context, fmsg);
 }
 
-void CP_LOCAL cpi_herror(cp_context_t *context, cp_error_handler_t error_handler, const char *msg) {
+void CP_LOCAL cpi_herror(cp_context_t *context, cp_error_handler_t error_handler, void *user_data, const char *msg) {
 	assert(msg != NULL);
 	if (error_handler != NULL) {
-		error_handler(context, msg);
+		error_handler(context, msg, user_data);
 	}
 }
 
-void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handler, const char *msg, ...) {
+void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handler, void *user_data, const char *msg, ...) {
 	va_list params;
 	char fmsg[256];
 	
@@ -391,13 +390,13 @@ void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handle
 	vsnprintf(fmsg, sizeof(fmsg), msg, params);
 	va_end(params);
 	fmsg[sizeof(fmsg)/sizeof(char) - 1] = '\0';
-	cpi_herror(context, error_handler, msg);
+	cpi_herror(context, error_handler, user_data, msg);
 }
 
 
 // Event listeners 
 
-int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t event_listener) {
+int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t event_listener, void *user_data) {
 	int status = CP_ERR_RESOURCE;
 	el_holder_t *holder;
 	lnode_t *node;
@@ -410,6 +409,7 @@ int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t even
 	} else if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
 		holder->event_listener = event_listener;
 		holder->context = context;
+		holder->user_data = user_data;
 		if ((node = lnode_create(holder)) != NULL) {
 			list_append(context->event_listeners, node);
 			status = CP_OK;

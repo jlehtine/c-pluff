@@ -66,6 +66,9 @@ static cpi_mutex_t *mutex = NULL;
 /// Fatal error handler, or NULL for default 
 static cp_error_handler_t fatal_error_handler = NULL;
 
+/// User data pointer for fatal error handler
+static void *fatal_eh_user_data = NULL;
+
 /// List of in-use dynamic resources
 static hash_t *dynamic_resources = NULL;
 
@@ -162,9 +165,10 @@ void CP_API cp_destroy(void) {
 	}
 }
 
-void CP_API cp_set_fatal_error_handler(cp_error_handler_t error_handler) {
+void CP_API cp_set_fatal_error_handler(cp_error_handler_t error_handler, void *user_data) {
 	lock_mutex();
 	fatal_error_handler = error_handler;
+	fatal_eh_user_data = user_data;
 	unlock_mutex();
 }
 
@@ -182,7 +186,7 @@ void CP_LOCAL cpi_fatalf(const char *msg, ...) {
 	// Call error handler or print the error message
 	lock_mutex();
 	if (fatal_error_handler != NULL) {
-		fatal_error_handler(NULL, fmsg);
+		fatal_error_handler(NULL, fmsg, fatal_eh_user_data);
 	} else {
 		fprintf(stderr, _(PACKAGE_NAME ": FATAL ERROR: %s\n"), fmsg);
 	}

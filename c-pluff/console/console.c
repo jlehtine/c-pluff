@@ -216,13 +216,11 @@ static void no_active_context(void) {
 	error(_("There is no active plug-in context."));
 }
 
-static void error_handler(cp_context_t *context, const char *msg) {
+static void error_handler(cp_context_t *context, const char *msg, void *user_data) {
 	int i;
+	cp_context_t **cap = user_data;
 
-	for (i = 0; i < MAX_NUM_CONTEXTS && context != contexts[i]; i++);
-	if (i == MAX_NUM_CONTEXTS) {
-		i = next_context;
-	}
+	i = cap - contexts;
 	errorf(_("[context %d]: %s"), i, msg);
 }
 
@@ -245,10 +243,11 @@ static char *state_to_string(cp_plugin_state_t state) {
 	}
 }
 
-static void event_listener(cp_context_t *context, const cp_plugin_event_t *event) {
+static void event_listener(cp_context_t *context, const cp_plugin_event_t *event, void *user_data) {
 	int i;
+	cp_context_t **cap = user_data;
 	
-	for (i = 0; i < MAX_NUM_CONTEXTS && context != contexts[i]; i++);
+	i = cap - contexts;
 	noticef(_("EVENT [context %d]: Plug-in %s changed from %s to %s."),
 		i,
 		event->plugin_id,
@@ -264,9 +263,9 @@ static void cmd_create_context(int argc, char *argv[]) {
 		error(_("Usage: create-context"));
 	} else if (next_context == -1) {
 		error(_("Maximum number of plug-in contexts in use."));
-	} else if ((contexts[next_context] = cp_create_context(error_handler, &status)) == NULL) {
+	} else if ((contexts[next_context] = cp_create_context(error_handler, contexts + next_context, &status)) == NULL) {
 		errorf(_("cp_create_context failed with error code %d."), status);
-	} else if ((status = cp_add_event_listener(contexts[next_context], event_listener)) != CP_OK) {
+	} else if ((status = cp_add_event_listener(contexts[next_context], event_listener, contexts + next_context)) != CP_OK) {
 		errorf(_("cp_add_event_listener failed with error code %d."), status);
 		cp_destroy_context(contexts[next_context]);
 		contexts[next_context] = NULL;
