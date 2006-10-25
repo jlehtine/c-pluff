@@ -16,10 +16,10 @@
 #include "cpluff.h"
 #include "defines.h"
 #include "util.h"
-#include "context.h"
 #ifdef CP_THREADS
 #include "thread.h"
 #endif
+#include "internal.h"
 
 /* ------------------------------------------------------------------------
  * Data types
@@ -189,8 +189,6 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 		context->plugins = hash_create(HASHCOUNT_T_MAX,
 			(int (*)(const void *, const void *)) strcmp, NULL);
 		context->started_plugins = list_create(LISTCOUNT_T_MAX);
-		context->used_plugins = hash_create(HASHCOUNT_T_MAX,
-			cpi_comp_ptr, cpi_hashfunc_ptr);
 		if (context->error_handlers == NULL
 #ifdef CP_THREADS
 			|| context->mutex == NULL
@@ -198,8 +196,7 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, int *e
 			|| context->event_listeners == NULL
 			|| context->plugin_dirs == NULL
 			|| context->plugins == NULL
-			|| context->started_plugins == NULL
-			|| context->used_plugins == NULL) {
+			|| context->started_plugins == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
@@ -244,18 +241,10 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 
 	// Unload all plug-ins 
 	if (context->plugins != NULL && !hash_isempty(context->plugins)) {
-		cp_unload_all_plugins(context);
+		cp_uninstall_all_plugins(context);
 	}
 	
 	// Release data structures 
-	if (context->used_plugins != NULL) {
-		if (!hash_isempty(context->used_plugins)) {
-			cpi_error(context, _("Some resources were not released at context destruction."));
-		}
-		hash_free_nodes(context->used_plugins);
-		hash_destroy(context->used_plugins);
-		context->used_plugins = NULL;
-	}
 	if (context->plugins != NULL) {
 		assert(hash_isempty(context->plugins));
 		hash_destroy(context->plugins);

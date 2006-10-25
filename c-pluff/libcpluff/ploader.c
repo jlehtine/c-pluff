@@ -4,7 +4,7 @@
  *-----------------------------------------------------------------------*/
 
 /*
- * Plug-in loading functionality
+ * Plug-in descriptor loader
  */
 
 #include <stdio.h>
@@ -12,17 +12,13 @@
 #include <string.h>
 #include <assert.h>
 #include <stdarg.h>
-#include <sys/types.h>
 #include <sys/stat.h>
 #include <fcntl.h>
-#include <dirent.h>
 #include <expat.h>
-#include <errno.h>
 #include "cpluff.h"
 #include "defines.h"
 #include "util.h"
-#include "context.h"
-#include "pcontrol.h"
+#include "internal.h"
 
 
 /* ------------------------------------------------------------------------
@@ -59,7 +55,7 @@ typedef enum parser_state_t {
 /// Plug-in loader context 
 struct ploader_context_t {
 
-	/// The plug-in context
+	/// The plug-in context, or NULL if none
 	cp_context_t *context;
 
 	/// The XML parser being used 
@@ -118,8 +114,6 @@ struct ploader_context_t {
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-// Plug-in loading 
-
 /**
  * Reports a descriptor error. Does not set the parser to error state but
  * increments the error count, unless this is merely a warning.
@@ -133,19 +127,21 @@ static void descriptor_errorf(ploader_context_t *plcontext, int warn,
 	const char *error_msg, ...) {
 	va_list ap;
 	char message[128];
-	
-	va_start(ap, error_msg);
-	vsnprintf(message, sizeof(message), error_msg, ap);
-	va_end(ap);
-	message[127] = '\0';
-	cpi_errorf(plcontext->context,
-		warn
-			? _("Suspicious descriptor data in %s, line %d, column %d (%s).")
-			: _("Invalid descriptor data in %s, line %d, column %d (%s)."),
-		plcontext->file,
-		XML_GetCurrentLineNumber(plcontext->parser),
-		XML_GetCurrentColumnNumber(plcontext->parser) + 1,
-		message);
+
+	if (plcontext->context != NULL) {	
+		va_start(ap, error_msg);
+		vsnprintf(message, sizeof(message), error_msg, ap);
+		va_end(ap);
+		message[127] = '\0';
+		cpi_errorf(plcontext->context,
+			warn
+				? _("Suspicious plug-in descriptor content in %s, line %d, column %d (%s).")
+				: _("Invalid plug-in descriptor content in %s, line %d, column %d (%s)."),
+			plcontext->file,
+			XML_GetCurrentLineNumber(plcontext->parser),
+			XML_GetCurrentColumnNumber(plcontext->parser) + 1,
+			message);
+	}
 	if (!warn) {
 		plcontext->error_count++;
 	}
@@ -158,9 +154,10 @@ static void descriptor_errorf(ploader_context_t *plcontext, int warn,
  * @param context the parsing context
  */
 static void resource_error(ploader_context_t *plcontext) {
-	if (plcontext->resource_error_count == 0) {
+	if (plcontext->context != NULL
+		&& plcontext->resource_error_count == 0) {
 		cpi_errorf(plcontext->context,
-			_("Insufficient system resources to parse descriptor data in %s, line %d, column %d."),
+			_("Insufficient system resources to parse plug-in descriptor content in %s, line %d, column %d."),
 			plcontext->file,
 			XML_GetCurrentLineNumber(plcontext->parser),
 			XML_GetCurrentColumnNumber(plcontext->parser) + 1);
@@ -430,7 +427,13 @@ static void init_cfg_element(ploader_context_t *plcontext, cp_cfg_element_t *ce,
 	ce->children = NULL;	
 }
 
-// TODO
+/**
+ * Processes the character data while parsing.
+ * 
+ * @param userData the parsing context
+ * @param str the string data
+ * @param len the string length
+ */
 static void XMLCALL character_data_handler(
 	void *userData, const XML_Char *str, int len) {
 	ploader_context_t *plcontext = userData;
@@ -481,7 +484,7 @@ static void XMLCALL character_data_handler(
 /**
  * Processes the start of element events while parsing.
  * 
- * @param context the parsing context
+ * @param userData the parsing context
  * @param name the element name
  * @param atts the element attributes
  */
@@ -942,22 +945,14 @@ static void XMLCALL end_element_handler(
 	}
 }
 
-/**
- * Loads a plug-in from the specified path.
- * 
- * @param context the loading plug-in context
- * @param path the plug-in path
- * @param plugin where to store the pointer to the loaded plug-in
- * @return CP_OK (0) on success, an error code on failure
- */
-static int load_plugin(cp_context_t *context, const char *path, cp_plugin_info_t **plugin) {
+cp_plugin_info_t * CP_API cp_load_plugin_descriptor(cp_context_t *context, const char *path, int *error) {
 	char *file = NULL;
 	int status = CP_OK;
 	FILE *fh = NULL;
 	XML_Parser parser = NULL;
 	ploader_context_t *plcontext = NULL;
+	cp_plugin_info_t *plugin = NULL;
 
-	assert(context != NULL);
 	assert(path != NULL);
 	do {
 		int path_len;
@@ -1047,7 +1042,8 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_info_t
 			}
 
 			// Parse the data 
-			if (!(i = XML_ParseBuffer(parser, bytes_read, bytes_read == 0))) {
+			if (!(i = XML_ParseBuffer(parser, bytes_read, bytes_read == 0))
+				&& context != NULL) {
 				cpi_errorf(context,
 					_("XML parsing error in %s, line %d, column %d (%s)."),
 					file,
@@ -1081,22 +1077,35 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_info_t
 		plcontext->plugin->plugin_path = file;
 		file = NULL;
 		
+		// Increase plug-in usage count
+		if ((status = cpi_register_resource(plcontext->plugin, (void (*)(void *)) cpi_free_plugin)) != CP_OK) {
+			break;
+		}
+		
 	} while (0);
 
-	// Report possible errors 
-	switch (status) {
-		case CP_ERR_MALFORMED:
-			cpi_errorf(context,
-				_("Encountered a malformed descriptor while loading a plug-in from %s."), path);
-			break;
-		case CP_ERR_IO:
-			cpi_errorf(context,
-				_("An I/O error occurred while loading a plug-in from %s."), path);
-			break;
-		case CP_ERR_RESOURCE:
-			cpi_errorf(context,
-				_("Insufficient system resources to load a plug-in from %s."), path);
-			break;
+	// Report possible errors
+	if (context != NULL) {
+		switch (status) {
+			case CP_OK:
+				break;
+			case CP_ERR_MALFORMED:
+				cpi_errorf(context,
+					_("Plug-in descriptor in %s is invalid."), path);
+				break;
+			case CP_ERR_IO:
+				cpi_errorf(context,
+					_("An I/O error occurred while loading a plug-in descriptor from %s."), path);
+				break;
+			case CP_ERR_RESOURCE:
+				cpi_errorf(context,
+					_("Insufficient system resources to load a plug-in descriptor from %s."), path);
+				break;
+			default:
+				cpi_errorf(context,
+					_("Failed to load a plug-in descriptor from %s."), path);
+				break;
+		}
 	}
 
 	// Release persistently allocated data on failure 
@@ -1110,12 +1119,12 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_info_t
 			plcontext->plugin = NULL;
 		}
 	}
-
-	// Otherwise, set plug-in pointer 
-	else {
-		(*plugin) = plcontext->plugin;
-	}
 	
+	// Otherwise copy the plug-in pointer
+	else {
+		plugin = plcontext->plugin;
+	}
+
 	// Release data allocated for parsing 
 	if (parser != NULL) {
 		XML_ParserFree(parser);
@@ -1131,298 +1140,10 @@ static int load_plugin(cp_context_t *context, const char *path, cp_plugin_info_t
 		plcontext = NULL;
 	}
 
-	return status;
-}
-
-cp_plugin_info_t * CP_API cp_load_plugin(cp_context_t *context, const char *path, int *error) {
-	cp_plugin_info_t *plugin = NULL;
-	int status = CP_OK;
-
-	assert(context != NULL);
-	assert(path != NULL);
-	do {
-
-		// Load the plug-in 
-		status = load_plugin(context, path, &plugin);
-		if (status != CP_OK) {
-			break;
-		}
-
-		// Register the plug-in 
-		status = cpi_install_plugin(context, plugin, 1);
-		if (status != CP_OK) {
-			break;
-		}
-	
-	} while (0);
-	
-	// Release any allocated data on failure 
-	if (status != CP_OK) {
-		if (plugin != NULL) {
-			cpi_free_plugin(plugin);
-			plugin = NULL;
-		}
-	}
-	
-	// Return the error code if requested 
+	// Return error code
 	if (error != NULL) {
 		*error = status;
 	}
-	
+
 	return plugin;
-}
-
-int CP_API cp_load_plugins(cp_context_t *context, int flags) {
-	hash_t *avail_plugins = NULL;
-	list_t *started_plugins = NULL;
-	cp_plugin_info_t **plugins = NULL;
-	char *pdir_path = NULL;
-	int pdir_path_size = 0;
-	int plugins_stopped = 0;
-	int status = CP_OK;
-	
-	cpi_lock_context(context);
-	do {
-		lnode_t *lnode;
-		hscan_t hscan;
-		hnode_t *hnode;
-	
-		// Create a hash for available plug-ins 
-		if ((avail_plugins = hash_create(HASHCOUNT_T_MAX, (int (*)(const void *, const void *)) strcmp, NULL)) == NULL) {
-			status = CP_ERR_RESOURCE;
-			break;
-		}
-	
-		// Scan plug-in directories for available plug-ins 
-		lnode = list_first(context->plugin_dirs);
-		while (lnode != NULL) {
-			const char *dir_path;
-			DIR *dir;
-			
-			dir_path = lnode_get(lnode);
-			dir = opendir(dir_path);
-			if (dir != NULL) {
-				int dir_path_len;
-				struct dirent *de;
-				
-				dir_path_len = strlen(dir_path);
-				if (dir_path[dir_path_len - 1] == CP_FNAMESEP_CHAR) {
-					dir_path_len--;
-				}
-				errno = 0;
-				while ((de = readdir(dir)) != NULL) {
-					if (de->d_name[0] != '\0' && de->d_name[0] != '.') {
-						int pdir_path_len = dir_path_len + 1 + strlen(de->d_name);
-						cp_plugin_info_t *plugin;
-						int s;
-						hnode_t *hnode;
-
-						// Allocate memory for plug-in descriptor path 
-						if (pdir_path_size <= pdir_path_len) {
-							char *new_pdir_path;
-						
-							if (pdir_path_size == 0) {
-								pdir_path_size = 128;
-							}
-							while (pdir_path_size <= pdir_path_len) {
-								pdir_path_size *= 2;
-							}
-							new_pdir_path = realloc(pdir_path, pdir_path_size * sizeof(char));
-							if (new_pdir_path == NULL) {
-								cpi_errorf(context, _("Could not check possible plug-in location %s%c%s due to insufficient system resources."), dir_path, CP_FNAMESEP_CHAR, de->d_name);
-								status = CP_ERR_RESOURCE;
-								// continue loading plug-ins from other directories 
-								continue;
-							}
-							pdir_path = new_pdir_path;
-						}
-					
-						// Construct plug-in descriptor path 
-						strcpy(pdir_path, dir_path);
-						pdir_path[dir_path_len] = CP_FNAMESEP_CHAR;
-						strcpy(pdir_path + dir_path_len + 1, de->d_name);
-							
-						// Try to load a plug-in 
-						s = load_plugin(context, pdir_path, &plugin);
-						if (s != CP_OK) {
-							status = s;
-							// continue loading plug-ins from other directories 
-							continue;
-						}
-					
-						// Insert plug-in to the list of available plug-ins 
-						if ((hnode = hash_lookup(avail_plugins, plugin->identifier)) != NULL) {
-							cp_plugin_info_t *plugin2 = hnode_get(hnode);						
-							if (cpi_version_cmp(plugin2->version, plugin->version, 4) < 0) {
-								hash_delete_free(avail_plugins, hnode);
-								cpi_free_plugin(plugin2);
-								hnode = NULL;
-							}
-						}
-						if (hnode == NULL) {
-							if (!hash_alloc_insert(avail_plugins, plugin->identifier, plugin)) {
-								cpi_errorf(context, _("Plug-in %s version %s could not be loaded due to insufficient system resources."), plugin->identifier, plugin->version);
-								cpi_free_plugin(plugin);
-								status = CP_ERR_RESOURCE;
-								// continue loading plug-ins from other directories 
-								continue;
-							}
-						}
-						
-					}
-					errno = 0;
-				}
-				if (errno) {
-					cpi_errorf(context, _("Could not read plug-in directory %s: %s"), dir_path, strerror(errno));
-					status = CP_ERR_IO;
-					// continue loading plug-ins from other directories 
-				}
-				closedir(dir);
-			} else {
-				cpi_errorf(context, _("Could not open plug-in directory %s: %s"), dir_path, strerror(errno));
-				status = CP_ERR_IO;
-				// continue loading plug-ins from other directories 
-			}
-			
-			lnode = list_next(context->plugin_dirs, lnode);
-		}
-		
-		// Copy the list of started plug-ins, if necessary 
-		if ((flags & CP_LP_RESTART_ACTIVE)
-			&& (flags & (CP_LP_UPGRADE | CP_LP_STOP_ALL_ON_INSTALL))) {
-			int s, i;
-
-			if ((plugins = cp_get_plugin_infos(context, &s, NULL)) == NULL) {
-				status = s;
-				break;
-			}
-			if ((started_plugins = list_create(LISTCOUNT_T_MAX)) == NULL) {
-				status = CP_ERR_RESOURCE;
-				break;
-			}
-			for (i = 0; plugins[i] != NULL; i++) {
-				cp_plugin_state_t state;
-				
-				state = cp_get_plugin_state(context, plugins[i]->identifier);
-				if (state == CP_PLUGIN_STARTING || state == CP_PLUGIN_ACTIVE) {
-					char *pid;
-				
-					if ((pid = cpi_strdup(plugins[i]->identifier)) == NULL) {
-						status = CP_ERR_RESOURCE;
-						break;
-					}
-					if ((lnode = lnode_create(pid)) == NULL) {
-						free(pid);
-						status = CP_ERR_RESOURCE;
-						break;
-					}
-					list_append(started_plugins, lnode);
-				}
-			}
-			cp_release_plugin_infos(context, plugins);
-			plugins = NULL;
-		}
-		
-		// Install/upgrade plug-ins 
-		hash_scan_begin(&hscan, avail_plugins);
-		while ((hnode = hash_scan_next(&hscan)) != NULL) {
-			cp_plugin_info_t *plugin;
-			cp_plugin_state_t state;
-			int s;
-			
-			plugin = hnode_get(hnode);
-			state = cp_get_plugin_state(context, plugin->identifier);
-			
-			// Unload the installed plug-in if it is to be upgraded 
-			if (state >= CP_PLUGIN_INSTALLED
-				&& (flags & CP_LP_UPGRADE)) {
-				if ((flags & (CP_LP_STOP_ALL_ON_UPGRADE | CP_LP_STOP_ALL_ON_INSTALL))
-					&& !plugins_stopped) {
-					plugins_stopped = 1;
-					s = cp_stop_all_plugins(context);
-					if (s != CP_OK) {
-						status = s;
-						break;
-					}
-				}
-				s = cp_unload_plugin(context, plugin->identifier);
-				if (s != CP_OK) {
-					status = s;
-					break;
-				}
-				state = CP_PLUGIN_UNINSTALLED;
-				assert(cp_get_plugin_state(context, plugin->identifier) == state);
-			}
-			
-			// Install the plug-in, if to be installed 
-			if (state == CP_PLUGIN_UNINSTALLED) {
-				if ((flags & CP_LP_STOP_ALL_ON_INSTALL) && !plugins_stopped) {
-					plugins_stopped = 1;
-					s = cp_stop_all_plugins(context);
-					if (s != CP_OK) {
-						status = s;
-						break;
-					}
-				}
-				cpi_install_plugin(context, plugin, 0);
-				hash_scan_delfree(avail_plugins, hnode);
-			}
-		}
-		
-		// Restart stopped plug-ins if necessary 
-		if (started_plugins != NULL) {
-			lnode = list_first(started_plugins);
-			while (lnode != NULL) {
-				char *pid;
-				int s;
-				
-				pid = lnode_get(lnode);
-				s = cp_start_plugin(context, pid);
-				if (s != CP_OK) {
-					status = s;
-				}
-				lnode = list_next(started_plugins, lnode);
-			}
-		}
-		
-	} while (0);
-	cpi_unlock_context(context);
-
-	// Release resources 
-	if (pdir_path != NULL) {
-		free(pdir_path);
-	}
-	if (avail_plugins != NULL) {
-		hscan_t hscan;
-		hnode_t *hnode;
-		
-		hash_scan_begin(&hscan, avail_plugins);
-		while ((hnode = hash_scan_next(&hscan)) != NULL) {
-			cp_plugin_info_t *p = hnode_get(hnode);
-			hash_scan_delfree(avail_plugins, hnode);
-			cpi_free_plugin(p);
-		}
-		hash_destroy(avail_plugins);
-	}
-	if (started_plugins != NULL) {
-		list_process(started_plugins, NULL, cpi_process_free_ptr);
-		list_destroy(started_plugins);
-	}
-	if (plugins != NULL) {
-		cp_release_plugin_infos(context, plugins);
-	}
-
-	// Error handling 
-	switch (status) {
-		case CP_OK:
-			break;
-		case CP_ERR_RESOURCE:
-			cpi_error(context, _("Could not load plug-ins due to insufficient system resources."));
-			break;
-		default:
-			cpi_error(context, _("Could not load plug-ins."));
-			break;
-	}
-	
-	return status;
 }

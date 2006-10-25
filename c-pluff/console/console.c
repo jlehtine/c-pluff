@@ -405,11 +405,14 @@ static void cmd_load_plugin(int argc, char *argv[]) {
 		error(_("Usage: load-plugin <path>"));
 	} else if (active_context == -1) {
 		no_active_context();
-	} else if ((plugin = cp_load_plugin(contexts[active_context], argv[1], &status)) == NULL) {
-		errorf(_("cp_load_plugin failed with error code %d."), status);
+	} else if ((plugin = cp_load_plugin_descriptor(contexts[active_context], argv[1], &status)) == NULL) {
+		errorf(_("cp_load_plugin_descriptor failed with error code %d."), status);
+	} else if ((status = cp_install_plugin(contexts[active_context], plugin)) != CP_OK) {
+		errorf(_("cp_install_plugin failed with error code %d."), status);
+		cp_release_info(plugin);
 	} else {
 		noticef(_("Loaded plug-in %s into plug-in context %d."), plugin->identifier, active_context);
-		cp_release_plugin_info(contexts[active_context], plugin);
+		cp_release_info(plugin);
 	}
 }
 
@@ -444,7 +447,7 @@ static void cmd_load_plugins(int argc, char *argv[]) {
 		}
 	}
 	
-	if ((status = cp_load_plugins(contexts[active_context], flags)) != CP_OK) {
+	if ((status = cp_scan_plugins(contexts[active_context], flags)) != CP_OK) {
 		errorf(_("cp_load_plugins failed with error code %d."), status);
 		return;
 	}
@@ -460,7 +463,7 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 		error(_("Usage: list-plugins"));
 	} else if (active_context == -1) {
 		no_active_context();
-	} else if ((plugins = cp_get_plugin_infos(contexts[active_context], &status, NULL)) == NULL) {
+	} else if ((plugins = cp_get_plugins_info(contexts[active_context], &status, NULL)) == NULL) {
 		errorf(_("cp_get_plugins failed with error code %d."), status);
 	} else {
 		noticef(_("Plug-ins loaded into context %d:"), active_context);
@@ -480,7 +483,7 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 				);
 			}
 		}
-		cp_release_plugin_infos(contexts[active_context], plugins);
+		cp_release_info(plugins);
 	}
 }
 
@@ -504,7 +507,7 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 		noticef("  name = \"%s\",", plugin->name);
 		noticef("  identifier = \"%s\",", plugin->identifier);
 		noticef("  version = \"%s\",", plugin->version);
-		cp_release_plugin_info(contexts[active_context], plugin);
+		cp_release_info(plugin);
 	}
 }
 

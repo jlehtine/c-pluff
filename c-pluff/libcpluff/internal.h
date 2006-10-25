@@ -4,11 +4,11 @@
  *-----------------------------------------------------------------------*/
 
 /*
- * Plug-in context declarations
+ * C-Pluff internal declarations
  */
 
-#ifndef CONTEXT_H_
-#define CONTEXT_H_
+#ifndef INTERNAL_H_
+#define INTERNAL_H_
 
 
 /* ------------------------------------------------------------------------
@@ -27,6 +27,14 @@
 #ifdef __cplusplus
 extern "C" {
 #endif //__cplusplus
+
+
+/* ------------------------------------------------------------------------
+ * Constants
+ * ----------------------------------------------------------------------*/
+
+/// Preliminarily OK 
+#define CP_OK_PRELIMINARY 1
 
 
 /* ------------------------------------------------------------------------
@@ -66,10 +74,10 @@ struct cp_context_t {
 	/// List of started plug-ins in the order they were started 
 	list_t *started_plugins;
 	
-	/// Hash of in-use registered plug-ins by plugin pointer 
-	hash_t *used_plugins;
-	
 };
+
+/// Resource deallocation function
+typedef void (*cpi_dealloc_func_t)(void *resource);
 
 
 /* ------------------------------------------------------------------------
@@ -96,14 +104,20 @@ void CP_LOCAL cpi_lock_context(cp_context_t *context);
 void CP_LOCAL cpi_unlock_context(cp_context_t *context);
 
 #else
-
 #define cpi_lock_context(dummy) do {} while (0)
 #define cpi_unlock_context(dummy) do {} while (0)
-
 #endif
 
 
-// Processing errors 
+// Error handling 
+
+/**
+ * Reports a fatal error. This method does not return.
+ * 
+ * @param msg the formatted error message
+ * @param ... parameters
+ */
+void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
 
 /**
  * Delivers a plug-in framework error to registered error handlers.
@@ -156,8 +170,46 @@ void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handle
 void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *event);
 
 
+// Plug-in descriptor management
+
+/**
+ * Frees any resources allocated for a plug-in description.
+ * 
+ * @param plugin the plug-in to be freed
+ */
+void CP_LOCAL cpi_free_plugin(cp_plugin_info_t *plugin);
+
+/**
+ * Frees any resources allocated for a configuration element.
+ * 
+ * @param cfg_element the configuration element to be freed
+ */
+void CP_LOCAL cpi_free_cfg_element(cp_cfg_element_t *cfg_element);
+
+
+// Dynamic resource management
+
+/**
+ * Registers a new dynamic resource which uses reference counting.
+ * Initializes the use count to 1.
+ * 
+ * @param res the resource
+ * @param df the deallocation function
+ * @return CP_OK (zero) on success or error code on failure
+ */
+int CP_LOCAL cpi_register_resource(void *res, cpi_dealloc_func_t df);
+
+/**
+ * Increases the usage count for the specified dynamically allocated
+ * registered resource.
+ * 
+ * @param res the resource
+ */
+void CP_LOCAL cpi_use_resource(void *res);
+
+
 #ifdef __cplusplus
 }
 #endif //__cplusplus
 
-#endif //CONTEXT_H_
+#endif /*INTERNAL_H_*/

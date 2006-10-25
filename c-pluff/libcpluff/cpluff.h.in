@@ -550,10 +550,23 @@ typedef void (*cp_error_handler_t)(cp_context_t *ctx, const char *msg);
  * Function declarations
  * ----------------------------------------------------------------------*/
 
-/** @name Functions */
+/**
+ * @name Functions
+ *
+ * C-Pluff framework functions and any exposed data are thread-safe if
+ * the library has been compiled with multi-threading support. The
+ * initialization and destroy functions \Ref{cp_init} and \Ref{cp_destroy}
+ * are exceptions, they are not thread-safe.
+ */
 /*@{*/
 
-/** @name Library information */
+/**
+ * @name Library information
+ *
+ * This function can be used to query runtime information about the
+ * library implementation. It may be used by the client program or
+ * by a plug-in runtime.
+ */
 /*@{*/
 
 /**
@@ -567,7 +580,12 @@ cp_implementation_info_t * CP_API cp_get_implementation_info(void);
 /*@}*/
 
 
-/** @name Library initialization */
+/**
+ * @name Library initialization
+ *
+ * These functions are used for library and framework initialization.
+ * They are intended to be used by the client program.
+ */
 /*@{*/
 
 /**
@@ -581,15 +599,20 @@ cp_implementation_info_t * CP_API cp_get_implementation_info(void);
  * Additionally, to enable localization support, the main program should
  * set the current locale using setlocale(LC_ALL, "") before calling
  * this function.
+ *
+ * @return CP_OK (zero) on success or error code on failure
  */
-void CP_API cp_init(void);
+int CP_API cp_init(void);
 
 /**
  * Destroys the plug-in framework and releases any global resources.
  * The plug-in framework is only destroyed after this function has
- * been called as many times as \Ref{cp_init}. Plug-in framework functions
- * other than \Ref{cp_init} and \Ref{cp_get_implementation_info} must not be called
- * after the plug-in framework has been destroyed.
+ * been called as many times as \Ref{cp_init}. This function is not
+ * thread-safe. Plug-in framework functions other than \Ref{cp_init}
+ * and \Ref{cp_get_implementation_info} must not be called
+ * after the plug-in framework has been destroyed. All data references
+ * returned by the framework are invalid after the framework has been
+ * destroyed.
  */
 void CP_API cp_destroy(void);
 
@@ -598,8 +621,7 @@ void CP_API cp_destroy(void);
  * handler prints the error message out to standard error and aborts the program.
  * Fatal error handler is called with NULL context. If the user specified error handler
  * returns, the framework will abort the program. Setting NULL error handler will
- * restore the default handler. This function is typically called as part of the client
- * program initialization and it is not thread-safe.
+ * restore the default handler.
  * 
  * @param error_handler the fatal error handler
  */
@@ -608,7 +630,18 @@ void CP_API cp_set_fatal_error_handler(cp_error_handler_t error_handler);
 /*@}*/
 
 
-/** @name Plug-in context management */
+/**
+ * @name Plug-in context management
+ *
+ * These functions are used to manage plug-in context instances. They
+ * are intended to be used by the client program. A
+ * plug-in context is a container for installed plug-ins. There can
+ * be several plug-in context instances if the client program has
+ * several independent sets of plug-ins. However, the isolation between
+ * different plug-in contexts is far from perfect because the global
+ * symbols exported by a plug-in runtime in one context are visible to
+ * all plug-ins in all context instances.
+ */
 /*@{*/
 
 /**
@@ -643,7 +676,7 @@ void CP_API cp_destroy_context(cp_context_t *ctx);
  * 
  * @param ctx the plug-in context
  * @param error_handler the error handler to be added
- * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources, or CP_ERR_DEADLOCK
+ * @return CP_OK (zero) on success, CP_ERR_RESOURCE if out of resources, or CP_ERR_DEADLOCK
  * 		if called from an error handler
  */
 int CP_API cp_add_error_handler(cp_context_t *ctx, cp_error_handler_t error_handler);
@@ -653,7 +686,7 @@ int CP_API cp_add_error_handler(cp_context_t *ctx, cp_error_handler_t error_hand
  * 
  * @param ctx the plug-in context
  * @param error_handler the error handler to be removed
- * @return CP_OK (0) on success, CP_ERR_UNKNOWN if the error handler is unknown,
+ * @return CP_OK (zero) on success, CP_ERR_UNKNOWN if the error handler is unknown,
  * 		or CP_ERR_DEADLOCK if called from an error handler
  */
 int CP_API cp_remove_error_handler(cp_context_t *ctx, cp_error_handler_t error_handler);
@@ -665,7 +698,7 @@ int CP_API cp_remove_error_handler(cp_context_t *ctx, cp_error_handler_t error_h
  * 
  * @param ctx the plug-in context
  * @param event_listener the event_listener to be added
- * @return CP_OK (0) on success, CP_ERR_RESOURCE if out of resources, or
+ * @return CP_OK (zero) on success, CP_ERR_RESOURCE if out of resources, or
  * 		CP_ERR_DEADLOCK if called from an event listener
  */
 int CP_API cp_add_event_listener(cp_context_t *ctx, cp_event_listener_t event_listener);
@@ -675,7 +708,7 @@ int CP_API cp_add_event_listener(cp_context_t *ctx, cp_event_listener_t event_li
  * 
  * @param ctx the plug-in context
  * @param event_listener the event listener to be removed
- * @return CP_OK (0) on success, CP_ERR_UNKNOWN if the event listener is unknown,
+ * @return CP_OK (zero) on success, CP_ERR_UNKNOWN if the event listener is unknown,
  * 		or CP_ERR_DEADLOCK if called from an event listener
  */
 int CP_API cp_remove_event_listener(cp_context_t *ctx, cp_event_listener_t event_listener);
@@ -687,7 +720,7 @@ int CP_API cp_remove_event_listener(cp_context_t *ctx, cp_event_listener_t event
  * 
  * @param ctx the plug-in context
  * @param dir the directory
- * @return CP_OK (0) on success, or CP_ERR_RESOURCE if insufficient system resources
+ * @return CP_OK (zero) on success, or CP_ERR_RESOURCE if insufficient system resources
  */
 int CP_API cp_add_plugin_dir(cp_context_t *ctx, const char *dir);
 
@@ -705,22 +738,46 @@ void CP_API cp_remove_plugin_dir(cp_context_t *ctx, const char *dir);
 /*@}*/
 
 
-/** @name Plug-in management */
+/**
+ * @name Plug-in management
+ *
+ * These functions can be used to manage plug-ins. They are typically
+ * used by the client program but a plug-in runtime may call them
+ * as well.
+ */
 /*@{*/
 
 /**
- * Loads a plug-in from the specified path and returns static information about
- * the loaded plug-in. The plug-in is installed to the specified plug-in
- * context. If operation fails then NULL is returned. The caller must
- * release the returned information by calling \Ref{cp_release_plugin_info} as soon
- * as it does not need the information anymore.
+ * Loads a plug-in descriptor from the specified plug-in installation
+ * path and returns information about the plug-in. The plug-in descriptor
+ * is validated during loading. Possible errors are reported via the
+ * specified plug-in context (if non-NULL). The plug-in is
+ * not installed to any context. If operation fails or the descriptor
+ * is invalid then NULL is returned. The caller must release the returned
+ * information by calling \Ref{cp_release_plugin_info} when it does not
+ * need the information anymore, typically after installing the plug-in.
  * 
- * @param ctx the plug-in context
+ * @param ctx the plug-in context for error reporting, or NULL for none
  * @param path the installation path of the plug-in
  * @param error pointer to the location for the returned error code, or NULL
  * @return pointer to the information structure or NULL if error occurs
  */
-cp_plugin_info_t * CP_API cp_load_plugin(cp_context_t *ctx, const char *path, int *error);
+cp_plugin_info_t * CP_API cp_load_plugin_descriptor(cp_context_t *ctx, const char *path, int *error);
+
+/**
+ * Installs the plug-in described by the specified plug-in information
+ * structure to the specified plug-in context. The plug-in information
+ * must have been obtained from \Ref{cp_load_plugin_descriptor}.
+ * The installation fails on \Ref{CP_ERR_CONFLICT} if the context already
+ * has an installed plug-in with the same plug-in identifier. The plug-in
+ * information must not be modified but it is safe to call
+ * \Ref{cp_release_plugin_info} after the plug-in has been installed.
+ *
+ * @param ctx the plug-in context
+ * @param pi plug-in information structure
+ * @return CP_OK (zero) on success or error code on failure
+ */
+int CP_API cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi);
 
 /**
  * Scans for plug-ins in the registered plug-in directories, installing
@@ -743,9 +800,9 @@ cp_plugin_info_t * CP_API cp_load_plugin(cp_context_t *ctx, const char *path, in
  * 
  * @param ctx the plug-in context
  * @param flags the bitmask of flags
- * @return CP_OK (0) on success, an error code on failure
+ * @return CP_OK (zero) on success, an error code on failure
  */
-int CP_API cp_load_plugins(cp_context_t *ctx, int flags);
+int CP_API cp_scan_plugins(cp_context_t *ctx, int flags);
 
 /**
  * Starts a plug-in. The plug-in is first resolved, if necessary, and all
@@ -757,7 +814,7 @@ int CP_API cp_load_plugins(cp_context_t *ctx, int flags);
  * 
  * @param ctx the plug-in context
  * @param id identifier of the plug-in to be started
- * @return CP_OK (0) on success, an error code on failure
+ * @return CP_OK (zero) on success, an error code on failure
  */
 int CP_API cp_start_plugin(cp_context_t *ctx, const char *id);
 
@@ -771,7 +828,7 @@ int CP_API cp_start_plugin(cp_context_t *ctx, const char *id);
  * 
  * @param ctx the plug-in context
  * @param id identifier of the plug-in to be stopped
- * @return CP_OK (0) on success, an error code on failure
+ * @return CP_OK (zero) on success, an error code on failure
  */
 int CP_API cp_stop_plugin(cp_context_t *ctx, const char *id);
 
@@ -779,38 +836,46 @@ int CP_API cp_stop_plugin(cp_context_t *ctx, const char *id);
  * Stops all active plug-ins.
  * 
  * @param ctx the plug-in context
- * @return CP_OK (0) on success, an error code on failure
+ * @return CP_OK (zero) on success, an error code on failure
  */
 int CP_API cp_stop_all_plugins(cp_context_t *ctx);
 
 /**
- * Unloads a plug-in. The plug-in is first stopped if it is active.
+ * Uninstalls the specified plug-in. The plug-in is first stopped if
+ * it is active.
  * 
  * @param ctx the plug-in context
  * @param id identifier of the plug-in to be unloaded
- * @return CP_OK (0) on success, an error code on failure
+ * @return CP_OK (zero) on success, an error code on failure
  */
-int CP_API cp_unload_plugin(cp_context_t *ctx, const char *id);
+int CP_API cp_uninstall_plugin(cp_context_t *ctx, const char *id);
 
 /**
- * Unloads all plug-ins. This effectively stops all plug-in activity and
- * releases the resources allocated by the plug-ins.
+ * Uninstalls all plug-ins. This effectively stops all plug-in activity
+ * and releases the resources allocated by the plug-ins.
  * 
  * @param ctx the plug-in context
- * @return CP_OK (0) on success, an error code on failure
+ * @return CP_OK (zero) on success, an error code on failure
  */
-int CP_API cp_unload_all_plugins(cp_context_t *ctx);
+int CP_API cp_uninstall_all_plugins(cp_context_t *ctx);
 
 /*@}*/
 
 
-/** @name Plug-in information */
+/**
+ * @name Plug-in information
+ *
+ * These functions can be used to query information about the installed
+ * plug-ins. They are typically used by the client program but a plug-in
+ * runtime may call them as well.
+ */
 /*@{*/
 
 /**
- * Returns static information about the specified plug-in. The caller must
- * release the information by calling \Ref{cp_release_plugin_info} when the information
- * is not needed anymore.
+ * Returns static information about the specified plug-in. The returned
+ * data structures must not be modified and the caller must
+ * release the information by calling \Ref{cp_release_info} when the
+ * information is not needed anymore.
  * 
  * @param ctx the plug-in context
  * @param id identifier of the plug-in to be examined
@@ -820,17 +885,9 @@ int CP_API cp_unload_all_plugins(cp_context_t *ctx);
 cp_plugin_info_t * CP_API cp_get_plugin_info(cp_context_t *ctx, const char *id, int *error);
 
 /**
- * Releases a previously obtained plug-in information structure. The
- * information must not be accessed after it has been released.
- * 
- * @param ctx the plug-in context
- * @param plugin the plug-in information structure to be released
- */
-void CP_API cp_release_plugin_info(cp_context_t *ctx, cp_plugin_info_t *plugin);
-
-/**
- * Returns static information about the installed plug-ins. The caller must
- * release the information by calling \Ref{cp_release_plugin_infos} when the
+ * Returns static information about the installed plug-ins. The returned
+ * data structures must not be modified and the caller must
+ * release the information by calling \Ref{cp_release_info} when the
  * information is not needed anymore.
  * 
  * @param ctx the plug-in context
@@ -839,16 +896,7 @@ void CP_API cp_release_plugin_info(cp_context_t *ctx, cp_plugin_info_t *plugin);
  * @return pointer to a NULL-terminated list of pointers to plug-in information
  * 			or NULL if error occurs
  */
-cp_plugin_info_t ** CP_API cp_get_plugin_infos(cp_context_t *ctx, int *error, int *num);
-
-/**
- * Releases a previously obtained plug-in information list. The
- * information must not be accessed after it has been released.
- * 
- * @param ctx the plug-in context
- * @param plugins the plug-in information to be released
- */
-void CP_API cp_release_plugin_infos(cp_context_t *ctx, cp_plugin_info_t **plugins);
+cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *ctx, int *error, int *num);
 
 /**
  * Returns the current state of the specified plug-in. Returns
@@ -861,6 +909,29 @@ void CP_API cp_release_plugin_infos(cp_context_t *ctx, cp_plugin_info_t **plugin
 cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *ctx, const char *id);
 
 /*@}*/
+
+
+/**
+ * @name Resource management
+ *
+ * There is a single function which is used to release different
+ * kind of dynamically allocated information returned by the framework.
+ */
+/*@{*/
+
+/**
+ * Releases previously obtained dynamically allocated information. The
+ * documentation for functions returning such information refers
+ * to this function. The information must not be accessed after it has
+ * been released. The framework uses reference counting to deallocate
+ * the information when it is not in use anymore.
+ * 
+ * @param info the information to be released
+ */
+void CP_API cp_release_info(void *info);
+
+/*@}*/
+
 /*@}*/
 /*@}*/
 

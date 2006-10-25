@@ -10,8 +10,9 @@
 #include <windows.h>
 #include "cpluff.h"
 #include "defines.h"
-#include "thread.h"
 #include "util.h"
+#include "internal.h"
+#include "thread.h"
 
 // Generic multi-threading support, Windows implementation 
 

@@ -82,17 +82,6 @@ int CP_LOCAL cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
 void CP_LOCAL cpi_process_free_ptr(list_t *list, lnode_t *node, void *dummy);
 
 
-// For error handling 
-
-/**
- * Reports a fatal error. This method does not return.
- * 
- * @param msg the formatted error message
- * @param ... parameters
- */
-void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
-
-
 // For version strings 
 
 /**
