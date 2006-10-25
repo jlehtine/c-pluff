@@ -233,7 +233,7 @@ void CP_LOCAL cpi_use_resource(void *res) {
 	lock_mutex();
 	node = hash_lookup(dynamic_resources, res);
 	if (node == NULL) {
-		cpi_fatalf(_("Attempt to increase usage count on unknown resource pointer %p."), res);
+		cpi_fatalf(_("Trying to increase usage count on unknown resource %p."), res);
 	}
 	dr = hnode_get(node);
 	dr->usage_count++;
@@ -253,9 +253,10 @@ void CP_API cp_release_info(void *info) {
 		if (--dr->usage_count == 0) {
 			hash_delete_free(dynamic_resources, node);
 			dr->dealloc_func(info);
+			free(dr);
 		}
 	} else {
-		fprintf(stderr, _("ERROR: Trying to release unknown resource %p using cp_release_info.\n"), info);
+		fprintf(stderr, _("ERROR: Trying to release unknown resource %p in cp_release_info.\n"), info);
 	}
 	unlock_mutex();
 }

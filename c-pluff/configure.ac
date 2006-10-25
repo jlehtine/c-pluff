@@ -128,6 +128,23 @@ fi
 AM_CONDITIONAL([POSIX_THREADS], test "$cp_threads" = Posix)
 AM_CONDITIONAL([WINDOWS_THREADS], test "$cp_threads" = Windows)
 
+# Check if dmalloc usage requested
+# --------------------------------
+LIBS_DMALLOC=
+AC_ARG_WITH([dmalloc],
+  AS_HELP_STRING([--with-dmalloc],
+    [compile and link with dmalloc to debug memory usage]))
+if test "$with_dmalloc" = yes; then
+  AC_CHECK_HEADERS([dmalloc.h],,
+    AC_MSG_WARN([Dmalloc header files not found (not including)]))
+  AC_CHECK_LIB([dmalloc${cp_threads+th}], [malloc],
+    [LIBS_DMALLOC="-ldmalloc${cp_threads+th}"],
+    AC_MSG_ERROR([Dmalloc library is required for requested dmalloc support]))
+  AC_DEFINE([DMALLOC_FUNC_CHECK], [], [Define to use additional dmalloc checks])
+  LIBS="$LIBS_DMALLOC $LIBS"
+fi
+AC_SUBST([LIBS_DMALLOC])
+
 # Check for the dlopen mechanism (Posix dlopen or GNU Libtool libltdl)
 # --------------------------------------------------------------------
 AC_ARG_WITH([dlopen],
@@ -180,19 +197,6 @@ AM_CONDITIONAL([HAVE_READLINE], test "$have_readline" = yes)
 # ----------------------------------
 dnl AC_CHECK_HEADER([langinfo.h],
 dnl  AC_CHECK_FUNC(
-
-# Check if dmalloc usage requested
-# --------------------------------
-AC_ARG_WITH([dmalloc],
-  AS_HELP_STRING([--with-dmalloc],
-    [compile and link with dmalloc to debug memory usage]))
-if test "$with_dmalloc" = yes; then
-  AC_CHECK_HEADERS([dmalloc.h],,
-    AC_MSG_WARN([Dmalloc header files not found (not including)]))
-  AC_CHECK_LIB([dmalloc${cp_threads+th}], [malloc],,
-    AC_MSG_ERROR([Dmalloc library is required for requested dmalloc support]))
-  AC_DEFINE([DMALLOC_FUNC_CHECK], [], [Define to use additional dmalloc checks])
-fi
 
 # Debugging support
 # -----------------

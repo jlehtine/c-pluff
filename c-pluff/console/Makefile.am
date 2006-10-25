@@ -4,7 +4,7 @@
 # This Makefile is free software; Johannes Lehtinen gives unlimited
 # permission to copy, distribute and modify it.
 
-LIBS =
+LIBS = $(LIBS_DMALLOC)
 
 bin_PROGRAMS = cpluff-console
 noinst_HEADERS = console.h

@@ -276,6 +276,7 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 	}
 #endif
 
+	free(context);
 }
 
 

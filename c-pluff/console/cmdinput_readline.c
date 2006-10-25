@@ -13,8 +13,8 @@
 #include "console.h"
 
 static char *cp_console_compl_flagsgen(const char *text, int state) {
-	static int counter = 0;
-	static int textlen = 0;
+	static int counter;
+	static int textlen;
 	char *buffer;
 	
 	if (!state) {
@@ -37,8 +37,8 @@ static char *cp_console_compl_flagsgen(const char *text, int state) {
 }
 
 static char *cp_console_compl_cmdgen(const char *text, int state) {
-	static int counter = 0;
-	static int textlen = 0;
+	static int counter;
+	static int textlen;
 	char *buffer;
 
 	if (!state) {
@@ -67,8 +67,10 @@ static char **cp_console_completion(const char *text, int start, int end) {
 	for (i = 0; i < start && isspace(rl_line_buffer[i]); i++);
 	if (i >= start) {
 		matches = rl_completion_matches(text, cp_console_compl_cmdgen);
+		rl_attempted_completion_over = 1;
 	} else if (!strncmp(rl_line_buffer + i, "load-plugins", start - i < 12 ? start - i : 12)) {
 		matches = rl_completion_matches(text, cp_console_compl_flagsgen);
+		rl_attempted_completion_over = 1;
 	}
 	return matches;
 }
