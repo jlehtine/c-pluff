@@ -41,7 +41,7 @@ static void cmd_destroy_context(int argc, char *argv[]);
 static void cmd_add_plugin_dir(int argc, char *argv[]);
 static void cmd_remove_plugin_dir(int argc, char *argv[]);
 static void cmd_load_plugin(int argc, char *argv[]);
-static void cmd_load_plugins(int argc, char *argv[]);
+static void cmd_scan_plugins(int argc, char *argv[]);
 static void cmd_list_plugins(int argc, char *argv[]);
 static void cmd_show_plugin_info(int argc, char *argv[]);
 static void cmd_exit(int argc, char *argv[]);
@@ -67,8 +67,8 @@ const command_info_t commands[] = {
 	{ "destroy-context", N_("destroys the selected plug-in context"), cmd_destroy_context },
 	{ "add-plugin-dir", N_("registers a plug-in directory"), cmd_add_plugin_dir },
 	{ "remove-plugin-dir", N_("unregisters a plug-in directory"), cmd_remove_plugin_dir },
-	{ "load-plugin", N_("loads a plug-in from the specified path"), cmd_load_plugin },
-	{ "load-plugins", N_("loads plug-ins from the registered plug-in directories"), cmd_load_plugins },
+	{ "load-plugin", N_("loads and installs a plug-in from the specified path"), cmd_load_plugin },
+	{ "scan-plugins", N_("scans plug-ins in the registered plug-in directories"), cmd_scan_plugins },
 	{ "list-plugins", N_("lists the loaded plug-ins"), cmd_list_plugins },
 	{ "show-plugin-info", N_("shows static plug-in information"), cmd_show_plugin_info },
 	{ "quit", N_("quits the program"), cmd_exit },
@@ -84,6 +84,17 @@ const flag_info_t load_flags[] = {
 	{ "restart-active", CP_LP_RESTART_ACTIVE },
 	{ NULL, -1 }
 };
+
+/// The available matching types
+static const flag_info_t match_values[] = {
+	{ "CP_MATCH_NONE", CP_MATCH_NONE },
+	{ "CP_MATCH_PERFECT", CP_MATCH_PERFECT },
+	{ "CP_MATCH_EQUIVALENT", CP_MATCH_EQUIVALENT },
+	{ "CP_MATCH_COMPATIBLE", CP_MATCH_COMPATIBLE },
+	{ "CP_MATCH_GREATEROREQUAL", CP_MATCH_GREATEROREQUAL },
+	{ NULL, -1 }
+};
+
 
 /* ------------------------------------------------------------------------
  * Function definitions
@@ -409,7 +420,7 @@ static void cmd_load_plugin(int argc, char *argv[]) {
 	}
 }
 
-static void cmd_load_plugins(int argc, char *argv[]) {
+static void cmd_scan_plugins(int argc, char *argv[]) {
 	int flags = 0;
 	int status;
 	int i;
@@ -480,9 +491,206 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 	}
 }
 
+static char *str_or_null(const char *str) {
+	static char *buffer = NULL;
+	static int buffer_size = 0;
+	
+	if (str != NULL) {
+		int rs = strlen(str) + 3;
+		int do_realloc = 0;
+
+		while (buffer_size < rs) {
+			if (buffer_size == 0) {
+				buffer_size = 64;
+			} else {
+				buffer_size *= 2;
+			}
+			do_realloc = 1;
+		}
+		if (do_realloc) {
+			if ((buffer = realloc(buffer, buffer_size * sizeof(char))) == NULL) {
+				error(_("Insufficient memory."));
+				abort();
+			}
+		}
+		snprintf(buffer, buffer_size, "\"%s\"", str);
+		buffer[buffer_size - 1] = '\0';
+		return buffer;
+	} else {
+		return "NULL";
+	}
+}
+
+static void show_plugin_info_import(cp_plugin_import_t *import) {
+	int i;
+	
+	noticef("    plugin_id = \"%s\",", import->plugin_id);
+	noticef("    version = %s,", str_or_null(import->version));
+	for (i = 0; match_values[i].name != NULL && match_values[i].value != import->match; i++);
+	if (match_values[i].name != NULL) {
+		noticef("    match = %s,", match_values[i].name);
+	} else {
+		noticef("    match = %d,", import->match);
+	}
+	noticef("    optional = %d,", import->optional);
+}
+
+static void show_plugin_info_ext_point(cp_ext_point_t *ep) {
+	noticef("    name = %s,", str_or_null(ep->name));
+	noticef("    local_id = \"%s\",", ep->local_id);
+	noticef("    global_id = \"%s\",", ep->global_id);
+	noticef("    schema_path = %s,", str_or_null(ep->schema_path));
+}
+
+static void strcat_quote_xml(char *dst, const char *src, int is_attr) {
+	char c;
+	
+	while (*dst != '\0')
+		dst++;
+	do {
+		switch ((c = *(src++))) {
+			case '&':
+				strcpy(dst, "&amp;");
+				dst += 5;
+				break;
+			case '<':
+				strcpy(dst, "&lt;");
+				dst += 4;
+				break;
+			case '>':
+				strcpy(dst, "&gt;");
+				dst += 4;
+				break;
+			case '"':
+				if (is_attr) {
+					strcpy(dst, "&quot;");
+					dst += 6;
+					break;
+				}
+			default:
+				*(dst++) = c;
+				break;
+		}
+	} while (c != '\0');
+}
+
+static int strlen_quoted_xml(const char *str,int is_attr) {
+	int len = 0;
+	int i;
+	
+	for (i = 0; str[i] != '\0'; i++) {
+		switch (str[i]) {
+			case '&':
+				len += 5;
+				break;
+			case '<':
+			case '>':
+				len += 4;
+				break;
+			case '"':
+				if (is_attr) {
+					len += 6;
+					break;
+				}
+			default:
+				len++;
+		}
+	}
+	return len;
+}
+
+static void show_plugin_info_cfg(cp_cfg_element_t *ce, int indent) {
+	static char *buffer = NULL;
+	static int buffer_size = 0;
+	int do_realloc;
+	int rs;
+	int i;
+	
+	// Calculate the maximum required buffer size
+	rs = 2 * strlen(ce->name) + 6 + indent;
+	if (ce->value != NULL) {
+		rs += strlen_quoted_xml(ce->value, 0);
+	}
+	for (i = 0; i < ce->num_atts; i++) {
+		rs += strlen(ce->atts[2*i]);
+		rs += strlen_quoted_xml(ce->atts[2*i + 1], 1);
+		rs += 4;
+	}
+	
+	// Enlarge buffer if necessary
+	do_realloc = 0;
+	while (buffer_size < rs) {
+		if (buffer_size == 0) {
+			buffer_size = 64;
+		} else {
+			buffer_size *= 2;
+		}
+		do_realloc = 1;
+	}
+	if (do_realloc) {
+		if ((buffer = realloc(buffer, buffer_size * sizeof(char))) == NULL) {
+			error(_("Insufficient memory."));
+			abort();
+		}
+	}
+	
+	// Create the string
+	for (i = 0; i < indent; i++) {
+		buffer[i] = ' ';
+	}
+	buffer[i++] = '<';
+	buffer[i] = '\0';
+	strcat(buffer, ce->name);
+	for (i = 0; i < ce->num_atts; i++) {
+		strcat(buffer, " ");
+		strcat(buffer, ce->atts[2*i]);
+		strcat(buffer, "=\"");
+		strcat_quote_xml(buffer, ce->atts[2*i + 1], 1);
+		strcat(buffer, "\"");
+	}
+	if (ce->value != NULL || ce->num_children) {
+		strcat(buffer, ">");
+		if (ce->value != NULL) {
+			strcat_quote_xml(buffer, ce->value, 0);
+		}
+		if (ce->num_children) {
+			notice(buffer);
+			for (i = 0; i < ce->num_children; i++) {
+				show_plugin_info_cfg(ce->children + i, indent + 2);
+			}
+			for (i = 0; i < indent; i++) {
+				buffer[i] = ' ';
+			}
+			buffer[i++] = '<';
+			buffer[i++] = '/';
+			buffer[i] = '\0';
+			strcat(buffer, ce->name);
+			strcat(buffer, ">");
+		} else {
+			strcat(buffer, "</");
+			strcat(buffer, ce->name);
+			strcat(buffer, ">");
+		}
+	} else {
+		strcat(buffer, "/>");
+	}
+	notice(buffer);
+}
+
+static void show_plugin_info_extension(cp_extension_t *e) {
+	noticef("    name = %s,", str_or_null(e->name));
+	noticef("    local_id = %s,", str_or_null(e->local_id));
+	noticef("    global_id = %s,", str_or_null(e->global_id));
+	noticef("    ext_point_id = \"%s\",", e->ext_point_id);
+	notice("    configuration = {");
+	show_plugin_info_cfg(e->configuration, 6);
+	notice("    },");
+}
+
 static void cmd_show_plugin_info(int argc, char *argv[]) {
 	cp_plugin_info_t *plugin;
 	int status;
+	int i;
 	
 	if (argc != 2) {
 		error(_("Usage: show-plugin-info <plugin>"));
@@ -491,15 +699,52 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 	} else if ((plugin = cp_get_plugin_info(contexts[active_context], argv[1], &status)) == NULL) {
 		errorf(_("cp_get_plugin failed with error code %d."), status);
 	} else {
-		char buffer[16];
-		
 		notice("{");
-		snprintf(buffer, sizeof(buffer), _("context %d"), active_context);
-		buffer[sizeof(buffer)/sizeof(char) - 1] = '\0';
-		noticef("  context = [%s],", buffer);
 		noticef("  name = \"%s\",", plugin->name);
 		noticef("  identifier = \"%s\",", plugin->identifier);
 		noticef("  version = \"%s\",", plugin->version);
+		noticef("  provider_name = \"%s\",", plugin->provider_name);
+		noticef("  plugin_path = %s,", str_or_null(plugin->plugin_path));
+		noticef("  num_imports = %u,", plugin->num_imports);
+		if (plugin->num_imports) {
+			notice("  imports = {{");
+			for (i = 0; i < plugin->num_imports; i++) {
+				if (i)
+					notice("  }, {");
+				show_plugin_info_import(plugin->imports + i);
+			}
+			notice("  }},");
+		} else {
+			notice("  imports = {},");
+		}
+		noticef("  lib_path = %s,", str_or_null(plugin->lib_path));
+		noticef("  start_func_name = %s,", str_or_null(plugin->start_func_name));
+		noticef("  stop_func_name = %s,", str_or_null(plugin->stop_func_name));
+		noticef("  num_ext_points = %u,", plugin->num_ext_points);
+		if (plugin->num_ext_points) {
+			notice("  ext_points = {{");
+			for (i = 0; i < plugin->num_ext_points; i++) {
+				if (i)
+					notice("  }, {");
+				show_plugin_info_ext_point(plugin->ext_points + i);
+			}
+			notice("  }},");
+		} else {
+			notice("  ext_points = {},");
+		}
+		noticef("  num_extensions = %u,", plugin->num_extensions);
+		if (plugin->num_extensions) {
+			notice("  extensions = {{");
+			for (i = 0; i < plugin->num_extensions; i++) {
+				if (i)
+					notice("  }, {");
+				show_plugin_info_extension(plugin->extensions + i);
+			}
+			notice("  }}");
+		} else {
+			notice("  extensions = {},");
+		}
+		notice("}");
 		cp_release_info(plugin);
 	}
 }

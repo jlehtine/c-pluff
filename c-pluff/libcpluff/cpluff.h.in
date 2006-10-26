@@ -392,7 +392,10 @@ struct cp_cfg_element_t {
 	 */
 	char **atts;
 	
-	/** The value (text contents) of this configuration element, possibly localized */
+	/**
+	  * The value (text contents) of this configuration element,
+	  * possibly localized, or NULL if none
+	  */
 	char *value;
 	
 	/** The parent, or NULL if root node */
