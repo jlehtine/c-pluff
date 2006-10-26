@@ -189,12 +189,6 @@ static int destroy_context(int ci) {
 }
 
 static void cmd_exit(int argc, char *argv[]) {
-	int i;
-	
-	// Destroy all plug-in contexts 
-	for (i = 0; i < MAX_NUM_CONTEXTS; i++) {
-		destroy_context(i);
-	}
 	
 	// Destroy C-Pluff framework 
 	cp_destroy();

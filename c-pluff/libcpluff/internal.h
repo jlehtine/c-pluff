@@ -90,6 +90,18 @@ typedef void (*cpi_dealloc_func_t)(void *resource);
 #if defined(CP_THREADS) || !defined(NDEBUG)
 
 /**
+ * Acquires exclusive access to the framework. Thread having the framework
+ * lock must not acquire plug-in context lock (it is ok to retain a previously
+ * acquired plug-in context lock).
+ */
+void CP_LOCAL cpi_lock_framework(void);
+
+/**
+ * Releases exclusive access to the framework.
+ */
+void CP_LOCAL cpi_unlock_framework(void);
+
+/**
  * Acquires exclusive access to a plug-in context.
  * 
  * @param context the plug-in context
@@ -106,6 +118,8 @@ void CP_LOCAL cpi_unlock_context(cp_context_t *context);
 #else
 #define cpi_lock_context(dummy) do {} while (0)
 #define cpi_unlock_context(dummy) do {} while (0)
+#define cpi_lock_framework() do {} while(0)
+#define cpi_unlock_framework() do {} while(0)
 #endif
 
 
@@ -159,6 +173,14 @@ void CP_LOCAL cpi_herror(cp_context_t *context, cp_error_handler_t error_handler
  */
 void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handler, void *user_data, const char *msg, ...)
 	CP_PRINTF(4, 5);
+
+
+// Context management
+
+/**
+ * Destroys all contexts and releases the context list resources.
+ */
+void CP_LOCAL cpi_destroy_all_contexts(void);
 
 
 // Delivering plug-in events 

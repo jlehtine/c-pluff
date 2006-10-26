@@ -59,7 +59,12 @@ static int initialized = 0;
 #ifdef CP_THREADS
 
 /// Framework mutex
-static cpi_mutex_t *mutex = NULL;
+static cpi_mutex_t *framework_mutex = NULL;
+
+#elif !defined(NDEBUG)
+
+/// Framework locking count
+static int framework_locked = 0;
 
 #endif
 
@@ -69,8 +74,9 @@ static cp_error_handler_t fatal_error_handler = NULL;
 /// User data pointer for fatal error handler
 static void *fatal_eh_user_data = NULL;
 
-/// List of in-use dynamic resources
+/// Map of in-use dynamic resources
 static hash_t *dynamic_resources = NULL;
+
 
 /* ------------------------------------------------------------------------
  * Function definitions
@@ -80,26 +86,22 @@ cp_implementation_info_t * CP_API cp_get_implementation_info(void) {
 	return &implementation_info;
 }
 
-#ifdef CP_THREADS
-
-/**
- * Locks the global framework mutex.
- */
-static void lock_mutex(void) {
-	cpi_lock_mutex(mutex);
-}
-
-/**
- * Unlocks the global framework mutex.
- */
-static void unlock_mutex(void) {
-	cpi_unlock_mutex(mutex);
-}
-
-#else
-#define lock_mutex() do {} while(0)
-#define unlock_mutex() do {} while(0)
+void CP_LOCAL cpi_lock_framework(void) {
+	#if defined(CP_THREADS)
+	cpi_lock_mutex(framework_mutex);
+#elif !defined(NDEBUG)
+	framework_locked++;
 #endif
+}
+
+void CP_LOCAL cpi_unlock_framework(void) {
+#if defined(CP_THREADS)
+	cpi_unlock_mutex(framework_mutex);
+#elif !defined(NDEBUG)
+	assert(framework_locked > 0);
+	framework_locked--;
+#endif
+}
 
 static void reset(void) {
 	if (dynamic_resources != NULL) {
@@ -118,9 +120,9 @@ static void reset(void) {
 		dynamic_resources = NULL;
 	}
 #ifdef CP_THREADS
-	if (mutex != NULL) {
-		cpi_destroy_mutex(mutex);
-		mutex = NULL;
+	if (framework_mutex != NULL) {
+		cpi_destroy_mutex(framework_mutex);
+		framework_mutex = NULL;
 	}
 #endif
 }
@@ -136,7 +138,7 @@ int CP_API cp_init(void) {
 				break;
 			}
 #ifdef CP_THREADS
-			if ((mutex = cpi_create_mutex()) == NULL) {
+			if ((framework_mutex = cpi_create_mutex()) == NULL) {
 				status = CP_ERR_RESOURCE;
 				break;
 			}
@@ -161,15 +163,21 @@ void CP_API cp_destroy(void) {
 	assert(initialized > 0);
 	initialized--;
 	if (!initialized) {
+#ifdef CP_THREADS
+		assert(framework_mutex == NULL || !cpi_is_mutex_locked(framework_mutex));
+#else
+		assert(!framework_locked);
+#endif
+		cpi_destroy_all_contexts();
 		reset();
 	}
 }
 
 void CP_API cp_set_fatal_error_handler(cp_error_handler_t error_handler, void *user_data) {
-	lock_mutex();
+	cpi_lock_framework();
 	fatal_error_handler = error_handler;
 	fatal_eh_user_data = user_data;
-	unlock_mutex();
+	cpi_unlock_framework();
 }
 
 void CP_LOCAL cpi_fatalf(const char *msg, ...) {
@@ -184,13 +192,13 @@ void CP_LOCAL cpi_fatalf(const char *msg, ...) {
 	fmsg[sizeof(fmsg)/sizeof(char) - 1] = '\0';
 
 	// Call error handler or print the error message
-	lock_mutex();
+	cpi_lock_framework();
 	if (fatal_error_handler != NULL) {
 		fatal_error_handler(NULL, fmsg, fatal_eh_user_data);
 	} else {
 		fprintf(stderr, _(PACKAGE_NAME ": FATAL ERROR: %s\n"), fmsg);
 	}
-	unlock_mutex();
+	cpi_unlock_framework();
 	
 	// Abort if still alive 
 	abort();
@@ -208,11 +216,11 @@ int CP_LOCAL cpi_register_resource(void *res, cpi_dealloc_func_t df) {
 		dr->resource = res;
 		dr->usage_count = 1;
 		dr->dealloc_func = df;
-		lock_mutex();
+		cpi_lock_framework();
 		if (!hash_alloc_insert(dynamic_resources, res, dr)) {
 			status = CP_ERR_RESOURCE;
 		}
-		unlock_mutex();
+		cpi_unlock_framework();
 		
 	} while (0);
 	
@@ -230,14 +238,14 @@ void CP_LOCAL cpi_use_resource(void *res) {
 	hnode_t *node;
 	dynamic_resource_t *dr;
 	
-	lock_mutex();
+	cpi_lock_framework();
 	node = hash_lookup(dynamic_resources, res);
 	if (node == NULL) {
 		cpi_fatalf(_("Trying to increase usage count on unknown resource %p."), res);
 	}
 	dr = hnode_get(node);
 	dr->usage_count++;
-	unlock_mutex();
+	cpi_unlock_framework();
 }
 
 void CP_API cp_release_info(void *info) {
@@ -245,7 +253,7 @@ void CP_API cp_release_info(void *info) {
 	dynamic_resource_t *dr;
 	
 	assert(info != NULL);
-	lock_mutex();
+	cpi_lock_framework();
 	node = hash_lookup(dynamic_resources, info);
 	if (node != NULL) {
 		dr = hnode_get(node);
@@ -258,5 +266,5 @@ void CP_API cp_release_info(void *info) {
 	} else {
 		fprintf(stderr, _("ERROR: Trying to release unknown resource %p in cp_release_info.\n"), info);
 	}
-	unlock_mutex();
+	cpi_unlock_framework();
 }

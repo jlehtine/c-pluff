@@ -53,8 +53,18 @@ typedef struct eh_params_t {
 
 
 /* ------------------------------------------------------------------------
- * Static function declarations
+ * Variables
  * ----------------------------------------------------------------------*/
+
+/// Existing contexts
+static list_t *contexts = NULL;
+
+
+/* ------------------------------------------------------------------------
+ * Function definitions
+ * ----------------------------------------------------------------------*/
+
+// Generic 
 
 /**
  * Processes a node by freeing the associated eh_holder_t and deleting
@@ -64,7 +74,12 @@ typedef struct eh_params_t {
  * @param node the node being processed
  * @param dummy not used
  */
-static void process_free_eh_holder(list_t *list, lnode_t *node, void *dummy);
+static void process_free_eh_holder(list_t *list, lnode_t *node, void *dummy) {
+	eh_holder_t *h = lnode_get(node);
+	list_delete(list, node);
+	lnode_destroy(node);
+	free(h);
+}
 
 /**
  * Processes a node by freeing the associated el_holder_t and deleting the
@@ -74,7 +89,12 @@ static void process_free_eh_holder(list_t *list, lnode_t *node, void *dummy);
  * @param node the node being processed
  * @param dummy not used
  */
-static void process_free_el_holder(list_t *list, lnode_t *node, void *dummy);
+static void process_free_el_holder(list_t *list, lnode_t *node, void *dummy) {
+	el_holder_t *h = lnode_get(node);
+	list_delete(list, node);
+	lnode_destroy(node);
+	free(h);
+}
 
 /**
  * Compares error handler holders.
@@ -83,7 +103,12 @@ static void process_free_el_holder(list_t *list, lnode_t *node, void *dummy);
  * @param h2 the second holder to be compared
  * @return zero if the holders point to the same function, otherwise non-zero
  */
-static int comp_eh_holder(const void *h1, const void *h2) CP_PURE;
+static int comp_eh_holder(const void *h1, const void *h2) {
+	const eh_holder_t *ehh1 = h1;
+	const eh_holder_t *ehh2 = h2;
+	
+	return (ehh1->error_handler != ehh2->error_handler);
+}
 
 /**
  * Compares event listener holders.
@@ -92,7 +117,12 @@ static int comp_eh_holder(const void *h1, const void *h2) CP_PURE;
  * @param h2 the second holder to be compared
  * @return zero if the holders point to the same function, otherwise non-zero
  */
-static int comp_el_holder(const void *h1, const void *h2) CP_PURE;
+static int comp_el_holder(const void *h1, const void *h2) {
+	const el_holder_t *elh1 = h1;
+	const el_holder_t *elh2 = h2;
+	
+	return (elh1->event_listener != elh2->event_listener);
+}
 
 /**
  * Processes a node by delivering the specified error message to the associated
@@ -102,7 +132,10 @@ static int comp_el_holder(const void *h1, const void *h2) CP_PURE;
  * @param node the node being processed
  * @param msg the error message
  */
-static void process_error(list_t *list, lnode_t *node, void *msg);
+static void process_error(list_t *list, lnode_t *node, void *msg) {
+	eh_holder_t *h = lnode_get(node);
+	h->error_handler(h->context, msg, h->user_data);
+}
 
 /**
  * Processes a node by delivering the specified event to the associated
@@ -112,49 +145,6 @@ static void process_error(list_t *list, lnode_t *node, void *msg);
  * @param node the node being processed
  * @param event the event
  */
-static void process_event(list_t *list, lnode_t *node, void *event);
-
-
-/* ------------------------------------------------------------------------
- * Function definitions
- * ----------------------------------------------------------------------*/
-
-
-// Generic 
-
-static void process_free_eh_holder(list_t *list, lnode_t *node, void *dummy) {
-	eh_holder_t *h = lnode_get(node);
-	list_delete(list, node);
-	lnode_destroy(node);
-	free(h);
-}
-
-static void process_free_el_holder(list_t *list, lnode_t *node, void *dummy) {
-	el_holder_t *h = lnode_get(node);
-	list_delete(list, node);
-	lnode_destroy(node);
-	free(h);
-}
-
-static int comp_eh_holder(const void *h1, const void *h2) {
-	const eh_holder_t *ehh1 = h1;
-	const eh_holder_t *ehh2 = h2;
-	
-	return (ehh1->error_handler != ehh2->error_handler);
-}
-
-static int comp_el_holder(const void *h1, const void *h2) {
-	const el_holder_t *elh1 = h1;
-	const el_holder_t *elh2 = h2;
-	
-	return (elh1->event_listener != elh2->event_listener);
-}
-
-static void process_error(list_t *list, lnode_t *node, void *msg) {
-	eh_holder_t *h = lnode_get(node);
-	h->error_handler(h->context, msg, h->user_data);
-}
-
 static void process_event(list_t *list, lnode_t *node, void *event) {
 	el_holder_t *h = lnode_get(node);
 	h->event_listener(h->context, event, h->user_data);
@@ -207,6 +197,24 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, void *
 			}
 		}
 		
+		// Create a context list, if necessary, and add context to the list
+		cpi_lock_framework();
+		if (contexts == NULL) {
+			if ((contexts = list_create(LISTCOUNT_T_MAX)) == NULL) {
+				status = CP_ERR_RESOURCE;
+			}
+		}
+		if (status == CP_OK) {
+			lnode_t *node;
+			
+			if ((node = lnode_create(context)) == NULL) {
+				status = CP_ERR_RESOURCE;
+			} else {
+				list_append(contexts, node);
+			}
+		}
+		cpi_unlock_framework();
+		
 	} while (0);
 	
 	// Report failure 
@@ -236,6 +244,18 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 #else
 	assert(!context->locked);
 #endif
+
+	// Remove context from the context list
+	cpi_lock_framework();
+	if (contexts != NULL) {
+		lnode_t *node;
+		
+		if ((node = list_find(contexts, context, cpi_comp_ptr)) != NULL) {
+			list_delete(contexts, node);
+			lnode_destroy(node);
+		}
+	}
+	cpi_unlock_framework();
 
 	// Unload all plug-ins 
 	if (context->plugins != NULL && !hash_isempty(context->plugins)) {
@@ -277,6 +297,22 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 #endif
 
 	free(context);
+}
+
+void CP_LOCAL cpi_destroy_all_contexts(void) {
+	cpi_lock_framework();
+	if (contexts != NULL) {
+		lnode_t *node;
+		
+		while ((node = list_last(contexts)) != NULL) {
+			cpi_unlock_framework();
+			cp_destroy_context(lnode_get(node));
+			cpi_lock_framework();
+		}
+		list_destroy(contexts);
+		contexts = NULL;
+	}
+	cpi_unlock_framework();
 }
 
 
