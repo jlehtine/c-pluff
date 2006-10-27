@@ -232,6 +232,7 @@ list_t *preliminary) {
  * 
  * @param context the plug-in context
  * @param plugin the plugin
+ * @return CP_OK (zero) on success or error code on failure
  */
 static int resolve_plugin_runtime(cp_context_t *context, registered_plugin_t *plugin) {
 	char *rlpath = NULL;
@@ -297,209 +298,206 @@ static int resolve_plugin_runtime(cp_context_t *context, registered_plugin_t *pl
 }
 
 /**
- * Recursively resolves a plug-in and its dependencies. Plug-ins with
- * circular dependencies are only preliminary resolved (state is locked
- * but not updated).
+ * Resolves the specified plug-in import into a plug-in pointer. Does not
+ * try to resolve the imported plug-in.
+ * 
+ * @param context the plug-in context
+ * @param plugin the plug-in being resolved
+ * @param import the plug-in import to resolve
+ * @param ipptr filled with pointer to the resolved plug-in or NULL
+ * @return CP_OK on success or error code on failure
+ */
+static int resolve_plugin_import(cp_context_t *context, registered_plugin_t *plugin, cp_plugin_import_t *import, registered_plugin_t **ipptr) {
+	registered_plugin_t *ip = NULL;
+	hnode_t *node;
+	int vermismatch = 0;
+
+	// Lookup the plug-in 
+	node = hash_lookup(context->plugins, import->plugin_id);
+	if (node != NULL) {
+		ip = hnode_get(node);
+	}
+			
+	// Check plug-in version 
+	if (ip != NULL && import->version != NULL) {
+		const char *iv = ip->plugin->version;
+		const char *rv = import->version;
+				
+		switch (import->match) {
+			case CP_MATCH_NONE:
+				break;
+			case CP_MATCH_PERFECT:
+				vermismatch = (cpi_version_cmp(iv, rv, 4) != 0);
+				break;
+			case CP_MATCH_EQUIVALENT:
+				vermismatch = (cpi_version_cmp(iv, rv, 2) != 0
+					|| cpi_version_cmp(iv, rv, 4) < 0);
+				break;
+			case CP_MATCH_COMPATIBLE:
+				vermismatch = (cpi_version_cmp(iv, rv, 1) != 0
+					|| cpi_version_cmp(iv, rv, 4) < 0);
+				break;
+			case CP_MATCH_GREATEROREQUAL:
+				vermismatch = (cpi_version_cmp(iv, rv, 4) < 0);
+				break;
+			default:
+				cpi_fatalf(_("Encountered unimplemented version match type."));
+				break;
+		}
+	}
+
+	// Check for version mismatch 
+	if (vermismatch) {
+		cpi_errorf(context,
+			_("Plug-in %s could not be resolved because of version incompatibility with plug-in %s."),
+			plugin->plugin->identifier,
+			import->plugin_id);
+		*ipptr = NULL;
+		return CP_ERR_DEPENDENCY;
+	}
+	
+	// Check if missing mandatory plug-in
+	if (ip == NULL && !import->optional) {
+		cpi_errorf(context,
+			_("Plug-in %s could not be resolved because it depends on plug-in %s which is not installed."),
+			plugin->plugin->identifier,
+			import->plugin_id);
+		*ipptr = NULL;
+		return CP_ERR_DEPENDENCY;
+	}
+
+	// Return imported plug-in
+	*ipptr = ip;
+	return CP_OK;
+}
+
+/**
+ * Recursively resolves a plug-in and its dependencies.
  * 
  * @param context the plug-in context
  * @param plugin the plug-in to be resolved
- * @param seen list of seen plug-ins
- * @param preliminary list of preliminarily resolved plug-ins
- * @return CP_OK (0) or CP_OK_PRELIMINARY (1) on success, an error code on failure
+ * @param phase the resolving phase (2 for resolving attempt, 1 for
+ * 			commit or 0 for rollback)
+ * @return CP_OK on success, CP_OK_PRELIMINARY on preliminary success or
+ * 			error code on failure
  */
 static int resolve_plugin_rec
-(cp_context_t *context, registered_plugin_t *plugin, list_t *seen,
-list_t *preliminary) {
+(cp_context_t *context, registered_plugin_t *plugin, int phase) {
+	lnode_t *node;
 	int i;
 	int status = CP_OK;
 	int error_reported = 0;
 	
-	// Check if already resolved 
-	if (plugin->state >= CP_PLUGIN_RESOLVED) {
+	// Check if already resolved
+	if (plugin->phase == 0 && plugin->state >= CP_PLUGIN_RESOLVED) {
 		return CP_OK;
 	}
-	assert(plugin->state == CP_PLUGIN_INSTALLED);
 	
-	// Check if already seen 
-	if (cpi_ptrset_contains(seen, plugin)) {
-		return CP_OK_PRELIMINARY;
+	// Check for dependency loops
+	if (plugin->phase == phase) {
+		return phase == 2 ? CP_OK_PRELIMINARY : CP_OK;
 	}
 	
-	do {
-	
-		// Put the plug-in into seen list
-		if (!cpi_ptrset_add(seen, plugin)) {
-			status = CP_ERR_RESOURCE;
-			break;
-		}
+	// Start the specified phase for this plug-in
+	plugin->phase = phase;
 
-		// Allocate space for the import information 
-		plugin->imported = list_create(LISTCOUNT_T_MAX);
-		if (plugin->imported == NULL) {
-			status = CP_ERR_RESOURCE;
-			break;
-		}
-	
-		// Check that all imported plug-ins are present and resolved 
-		for (i = 0;	i < plugin->plugin->num_imports; i++) {
-			registered_plugin_t *ip;
-			hnode_t *node;
-			int rc = CP_OK;
-			int vermismatch = 0;
+	// Process dependencies
+	switch (phase) {
 		
-			// Lookup the plug-in 
-			node = hash_lookup(context->plugins, plugin->plugin->imports[i].plugin_id);
-			if (node != NULL) {
-				ip = hnode_get(node);
-			} else {
-				ip = NULL;
-			}
-			
-			// Check plug-in version 
-			if (ip != NULL && plugin->plugin->imports[i].version != NULL) {
-				const char *iv = ip->plugin->version;
-				const char *rv = plugin->plugin->imports[i].version;
-				
-				switch (plugin->plugin->imports[i].match) {
-					case CP_MATCH_NONE:
-						break;
-					case CP_MATCH_PERFECT:
-						vermismatch = (cpi_version_cmp(iv, rv, 4) != 0);
-						break;
-					case CP_MATCH_EQUIVALENT:
-						vermismatch = (cpi_version_cmp(iv, rv, 2) != 0
-							|| cpi_version_cmp(iv, rv, 4) < 0);
-						break;
-					case CP_MATCH_COMPATIBLE:
-						vermismatch = (cpi_version_cmp(iv, rv, 1) != 0
-							|| cpi_version_cmp(iv, rv, 4) < 0);
-						break;
-					case CP_MATCH_GREATEROREQUAL:
-						vermismatch = (cpi_version_cmp(iv, rv, 4) < 0);
-						break;
-					default:
-						cpi_fatalf(_("Encountered unimplemented version match type."));
-						break;
-				}
-			}
-		
-			// Check for version mismatch 
-			if (vermismatch) {
-				cpi_errorf(context,
-					_("Plug-in %s could not be resolved because of version incompatibility with plug-in %s."),
-					plugin->plugin->identifier,
-					plugin->plugin->imports[i].plugin_id);
-				error_reported = 1;
-				status = CP_ERR_DEPENDENCY;
-				break;
-			}
-		
-			// Try to resolve the plugin 
-			if (ip != NULL) {
-				rc = resolve_plugin_rec(context, ip, seen, preliminary);
-				
-				// If import was succesful, register the dependency 
-				if (rc == CP_OK || rc == CP_OK_PRELIMINARY) {
-					if (!cpi_ptrset_add(plugin->imported, ip)
-						|| !cpi_ptrset_add(ip->importing, plugin)) {
-						status = CP_ERR_RESOURCE;
-						break;
-					}
-					if (rc == CP_OK_PRELIMINARY) {
-						status = CP_OK_PRELIMINARY;
-					}
-				}				
-				
-			}
-
-			// Handle failure if import was mandatory 
-			if (!plugin->plugin->imports[i].optional) {
-				if (ip == NULL) {
-					cpi_errorf(context,
-						_("Plug-in %s could not be resolved because it depends on plug-in %s which is not installed."),
-						plugin->plugin->identifier,
-						plugin->plugin->imports[i].plugin_id);
-					error_reported = 1;
-					status = CP_ERR_DEPENDENCY;
-					break;
-				} else if (rc != CP_OK && rc != CP_OK_PRELIMINARY) {
-					cpi_errorf(context,
-						_("Plug-in %s could not be resolved because it depends on plug-in %s which could not be resolved."),
-						plugin->plugin->identifier,
-						plugin->plugin->imports[i].plugin_id);
-					error_reported = 1;
-					status = rc;
-					break;
-				}
-			}
-		
-		}
-		if (status != CP_OK && status != CP_OK_PRELIMINARY) {
-			break;
-		}
-
-		// Resolve the plug-in runtime 
-		if ((i = resolve_plugin_runtime(context, plugin)) != CP_OK) {
-			error_reported = 1;
-			status = i;
-			break;
-		}
-		
-		// Update state and inform listeners on definite success 
-		if (status == CP_OK) {
-			cp_plugin_event_t event;
-		
-			event.plugin_id = plugin->plugin->identifier;
-			event.old_state = plugin->state;
-			event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
-			cpi_deliver_event(context, &event);
-		}
-	
-		// Postpone updates on preliminary success 
-		else {
-			if (!cpi_ptrset_add(preliminary, plugin)) {
+		case 2: // resolving attempt
+			assert(plugin->imported == NULL);
+			if ((plugin->imported = list_create(LISTCOUNT_T_MAX)) == NULL) {
 				status = CP_ERR_RESOURCE;
 				break;
 			}
-		}
+			for (i = 0; i < plugin->plugin->num_imports; i++) {
+				registered_plugin_t *ip;
+				int s;
+				
+				if ((node = lnode_create(NULL)) == NULL) {
+					status = CP_ERR_RESOURCE;
+					break;
+				}
+				if ((s = resolve_plugin_import(context, plugin, plugin->plugin->imports + i, &ip)) != CP_OK) {
+					error_reported = 1;
+					status = s;
+				}
+				if (ip != NULL) {
+					lnode_put(node, ip);
+					list_append(plugin->imported, node);
+					if (!cpi_ptrset_add(ip->importing, plugin)) {
+						status = CP_ERR_RESOURCE;
+					} else if ((s = resolve_plugin_rec(context, ip, phase)) != CP_OK && s != CP_OK_PRELIMINARY) {
+						error_reported = 1;
+						status = s;
+					}
+				} else {
+					lnode_destroy(node);
+				}
+			}
+			break;
+
+		case 1: // commit
+		case 0: // rollback
+			if (plugin->imported != NULL) {
+				while ((node = list_first(plugin->imported)) != NULL) {
+					resolve_plugin_rec(context, lnode_get(node), phase);
+				}
+			}
+			break;
 		
-	} while (0);
-	
-	// Clean up on failure 
+	}
 	if (status != CP_OK && status != CP_OK_PRELIMINARY) {
-		lnode_t *node;
-
-		/* 
-		 * Unresolve plug-ins which import this plug-in (if there were
-		 * circular dependencies while resolving this plug-in)
-		 */
-		while ((node = list_first(plugin->importing)) != NULL) {
-			registered_plugin_t *ip = lnode_get(node);
-			unresolve_preliminary_plugin(context, ip, plugin, preliminary);
-			assert(!cpi_ptrset_contains(plugin->importing, ip));
-		}
-
-		// Unresolve the plug-in runtime 
-		unresolve_plugin_runtime(plugin);
-		
-		// Remove references to imported plug-ins 
-		while ((node = list_first(plugin->imported)) != NULL) {
-			registered_plugin_t *ip = lnode_get(node);
-			cpi_ptrset_remove(ip->importing, plugin);
-			list_delete(plugin->imported, node);
-			lnode_destroy(node);
-		}
-		list_destroy(plugin->imported);
-		plugin->imported = NULL;
-
-		// Remove plug-in from the seen list 
-		cpi_ptrset_remove(seen, plugin);
-		
-		// Report errors 
+		assert(phase == 2);
 		if (!error_reported) {
 			cpi_errorf(context, _("Plug-in %s could not be resolved due to insufficient system resources."), plugin->plugin->identifier);
 		}
+		return status;
+	}
 	
+	// Process this plug-in
+	switch (phase) {
+		
+		case 2: // resolving attempt
+			assert(plugin->state == CP_PLUGIN_INSTALLED);
+			if ((i = resolve_plugin_runtime(context, plugin)) != CP_OK) {
+				status = i;
+			}
+			if (status == CP_OK) {
+				cp_plugin_event_t event;
+				
+				event.plugin_id = plugin->plugin->identifier;
+				event.old_state = plugin->state;
+				event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
+				cpi_deliver_event(context, &event);
+			}
+			break;
+			
+		case 1: // commit
+			if (plugin->state < CP_PLUGIN_RESOLVED) {
+				cp_plugin_event_t event;
+				
+				event.plugin_id = plugin->plugin->identifier;
+				event.old_state = plugin->state;
+				event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
+				cpi_deliver_event(context, &event);				
+			}
+			plugin->phase = 0;
+			break;
+			
+		case 0: // rollback
+			if (plugin->state < CP_PLUGIN_RESOLVED) {
+				if (plugin->imported != NULL) {
+					while ((node = list_first(plugin->imported)) != NULL) {
+						registered_plugin_t *ip = lnode_get(node);
+						cpi_ptrset_remove(ip->importing, plugin);
+						list_delete(plugin->imported, node);
+						lnode_destroy(node);
+					}
+				}
+				unresolve_plugin_runtime(plugin);
+			}
+			break;
 	}
 	
 	return status;
@@ -514,84 +512,18 @@ list_t *preliminary) {
  * @return CP_OK (0) on success, an error code on failure
  */
 static int resolve_plugin(cp_context_t *context, registered_plugin_t *plugin) {
-	list_t *seen = NULL, *preliminary = NULL;
-	int status = CP_OK;
+	int status;
 	
 	assert(context != NULL);
 	assert(plugin != NULL);
+
+	// Resolve recursively
+	if ((status = resolve_plugin_rec(context, plugin, 2)) == CP_OK || status == CP_OK_PRELIMINARY) {
+		resolve_plugin_rec(context, plugin, 1);
+	} else {
+		resolve_plugin_rec(context, plugin, 0);
+	}
 	
-	// Check if already resolved 
-	if (plugin->state >= CP_PLUGIN_RESOLVED) {
-		return CP_OK;
-	}
-
-	do {
-		lnode_t *node;
-
-		// Create plug-in collections 
-		seen = list_create(LISTCOUNT_T_MAX);
-		preliminary = list_create(LISTCOUNT_T_MAX);
-		if (seen == NULL || preliminary == NULL) {
-			status = CP_ERR_RESOURCE;
-			cpi_errorf(context, _("Plug-in %s could not be resolved due to insufficient system resources."), plugin->plugin->identifier);
-			break;
-		}
-
-		// Resolve this plug-in recursively 
-		status = resolve_plugin_rec(context, plugin, seen, preliminary);
-		if (status == CP_OK_PRELIMINARY) {
-			status = CP_OK;
-		}
-	
-		// Plug-ins in the preliminary list are now resolved 
-		if (status == CP_OK) {
-			while ((node = list_first(preliminary)) != NULL) {
-				registered_plugin_t *rp;
-				cp_plugin_event_t event;
-		
-				rp = lnode_get(node);
-				event.plugin_id = rp->plugin->identifier;
-				event.old_state = rp->state;
-				event.new_state = rp->state = CP_PLUGIN_RESOLVED;
-				cpi_deliver_event(context, &event);
-				list_delete(preliminary, node);
-				lnode_destroy(node);
-			}
-		}
-		
-		// On error unresolve plug-in runtimes of preliminary resolved plug-ins 
-		else {
-			while ((node = list_last(preliminary)) != NULL) {
-				registered_plugin_t *rp;
-				
-				rp = lnode_get(node);
-				unresolve_plugin_runtime(rp);
-				list_delete(preliminary, node);
-				lnode_destroy(node);
-			}
-		}
-		
-		// Destroy the list of seen plug-ins
-		while ((node = list_first(seen)) != NULL) {
-			registered_plugin_t *rp;
-			
-			rp = lnode_get(node);
-			list_delete(seen, node);
-			lnode_destroy(node);
-		}
-
-	} while (0);
-
-	// Release data structures 
-	if (seen != NULL) {
-		assert(list_isempty(seen));
-		list_destroy(seen);
-	}
-	if (preliminary != NULL) {
-		list_destroy_nodes(preliminary);
-		list_destroy(preliminary);
-	}
-
 	return status;
 }
 
@@ -798,8 +730,9 @@ static void unresolve_plugin_rec(cp_context_t *context, registered_plugin_t *plu
 	lnode_t *node;
 	cp_plugin_event_t event;
 
-	// Check if already fully unresolved or phase already ongoing
-	if (plugin->imported == NULL || plugin->phase == phase) {
+	// Check if already fully unresolved or dependency loop
+	if ((plugin->phase == 0 && plugin->state < CP_PLUGIN_RESOLVED)
+		|| plugin->phase == phase) {
 		return;
 	}
 	
