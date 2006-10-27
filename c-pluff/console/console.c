@@ -17,6 +17,7 @@
 #ifdef HAVE_GETTEXT
 #include <locale.h>
 #endif
+#include <assert.h>
 #include "../libcpluff/cpluff.h"
 #include "console.h"
 
@@ -536,6 +537,7 @@ static void show_plugin_info_import(cp_plugin_import_t *import) {
 }
 
 static void show_plugin_info_ext_point(cp_ext_point_t *ep) {
+	assert(ep->plugin != NULL);
 	noticef("    name = %s,", str_or_null(ep->name));
 	noticef("    local_id = \"%s\",", ep->local_id);
 	noticef("    global_id = \"%s\",", ep->global_id);
@@ -605,7 +607,7 @@ static void show_plugin_info_cfg(cp_cfg_element_t *ce, int indent) {
 	int do_realloc;
 	int rs;
 	int i;
-	
+
 	// Calculate the maximum required buffer size
 	rs = 2 * strlen(ce->name) + 6 + indent;
 	if (ce->value != NULL) {
@@ -678,6 +680,7 @@ static void show_plugin_info_cfg(cp_cfg_element_t *ce, int indent) {
 }
 
 static void show_plugin_info_extension(cp_extension_t *e) {
+	assert(e->plugin != NULL);
 	noticef("    name = %s,", str_or_null(e->name));
 	noticef("    local_id = %s,", str_or_null(e->local_id));
 	noticef("    global_id = %s,", str_or_null(e->global_id));

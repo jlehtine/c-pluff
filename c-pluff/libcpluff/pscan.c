@@ -35,6 +35,7 @@ int CP_API cp_scan_plugins(cp_context_t *context, int flags) {
 	int plugins_stopped = 0;
 	int status = CP_OK;
 	
+	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
 	do {
 		lnode_t *lnode;
@@ -193,11 +194,7 @@ int CP_API cp_scan_plugins(cp_context_t *context, int flags) {
 				if ((flags & (CP_LP_STOP_ALL_ON_UPGRADE | CP_LP_STOP_ALL_ON_INSTALL))
 					&& !plugins_stopped) {
 					plugins_stopped = 1;
-					s = cp_stop_all_plugins(context);
-					if (s != CP_OK) {
-						status = s;
-						break;
-					}
+					cp_stop_all_plugins(context);
 				}
 				s = cp_uninstall_plugin(context, plugin->identifier);
 				if (s != CP_OK) {
@@ -212,11 +209,7 @@ int CP_API cp_scan_plugins(cp_context_t *context, int flags) {
 			if (state == CP_PLUGIN_UNINSTALLED) {
 				if ((flags & CP_LP_STOP_ALL_ON_INSTALL) && !plugins_stopped) {
 					plugins_stopped = 1;
-					s = cp_stop_all_plugins(context);
-					if (s != CP_OK) {
-						status = s;
-						break;
-					}
+					cp_stop_all_plugins(context);
 				}
 				if ((s = cp_install_plugin(context, plugin)) != CP_OK) {
 					status = s;

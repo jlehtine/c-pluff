@@ -580,6 +580,7 @@ static void XMLCALL start_element_handler(
 					ext_point = plcontext->plugin->ext_points
 						+ plcontext->plugin->num_ext_points;
 					memset(ext_point, 0, sizeof(cp_ext_point_t));
+					ext_point->plugin = plcontext->plugin;
 					ext_point->name = NULL;
 					ext_point->local_id = NULL;
 					ext_point->global_id = NULL;
@@ -632,6 +633,7 @@ static void XMLCALL start_element_handler(
 					extension = plcontext->plugin->extensions
 						+ plcontext->plugin->num_extensions;
 					memset(extension, 0, sizeof(cp_extension_t));
+					extension->plugin = plcontext->plugin;
 					extension->name = NULL;
 					extension->local_id = NULL;
 					extension->global_id = NULL;

@@ -24,12 +24,10 @@ char *cmdline_input(const char *prompt) {
 		}
 		if (strlen(cmdline) == CMDLINE_SIZE - 1
 			&& cmdline[CMDLINE_SIZE - 2] != '\n') {
+			char c;
 			do {
-				if (fgets(cmdline, CMDLINE_SIZE, stdin) == NULL) {
-					return NULL;
-				}
-			} while (strlen(cmdline) == CMDLINE_SIZE - 1
-				&& cmdline[CMDLINE_SIZE - 2] != '\n');
+				c = getchar();
+			} while (c != '\n');
 			fputs(_("ERROR: Command line too long.\n"), stderr);
 		} else {
 			success = 1;

@@ -38,6 +38,31 @@ extern "C" {
 
 
 /* ------------------------------------------------------------------------
+ * Macros
+ * ----------------------------------------------------------------------*/
+
+#ifndef NDEBUG
+#define cpi_inc_error_invocation(context) ((context)->in_error_handler_invocation++)
+#define cpi_dec_error_invocation(context) ((context)->in_error_handler_invocation--)
+#define cpi_inc_event_invocation(context) ((context)->in_event_listener_invocation++)
+#define cpi_dev_event_invocation(context) ((context)->in_event_listener_invocation--)
+#define cpi_inc_start_invocation(context) ((context)->in_start_func_invocation++)
+#define cpi_dec_start_invocation(context) ((context)->in_start_func_invocation--)
+#define cpi_inc_stop_invocation(context) ((context)->in_stop_func_invocation++)
+#define cpi_dec_stop_invocation(context) ((context)->in_stop_func_invocation--)
+#else
+#define cpi_inc_error_invocation(context) do {} while (0)
+#define cpi_dec_error_invocation(context) do {} while (0)
+#define cpi_inc_event_invocation(context) do {} while (0)
+#define cpi_dev_event_invocation(context) do {} while (0)
+#define cpi_inc_start_invocation(context) do {} while (0)
+#define cpi_dec_start_invocation(context) do {} while (0)
+#define cpi_inc_stop_invocation(context) do {} while (0)
+#define cpi_dec_stop_invocation(context) do {} while (0)
+#endif
+
+
+/* ------------------------------------------------------------------------
  * Data types
  * ----------------------------------------------------------------------*/
 
@@ -55,15 +80,9 @@ struct cp_context_t {
 	
 	/// Installed error handlers 
 	list_t *error_handlers;
-	
-	/// Whether error handlers list is frozen 
-	int error_handlers_frozen;
 
 	/// Installed event listeners 
 	list_t *event_listeners;
-	
-	/// Whether event listeners list is frozen 
-	int event_listeners_frozen;
 	
 	/// List of registered plug-in directories 
 	list_t *plugin_dirs;
@@ -73,7 +92,23 @@ struct cp_context_t {
 
 	/// List of started plug-ins in the order they were started 
 	list_t *started_plugins;
+
+#ifndef NDEBUG
+
+	/// Whether currently in error handler invocation 
+	int in_error_handler_invocation;
 	
+	/// Whether currently in event listener invocation
+	int in_event_listener_invocation;
+	
+	// Whether currently in start function invocation
+	int in_start_func_invocation;
+	
+	// Whether currently in stop function invocation
+	int in_stop_func_invocation;
+	
+#endif
+
 };
 
 /// Resource deallocation function
@@ -173,6 +208,22 @@ void CP_LOCAL cpi_herror(cp_context_t *context, cp_error_handler_t error_handler
  */
 void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handler, void *user_data, const char *msg, ...)
 	CP_PRINTF(4, 5);
+
+#ifndef NDEBUG
+
+/**
+ * Checks that we are currently not in an error handler, event listener,
+ * start function or stop function invocation. Otherwise, reports a fatal
+ * error.
+ * 
+ * @param ctx the associated plug-in context
+ * @param func the current plug-in framework function
+ */
+void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, const char *func);
+
+#else
+#define cpi_check_invocation(a, b) do {} while (0)
+#endif
 
 
 // Context management

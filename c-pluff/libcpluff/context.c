@@ -245,6 +245,9 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 	assert(!context->locked);
 #endif
 
+	// Check invocation, although context not locked
+	cpi_check_invocation(context, __func__);
+
 	// Remove context from the context list
 	cpi_lock_framework();
 	if (contexts != NULL) {
@@ -325,10 +328,12 @@ int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_
 	
 	assert(error_handler != NULL);
 	
+	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
-	if (context->error_handlers_frozen) {
-		status = CP_ERR_DEADLOCK;
-	} else if ((holder = malloc(sizeof(eh_holder_t))) != NULL) {
+	if (context->in_error_handler_invocation) {
+		cpi_fatalf(_("%s was called from within an error handler invocation."), __func__);
+	}
+	if ((holder = malloc(sizeof(eh_holder_t))) != NULL) {
 		holder->error_handler = error_handler;
 		holder->context = context;
 		holder->user_data = user_data;
@@ -340,62 +345,35 @@ int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_
 		}
 	}
 	cpi_unlock_context(context);
-	switch (status) {
-		case CP_OK:
-			break;
-		case CP_ERR_RESOURCE:
-			cpi_error(context, _("An error handler could not be registered due to insufficient system resources."));
-			break;
-		case CP_ERR_DEADLOCK:
-			cpi_error(context, _("An error handler can not be registered from within an error handler invocation."));
-			break;
-		default:
-			cpi_error(context, _("An error handler could not be registered."));
-			break;
+	if (status != CP_OK) {
+		cpi_error(context, _("An error handler could not be registered due to insufficient system resources."));
 	}
 	return status;
 }
 
-int CP_API cp_remove_error_handler(cp_context_t *context, cp_error_handler_t error_handler) {
+void CP_API cp_remove_error_handler(cp_context_t *context, cp_error_handler_t error_handler) {
 	eh_holder_t holder;
 	lnode_t *node;
-	int status = CP_OK;
 	
+	cpi_check_invocation(context, __func__);
 	holder.error_handler = error_handler;
 	cpi_lock_context(context);
-	if (context->error_handlers_frozen) {
-		status = CP_ERR_DEADLOCK;
-	} else {
-		node = list_find(context->error_handlers, &holder, comp_eh_holder);
-		if (node != NULL) {
-			process_free_eh_holder(context->error_handlers, node, NULL);
-		} else {
-			status = CP_ERR_UNKNOWN;
-		}
+	if (context->in_error_handler_invocation) {
+		cpi_fatalf(_("%s was called from within an error handler invocation."), __func__);
+	}
+	node = list_find(context->error_handlers, &holder, comp_eh_holder);
+	if (node != NULL) {
+		process_free_eh_holder(context->error_handlers, node, NULL);
 	}
 	cpi_unlock_context(context);
-	switch (status) {
-		case CP_OK:
-			break;
-		case CP_ERR_DEADLOCK:
-			cpi_error(context, _("An error handler can not be removed from within an error handler invocation."));
-			break;
-		case CP_ERR_UNKNOWN:
-			cpi_error(context, _("Could not remove an unknown error handler."));
-			break;
-		default:
-			cpi_error(context, _("Could not remove an error handler."));
-			break;
-	}
-	return status;
 }
 
 void CP_LOCAL cpi_error(cp_context_t *context, const char *msg) {
 	assert(msg != NULL);
 	cpi_lock_context(context);
-	context->error_handlers_frozen++;
+	cpi_inc_error_invocation(context);
 	list_process(context->error_handlers, (void *) msg, process_error);
-	context->error_handlers_frozen--;
+	cpi_dec_error_invocation(context);
 	cpi_unlock_context(context);
 }
 
@@ -440,10 +418,9 @@ int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t even
 
 	assert(event_listener != NULL);
 	
+	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
-	if (context->event_listeners_frozen) {
-		status = CP_ERR_DEADLOCK;
-	} else if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
+	if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
 		holder->event_listener = event_listener;
 		holder->context = context;
 		holder->user_data = user_data;
@@ -455,63 +432,33 @@ int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t even
 		}
 	}
 	cpi_unlock_context(context);
-	switch (status) {
-		case CP_OK:
-			break;
-		case CP_ERR_RESOURCE:
-			cpi_error(context, _("An event listener could not be registered due to insufficient system resources."));
-			break;
-		case CP_ERR_DEADLOCK:
-			cpi_error(context, _("An event listener can not be registered from within an event listener invocation."));
-			break;
-		default:
-			cpi_error(context, _("An event listener could not be registered."));
-			break;
+	if (status != CP_OK) {
+		cpi_error(context, _("An event listener could not be registered due to insufficient system resources."));
 	}
 	return status;
 }
 
-int CP_API cp_remove_event_listener(cp_context_t *context, cp_event_listener_t event_listener) {
+void CP_API cp_remove_event_listener(cp_context_t *context, cp_event_listener_t event_listener) {
 	el_holder_t holder;
 	lnode_t *node;
-	int status = CP_OK;
 	
+	cpi_check_invocation(context, __func__);
 	holder.event_listener = event_listener;
 	cpi_lock_context(context);
-	if (context->event_listeners_frozen) {
-		status = CP_ERR_DEADLOCK;
-	} else {
-		node = list_find(context->event_listeners, &holder, comp_el_holder);
-		if (node != NULL) {
-			process_free_el_holder(context->event_listeners, node, NULL);
-		} else {
-			status = CP_ERR_UNKNOWN;
-		}
+	node = list_find(context->event_listeners, &holder, comp_el_holder);
+	if (node != NULL) {
+		process_free_el_holder(context->event_listeners, node, NULL);
 	}
 	cpi_unlock_context(context);
-	switch (status) {
-		case CP_OK:
-			break;
-		case CP_ERR_DEADLOCK:
-			cpi_error(context, _("An event listener can not be removed from within an event listener invocation."));
-			break;
-		case CP_ERR_UNKNOWN:
-			cpi_error(context, _("Could not remove an unknown event listener."));
-			break;
-		default:
-			cpi_error(context, _("Could not remove an event listener."));
-			break;
-	}
-	return status;
 }
 
 void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *event) {
 	assert(event != NULL);
 	assert(event->plugin_id != NULL);
 	cpi_lock_context(context);
-	context->event_listeners_frozen++;
+	cpi_inc_event_invocation(context);
 	list_process(context->event_listeners, (void *) event, process_event);
-	context->event_listeners_frozen--;
+	cpi_dev_event_invocation(context);
 	cpi_unlock_context(context);
 }
 
@@ -525,6 +472,7 @@ int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	
 	assert(dir != NULL);
 	
+	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
 	do {
 	
@@ -579,6 +527,7 @@ void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 	
 	assert(dir != NULL);
 	
+	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
 	node = list_find(context->plugin_dirs, dir, (int (*)(const void *, const void *)) strcmp);
 	if (node != NULL) {
@@ -611,5 +560,29 @@ void CP_LOCAL cpi_unlock_context(cp_context_t *context) {
 	context->locked--;
 #endif
 }
+
+
+// Invocation checking
+
+#ifndef NDEBUG
+
+void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, const char *func) {
+	assert(ctx != NULL);
+	assert(func != NULL);
+	if (ctx->in_error_handler_invocation) {
+		cpi_fatalf(_("%s was called from within an error handler invocation."), func);
+	}
+	if (ctx->in_event_listener_invocation) {
+		cpi_fatalf(_("%s was called from within an event listener invocation."), func);
+	}
+	if (ctx->in_start_func_invocation) {
+		cpi_fatalf(_("%s was called from within a start function invocation."), func);
+	}
+	if (ctx->in_stop_func_invocation) {
+		cpi_fatalf(_("%s was called from within a stop function invocation."), func);
+	}
+}
+
+#endif
 
 #endif
