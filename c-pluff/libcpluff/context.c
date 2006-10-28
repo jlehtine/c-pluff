@@ -35,10 +35,10 @@ typedef struct eh_holder_t {
 } eh_holder_t;
 
 /**
- * A holder structure for event listener.
+ * A holder structure for a plug-in listener.
  */
 typedef struct el_holder_t {
-	cp_event_listener_t event_listener;
+	cp_plugin_listener_t plugin_listener;
 	cp_context_t *context;
 	void *user_data;
 } el_holder_t;
@@ -111,17 +111,17 @@ static int comp_eh_holder(const void *h1, const void *h2) {
 }
 
 /**
- * Compares event listener holders.
+ * Compares plug-in listener holders.
  * 
  * @param h1 the first holder to be compared
  * @param h2 the second holder to be compared
  * @return zero if the holders point to the same function, otherwise non-zero
  */
 static int comp_el_holder(const void *h1, const void *h2) {
-	const el_holder_t *elh1 = h1;
-	const el_holder_t *elh2 = h2;
+	const el_holder_t *plh1 = h1;
+	const el_holder_t *plh2 = h2;
 	
-	return (elh1->event_listener != elh2->event_listener);
+	return (plh1->plugin_listener != plh2->plugin_listener);
 }
 
 /**
@@ -139,7 +139,7 @@ static void process_error(list_t *list, lnode_t *node, void *msg) {
 
 /**
  * Processes a node by delivering the specified event to the associated
- * event listener.
+ * plug-in listener.
  * 
  * @param list the list being processed
  * @param node the node being processed
@@ -147,7 +147,7 @@ static void process_error(list_t *list, lnode_t *node, void *msg) {
  */
 static void process_event(list_t *list, lnode_t *node, void *event) {
 	el_holder_t *h = lnode_get(node);
-	h->event_listener(h->context, event, h->user_data);
+	h->plugin_listener(h->context, event, h->user_data);
 }
 
 
@@ -172,7 +172,7 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, void *
 		context->mutex = cpi_create_mutex();
 #endif
 		context->error_handlers = list_create(LISTCOUNT_T_MAX);
-		context->event_listeners = list_create(LISTCOUNT_T_MAX);
+		context->plugin_listeners = list_create(LISTCOUNT_T_MAX);
 		context->plugin_dirs = list_create(LISTCOUNT_T_MAX);
 		context->plugins = hash_create(HASHCOUNT_T_MAX,
 			(int (*)(const void *, const void *)) strcmp, NULL);
@@ -181,7 +181,7 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, void *
 #ifdef CP_THREADS
 			|| context->mutex == NULL
 #endif
-			|| context->event_listeners == NULL
+			|| context->plugin_listeners == NULL
 			|| context->plugin_dirs == NULL
 			|| context->plugins == NULL
 			|| context->started_plugins == NULL) {
@@ -286,10 +286,10 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 		list_destroy(context->error_handlers);
 		context->error_handlers = NULL;
 	}
-	if (context->event_listeners != NULL) {
-		list_process(context->event_listeners, NULL, process_free_el_holder);
-		list_destroy(context->event_listeners);
-		context->event_listeners = NULL;
+	if (context->plugin_listeners != NULL) {
+		list_process(context->plugin_listeners, NULL, process_free_el_holder);
+		list_destroy(context->plugin_listeners);
+		context->plugin_listeners = NULL;
 	}
 	
 	// Release mutex 
@@ -409,23 +409,23 @@ void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handle
 }
 
 
-// Event listeners 
+// Plug-in listeners 
 
-int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t event_listener, void *user_data) {
+int CP_API cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_t listener, void *user_data) {
 	int status = CP_ERR_RESOURCE;
 	el_holder_t *holder;
 	lnode_t *node;
 
-	assert(event_listener != NULL);
+	assert(listener != NULL);
 	
 	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
 	if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
-		holder->event_listener = event_listener;
+		holder->plugin_listener = listener;
 		holder->context = context;
 		holder->user_data = user_data;
 		if ((node = lnode_create(holder)) != NULL) {
-			list_append(context->event_listeners, node);
+			list_append(context->plugin_listeners, node);
 			status = CP_OK;
 		} else {
 			free(holder);
@@ -433,21 +433,21 @@ int CP_API cp_add_event_listener(cp_context_t *context, cp_event_listener_t even
 	}
 	cpi_unlock_context(context);
 	if (status != CP_OK) {
-		cpi_error(context, _("An event listener could not be registered due to insufficient system resources."));
+		cpi_error(context, _("A plug-in listener could not be registered due to insufficient system resources."));
 	}
 	return status;
 }
 
-void CP_API cp_remove_event_listener(cp_context_t *context, cp_event_listener_t event_listener) {
+void CP_API cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_t listener) {
 	el_holder_t holder;
 	lnode_t *node;
 	
 	cpi_check_invocation(context, __func__);
-	holder.event_listener = event_listener;
+	holder.plugin_listener = listener;
 	cpi_lock_context(context);
-	node = list_find(context->event_listeners, &holder, comp_el_holder);
+	node = list_find(context->plugin_listeners, &holder, comp_el_holder);
 	if (node != NULL) {
-		process_free_el_holder(context->event_listeners, node, NULL);
+		process_free_el_holder(context->plugin_listeners, node, NULL);
 	}
 	cpi_unlock_context(context);
 }
@@ -457,7 +457,7 @@ void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *
 	assert(event->plugin_id != NULL);
 	cpi_lock_context(context);
 	cpi_inc_event_invocation(context);
-	list_process(context->event_listeners, (void *) event, process_event);
+	list_process(context->plugin_listeners, (void *) event, process_event);
 	cpi_dev_event_invocation(context);
 	cpi_unlock_context(context);
 }

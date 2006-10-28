@@ -271,7 +271,7 @@ static void cmd_create_context(int argc, char *argv[]) {
 		error(_("Maximum number of plug-in contexts in use."));
 	} else if ((contexts[next_context] = cp_create_context(error_handler, contexts + next_context, &status)) == NULL) {
 		errorf(_("cp_create_context failed with error code %d."), status);
-	} else if ((status = cp_add_event_listener(contexts[next_context], event_listener, contexts + next_context)) != CP_OK) {
+	} else if ((status = cp_add_plugin_listener(contexts[next_context], event_listener, contexts + next_context)) != CP_OK) {
 		errorf(_("cp_add_event_listener failed with error code %d."), status);
 		cp_destroy_context(contexts[next_context]);
 		contexts[next_context] = NULL;

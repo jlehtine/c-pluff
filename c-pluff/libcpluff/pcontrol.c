@@ -56,11 +56,8 @@
  * Data types
  * ----------------------------------------------------------------------*/
 
-// Forward type definitions 
-typedef struct registered_plugin_t registered_plugin_t;
-
 /// Stores the state of a registered plug-in. 
-struct registered_plugin_t {
+struct cp_plugin_t {
 	
 	/// Plug-in information 
 	cp_plugin_info_t *plugin;
@@ -96,7 +93,7 @@ struct registered_plugin_t {
 // Plug-in control
 
 int CP_API cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
-	registered_plugin_t *rp;
+	cp_plugin_t *rp;
 	int status = CP_OK;
 	cp_plugin_event_t event;
 
@@ -116,13 +113,13 @@ int CP_API cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 		cpi_use_resource(plugin);
 
 		// Allocate space for the plug-in state 
-		if ((rp = malloc(sizeof(registered_plugin_t))) == NULL) {
+		if ((rp = malloc(sizeof(cp_plugin_t))) == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
 	
 		// Initialize plug-in state 
-		memset(rp, 0, sizeof(registered_plugin_t));
+		memset(rp, 0, sizeof(cp_plugin_t));
 		rp->plugin = plugin;
 		rp->state = CP_PLUGIN_INSTALLED;
 		rp->imported = NULL;
@@ -176,7 +173,7 @@ int CP_API cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
  * 
  * @param plugin the plug-in to unresolve
  */
-static void unresolve_plugin_runtime(registered_plugin_t *plugin) {
+static void unresolve_plugin_runtime(cp_plugin_t *plugin) {
 	plugin->start_func = NULL;
 	plugin->stop_func = NULL;
 	if (plugin->runtime_lib != NULL) {
@@ -194,7 +191,7 @@ static void unresolve_plugin_runtime(registered_plugin_t *plugin) {
  * @param preliminary list of preliminary resolved plug-ins
  */
 static void unresolve_preliminary_plugin(cp_context_t *context,
-registered_plugin_t *plugin, registered_plugin_t *failed,
+cp_plugin_t *plugin, cp_plugin_t *failed,
 list_t *preliminary) {
 	lnode_t *node;
 
@@ -209,7 +206,7 @@ list_t *preliminary) {
 	// Remove references to imported plug-ins 
 	assert(plugin->imported != NULL);
 	while ((node = list_first(plugin->imported)) != NULL) {
-		registered_plugin_t *ip = lnode_get(node);
+		cp_plugin_t *ip = lnode_get(node);
 		cpi_ptrset_remove(ip->importing, plugin);
 		list_delete(plugin->imported, node);
 		lnode_destroy(node);
@@ -219,7 +216,7 @@ list_t *preliminary) {
 		
 	// Unresolve plug-ins which import this plug-in 
 	while ((node = list_first(plugin->importing)) != NULL) {
-		registered_plugin_t *ip = lnode_get(node);
+		cp_plugin_t *ip = lnode_get(node);
 		unresolve_preliminary_plugin(context, ip, plugin, preliminary);
 	}
 	
@@ -234,7 +231,7 @@ list_t *preliminary) {
  * @param plugin the plugin
  * @return CP_OK (zero) on success or error code on failure
  */
-static int resolve_plugin_runtime(cp_context_t *context, registered_plugin_t *plugin) {
+static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	char *rlpath = NULL;
 	int status = CP_OK;
 	
@@ -307,8 +304,8 @@ static int resolve_plugin_runtime(cp_context_t *context, registered_plugin_t *pl
  * @param ipptr filled with pointer to the resolved plug-in or NULL
  * @return CP_OK on success or error code on failure
  */
-static int resolve_plugin_import(cp_context_t *context, registered_plugin_t *plugin, cp_plugin_import_t *import, registered_plugin_t **ipptr) {
-	registered_plugin_t *ip = NULL;
+static int resolve_plugin_import(cp_context_t *context, cp_plugin_t *plugin, cp_plugin_import_t *import, cp_plugin_t **ipptr) {
+	cp_plugin_t *ip = NULL;
 	hnode_t *node;
 	int vermismatch = 0;
 
@@ -382,7 +379,7 @@ static int resolve_plugin_import(cp_context_t *context, registered_plugin_t *plu
  * 			error code on failure
  */
 static int resolve_plugin_rec
-(cp_context_t *context, registered_plugin_t *plugin, int phase) {
+(cp_context_t *context, cp_plugin_t *plugin, int phase) {
 	lnode_t *node;
 	int i;
 	int status = CP_OK;
@@ -411,7 +408,7 @@ static int resolve_plugin_rec
 				break;
 			}
 			for (i = 0; i < plugin->plugin->num_imports; i++) {
-				registered_plugin_t *ip;
+				cp_plugin_t *ip;
 				int s;
 				
 				if ((node = lnode_create(NULL)) == NULL) {
@@ -489,7 +486,7 @@ static int resolve_plugin_rec
 			if (plugin->state < CP_PLUGIN_RESOLVED) {
 				if (plugin->imported != NULL) {
 					while ((node = list_first(plugin->imported)) != NULL) {
-						registered_plugin_t *ip = lnode_get(node);
+						cp_plugin_t *ip = lnode_get(node);
 						cpi_ptrset_remove(ip->importing, plugin);
 						list_delete(plugin->imported, node);
 						lnode_destroy(node);
@@ -511,7 +508,7 @@ static int resolve_plugin_rec
  * @param plugin the plug-in to be resolved
  * @return CP_OK (0) on success, an error code on failure
  */
-static int resolve_plugin(cp_context_t *context, registered_plugin_t *plugin) {
+static int resolve_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	int status;
 	
 	assert(context != NULL);
@@ -534,7 +531,7 @@ static int resolve_plugin(cp_context_t *context, registered_plugin_t *plugin) {
  * @param plugin the plug-in to be started
  * @return CP_OK (0) on success, an error code on failure
  */
-static int start_plugin(cp_context_t *context, registered_plugin_t *plugin) {
+static int start_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	int status;
 	cp_plugin_event_t event;
 	lnode_t *node;
@@ -571,7 +568,7 @@ static int start_plugin(cp_context_t *context, registered_plugin_t *plugin) {
 			int s;
 			
 			cpi_inc_start_invocation(context);
-			s = plugin->start_func(context);
+			s = plugin->start_func(context, plugin);
 			cpi_dec_start_invocation(context);
 			if (!s) {
 			
@@ -628,7 +625,7 @@ static int start_plugin(cp_context_t *context, registered_plugin_t *plugin) {
 
 int CP_API cp_start_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
-	registered_plugin_t *plugin;
+	cp_plugin_t *plugin;
 	int status = CP_OK;
 
 	assert(id != NULL);
@@ -654,7 +651,7 @@ int CP_API cp_start_plugin(cp_context_t *context, const char *id) {
  * @param context the plug-in context
  * @param plugin the plug-in to be stopped
  */
-static void stop_plugin(cp_context_t *context, registered_plugin_t *plugin) {
+static void stop_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	cp_plugin_event_t event;
 	
 	// Check if already stopped 
@@ -685,7 +682,7 @@ static void stop_plugin(cp_context_t *context, registered_plugin_t *plugin) {
 
 int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
-	registered_plugin_t *plugin;
+	cp_plugin_t *plugin;
 	int status = CP_OK;
 
 	assert(id != NULL);
@@ -726,7 +723,7 @@ void CP_API cp_stop_all_plugins(cp_context_t *context) {
  * @param phase the current phase of operation (2 for stopping,
  * 			1 for unresolve runtime and inform listeners and 0 for clean up)
  */
-static void unresolve_plugin_rec(cp_context_t *context, registered_plugin_t *plugin, int phase) {
+static void unresolve_plugin_rec(cp_context_t *context, cp_plugin_t *plugin, int phase) {
 	lnode_t *node;
 	cp_plugin_event_t event;
 
@@ -768,7 +765,7 @@ static void unresolve_plugin_rec(cp_context_t *context, registered_plugin_t *plu
 			
 		case 0: // clean up
 			while ((node = list_first(plugin->imported)) != NULL) {
-				registered_plugin_t *ip = lnode_get(node);
+				cp_plugin_t *ip = lnode_get(node);
 				cpi_ptrset_remove(ip->importing, plugin);
 				list_delete(plugin->imported, node);
 				lnode_destroy(node);
@@ -785,7 +782,7 @@ static void unresolve_plugin_rec(cp_context_t *context, registered_plugin_t *plu
  * @param context the plug-in context
  * @param plug-in the plug-in to be unresolved
  */
-static void unresolve_plugin(cp_context_t *context, registered_plugin_t *plugin) {
+static void unresolve_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	unresolve_plugin_rec(context, plugin, 2);
 	unresolve_plugin_rec(context, plugin, 1);
 	unresolve_plugin_rec(context, plugin, 0);
@@ -863,7 +860,7 @@ void CP_LOCAL cpi_free_plugin(cp_plugin_info_t *plugin) {
  * 
  * @param plugin the plug-in to be freed
  */
-static void free_registered_plugin(registered_plugin_t *plugin) {
+static void free_registered_plugin(cp_plugin_t *plugin) {
 
 	assert(plugin != NULL);
 
@@ -887,11 +884,11 @@ static void free_registered_plugin(registered_plugin_t *plugin) {
  * @param node the hash node of the plug-in to be uninstalled
  */
 static void uninstall_plugin(cp_context_t *context, hnode_t *node) {
-	registered_plugin_t *plugin;
+	cp_plugin_t *plugin;
 	cp_plugin_event_t event;
 	
 	// Check if already uninstalled 
-	plugin = (registered_plugin_t *) hnode_get(node);
+	plugin = (cp_plugin_t *) hnode_get(node);
 	if (plugin->state <= CP_PLUGIN_UNINSTALLED) {
 		return;
 	}
@@ -962,7 +959,7 @@ cp_plugin_info_t * CP_API cp_get_plugin_info(cp_context_t *context, const char *
 	cpi_lock_context(context);
 	node = hash_lookup(context->plugins, id);
 	if (node != NULL) {
-		registered_plugin_t *rp = hnode_get(node);
+		cp_plugin_t *rp = hnode_get(node);
 		cpi_use_resource(rp->plugin);
 		plugin = rp->plugin;
 	} else {
@@ -1010,7 +1007,7 @@ cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *context, int *error
 		hash_scan_begin(&scan, context->plugins);
 		i = 0;
 		while ((node = hash_scan_next(&scan)) != NULL) {
-			registered_plugin_t *rp = hnode_get(node);
+			cp_plugin_t *rp = hnode_get(node);
 			
 			assert(i < n);
 			cpi_use_resource(rp->plugin);
@@ -1049,7 +1046,7 @@ cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *context, const char *
 	// Look up the plug-in state 
 	cpi_lock_context(context);
 	if ((hnode = hash_lookup(context->plugins, id)) != NULL) {
-		registered_plugin_t *rp = hnode_get(hnode);
+		cp_plugin_t *rp = hnode_get(hnode);
 		state = rp->state;
 	}
 	cpi_unlock_context(context);

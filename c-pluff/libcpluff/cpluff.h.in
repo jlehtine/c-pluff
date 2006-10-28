@@ -418,7 +418,7 @@ struct cp_cfg_element_t {
 /**
  * An enumeration of possible plug-in states.
  *
- * @see cp_event_listener_t
+ * @see cp_plugin_listener_t
  * @see cp_get_plugin_state
  */
 typedef enum cp_plugin_state_t {
@@ -476,9 +476,22 @@ typedef enum cp_plugin_state_t {
 } cp_plugin_state_t;
 
 /**
- * Describes a plug-in status event.
+ * A listener function called synchronously after a plugin state change.
+ * The function should return promptly. Plug-in framework
+ * functions causing plug-in context changes or changes to installed plug-ins
+ * must not be called from within a plug-in listener invocation.
+ * 
+ * @param ctx the associated plug-in context
+ * @param event te plug-in state change event
+ * @param user_data the user data pointer supplied at listener registration
+ * @see cp_add_plugin_listener
+ */
+typedef void (*cp_plugin_listener_t)(cp_context_t *ctx, const cp_plugin_event_t *event, void *user_data);
+
+/**
+ * Describes a plug-in state change event.
  *
- * @see cp_add_event_listener
+ * @see cp_add_plugin_listener
  */
 struct cp_plugin_event_t {
 	
@@ -494,19 +507,6 @@ struct cp_plugin_event_t {
 };
 
 /**
- * An event listener function called synchronously after a plugin state change.
- * An event listener function should return promptly. Plug-in framework
- * functions causing plug-in context changes or changes to installed plug-ins
- * must not be called from within an event listener invocation.
- * 
- * @param ctx the associated plug-in context
- * @param event te plug-in state change event
- * @param user_data the user data pointer supplied at listener registration
- * @see cp_add_event_listener
- */
-typedef void (*cp_event_listener_t)(cp_context_t *ctx, const cp_plugin_event_t *event, void *user_data);
-
-/**
  * A start function called to start a plug-in. The start function must return
  * non-zero on success and zero on failure. If the start fails then the
  * stop function (if any) is called to clean up plug-in state. Plug-in
@@ -514,9 +514,10 @@ typedef void (*cp_event_listener_t)(cp_context_t *ctx, const cp_plugin_event_t *
  * plugins must not be called from within a start function invocation.
  * 
  * @param ctx the associated plug-in context
+ * @param pi the plug-in instance handle
  * @return non-zero on success, or zero on failure
  */
-typedef int (*cp_start_t)(cp_context_t *ctx);
+typedef int (*cp_start_t)(cp_context_t *ctx, cp_plugin_t *pi);
 
 /**
  * A stop function called to stop a plugin. Plug-in framework functions
@@ -698,25 +699,25 @@ int CP_API cp_add_error_handler(cp_context_t *ctx, cp_error_handler_t error_hand
 void CP_API cp_remove_error_handler(cp_context_t *ctx, cp_error_handler_t error_handler);
 
 /**
- * Registers an event listener with a plug-in context. The event listener is called
+ * Registers a plug-in listener with a plug-in context. The listener is called
  * synchronously immediately after a plug-in state change. There can be several
  * listeners registered with the same context.
  * 
  * @param ctx the plug-in context
- * @param event_listener the event_listener to be added
- * @param user_data user data pointer supplied to the event listener
+ * @param listener the plug-in listener to be added
+ * @param user_data user data pointer supplied to the listener
  * @return CP_OK (zero) on success, CP_ERR_RESOURCE if out of resources
  */
-int CP_API cp_add_event_listener(cp_context_t *ctx, cp_event_listener_t event_listener, void *user_data);
+int CP_API cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_t listener, void *user_data);
 
 /**
- * Removes an event listener from a plug-in context. Does nothing if the
- * specified event listener was not registered.
+ * Removes a plug-in listener from a plug-in context. Does nothing if the
+ * specified listener was not registered.
  * 
  * @param ctx the plug-in context
- * @param event_listener the event listener to be removed
+ * @param listener the plug-in listener to be removed
  */
-void CP_API cp_remove_event_listener(cp_context_t *ctx, cp_event_listener_t event_listener);
+void CP_API cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_t listener);
 
 /**
  * Registers a directory of plug-ins with a plug-in context. The
@@ -845,7 +846,9 @@ void CP_API cp_stop_all_plugins(cp_context_t *ctx);
 
 /**
  * Uninstalls the specified plug-in. The plug-in and all the dependent plug-ins
- * are first stopped and then uninstalled.
+ * are first stopped and then uninstalled. The client program must not have any
+ * unreleased references to dynamic symbols provided by the uninstalled
+ * plug-ins.
  * 
  * @param ctx the plug-in context
  * @param id identifier of the plug-in to be unloaded
@@ -855,7 +858,9 @@ int CP_API cp_uninstall_plugin(cp_context_t *ctx, const char *id);
 
 /**
  * Uninstalls all plug-ins. All plug-ins are first stopped and then
- * uninstalled.
+ * uninstalled. The client program must not have any
+ * unreleased references to dynamic symbols provided by the uninstalled
+ * plug-ins.
  * 
  * @param ctx the plug-in context
  */
@@ -950,6 +955,54 @@ cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *ctx, const char *e
  */
 /*@{*/
 
+/**
+ * Resolves a dynamically named symbol provided by the specified plug-in.
+ * The plug-in framework creates dynamically a dependency from the symbol using
+ * plug-in to the symbol defining plug-in. When the symbol is not used anymore
+ * it must be released using \Ref{cp_release_symbol} which also removes the
+ * dependency. If the symbol is to be passed on to other plug-in or to the
+ * client program then the plug-in passing the symbol must use
+ * \Ref{cp_pass_symbol}.
+ *
+ * @param pi the plug-in instance resolving the symbol or NULL for the client program
+ * @param pid the identifier of the symbol defining plug-in
+ * @param name the name of the symbol
+ * @param error filled with an error code if non-NULL
+ * @return the pointer associated with the symbol or NULL on failure
+ */
+void *cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *name, int *error);
+
+/**
+ * Passes a dynamically resolved symbol from one plug-in instance to another.
+ * The plug-in framework creates dynamically a dependency from the symbol
+ * receiving plug-in to the original symbol defining plug-in.
+ * The symbol is released only after both plug-in instances have released
+ * the symbol. This function must be called by a plug-in which is about
+ * to pass a dynamically resolved symbol to another plug-in runtime as a
+ * parameter or as part of a data structure. The documentation of such
+ * interface should clearly indicate how the receiving plug-in should
+ * release the symbol. This can happen either directly using
+ * \Ref{cp_release_symbol} or indirectly using facilities provided by the
+ * symbol passing plug-in. A plug-in instance can also pass a symbol to
+ * itself which increases the usage count for the symbol.
+ *
+ * @param passing_pi the plug-in instance passing the symbol or NULL for the client program
+ * @param receiving_pi the plug-in receiving the symbol or NULL for the client program
+ * @param ptr the pointer associated with the symbol
+ */
+int cp_pass_symbol(cp_plugin_t *passing_pi, cp_plugin_t *receiving_pi, void *ptr);
+
+/**
+ * Releases a previously obtained symbol. The pointer must not be used by the
+ * releasing plug-in after the symbol has been released. The symbol is released
+ * only after as many calls to this function as there have been for
+ * \Ref{cp_resolve_symbol} and \Ref{cp_pass_symbol} for the same plug-in and
+ * symbol.
+ *
+ * @param pi the plug-in instance releasing the symbol or NULL for the client program
+ * @param ptr the pointer associated with the symbol
+ */
+void cp_release_symbol(cp_plugin_t *pi, void *ptr);
 
 /*@}*/
 

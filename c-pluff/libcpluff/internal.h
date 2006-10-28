@@ -81,8 +81,8 @@ struct cp_context_t {
 	/// Installed error handlers 
 	list_t *error_handlers;
 
-	/// Installed event listeners 
-	list_t *event_listeners;
+	/// Installed plug-in listeners 
+	list_t *plugin_listeners;
 	
 	/// List of registered plug-in directories 
 	list_t *plugin_dirs;
