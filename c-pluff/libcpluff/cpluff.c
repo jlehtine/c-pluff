@@ -302,7 +302,10 @@ void CP_API cp_remove_logger(cp_logger_t logger) {
 }
 
 static void log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) {
-	lnode_t *node = list_first(loggers);
+	lnode_t *node;
+	
+	cpi_lock_framework();
+	node = list_first(loggers);
 	while (node != NULL) {
 		logger_t *lh = lnode_get(node);
 		if (severity >= lh->min_severity
@@ -311,6 +314,7 @@ static void log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) 
 		}
 		node = list_next(loggers, node);
 	}
+	cpi_unlock_framework();
 }
 
 void CP_LOCAL cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) {
