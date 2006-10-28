@@ -78,9 +78,6 @@ struct cp_context_t {
 	int locked;
 #endif
 	
-	/// Installed error handlers 
-	list_t *error_handlers;
-
 	/// Installed plug-in listeners 
 	list_t *plugin_listeners;
 	
@@ -114,6 +111,20 @@ struct cp_context_t {
 /// Resource deallocation function
 typedef void (*cpi_dealloc_func_t)(void *resource);
 
+typedef struct cpi_plugin_event_t cpi_plugin_event_t;
+
+/// Plug-in event information
+struct cpi_plugin_event_t {
+	
+	/// The affect plug-in
+	const char *plugin_id;
+	
+	/// Old state
+	cp_plugin_state_t old_state;
+	
+	/// New state
+	cp_plugin_state_t new_state;
+};
 
 /* ------------------------------------------------------------------------
  * Function declarations
@@ -158,7 +169,45 @@ void CP_LOCAL cpi_unlock_context(cp_context_t *context);
 #endif
 
 
-// Error handling 
+// Logging
+
+/**
+ * Logs a message.
+ * 
+ * @param ctx the related plug-in context or NULL if none
+ * @param severity the severity of the message
+ * @param msg the localized message
+ */
+void CP_LOCAL cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg);
+
+/**
+ * Formats and logs a message.
+ * 
+ * @param ctx the related plug-in context or NULL if none
+ * @param severity the severity of the message
+ * @param msg the localized message format
+ * @param ... the message parameters
+ */
+void CP_LOCAL cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char *msg, ...) CP_PRINTF(3, 4);
+
+/**
+ * Returns whether the messages of the specified severity level are
+ * being logged.
+ * 
+ * @param severity the severity
+ * @return whether the messages of the specified severity level are logged
+ */
+int CP_LOCAL cpi_is_logged(cp_log_severity_t severity);
+
+// Convenience macros for logging
+#define cpi_error(ctx, msg) cpi_log((ctx), CP_LOG_ERROR, (msg))
+#define cpi_errorf(ctx, msg, ...) cpi_logf((ctx), CP_LOG_ERROR, (msg), __VA_ARGS__)
+#define cpi_warn(ctx, msg) cpi_log((ctx), CP_LOG_WARNING, (msg))
+#define cpi_warnf(ctx, msg, ...) cpi_logf((ctx), CP_LOG_WARNING, (msg), __VA_ARGS__)
+#define cpi_info(ctx, msg) cpi_log((ctx), CP_LOG_INFO, (msg))
+#define cpi_infof(ctx, msg, ...) cpi_logf((ctx), CP_LOG_INFO, (msg), __VA_ARGS__)
+#define cpi_debug(ctx, msg) cpi_log((ctx), CP_LOG_DEBUG, (msg))
+#define cpi_debugf(ctx, msg, ...) cpi_logf((ctx), CP_LOG_DEBUG, (msg), __VA_ARGS__)
 
 /**
  * Reports a fatal error. This method does not return.
@@ -167,47 +216,6 @@ void CP_LOCAL cpi_unlock_context(cp_context_t *context);
  * @param ... parameters
  */
 void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
-
-/**
- * Delivers a plug-in framework error to registered error handlers.
- * 
- * @param context the plug-in context
- * @param msg the error message
- */
-void CP_LOCAL cpi_error(cp_context_t *context, const char *msg);
-
-/**
- * Delivers a printf formatted plugin-in framework error to registered
- * error handlers.
- * 
- * @param context the plug-in context
- * @param msg the formatted error message
- * @param ... parameters
- */
-void CP_LOCAL cpi_errorf(cp_context_t *context, const char *msg, ...) CP_PRINTF(2, 3);
-
-/**
- * Delivers a plug-in framework error to the specified error handler.
- * 
- * @param context the plug-in context
- * @param error_handler the error handler or NULL if none
- * @param user_data the user data pointer supplied at registration
- * @param msg the error message
- */
-void CP_LOCAL cpi_herror(cp_context_t *context, cp_error_handler_t error_handler, void *user_data, const char *msg);
-
-/**
- * Delivers a printf formatted plug-in framework error to the specified
- * error handler.
- * 
- * @param context the plug-in context
- * @param error_handler the error handler or NULL if none
- * @param user_data the user data pointer supplied at registration
- * @param msg the formatted error message
- * @param ... parameters
- */
-void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handler, void *user_data, const char *msg, ...)
-	CP_PRINTF(4, 5);
 
 #ifndef NDEBUG
 
@@ -240,9 +248,9 @@ void CP_LOCAL cpi_destroy_all_contexts(void);
  * Delivers a plug-in event to registered event listeners.
  * 
  * @param context the plug-in context
- * @param event the event
+ * @param event the plug-in event
  */
-void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *event);
+void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t *event);
 
 
 // Plug-in descriptor management

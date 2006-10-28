@@ -20,10 +20,35 @@
 
 
 /* ------------------------------------------------------------------------
+ * Constants
+ * ----------------------------------------------------------------------*/
+
+/// Logging limit for no logging
+#define CP_LOG_NONE 1000
+
+
+/* ------------------------------------------------------------------------
  * Data types
  * ----------------------------------------------------------------------*/
 
+typedef struct logger_t logger_t;
 typedef struct dynamic_resource_t dynamic_resource_t;
+
+/// Contains information about installed loggers
+struct logger_t {
+	
+	/// Pointer to logger
+	cp_logger_t logger;
+	
+	/// User data pointer
+	void *user_data;
+	
+	/// Minimum severity
+	cp_log_severity_t min_severity;
+	
+	/// Context criteria
+	cp_context_t *ctx_rule;
+};
 
 /// Contains information about a dynamically allocated resource
 struct dynamic_resource_t {
@@ -68,11 +93,14 @@ static int framework_locked = 0;
 
 #endif
 
-/// Fatal error handler, or NULL for default 
-static cp_error_handler_t fatal_error_handler = NULL;
+/// Loggers
+static list_t *loggers = NULL;
 
-/// User data pointer for fatal error handler
-static void *fatal_eh_user_data = NULL;
+/// Global minimum severity for logging
+static int log_min_severity = CP_LOG_NONE;
+
+/// Fatal error handler, or NULL for default 
+static cp_fatal_error_handler_t fatal_error_handler = NULL;
 
 /// Map of in-use dynamic resources
 static hash_t *dynamic_resources = NULL;
@@ -119,6 +147,18 @@ static void reset(void) {
 		hash_destroy(dynamic_resources);
 		dynamic_resources = NULL;
 	}
+	if (loggers != NULL) {
+		lnode_t *node;
+		
+		while ((node = list_first(loggers)) != NULL) {
+			logger_t *l = lnode_get(node);
+			list_delete(loggers, node);
+			lnode_destroy(node);
+			free(l);
+		}
+		list_destroy(loggers);
+		loggers = NULL;
+	}
 #ifdef CP_THREADS
 	if (framework_mutex != NULL) {
 		cpi_destroy_mutex(framework_mutex);
@@ -147,6 +187,10 @@ int CP_API cp_init(void) {
 				status = CP_ERR_RESOURCE;
 				break;
 			}
+			if ((loggers = list_create(LISTCOUNT_T_MAX)) == NULL) {
+				status = CP_ERR_RESOURCE;
+				break;
+			}
 		}
 		initialized++;
 	} while (0);
@@ -168,16 +212,132 @@ void CP_API cp_destroy(void) {
 #else
 		assert(!framework_locked);
 #endif
+		cpi_info(NULL, _("The plug-in framework is being shut down."));
 		cpi_destroy_all_contexts();
 		reset();
 	}
 }
 
-void CP_API cp_set_fatal_error_handler(cp_error_handler_t error_handler, void *user_data) {
+/**
+ * Updates the global logging limits.
+ */
+static void update_logging_limits(void) {
+	lnode_t *node;
+	
+	log_min_severity = CP_LOG_NONE;
+	node = list_first(loggers);
+	while (node != NULL) {
+		logger_t *lh = lnode_get(node);
+		if (lh->min_severity < log_min_severity) {
+			log_min_severity = lh->min_severity;
+		}
+		node = list_next(loggers, node);
+	}
+}
+
+static int comp_logger(const void *p1, const void *p2) {
+	const logger_t *l1 = p1;
+	const logger_t *l2 = p2;
+	return l1->logger != l2->logger;
+}
+
+int CP_API cp_add_logger(cp_logger_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule) {
+	logger_t l;
+	logger_t *lh;
+	lnode_t *node;
+
+	assert(logger != NULL);
+	
+	// Check if logger already exists and allocate new holder if necessary
+	l.logger = logger;
 	cpi_lock_framework();
-	fatal_error_handler = error_handler;
-	fatal_eh_user_data = user_data;
+	if ((node = list_find(loggers, &l, comp_logger)) == NULL) {
+		lh = malloc(sizeof(logger_t));
+		node = lnode_create(lh);
+		if (lh == NULL || node == NULL) {
+			cpi_unlock_framework();
+			if (lh != NULL) {
+				free(lh);
+			}
+			if (node != NULL) {
+				lnode_destroy(node);
+			}
+			cpi_error(NULL, _("Logger could not be registered due to insufficient memory."));
+			return CP_ERR_RESOURCE;
+		}
+		lh->logger = logger;
+		lh->user_data = user_data;
+		list_append(loggers, node);
+	} else {
+		lh = lnode_get(node);
+	}
+		
+	// Initialize or update the logger holder
+	lh->min_severity = min_severity;
+	lh->ctx_rule = ctx_rule;
+		
+	// Update global limits
+	update_logging_limits();
 	cpi_unlock_framework();
+
+	cpi_debugf(NULL, _("Logger %p was added or updated with minimum severity %d."), logger, min_severity);
+	return CP_OK;
+}
+
+void CP_API cp_remove_logger(cp_logger_t logger) {
+	logger_t l;
+	lnode_t *node;
+	
+	l.logger = logger;
+	cpi_lock_framework();
+	if ((node = list_find(loggers, &l, comp_logger)) != NULL) {
+		logger_t *lh = lnode_get(node);
+		list_delete(loggers, node);
+		lnode_destroy(node);
+		free(lh);
+		update_logging_limits();
+	}
+	cpi_unlock_framework();
+	cpi_debugf(NULL, _("Logger %p was removed."), logger);
+}
+
+static void log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) {
+	lnode_t *node = list_first(loggers);
+	while (node != NULL) {
+		logger_t *lh = lnode_get(node);
+		if (severity >= lh->min_severity
+			&& (lh->ctx_rule == NULL || ctx == lh->ctx_rule)) {
+			lh->logger(severity, msg, ctx, lh->user_data);
+		}
+		node = list_next(loggers, node);
+	}
+}
+
+void CP_LOCAL cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) {
+	if (severity >= log_min_severity) {
+		log(ctx, severity, msg);
+	}
+}
+
+void CP_LOCAL cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char *msg, ...) {
+	if (severity >= log_min_severity) {
+		char buffer[256];
+		va_list va;
+		
+		va_start(va, msg);
+		vsnprintf(buffer, sizeof(buffer), msg, va);
+		va_end(va);
+		buffer[sizeof(buffer)/sizeof(char) - 1] = '\0';
+		log(ctx, severity, buffer);
+	}
+}
+
+int CP_LOCAL cpi_is_logged(cp_log_severity_t severity) {
+	return severity >= log_min_severity;
+}
+
+void CP_API cp_set_fatal_error_handler(cp_fatal_error_handler_t error_handler) {
+	fatal_error_handler = error_handler;
 }
 
 void CP_LOCAL cpi_fatalf(const char *msg, ...) {
@@ -192,13 +352,11 @@ void CP_LOCAL cpi_fatalf(const char *msg, ...) {
 	fmsg[sizeof(fmsg)/sizeof(char) - 1] = '\0';
 
 	// Call error handler or print the error message
-	cpi_lock_framework();
 	if (fatal_error_handler != NULL) {
-		fatal_error_handler(NULL, fmsg, fatal_eh_user_data);
+		fatal_error_handler(fmsg);
 	} else {
 		fprintf(stderr, _(PACKAGE_NAME ": FATAL ERROR: %s\n"), fmsg);
 	}
-	cpi_unlock_framework();
 	
 	// Abort if still alive 
 	abort();
@@ -229,6 +387,11 @@ int CP_LOCAL cpi_register_resource(void *res, cpi_dealloc_func_t df) {
 		if (dr != NULL) {
 			free(dr);
 		}
+	}
+	
+	// Otherwise report success
+	else {
+		cpi_debugf(NULL, _("Dynamic resource %p was registered."), res);
 	}
 	
 	return status;
@@ -262,6 +425,7 @@ void CP_API cp_release_info(void *info) {
 			hash_delete_free(dynamic_resources, node);
 			dr->dealloc_func(info);
 			free(dr);
+			cpi_debugf(NULL, _("Dynamic resource %p was freed."), info);
 		}
 	} else {
 		fprintf(stderr, _("ERROR: Trying to release unknown resource %p in cp_release_info.\n"), info);

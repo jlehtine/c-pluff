@@ -95,7 +95,7 @@ struct cp_plugin_t {
 int CP_API cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 	cp_plugin_t *rp;
 	int status = CP_OK;
-	cp_plugin_event_t event;
+	cpi_plugin_event_t event;
 
 	assert(plugin != NULL);
 	
@@ -461,7 +461,7 @@ static int resolve_plugin_rec
 				status = i;
 			}
 			if (status == CP_OK) {
-				cp_plugin_event_t event;
+				cpi_plugin_event_t event;
 				
 				event.plugin_id = plugin->plugin->identifier;
 				event.old_state = plugin->state;
@@ -472,7 +472,7 @@ static int resolve_plugin_rec
 			
 		case 1: // commit
 			if (plugin->state < CP_PLUGIN_RESOLVED) {
-				cp_plugin_event_t event;
+				cpi_plugin_event_t event;
 				
 				event.plugin_id = plugin->plugin->identifier;
 				event.old_state = plugin->state;
@@ -533,7 +533,7 @@ static int resolve_plugin(cp_context_t *context, cp_plugin_t *plugin) {
  */
 static int start_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	int status;
-	cp_plugin_event_t event;
+	cpi_plugin_event_t event;
 	lnode_t *node;
 	
 	// Check if already active 
@@ -638,6 +638,7 @@ int CP_API cp_start_plugin(cp_context_t *context, const char *id) {
 		plugin = hnode_get(node);
 		status = start_plugin(context, plugin);
 	} else {
+		cpi_warnf(context, _("Unknown plug-in %s could not be started."), id);
 		status = CP_ERR_UNKNOWN;
 	}
 	cpi_unlock_context(context);
@@ -652,7 +653,7 @@ int CP_API cp_start_plugin(cp_context_t *context, const char *id) {
  * @param plugin the plug-in to be stopped
  */
 static void stop_plugin(cp_context_t *context, cp_plugin_t *plugin) {
-	cp_plugin_event_t event;
+	cpi_plugin_event_t event;
 	
 	// Check if already stopped 
 	if (plugin->state < CP_PLUGIN_ACTIVE) {
@@ -695,6 +696,7 @@ int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
 		plugin = hnode_get(node);
 		stop_plugin(context, plugin);
 	} else {
+		cpi_warnf(context, _("Unknown plug-in %s could not be stopped."), id);
 		status = CP_ERR_UNKNOWN;
 	}
 	cpi_unlock_context(context);
@@ -725,7 +727,7 @@ void CP_API cp_stop_all_plugins(cp_context_t *context) {
  */
 static void unresolve_plugin_rec(cp_context_t *context, cp_plugin_t *plugin, int phase) {
 	lnode_t *node;
-	cp_plugin_event_t event;
+	cpi_plugin_event_t event;
 
 	// Check if already fully unresolved or dependency loop
 	if ((plugin->phase == 0 && plugin->state < CP_PLUGIN_RESOLVED)
@@ -885,7 +887,7 @@ static void free_registered_plugin(cp_plugin_t *plugin) {
  */
 static void uninstall_plugin(cp_context_t *context, hnode_t *node) {
 	cp_plugin_t *plugin;
-	cp_plugin_event_t event;
+	cpi_plugin_event_t event;
 	
 	// Check if already uninstalled 
 	plugin = (cp_plugin_t *) hnode_get(node);
@@ -923,6 +925,7 @@ int CP_API cp_uninstall_plugin(cp_context_t *context, const char *id) {
 	if (node != NULL) {
 		uninstall_plugin(context, node);
 	} else {
+		cpi_warnf(context, _("Unknown plug-in %s could not be uninstalled."), id);
 		status = CP_ERR_UNKNOWN;
 	}
 	cpi_unlock_context(context);
@@ -963,6 +966,7 @@ cp_plugin_info_t * CP_API cp_get_plugin_info(cp_context_t *context, const char *
 		cpi_use_resource(rp->plugin);
 		plugin = rp->plugin;
 	} else {
+		cpi_warnf(context, _("Could not return information about unknown plug-in %s."), id);
 		status = CP_ERR_UNKNOWN;
 	}
 	cpi_unlock_context(context);
@@ -1023,6 +1027,7 @@ cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *context, int *error
 	
 	// Release resources on error 
 	if (status != CP_OK) {
+		cpi_error(context, _("Plug-in information could not be returned due to insufficient memory."));
 		if (plugins != NULL) {
 			dealloc_plugins_info(plugins);
 			plugins = NULL;

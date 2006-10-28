@@ -26,15 +26,6 @@
  * ----------------------------------------------------------------------*/
 
 /**
- * A holder structure for error handler.
- */
-typedef struct eh_holder_t {
-	cp_error_handler_t error_handler;
-	cp_context_t *context;
-	void *user_data;
-} eh_holder_t;
-
-/**
  * A holder structure for a plug-in listener.
  */
 typedef struct el_holder_t {
@@ -67,21 +58,6 @@ static list_t *contexts = NULL;
 // Generic 
 
 /**
- * Processes a node by freeing the associated eh_holder_t and deleting
- * the node from the list.
- * 
- * @param list the list being processed
- * @param node the node being processed
- * @param dummy not used
- */
-static void process_free_eh_holder(list_t *list, lnode_t *node, void *dummy) {
-	eh_holder_t *h = lnode_get(node);
-	list_delete(list, node);
-	lnode_destroy(node);
-	free(h);
-}
-
-/**
  * Processes a node by freeing the associated el_holder_t and deleting the
  * node from the list.
  * 
@@ -94,20 +70,6 @@ static void process_free_el_holder(list_t *list, lnode_t *node, void *dummy) {
 	list_delete(list, node);
 	lnode_destroy(node);
 	free(h);
-}
-
-/**
- * Compares error handler holders.
- * 
- * @param h1 the first holder to be compared
- * @param h2 the second holder to be compared
- * @return zero if the holders point to the same function, otherwise non-zero
- */
-static int comp_eh_holder(const void *h1, const void *h2) {
-	const eh_holder_t *ehh1 = h1;
-	const eh_holder_t *ehh2 = h2;
-	
-	return (ehh1->error_handler != ehh2->error_handler);
 }
 
 /**
@@ -125,19 +87,6 @@ static int comp_el_holder(const void *h1, const void *h2) {
 }
 
 /**
- * Processes a node by delivering the specified error message to the associated
- * error handler.
- * 
- * @param list the list being processed
- * @param node the node being processed
- * @param msg the error message
- */
-static void process_error(list_t *list, lnode_t *node, void *msg) {
-	eh_holder_t *h = lnode_get(node);
-	h->error_handler(h->context, msg, h->user_data);
-}
-
-/**
  * Processes a node by delivering the specified event to the associated
  * plug-in listener.
  * 
@@ -147,13 +96,14 @@ static void process_error(list_t *list, lnode_t *node, void *msg) {
  */
 static void process_event(list_t *list, lnode_t *node, void *event) {
 	el_holder_t *h = lnode_get(node);
-	h->plugin_listener(h->context, event, h->user_data);
+	cpi_plugin_event_t *e = event;
+	h->plugin_listener(h->context, e->plugin_id, e->old_state, e->new_state, h->user_data);
 }
 
 
 // Initialization and destroy 
 
-cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, void *user_data, int *error) {
+cp_context_t * CP_API cp_create_context(int *error) {
 	cp_context_t *context = NULL;
 	int status = CP_OK;
 
@@ -171,17 +121,15 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, void *
 #ifdef CP_THREADS
 		context->mutex = cpi_create_mutex();
 #endif
-		context->error_handlers = list_create(LISTCOUNT_T_MAX);
 		context->plugin_listeners = list_create(LISTCOUNT_T_MAX);
 		context->plugin_dirs = list_create(LISTCOUNT_T_MAX);
 		context->plugins = hash_create(HASHCOUNT_T_MAX,
 			(int (*)(const void *, const void *)) strcmp, NULL);
 		context->started_plugins = list_create(LISTCOUNT_T_MAX);
-		if (context->error_handlers == NULL
+		if (context->plugin_listeners == NULL
 #ifdef CP_THREADS
 			|| context->mutex == NULL
 #endif
-			|| context->plugin_listeners == NULL
 			|| context->plugin_dirs == NULL
 			|| context->plugins == NULL
 			|| context->started_plugins == NULL) {
@@ -189,14 +137,6 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, void *
 			break;
 		}
 
-		// Register initial error handler 
-		if (error_handler != NULL) {
-			if (cp_add_error_handler(context, error_handler, user_data) != CP_OK) {
-				status = CP_ERR_RESOURCE;
-				break;
-			}
-		}
-		
 		// Create a context list, if necessary, and add context to the list
 		cpi_lock_framework();
 		if (contexts == NULL) {
@@ -217,9 +157,11 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, void *
 		
 	} while (0);
 	
-	// Report failure 
+	// Report failure or success
 	if (status != CP_OK) {
-		cpi_herror(NULL, error_handler, _("Plug-in context could not be created due to insufficient system resources."), user_data);
+		cpi_error(NULL, _("Plug-in context could not be created due to insufficient system resources."));
+	} else {
+		cpi_debugf(NULL, _("Plug-in context %p was created."), context);
 	}
 	
 	// Rollback initialization on failure 
@@ -281,11 +223,6 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 		list_destroy(context->plugin_dirs);
 		context->plugin_dirs = NULL;
 	}
-	if (context->error_handlers != NULL) {
-		list_process(context->error_handlers, NULL, process_free_eh_holder);
-		list_destroy(context->error_handlers);
-		context->error_handlers = NULL;
-	}
 	if (context->plugin_listeners != NULL) {
 		list_process(context->plugin_listeners, NULL, process_free_el_holder);
 		list_destroy(context->plugin_listeners);
@@ -299,7 +236,11 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 	}
 #endif
 
+	// Release context data structure
 	free(context);
+	
+	// Log event
+	cpi_debugf(NULL, _("Plug-in context %p was destroyed."), context);
 }
 
 void CP_LOCAL cpi_destroy_all_contexts(void) {
@@ -316,96 +257,6 @@ void CP_LOCAL cpi_destroy_all_contexts(void) {
 		contexts = NULL;
 	}
 	cpi_unlock_framework();
-}
-
-
-// Error handling 
-
-int CP_API cp_add_error_handler(cp_context_t *context, cp_error_handler_t error_handler, void *user_data) {
-	int status = CP_ERR_RESOURCE;
-	eh_holder_t *holder;
-	lnode_t *node;
-	
-	assert(error_handler != NULL);
-	
-	cpi_check_invocation(context, __func__);
-	cpi_lock_context(context);
-	if (context->in_error_handler_invocation) {
-		cpi_fatalf(_("%s was called from within an error handler invocation."), __func__);
-	}
-	if ((holder = malloc(sizeof(eh_holder_t))) != NULL) {
-		holder->error_handler = error_handler;
-		holder->context = context;
-		holder->user_data = user_data;
-		if ((node = lnode_create(holder)) != NULL) {
-			list_append(context->error_handlers, node);
-			status = CP_OK;
-		} else {
-			free(holder);
-		}
-	}
-	cpi_unlock_context(context);
-	if (status != CP_OK) {
-		cpi_error(context, _("An error handler could not be registered due to insufficient system resources."));
-	}
-	return status;
-}
-
-void CP_API cp_remove_error_handler(cp_context_t *context, cp_error_handler_t error_handler) {
-	eh_holder_t holder;
-	lnode_t *node;
-	
-	cpi_check_invocation(context, __func__);
-	holder.error_handler = error_handler;
-	cpi_lock_context(context);
-	if (context->in_error_handler_invocation) {
-		cpi_fatalf(_("%s was called from within an error handler invocation."), __func__);
-	}
-	node = list_find(context->error_handlers, &holder, comp_eh_holder);
-	if (node != NULL) {
-		process_free_eh_holder(context->error_handlers, node, NULL);
-	}
-	cpi_unlock_context(context);
-}
-
-void CP_LOCAL cpi_error(cp_context_t *context, const char *msg) {
-	assert(msg != NULL);
-	cpi_lock_context(context);
-	cpi_inc_error_invocation(context);
-	list_process(context->error_handlers, (void *) msg, process_error);
-	cpi_dec_error_invocation(context);
-	cpi_unlock_context(context);
-}
-
-void CP_LOCAL cpi_errorf(cp_context_t *context, const char *msg, ...) {
-	va_list params;
-	char fmsg[256];
-	
-	assert(msg != NULL);
-	va_start(params, msg);
-	vsnprintf(fmsg, sizeof(fmsg), msg, params);
-	va_end(params);
-	fmsg[sizeof(fmsg)/sizeof(char) - 1] = '\0';
-	cpi_error(context, fmsg);
-}
-
-void CP_LOCAL cpi_herror(cp_context_t *context, cp_error_handler_t error_handler, void *user_data, const char *msg) {
-	assert(msg != NULL);
-	if (error_handler != NULL) {
-		error_handler(context, msg, user_data);
-	}
-}
-
-void CP_LOCAL cpi_herrorf(cp_context_t *context, cp_error_handler_t error_handler, void *user_data, const char *msg, ...) {
-	va_list params;
-	char fmsg[256];
-	
-	assert(msg != NULL);
-	va_start(params, msg);
-	vsnprintf(fmsg, sizeof(fmsg), msg, params);
-	va_end(params);
-	fmsg[sizeof(fmsg)/sizeof(char) - 1] = '\0';
-	cpi_herror(context, error_handler, user_data, msg);
 }
 
 
@@ -434,6 +285,8 @@ int CP_API cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_t li
 	cpi_unlock_context(context);
 	if (status != CP_OK) {
 		cpi_error(context, _("A plug-in listener could not be registered due to insufficient system resources."));
+	} else {
+		cpi_debugf(context, _("Plug-in listener %p was added."), listener);
 	}
 	return status;
 }
@@ -450,9 +303,10 @@ void CP_API cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_
 		process_free_el_holder(context->plugin_listeners, node, NULL);
 	}
 	cpi_unlock_context(context);
+	cpi_debugf(context, _("Plug-in listener %p was removed."), listener);
 }
 
-void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *event) {
+void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t *event) {
 	assert(event != NULL);
 	assert(event->plugin_id != NULL);
 	cpi_lock_context(context);
@@ -460,6 +314,43 @@ void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cp_plugin_event_t *
 	list_process(context->plugin_listeners, (void *) event, process_event);
 	cpi_dev_event_invocation(context);
 	cpi_unlock_context(context);
+	if (cpi_is_logged(CP_LOG_INFO)) {
+		char *str;
+		switch (event->new_state) {
+			case CP_PLUGIN_UNINSTALLED:
+				str = _("Plug-in %s has been uninstalled.");
+				break;
+			case CP_PLUGIN_INSTALLED:
+				if (event->old_state < CP_PLUGIN_INSTALLED) {
+					str = _("Plug-in %s has been installed.");
+				} else {
+					str = _("Plug-in %s runtime has been unloaded.");
+				}
+				break;
+			case CP_PLUGIN_RESOLVED:
+				if (event->old_state < CP_PLUGIN_RESOLVED) {
+					str = _("Plug-in %s dependencies have been resolved and the plug-in runtime has been loaded.");
+				} else {
+					str = _("Plug-in %s has been stopped.");
+				}
+				break;
+			case CP_PLUGIN_STARTING:
+				str = _("Plug-in %s is starting.");
+				break;
+			case CP_PLUGIN_STOPPING:
+				str = _("Plug-in %s is stopping.");
+				break;
+			case CP_PLUGIN_ACTIVE:
+				str = _("Plug-in %s has been started.");
+				break;
+			default:
+				str = NULL;
+				break;
+		}
+		if (str != NULL) {
+			cpi_infof(context, str, event->plugin_id);
+		}
+	}
 }
 
 
@@ -518,6 +409,11 @@ int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 			break;
 	}
 
+	// Report success
+	if (status == CP_OK) {
+		cpi_debugf(context, _("Plug-in directory %s was added."), dir);
+	}
+	
 	return status;
 }
 
@@ -537,6 +433,7 @@ void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 		free(d);
 	}
 	cpi_unlock_context(context);
+	cpi_debugf(context, _("Plug-in directory %s was removed."), dir);
 }
 
 

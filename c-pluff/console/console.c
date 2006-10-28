@@ -222,12 +222,46 @@ static void no_active_context(void) {
 	error(_("There is no active plug-in context."));
 }
 
-static void error_handler(cp_context_t *context, const char *msg, void *user_data) {
-	int i;
-	cp_context_t **cap = user_data;
-
-	i = cap - contexts;
-	errorf(_("[context %d]: %s"), i, msg);
+static void logger(cp_log_severity_t severity, const char *msg, cp_context_t *ctx, void *dummy) {
+	int ci = -1;
+	char *prefix;
+	
+	if (ctx != NULL) {
+		for (ci = 0; ci < MAX_NUM_CONTEXTS && contexts[ci] != ctx; ci++);
+	}
+	switch (severity) {
+		
+		case CP_LOG_ERROR:
+			if (ctx != NULL) {
+				assert(ci >= 0 && ci < MAX_NUM_CONTEXTS);
+				errorf(_("context %d: %s"), ci, msg);
+			} else {
+				error(msg);
+			}
+			return;
+			
+		case CP_LOG_WARNING:
+			prefix = "WARNING";
+			break;
+			
+		case CP_LOG_DEBUG:
+			prefix = "DEBUG";
+			break;
+			
+		case CP_LOG_INFO:
+			prefix = "INFO";
+			break;
+			
+		default:
+			prefix = "UNKNOWN";
+			break;
+	}
+	if (ctx != NULL) {
+		assert(ci >= 0 && ci < MAX_NUM_CONTEXTS);
+		noticef(_("%s: context %d: %s"), prefix, ci, msg);
+	} else {
+		noticef("%s: %s", prefix, msg);
+	}
 }
 
 static char *state_to_string(cp_plugin_state_t state) {
@@ -249,16 +283,16 @@ static char *state_to_string(cp_plugin_state_t state) {
 	}
 }
 
-static void event_listener(cp_context_t *context, const cp_plugin_event_t *event, void *user_data) {
+static void plugin_listener(cp_context_t *context, const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *user_data) {
 	int i;
 	cp_context_t **cap = user_data;
 	
 	i = cap - contexts;
-	noticef(_("EVENT [context %d]: Plug-in %s changed from %s to %s."),
+	noticef(_("PLUGIN EVENT: context %d: %s: %s -> %s"),
 		i,
-		event->plugin_id,
-		state_to_string(event->old_state),
-		state_to_string(event->new_state));
+		plugin_id,
+		state_to_string(old_state),
+		state_to_string(new_state));
 }
 
 static void cmd_create_context(int argc, char *argv[]) {
@@ -269,9 +303,9 @@ static void cmd_create_context(int argc, char *argv[]) {
 		error(_("Usage: create-context"));
 	} else if (next_context == -1) {
 		error(_("Maximum number of plug-in contexts in use."));
-	} else if ((contexts[next_context] = cp_create_context(error_handler, contexts + next_context, &status)) == NULL) {
+	} else if ((contexts[next_context] = cp_create_context(&status)) == NULL) {
 		errorf(_("cp_create_context failed with error code %d."), status);
-	} else if ((status = cp_add_plugin_listener(contexts[next_context], event_listener, contexts + next_context)) != CP_OK) {
+	} else if ((status = cp_add_plugin_listener(contexts[next_context], plugin_listener, contexts + next_context)) != CP_OK) {
 		errorf(_("cp_add_event_listener failed with error code %d."), status);
 		cp_destroy_context(contexts[next_context]);
 		contexts[next_context] = NULL;
@@ -797,6 +831,9 @@ int main(int argc, char *argv[]) {
 	for (i = 0; i < MAX_NUM_CONTEXTS; i++) {
 		contexts[i] = NULL;
 	}
+
+	// Initialize logging
+	cp_add_logger(logger, NULL, CP_LOG_DEBUG, NULL);
 
 	// Command line loop 
 	cmdline_init();

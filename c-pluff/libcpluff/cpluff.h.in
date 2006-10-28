@@ -63,6 +63,7 @@ extern "C" {
 
 /**
  * @name Error codes
+ *
  * Most of the interface functions return error codes. The returned
  * error code either indicates successful completion of the operation
  * or some specific kind of error. Some functions do not return an error
@@ -167,7 +168,6 @@ typedef struct cp_ext_point_t cp_ext_point_t;
 typedef struct cp_cfg_element_t cp_cfg_element_t;
 typedef struct cp_extension_t cp_extension_t;
 typedef struct cp_plugin_info_t cp_plugin_info_t;
-typedef struct cp_plugin_event_t cp_plugin_event_t;
 
 
 /** @name Library information */
@@ -482,29 +482,13 @@ typedef enum cp_plugin_state_t {
  * must not be called from within a plug-in listener invocation.
  * 
  * @param ctx the associated plug-in context
- * @param event te plug-in state change event
+ * @param plugin_id the plug-in identifier
+ * @param old_state the old plug-in state
+ * @param new_state the new plug-in state
  * @param user_data the user data pointer supplied at listener registration
  * @see cp_add_plugin_listener
  */
-typedef void (*cp_plugin_listener_t)(cp_context_t *ctx, const cp_plugin_event_t *event, void *user_data);
-
-/**
- * Describes a plug-in state change event.
- *
- * @see cp_add_plugin_listener
- */
-struct cp_plugin_event_t {
-	
-	/** The identifier of the affected plug-in */
-	char *plugin_id;
-	
-	/** Old state of the plug-in */
-	cp_plugin_state_t old_state;
-	
-	/** New state of the plug-in */
-	cp_plugin_state_t new_state;
-	
-};
+typedef void (*cp_plugin_listener_t)(cp_context_t *ctx, const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *user_data);
 
 /**
  * A start function called to start a plug-in. The start function must return
@@ -529,23 +513,50 @@ typedef void (*cp_stop_t)(void);
 /*@}*/
 
 
-/** @name Error handling */
+/** @name Logging and error handling */
 /*@{*/
 
-/** 
- * An error handler function called when an error occurs. The error message
- * may be localized. An error handler function should return promptly.
- * Plug-in framework functions causing plug-in context changes or changes
- * to installed plug-ins must not be called from within an error handler
- * invocation.
- * 
- * @param ctx the associated plug-in context (NULL during context creation)
+/**
+ * An enumeration of possible message severities for logging.
+ */
+typedef enum cp_log_severity_t {
+
+	/** Used for detailed debug messages */
+	CP_LOG_DEBUG,
+	
+	/** Used for informational messages such as plug-in state changes */
+	CP_LOG_INFO,
+	
+	/** Used for messages warning about possible problems */
+	CP_LOG_WARNING,
+	
+	/** Used for messages reporting plug-in framework errors */
+	CP_LOG_ERROR
+	
+} cp_log_severity_t;
+
+/**
+ * A logger function called to log selected plug-in framework messages. The
+ * messages may be localized. Plug-in framework functions should not be called
+ * from within a logger function invocation.
+ *
+ * @param severity the severity of the message (one of CP_LOG_... constants)
+ * @param msg the message to be logged, possibly localized
+ * @param ctx the related plug-in context or NULL if none
+ * @param user_data the user data pointer given when the logger was registered
+ * @see cp_add_logger
+ */
+typedef void (*cp_logger_t)(cp_log_severity_t severity, const char *msg, cp_context_t *ctx, void *user_data);
+
+/**
+ * A fatal error handler for handling unrecoverable errors. If the error
+ * handler returns then the framework aborts the program. Plug-in framework
+ * functions must not be called from within a fatal error handler invocation.
+ *
  * @param msg the possibly localized error message
- * @param user_data user data pointer supplied at handler registration
- * @see cp_add_error_handler
  * @see cp_set_fatal_error_handler
  */
-typedef void (*cp_error_handler_t)(cp_context_t *ctx, const char *msg, void *user_data);
+typedef void (*cp_fatal_error_handler_t)(const char *msg);
 
 /*@}*/
 /*@}*/
@@ -560,8 +571,8 @@ typedef void (*cp_error_handler_t)(cp_context_t *ctx, const char *msg, void *use
  *
  * C-Pluff framework functions and any exposed data are thread-safe if
  * the library has been compiled with multi-threading support. The
- * initialization and destroy functions \Ref{cp_init} and \Ref{cp_destroy}
- * are exceptions, they are not thread-safe.
+ * initialization functions \Ref{cp_init}, \Ref{cp_destroy} and
+ * \Ref{cp_set_fatal_error_handler} are exceptions, they are not thread-safe.
  */
 /*@{*/
 
@@ -620,17 +631,48 @@ int CP_API cp_init(void);
  */
 void CP_API cp_destroy(void);
 
+/*@}*/
+
+
 /**
- * Sets the fatal error handler called on non-recoverable errors. The default error
- * handler prints the error message out to standard error and aborts the program.
- * Fatal error handler is called with NULL context. If the user specified error handler
- * returns, the framework will abort the program. Setting NULL error handler will
- * restore the default handler.
+ * @name Logging and error handling
+ *
+ * These functions can be used to log plug-in framework messages and to
+ * handle fatal errors. They are intended to be used by the client program.
+ */
+/*@{*/
+
+/**
+ * Registers a new logger or updates the settings of a registered logger.
+ * If the specified logger is not yet known, a new logger registration
+ * is made, otherwise the settings for the existing logger are updated.
+ *
+ * @param logger the logger function to be called
+ * @param user_data the user data pointer passed to the logger
+ * @param min_severity the minimum severity of messages passed to logger
+ * @param ctx_rule only the messages associated with the specified context
+ *			are passed to logger if non-NULL
+ * @return CP_OK (zero) on success or CP_ERR_RESOURCE if insufficient memory
+ */
+int CP_API cp_add_logger(cp_logger_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule);
+
+/**
+ * Removes a logger registration.
+ *
+ * @param logger the logger function to be unregistered
+ */
+void CP_API cp_remove_logger(cp_logger_t logger);
+
+/**
+ * Sets the fatal error handler called on non-recoverable errors. The default
+ * error handler prints the error message out to standard error and aborts
+ * the program. If the user specified error handler returns then the framework
+ * will abort the program. Setting NULL error handler will restore the default
+ * handler. This function is not thread-safe.
  * 
  * @param error_handler the fatal error handler
- * @param user_data user data pointer supplied to handler
  */
-void CP_API cp_set_fatal_error_handler(cp_error_handler_t error_handler, void *user_data);
+void CP_API cp_set_fatal_error_handler(cp_fatal_error_handler_t error_handler);
 
 /*@}*/
 
@@ -657,12 +699,10 @@ void CP_API cp_set_fatal_error_handler(cp_error_handler_t error_handler, void *u
  * the context are released by calling \Ref{cp_destroy_context} when the context is not
  * needed anymore.
  * 
- * @param error_handler an initial error handler, or NULL if none
- * @param user_data user data pointer for the initial error handler, or NULL
  * @param error pointer to the location where error code or CP_OK is stored, or NULL
  * @return the newly created plugin context, or NULL on failure
  */
-cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, void *user_data, int *error);
+cp_context_t * CP_API cp_create_context(int *error);
 
 /**
  * Destroys the specified plug-in context and releases the associated resources.
@@ -674,29 +714,6 @@ cp_context_t * CP_API cp_create_context(cp_error_handler_t error_handler, void *
  * @param ctx the context to be destroyed
  */
 void CP_API cp_destroy_context(cp_context_t *ctx);
-
-/**
- * Registers an error handler function with a plug-in context. The handler is
- * called synchronously when an error occurs. For example, failures when
- * loading, installing or starting plug-ins are reported to the registered
- * error handlers. There can be several error handlers registered with the
- * same context.
- * 
- * @param ctx the plug-in context
- * @param error_handler the error handler to be added
- * @param useData user data pointer supplied to the error handler
- * @return CP_OK (zero) on success, CP_ERR_RESOURCE if out of resources
- */
-int CP_API cp_add_error_handler(cp_context_t *ctx, cp_error_handler_t error_handler, void *user_data);
-
-/**
- * Removes an error handler from a plug-in context. Does nothing if the
- * specified error handler was not registered.
- * 
- * @param ctx the plug-in context
- * @param error_handler the error handler to be removed
- */
-void CP_API cp_remove_error_handler(cp_context_t *ctx, cp_error_handler_t error_handler);
 
 /**
  * Registers a plug-in listener with a plug-in context. The listener is called
