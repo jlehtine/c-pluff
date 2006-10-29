@@ -521,7 +521,10 @@ typedef void (*cp_stop_t)(void);
  */
 typedef enum cp_log_severity_t {
 
-	/** Used for detailed debug messages */
+	/**
+	 * Used for detailed debug messages. This level of logging is enabled
+	 * only if debugging has been enabled at framework compilation time.
+	 */
 	CP_LOG_DEBUG,
 	
 	/** Used for informational messages such as plug-in state changes */

@@ -206,8 +206,13 @@ int CP_LOCAL cpi_is_logged(cp_log_severity_t severity);
 #define cpi_warnf(ctx, msg, ...) cpi_logf((ctx), CP_LOG_WARNING, (msg), __VA_ARGS__)
 #define cpi_info(ctx, msg) cpi_log((ctx), CP_LOG_INFO, (msg))
 #define cpi_infof(ctx, msg, ...) cpi_logf((ctx), CP_LOG_INFO, (msg), __VA_ARGS__)
+#ifndef NDEBUG
 #define cpi_debug(ctx, msg) cpi_log((ctx), CP_LOG_DEBUG, (msg))
 #define cpi_debugf(ctx, msg, ...) cpi_logf((ctx), CP_LOG_DEBUG, (msg), __VA_ARGS__)
+#else
+#define cpi_debug(ctx, msg) do {} while (0)
+#define cpi_debugf(ctx, msg, ...) do {} while (0)
+#endif
 
 /**
  * Reports a fatal error. This method does not return.

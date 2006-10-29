@@ -223,16 +223,17 @@ void CP_API cp_destroy(void) {
  */
 static void update_logging_limits(void) {
 	lnode_t *node;
+	int nms = CP_LOG_NONE;
 	
-	log_min_severity = CP_LOG_NONE;
 	node = list_first(loggers);
 	while (node != NULL) {
 		logger_t *lh = lnode_get(node);
-		if (lh->min_severity < log_min_severity) {
-			log_min_severity = lh->min_severity;
+		if (lh->min_severity < nms) {
+			nms = lh->min_severity;
 		}
 		node = list_next(loggers, node);
 	}
+	log_min_severity = nms;
 }
 
 static int comp_logger(const void *p1, const void *p2) {
@@ -280,7 +281,7 @@ int CP_API cp_add_logger(cp_logger_t logger, void *user_data, cp_log_severity_t 
 	update_logging_limits();
 	cpi_unlock_framework();
 
-	cpi_debugf(NULL, _("Logger %p was added or updated with minimum severity %d."), logger, min_severity);
+	cpi_debugf(NULL, "Logger %p was added or updated with minimum severity %d.", (void *) logger, min_severity);
 	return CP_OK;
 }
 
@@ -298,7 +299,7 @@ void CP_API cp_remove_logger(cp_logger_t logger) {
 		update_logging_limits();
 	}
 	cpi_unlock_framework();
-	cpi_debugf(NULL, _("Logger %p was removed."), logger);
+	cpi_debugf(NULL, "Logger %p was removed.", (void *) logger);
 }
 
 static void log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) {
@@ -395,7 +396,7 @@ int CP_LOCAL cpi_register_resource(void *res, cpi_dealloc_func_t df) {
 	
 	// Otherwise report success
 	else {
-		cpi_debugf(NULL, _("Dynamic resource %p was registered."), res);
+		cpi_debugf(NULL, "Dynamic resource %p was registered.", res);
 	}
 	
 	return status;
@@ -429,7 +430,7 @@ void CP_API cp_release_info(void *info) {
 			hash_delete_free(dynamic_resources, node);
 			dr->dealloc_func(info);
 			free(dr);
-			cpi_debugf(NULL, _("Dynamic resource %p was freed."), info);
+			cpi_debugf(NULL, "Dynamic resource %p was freed.", info);
 		}
 	} else {
 		fprintf(stderr, _("ERROR: Trying to release unknown resource %p in cp_release_info.\n"), info);

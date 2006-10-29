@@ -36,7 +36,7 @@ int CP_API cp_scan_plugins(cp_context_t *context, int flags) {
 	int status = CP_OK;
 	
 	cpi_check_invocation(context, __func__);
-	cpi_debug(context, _("Plug-in scan is starting."));
+	cpi_debug(context, "Plug-in scan is starting.");
 	cpi_lock_context(context);
 	do {
 		lnode_t *lnode;
@@ -267,7 +267,7 @@ int CP_API cp_scan_plugins(cp_context_t *context, int flags) {
 	// Error handling 
 	switch (status) {
 		case CP_OK:
-			cpi_debug(context, _("Plug-in scan has completed successfully."));
+			cpi_debug(context, "Plug-in scan has completed successfully.");
 			break;
 		case CP_ERR_RESOURCE:
 			cpi_error(context, _("Could not scan plug-ins due to insufficient system resources."));

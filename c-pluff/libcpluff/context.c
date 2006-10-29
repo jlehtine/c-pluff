@@ -161,7 +161,7 @@ cp_context_t * CP_API cp_create_context(int *error) {
 	if (status != CP_OK) {
 		cpi_error(NULL, _("Plug-in context could not be created due to insufficient system resources."));
 	} else {
-		cpi_debugf(NULL, _("Plug-in context %p was created."), context);
+		cpi_debugf(NULL, "Plug-in context %p was created.", (void *) context);
 	}
 	
 	// Rollback initialization on failure 
@@ -240,7 +240,7 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 	free(context);
 	
 	// Log event
-	cpi_debugf(NULL, _("Plug-in context %p was destroyed."), context);
+	cpi_debugf(NULL, "Plug-in context %p was destroyed.", (void *) context);
 }
 
 void CP_LOCAL cpi_destroy_all_contexts(void) {
@@ -286,7 +286,7 @@ int CP_API cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_t li
 	if (status != CP_OK) {
 		cpi_error(context, _("A plug-in listener could not be registered due to insufficient system resources."));
 	} else {
-		cpi_debugf(context, _("Plug-in listener %p was added."), listener);
+		cpi_debugf(context, "Plug-in listener %p was added.", (void *) listener);
 	}
 	return status;
 }
@@ -303,7 +303,7 @@ void CP_API cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_
 		process_free_el_holder(context->plugin_listeners, node, NULL);
 	}
 	cpi_unlock_context(context);
-	cpi_debugf(context, _("Plug-in listener %p was removed."), listener);
+	cpi_debugf(context, "Plug-in listener %p was removed.", (void *) listener);
 }
 
 void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t *event) {
@@ -411,7 +411,7 @@ int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 
 	// Report success
 	if (status == CP_OK) {
-		cpi_debugf(context, _("Plug-in directory %s was added."), dir);
+		cpi_debugf(context, "Plug-in directory %s was added.", dir);
 	}
 	
 	return status;
@@ -433,7 +433,7 @@ void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 		free(d);
 	}
 	cpi_unlock_context(context);
-	cpi_debugf(context, _("Plug-in directory %s was removed."), dir);
+	cpi_debugf(context, "Plug-in directory %s was removed.", dir);
 }
 
 
