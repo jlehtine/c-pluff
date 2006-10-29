@@ -180,7 +180,7 @@ cp_context_t * CP_API cp_create_context(int *error) {
 }
 
 void CP_API cp_destroy_context(cp_context_t *context) {
-
+	assert(context != NULL);
 #ifdef CP_THREADS
 	assert(context->mutex == NULL || !cpi_is_mutex_locked(context->mutex));
 #else
@@ -267,6 +267,7 @@ int CP_API cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_t li
 	el_holder_t *holder;
 	lnode_t *node;
 
+	assert(context != NULL);
 	assert(listener != NULL);
 	
 	cpi_check_invocation(context, __func__);
@@ -295,6 +296,7 @@ void CP_API cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_
 	el_holder_t holder;
 	lnode_t *node;
 	
+	assert(context != NULL);
 	cpi_check_invocation(context, __func__);
 	holder.plugin_listener = listener;
 	cpi_lock_context(context);
@@ -361,6 +363,7 @@ int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	lnode_t *node = NULL;
 	int status = CP_OK;
 	
+	assert(context != NULL);
 	assert(dir != NULL);
 	
 	cpi_check_invocation(context, __func__);
@@ -421,6 +424,7 @@ void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 	char *d;
 	lnode_t *node;
 	
+	assert(context != NULL);
 	assert(dir != NULL);
 	
 	cpi_check_invocation(context, __func__);

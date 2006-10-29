@@ -35,6 +35,8 @@ int CP_API cp_scan_plugins(cp_context_t *context, int flags) {
 	int plugins_stopped = 0;
 	int status = CP_OK;
 	
+	assert(context != NULL);
+	
 	cpi_check_invocation(context, __func__);
 	cpi_debug(context, "Plug-in scan is starting.");
 	cpi_lock_context(context);

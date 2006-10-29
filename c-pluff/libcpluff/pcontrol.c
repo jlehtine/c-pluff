@@ -628,6 +628,7 @@ int CP_API cp_start_plugin(cp_context_t *context, const char *id) {
 	cp_plugin_t *plugin;
 	int status = CP_OK;
 
+	assert(context != NULL);
 	assert(id != NULL);
 
 	// Look up and start the plug-in 
@@ -686,6 +687,7 @@ int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
 	cp_plugin_t *plugin;
 	int status = CP_OK;
 
+	assert(context != NULL);
 	assert(id != NULL);
 
 	// Look up and stop the plug-in 
@@ -706,6 +708,8 @@ int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
 
 void CP_API cp_stop_all_plugins(cp_context_t *context) {
 	lnode_t *node;
+	
+	assert(context != NULL);
 	
 	// Stop the active plug-ins in the reverse order they were started 
 	cpi_check_invocation(context, __func__);
@@ -916,6 +920,7 @@ int CP_API cp_uninstall_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	int status = CP_OK;
 
+	assert(context != NULL);
 	assert(id != NULL);
 
 	// Look up and unload the plug-in 
@@ -937,6 +942,8 @@ void CP_API cp_uninstall_all_plugins(cp_context_t *context) {
 	hscan_t scan;
 	hnode_t *node;
 	
+	assert(context != NULL);
+	
 	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
 	cp_stop_all_plugins(context);
@@ -956,6 +963,7 @@ cp_plugin_info_t * CP_API cp_get_plugin_info(cp_context_t *context, const char *
 	cp_plugin_info_t *plugin = NULL;
 	int status = CP_OK;
 
+	assert(context != NULL);
 	assert(id != NULL);
 
 	// Look up the plug-in and return information 
@@ -991,6 +999,8 @@ cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *context, int *error
 	cp_plugin_info_t **plugins = NULL;
 	int i, n;
 	int status = CP_OK;
+	
+	assert(context != NULL);
 	
 	cpi_lock_context(context);
 	do {
@@ -1047,6 +1057,8 @@ cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *context, int *error
 cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *context, const char *id) {
 	cp_plugin_state_t state = CP_PLUGIN_UNINSTALLED;
 	hnode_t *hnode;
+	
+	assert(context != NULL);
 	
 	// Look up the plug-in state 
 	cpi_lock_context(context);

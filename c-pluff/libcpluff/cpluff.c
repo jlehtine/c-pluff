@@ -433,7 +433,7 @@ void CP_API cp_release_info(void *info) {
 			cpi_debugf(NULL, "Dynamic resource %p was freed.", info);
 		}
 	} else {
-		fprintf(stderr, _("ERROR: Trying to release unknown resource %p in cp_release_info.\n"), info);
+		cpi_errorf(NULL, _("Trying to release unknown information resource %p."), info);
 	}
 	cpi_unlock_framework();
 }
