@@ -61,6 +61,12 @@ extern "C" {
 #define cpi_dec_stop_invocation(context) do {} while (0)
 #endif
 
+#if defined(HAVE_LIBDL)
+#define DLHANDLE void *
+#elif defined(HAVE_LIBLTDL)
+#define DLHANDLE lt_dlhandle
+#endif
+
 
 /* ------------------------------------------------------------------------
  * Data types
@@ -90,6 +96,12 @@ struct cp_context_t {
 	/// List of started plug-ins in the order they were started 
 	list_t *started_plugins;
 
+	/// Maps extension point names to installed extension points
+	hash_t *ext_points;
+	
+	/// Maps extension point names to installed extensions
+	hash_t *extensions;
+
 #ifndef NDEBUG
 
 	/// Whether currently in error handler invocation 
@@ -108,6 +120,36 @@ struct cp_context_t {
 
 };
 
+// Plug-in instance
+struct cp_plugin_t {
+	
+	/// Plug-in information 
+	cp_plugin_info_t *plugin;
+	
+	/// The current state of the plug-in 
+	cp_plugin_state_t state;
+	
+	/// The set of imported plug-ins, or NULL if not resolved 
+	list_t *imported;
+	
+	/// The set of plug-ins importing this plug-in 
+	list_t *importing;
+	
+	/// The runtime library handle, or NULL if not resolved 
+	DLHANDLE runtime_lib;
+	
+	/// The start function, or NULL if none or not resolved 
+	cp_start_t start_func;
+	
+	/// The stop function, or NULL if none or not resolved 
+	cp_stop_t stop_func;
+	
+	/// The phase of ongoing resolve/unresolve operation or 0 if none
+	int phase;
+
+};
+
+
 /// Resource deallocation function
 typedef void (*cpi_dealloc_func_t)(void *resource);
 
@@ -125,6 +167,7 @@ struct cpi_plugin_event_t {
 	/// New state
 	cp_plugin_state_t new_state;
 };
+
 
 /* ------------------------------------------------------------------------
  * Function declarations
@@ -271,22 +314,26 @@ void CP_LOCAL cpi_free_plugin(cp_plugin_info_t *plugin);
 // Dynamic resource management
 
 /**
- * Registers a new dynamic resource which uses reference counting.
+ * Registers a new dynamic information object which uses reference counting.
  * Initializes the use count to 1.
  * 
  * @param res the resource
  * @param df the deallocation function
  * @return CP_OK (zero) on success or error code on failure
  */
-int CP_LOCAL cpi_register_resource(void *res, cpi_dealloc_func_t df);
+int CP_LOCAL cpi_register_info(void *res, cpi_dealloc_func_t df);
 
 /**
- * Increases the usage count for the specified dynamically allocated
- * registered resource.
+ * Increases the usage count for the specified dynamic information object.
  * 
  * @param res the resource
  */
-void CP_LOCAL cpi_use_resource(void *res);
+void CP_LOCAL cpi_use_info(void *res);
+
+/**
+ * Destroys all dynamic information objects.
+ */
+void CP_LOCAL cpi_destroy_all_infos(void);
 
 
 #ifdef __cplusplus

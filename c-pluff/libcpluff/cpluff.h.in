@@ -794,8 +794,10 @@ cp_plugin_info_t * CP_API cp_load_plugin_descriptor(cp_context_t *ctx, const cha
  * structure to the specified plug-in context. The plug-in information
  * must have been obtained from \Ref{cp_load_plugin_descriptor}.
  * The installation fails on \Ref{CP_ERR_CONFLICT} if the context already
- * has an installed plug-in with the same plug-in identifier. The plug-in
- * information must not be modified but it is safe to call
+ * has an installed plug-in with the same plug-in identifier. Installation
+ * also fails if the plug-in tries to install an extension point which
+ * conflicts with an already installed extension point.
+ * The plug-in information must not be modified but it is safe to call
  * \Ref{cp_release_plugin_info} after the plug-in has been installed.
  *
  * @param ctx the plug-in context

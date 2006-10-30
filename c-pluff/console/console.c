@@ -45,6 +45,8 @@ static void cmd_load_plugin(int argc, char *argv[]);
 static void cmd_scan_plugins(int argc, char *argv[]);
 static void cmd_list_plugins(int argc, char *argv[]);
 static void cmd_show_plugin_info(int argc, char *argv[]);
+static void cmd_list_ext_points(int argc, char *argv[]);
+static void cmd_list_extensions(int argc, char *argv[]);
 static void cmd_exit(int argc, char *argv[]);
 
 /* ------------------------------------------------------------------------
@@ -70,7 +72,9 @@ const command_info_t commands[] = {
 	{ "remove-plugin-dir", N_("unregisters a plug-in directory"), cmd_remove_plugin_dir },
 	{ "load-plugin", N_("loads and installs a plug-in from the specified path"), cmd_load_plugin },
 	{ "scan-plugins", N_("scans plug-ins in the registered plug-in directories"), cmd_scan_plugins },
-	{ "list-plugins", N_("lists the loaded plug-ins"), cmd_list_plugins },
+	{ "list-plugins", N_("lists the installed plug-ins"), cmd_list_plugins },
+	{ "list-ext-points", N_("lists the installed extension points"), cmd_list_ext_points },
+	{ "list-extensions", N_("lists the installed extensions"), cmd_list_extensions },
 	{ "show-plugin-info", N_("shows static plug-in information"), cmd_show_plugin_info },
 	{ "quit", N_("quits the program"), cmd_exit },
 	{ "exit", N_("quits the program"), cmd_exit },
@@ -503,9 +507,9 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 	} else if (active_context == -1) {
 		no_active_context();
 	} else if ((plugins = cp_get_plugins_info(contexts[active_context], &status, NULL)) == NULL) {
-		errorf(_("cp_get_plugins failed with error code %d."), status);
+		errorf(_("cp_get_plugins_info failed with error code %d."), status);
 	} else {
-		noticef(_("Plug-ins loaded into context %d:"), active_context);
+		noticef(_("Plug-ins installed into context %d:"), active_context);
 		for (i = 0; plugins[i] != NULL; i++) {
 			if (plugins[i]->name != NULL) {
 				noticef("  %s %s %s \"%s\"",
@@ -734,7 +738,7 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 	} else if (active_context == -1) {
 		no_active_context();
 	} else if ((plugin = cp_get_plugin_info(contexts[active_context], argv[1], &status)) == NULL) {
-		errorf(_("cp_get_plugin failed with error code %d."), status);
+		errorf(_("cp_get_plugin_info failed with error code %d."), status);
 	} else {
 		notice("{");
 		noticef("  name = \"%s\",", plugin->name);
@@ -784,6 +788,68 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 		notice("}");
 		cp_release_info(plugin);
 	}
+}
+
+static void cmd_list_ext_points(int argc, char *argv[]) {
+	cp_ext_point_t **ext_points;
+	int status;
+	int i;
+
+	if (argc != 1) {
+		error(_("Usage: list-ext-points"));
+	} else if (active_context == -1) {
+		no_active_context();
+	} else if ((ext_points = cp_get_ext_points_info(contexts[active_context], &status, NULL)) == NULL) {
+		errorf(_("cp_get_ext_points_info failed with error code %d."), status);
+	} else {
+		noticef(_("Extension points installed into context %d:"), active_context);
+		for (i = 0; ext_points[i] != NULL; i++) {
+			if (ext_points[i]->name != NULL) {
+				noticef("  %s \"%s\" (%s)",
+					ext_points[i]->global_id,
+					ext_points[i]->name,
+					ext_points[i]->plugin->identifier
+				);
+			} else {
+				noticef("  %s (%s)",
+					ext_points[i]->global_id,
+					ext_points[i]->plugin->identifier
+				);
+			}
+		}
+		cp_release_info(ext_points);
+	}	
+}
+
+static void cmd_list_extensions(int argc, char *argv[]) {
+	cp_extension_t **extensions;
+	int status;
+	int i;
+
+	if (argc != 1) {
+		error(_("Usage: list-extensions"));
+	} else if (active_context == -1) {
+		no_active_context();
+	} else if ((extensions = cp_get_extensions_info(contexts[active_context], NULL, &status, NULL)) == NULL) {
+		errorf(_("cp_get_extensions_info failed with error code %d."), status);
+	} else {
+		noticef(_("Extensions installed into context %d:"), active_context);
+		for (i = 0; extensions[i] != NULL; i++) {
+			if (extensions[i]->name != NULL) {
+				noticef("  %s \"%s\" (%s)",
+					extensions[i]->global_id != NULL ? extensions[i]->global_id : _("<unidentified>"),
+					extensions[i]->name,
+					extensions[i]->plugin->identifier
+				);
+			} else {
+				noticef("  %s (%s)",
+					extensions[i]->global_id != NULL ? extensions[i]->global_id : _("<unidentified>"),
+					extensions[i]->plugin->identifier
+				);
+			}
+		}
+		cp_release_info(extensions);
+	}	
 }
 
 int main(int argc, char *argv[]) {

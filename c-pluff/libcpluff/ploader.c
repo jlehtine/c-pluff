@@ -1080,7 +1080,7 @@ cp_plugin_info_t * CP_API cp_load_plugin_descriptor(cp_context_t *context, const
 		file = NULL;
 		
 		// Increase plug-in usage count
-		if ((status = cpi_register_resource(plcontext->plugin, (void (*)(void *)) cpi_free_plugin)) != CP_OK) {
+		if ((status = cpi_register_info(plcontext->plugin, (void (*)(void *)) cpi_free_plugin)) != CP_OK) {
 			break;
 		}
 		

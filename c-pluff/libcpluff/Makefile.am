@@ -7,7 +7,7 @@
 CP_API_VERSION = $(CP_API_CURRENT):$(CP_API_REVISION):$(CP_API_AGE)
 
 lib_LTLIBRARIES = libcpluff.la
-libcpluff_la_SOURCES = pscan.c ploader.c pcontrol.c context.c cpluff.c util.c ../kazlib/list.c ../kazlib/hash.c
+libcpluff_la_SOURCES = pscan.c ploader.c pinfo.c pcontrol.c context.c cpluff.c util.c ../kazlib/list.c ../kazlib/hash.c
 if POSIX_THREADS
 libcpluff_la_SOURCES += thread_posix.c
 endif

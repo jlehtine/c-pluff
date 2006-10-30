@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <assert.h>
-#include "../kazlib/hash.h"
 #include "cpluff.h"
 #include "defines.h"
 #include "util.h"
@@ -32,7 +31,6 @@
  * ----------------------------------------------------------------------*/
 
 typedef struct logger_t logger_t;
-typedef struct dynamic_resource_t dynamic_resource_t;
 
 /// Contains information about installed loggers
 struct logger_t {
@@ -48,19 +46,6 @@ struct logger_t {
 	
 	/// Context criteria
 	cp_context_t *ctx_rule;
-};
-
-/// Contains information about a dynamically allocated resource
-struct dynamic_resource_t {
-
-	/// Pointer to the resource
-	void *resource;	
-	
-	/// Usage count for the resource
-	int usage_count;
-	
-	/// Deallocation function
-	cpi_dealloc_func_t dealloc_func;
 };
 
 
@@ -102,9 +87,6 @@ static int log_min_severity = CP_LOG_NONE;
 /// Fatal error handler, or NULL for default 
 static cp_fatal_error_handler_t fatal_error_handler = NULL;
 
-/// Map of in-use dynamic resources
-static hash_t *dynamic_resources = NULL;
-
 
 /* ------------------------------------------------------------------------
  * Function definitions
@@ -132,21 +114,6 @@ void CP_LOCAL cpi_unlock_framework(void) {
 }
 
 static void reset(void) {
-	if (dynamic_resources != NULL) {
-		hscan_t scan;
-		hnode_t *node;
-		
-		hash_scan_begin(&scan, dynamic_resources);
-		while ((node = hash_scan_next(&scan)) != NULL) {
-			dynamic_resource_t *dr = hnode_get(node);
-			
-			hash_scan_delfree(dynamic_resources, node);
-			dr->dealloc_func(dr->resource);
-			free(dr);
-		}
-		hash_destroy(dynamic_resources);
-		dynamic_resources = NULL;
-	}
 	if (loggers != NULL) {
 		lnode_t *node;
 		
@@ -183,10 +150,6 @@ int CP_API cp_init(void) {
 				break;
 			}
 #endif
-			if ((dynamic_resources = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr)) == NULL) {
-				status = CP_ERR_RESOURCE;
-				break;
-			}
 			if ((loggers = list_create(LISTCOUNT_T_MAX)) == NULL) {
 				status = CP_ERR_RESOURCE;
 				break;
@@ -214,6 +177,7 @@ void CP_API cp_destroy(void) {
 #endif
 		cpi_info(NULL, _("The plug-in framework is being shut down."));
 		cpi_destroy_all_contexts();
+		cpi_destroy_all_infos();
 		reset();
 	}
 }
@@ -365,75 +329,4 @@ void CP_LOCAL cpi_fatalf(const char *msg, ...) {
 	
 	// Abort if still alive 
 	abort();
-}
-
-int CP_LOCAL cpi_register_resource(void *res, cpi_dealloc_func_t df) {
-	int status = CP_OK;
-	dynamic_resource_t *dr = NULL;
-	
-	do {
-		if ((dr = malloc(sizeof(dynamic_resource_t))) == NULL) {
-			status = CP_ERR_RESOURCE;
-			break;
-		}
-		dr->resource = res;
-		dr->usage_count = 1;
-		dr->dealloc_func = df;
-		cpi_lock_framework();
-		if (!hash_alloc_insert(dynamic_resources, res, dr)) {
-			status = CP_ERR_RESOURCE;
-		}
-		cpi_unlock_framework();
-		
-	} while (0);
-	
-	// Release resources on failure
-	if (status != CP_OK) {
-		if (dr != NULL) {
-			free(dr);
-		}
-	}
-	
-	// Otherwise report success
-	else {
-		cpi_debugf(NULL, "Dynamic resource %p was registered.", res);
-	}
-	
-	return status;
-}
-
-void CP_LOCAL cpi_use_resource(void *res) {
-	hnode_t *node;
-	dynamic_resource_t *dr;
-	
-	cpi_lock_framework();
-	node = hash_lookup(dynamic_resources, res);
-	if (node == NULL) {
-		cpi_fatalf(_("Trying to increase usage count on unknown resource %p."), res);
-	}
-	dr = hnode_get(node);
-	dr->usage_count++;
-	cpi_unlock_framework();
-}
-
-void CP_API cp_release_info(void *info) {
-	hnode_t *node;
-	dynamic_resource_t *dr;
-	
-	assert(info != NULL);
-	cpi_lock_framework();
-	node = hash_lookup(dynamic_resources, info);
-	if (node != NULL) {
-		dr = hnode_get(node);
-		assert(dr != NULL && info == dr->resource);
-		if (--dr->usage_count == 0) {
-			hash_delete_free(dynamic_resources, node);
-			dr->dealloc_func(info);
-			free(dr);
-			cpi_debugf(NULL, "Dynamic resource %p was freed.", info);
-		}
-	} else {
-		cpi_errorf(NULL, _("Trying to release unknown information resource %p."), info);
-	}
-	cpi_unlock_framework();
 }

@@ -126,13 +126,19 @@ cp_context_t * CP_API cp_create_context(int *error) {
 		context->plugins = hash_create(HASHCOUNT_T_MAX,
 			(int (*)(const void *, const void *)) strcmp, NULL);
 		context->started_plugins = list_create(LISTCOUNT_T_MAX);
+		context->ext_points = hash_create(HASHCOUNT_T_MAX,
+			(int (*)(const void *, const void *)) strcmp, NULL);
+		context->extensions = hash_create(HASHCOUNT_T_MAX,
+			(int (*)(const void *, const void *)) strcmp, NULL);
 		if (context->plugin_listeners == NULL
 #ifdef CP_THREADS
 			|| context->mutex == NULL
 #endif
 			|| context->plugin_dirs == NULL
 			|| context->plugins == NULL
-			|| context->started_plugins == NULL) {
+			|| context->started_plugins == NULL
+			|| context->ext_points == NULL
+			|| context->extensions == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
@@ -227,6 +233,14 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 		list_process(context->plugin_listeners, NULL, process_free_el_holder);
 		list_destroy(context->plugin_listeners);
 		context->plugin_listeners = NULL;
+	}
+	if (context->ext_points != NULL) {
+		assert(hash_isempty(context->ext_points));
+		hash_destroy(context->ext_points);
+	}
+	if (context->extensions != NULL) {
+		assert(hash_isempty(context->extensions));
+		hash_destroy(context->extensions);
 	}
 	
 	// Release mutex 
