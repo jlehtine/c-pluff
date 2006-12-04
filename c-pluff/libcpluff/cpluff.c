@@ -270,6 +270,7 @@ static void log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) 
 	lnode_t *node;
 	
 	cpi_lock_framework();
+	cpi_inc_logger_invocation(ctx);
 	node = list_first(loggers);
 	while (node != NULL) {
 		logger_t *lh = lnode_get(node);
@@ -279,6 +280,7 @@ static void log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) 
 		}
 		node = list_next(loggers, node);
 	}
+	cpi_dec_logger_invocation(ctx);
 	cpi_unlock_framework();
 }
 

@@ -41,25 +41,14 @@ extern "C" {
  * Macros
  * ----------------------------------------------------------------------*/
 
-#ifndef NDEBUG
-#define cpi_inc_error_invocation(context) ((context)->in_error_handler_invocation++)
-#define cpi_dec_error_invocation(context) ((context)->in_error_handler_invocation--)
+#define cpi_inc_logger_invocation(context) ((context)->in_logger_invocation++)
+#define cpi_dec_logger_invocation(context) ((context)->in_logger_invocation--)
 #define cpi_inc_event_invocation(context) ((context)->in_event_listener_invocation++)
 #define cpi_dev_event_invocation(context) ((context)->in_event_listener_invocation--)
 #define cpi_inc_start_invocation(context) ((context)->in_start_func_invocation++)
 #define cpi_dec_start_invocation(context) ((context)->in_start_func_invocation--)
 #define cpi_inc_stop_invocation(context) ((context)->in_stop_func_invocation++)
 #define cpi_dec_stop_invocation(context) ((context)->in_stop_func_invocation--)
-#else
-#define cpi_inc_error_invocation(context) do {} while (0)
-#define cpi_dec_error_invocation(context) do {} while (0)
-#define cpi_inc_event_invocation(context) do {} while (0)
-#define cpi_dev_event_invocation(context) do {} while (0)
-#define cpi_inc_start_invocation(context) do {} while (0)
-#define cpi_dec_start_invocation(context) do {} while (0)
-#define cpi_inc_stop_invocation(context) do {} while (0)
-#define cpi_dec_stop_invocation(context) do {} while (0)
-#endif
 
 #if defined(HAVE_LIBDL)
 #define DLHANDLE void *
@@ -102,10 +91,8 @@ struct cp_context_t {
 	/// Maps extension point names to installed extensions
 	hash_t *extensions;
 
-#ifndef NDEBUG
-
-	/// Whether currently in error handler invocation 
-	int in_error_handler_invocation;
+	/// Whether currently in logger invocation 
+	int in_logger_invocation;
 	
 	/// Whether currently in event listener invocation
 	int in_event_listener_invocation;
@@ -116,8 +103,6 @@ struct cp_context_t {
 	// Whether currently in stop function invocation
 	int in_stop_func_invocation;
 	
-#endif
-
 };
 
 // Plug-in instance
@@ -143,9 +128,9 @@ struct cp_plugin_t {
 	
 	/// The stop function, or NULL if none or not resolved 
 	cp_stop_t stop_func;
-	
-	/// The phase of ongoing resolve/unresolve operation or 0 if none
-	int phase;
+
+	/// Used by recursive operations: has this plug-in been processed already
+	int processed;
 
 };
 
@@ -265,8 +250,6 @@ int CP_LOCAL cpi_is_logged(cp_log_severity_t severity);
  */
 void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
 
-#ifndef NDEBUG
-
 /**
  * Checks that we are currently not in an error handler, event listener,
  * start function or stop function invocation. Otherwise, reports a fatal
@@ -276,10 +259,6 @@ void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
  * @param func the current plug-in framework function
  */
 void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, const char *func);
-
-#else
-#define cpi_check_invocation(a, b) do {} while (0)
-#endif
 
 
 // Context management
@@ -301,7 +280,7 @@ void CP_LOCAL cpi_destroy_all_contexts(void);
 void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t *event);
 
 
-// Plug-in descriptor management
+// Plug-in management
 
 /**
  * Frees any resources allocated for a plug-in description.
@@ -309,6 +288,15 @@ void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t 
  * @param plugin the plug-in to be freed
  */
 void CP_LOCAL cpi_free_plugin(cp_plugin_info_t *plugin);
+
+/**
+ * Starts the specified plug-in and its dependencies.
+ * 
+ * @param context the plug-in context
+ * @param plugin the plug-in
+ * @return CP_OK (zero) on success or error code on failure
+ */
+int CP_LOCAL cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin);
 
 
 // Dynamic resource management

@@ -479,13 +479,11 @@ void CP_LOCAL cpi_unlock_context(cp_context_t *context) {
 
 // Invocation checking
 
-#ifndef NDEBUG
-
 void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, const char *func) {
 	assert(ctx != NULL);
 	assert(func != NULL);
-	if (ctx->in_error_handler_invocation) {
-		cpi_fatalf(_("%s was called from within an error handler invocation."), func);
+	if (ctx->in_logger_invocation) {
+		cpi_fatalf(_("%s was called from within a logger invocation."), func);
 	}
 	if (ctx->in_event_listener_invocation) {
 		cpi_fatalf(_("%s was called from within an event listener invocation."), func);
@@ -497,7 +495,5 @@ void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, const char *func) {
 		cpi_fatalf(_("%s was called from within a stop function invocation."), func);
 	}
 }
-
-#endif
 
 #endif

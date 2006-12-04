@@ -832,8 +832,8 @@ int CP_API cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi);
 int CP_API cp_scan_plugins(cp_context_t *ctx, int flags);
 
 /**
- * Starts a plug-in. The plug-in is first resolved, if necessary, and all
- * imported plug-ins are started. If the plug-in is already starting then
+ * Starts a plug-in. Also starts any imported plug-ins. If the plug-in is
+ * already starting then
  * this function blocks until the plug-in has started or failed to start.
  * If the plug-in is already active then this function returns immediately.
  * If the plug-in is stopping then this function blocks until the plug-in
@@ -846,7 +846,7 @@ int CP_API cp_scan_plugins(cp_context_t *ctx, int flags);
 int CP_API cp_start_plugin(cp_context_t *ctx, const char *id);
 
 /**
- * Stops a plug-in. First stops any importing plug-ins that are currently
+ * Stops a plug-in. First stops any dependent plug-ins that are currently
  * active. Then stops the specified plug-in. If the plug-in is already
  * stopping then this function blocks until the plug-in has stopped. If the
  * plug-in is already stopped then this function returns immediately. If the
@@ -867,10 +867,10 @@ int CP_API cp_stop_plugin(cp_context_t *ctx, const char *id);
 void CP_API cp_stop_all_plugins(cp_context_t *ctx);
 
 /**
- * Uninstalls the specified plug-in. The plug-in and all the dependent plug-ins
- * are first stopped and then uninstalled. The client program must not have any
- * unreleased references to dynamic symbols provided by the uninstalled
- * plug-ins.
+ * Uninstalls the specified plug-in. The plug-in is first stopped if it is active.
+ * Then uninstalls the plug-in and any dependent plug-ins. The client program
+ * must not have any unreleased references to dynamic symbols provided by the
+ * uninstalled plug-ins.
  * 
  * @param ctx the plug-in context
  * @param id identifier of the plug-in to be unloaded
