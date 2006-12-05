@@ -492,7 +492,7 @@ typedef void (*cp_plugin_listener_t)(cp_context_t *ctx, const char *plugin_id, c
 
 /**
  * A start function called to start a plug-in. The start function must return
- * non-zero on success and zero on failure. If the start fails then the
+ * zero (CP_OK) on success and non-zero on failure. If the start fails then the
  * stop function (if any) is called to clean up plug-in state. Plug-in
  * framework functions causing plug-in context changes or changes to installed
  * plugins must not be called from within a start function invocation.
@@ -978,7 +978,7 @@ cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *ctx, const char *e
 /*@{*/
 
 /**
- * Resolves a dynamically named symbol provided by the specified plug-in.
+ * Resolves a named symbol provided by the specified plug-in.
  * The plug-in framework creates dynamically a dependency from the symbol using
  * plug-in to the symbol defining plug-in. When the symbol is not used anymore
  * it must be released using \Ref{cp_release_symbol} which also removes the

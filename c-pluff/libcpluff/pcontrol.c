@@ -587,7 +587,7 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			cpi_inc_start_invocation(context);
 			s = plugin->start_func(context, plugin);
 			cpi_dec_start_invocation(context);
-			if (!s) {
+			if (s != CP_OK) {
 			
 				// Roll back plug-in state 
 				event.old_state = plugin->state;
