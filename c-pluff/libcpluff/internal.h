@@ -15,6 +15,12 @@
  * Inclusions
  * ----------------------------------------------------------------------*/
 
+#ifdef HAVE_LIBDL
+#include <dlfcn.h>
+#endif
+#ifdef HAVE_LIBLTDL
+#include <ltdl.h>
+#endif
 #include "../kazlib/list.h"
 #include "../kazlib/hash.h"
 #include "cpluff.h"
@@ -52,8 +58,14 @@ extern "C" {
 
 #if defined(HAVE_LIBDL)
 #define DLHANDLE void *
+#define DLOPEN(name) dlopen((name), RTLD_LAZY | RTLD_GLOBAL)
+#define DLSYM(handle, symbol) dlsym((handle), (symbol))
+#define DLCLOSE(handle) dlclose(handle)
 #elif defined(HAVE_LIBLTDL)
 #define DLHANDLE lt_dlhandle
+#define DLOPEN(name) lt_dlopen(name)
+#define DLSYM(handle, symbol) lt_dlsym((handle), (symbol))
+#define DLCLOSE(handle) lt_dlclose(handle)
 #endif
 
 
@@ -108,6 +120,9 @@ struct cp_context_t {
 // Plug-in instance
 struct cp_plugin_t {
 	
+	/// The enclosing context
+	cp_context_t *context;
+	
 	/// Plug-in information 
 	cp_plugin_info_t *plugin;
 	
@@ -131,6 +146,9 @@ struct cp_plugin_t {
 
 	/// Used by recursive operations: has this plug-in been processed already
 	int processed;
+	
+	/// Information about symbol providing plugins, or NULL if not resolved
+	hash_t *symbol_providers;
 
 };
 

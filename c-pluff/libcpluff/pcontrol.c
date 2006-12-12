@@ -16,33 +16,12 @@
 #include <assert.h>
 #include <string.h>
 #include <stddef.h>
-#ifdef HAVE_LIBDL
-#include <dlfcn.h>
-#endif
-#ifdef HAVE_LIBLTDL
-#include <ltdl.h>
-#endif
 #include "../kazlib/list.h"
 #include "../kazlib/hash.h"
 #include "cpluff.h"
 #include "defines.h"
 #include "util.h"
 #include "internal.h"
-
-
-/* ------------------------------------------------------------------------
- * Defines
- * ----------------------------------------------------------------------*/
-
-#if defined(HAVE_LIBDL)
-#define DLOPEN(name) dlopen((name), RTLD_LAZY | RTLD_GLOBAL)
-#define DLSYM(handle, symbol) dlsym((handle), (symbol))
-#define DLCLOSE(handle) dlclose(handle)
-#elif defined(HAVE_LIBLTDL)
-#define DLOPEN(name) lt_dlopen(name)
-#define DLSYM(handle, symbol) lt_dlsym((handle), (symbol))
-#define DLCLOSE(handle) lt_dlclose(handle)
-#endif
 
 
 /* ------------------------------------------------------------------------
@@ -119,6 +98,7 @@ int CP_API cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 	
 		// Initialize plug-in state 
 		memset(rp, 0, sizeof(cp_plugin_t));
+		rp->context = context;
 		rp->plugin = plugin;
 		rp->state = CP_PLUGIN_INSTALLED;
 		rp->imported = NULL;

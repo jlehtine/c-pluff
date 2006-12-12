@@ -982,17 +982,16 @@ cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *ctx, const char *e
  * The plug-in framework creates dynamically a dependency from the symbol using
  * plug-in to the symbol defining plug-in. When the symbol is not used anymore
  * it must be released using \Ref{cp_release_symbol} which also removes the
- * dependency. If the symbol is to be passed on to other plug-in or to the
- * client program then the plug-in passing the symbol must use
- * \Ref{cp_pass_symbol}.
+ * dependency. If the symbol is to be passed on to another plug-in then the
+ * plug-in passing the symbol must use \Ref{cp_pass_symbol}.
  *
- * @param pi the plug-in instance resolving the symbol or NULL for the client program
+ * @param pi the plug-in instance resolving the symbol
  * @param pid the identifier of the symbol defining plug-in
  * @param name the name of the symbol
  * @param error filled with an error code if non-NULL
  * @return the pointer associated with the symbol or NULL on failure
  */
-void *cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *name, int *error);
+void * CP_API cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *name, int *error);
 
 /**
  * Passes a dynamically resolved symbol from one plug-in instance to another.
@@ -1008,11 +1007,11 @@ void *cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *name, int 
  * symbol passing plug-in. A plug-in instance can also pass a symbol to
  * itself which increases the usage count for the symbol.
  *
- * @param passing_pi the plug-in instance passing the symbol or NULL for the client program
- * @param receiving_pi the plug-in receiving the symbol or NULL for the client program
+ * @param passing_pi the plug-in instance passing the symbol
+ * @param receiving_pi the plug-in receiving the symbol
  * @param ptr the pointer associated with the symbol
  */
-int cp_pass_symbol(cp_plugin_t *passing_pi, cp_plugin_t *receiving_pi, void *ptr);
+int CP_API cp_pass_symbol(cp_plugin_t *passing_pi, cp_plugin_t *receiving_pi, void *ptr);
 
 /**
  * Releases a previously obtained symbol. The pointer must not be used by the
@@ -1021,10 +1020,10 @@ int cp_pass_symbol(cp_plugin_t *passing_pi, cp_plugin_t *receiving_pi, void *ptr
  * \Ref{cp_resolve_symbol} and \Ref{cp_pass_symbol} for the same plug-in and
  * symbol.
  *
- * @param pi the plug-in instance releasing the symbol or NULL for the client program
+ * @param pi the plug-in instance releasing the symbol
  * @param ptr the pointer associated with the symbol
  */
-void cp_release_symbol(cp_plugin_t *pi, void *ptr);
+void CP_API cp_release_symbol(cp_plugin_t *pi, void *ptr);
 
 /*@}*/
 
