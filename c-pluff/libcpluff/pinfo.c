@@ -118,7 +118,7 @@ void CP_API cp_release_info(void *info) {
 			hash_delete_free(infos, node);
 			ir->dealloc_func(info);
 			free(ir);
-			cpi_debugf(NULL, "Information object %p was freed.", info);
+			cpi_debugf(NULL, "Information object %p was released.", info);
 		}
 	} else {
 		cpi_errorf(NULL, _("Could not release an unknown information object %p."), info);

@@ -650,13 +650,17 @@ static int start_plugin_rec(cp_context_t *context, cp_plugin_t *plugin) {
 	lnode_t *node;
 	
 	// Check if already started or starting
-	if (plugin->state == CP_PLUGIN_ACTIVE || plugin->state == CP_PLUGIN_STARTING) {
+	if (plugin->state == CP_PLUGIN_ACTIVE) {
+		return CP_OK;
+	} else if (plugin->state == CP_PLUGIN_STARTING) {
+		cpi_warnf(context, _("Detected a dynamic dependency loop for plug-in %s."), plugin->plugin->identifier);
 		return CP_OK;
 	}
 	assert(plugin->state == CP_PLUGIN_RESOLVED);
 	
 	// Check for dependency loops
 	if (plugin->processed) {
+		cpi_warnf(context, _("Detected a dependency loop for plug-in %s."), plugin->plugin->identifier);
 		return CP_OK;
 	}
 	plugin->processed = 1;

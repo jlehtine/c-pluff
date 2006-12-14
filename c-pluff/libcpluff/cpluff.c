@@ -280,27 +280,25 @@ void CP_API cp_remove_logger(cp_logger_t logger) {
 
 static void log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) {
 	lnode_t *node;
+	const char *apid = NULL;
 	
 	cpi_lock_framework();
-	if (!in_logger_invocation) {
-		const char *apid = NULL;
-		
-		if (ctx != NULL && ctx->plugin != NULL) {
-			apid = ctx->plugin->plugin->identifier;
-		}
-		in_logger_invocation++;
-		node = list_first(loggers);
-		while (node != NULL) {
-			logger_t *lh = lnode_get(node);
-			if (severity >= lh->min_severity
-				&& (lh->env_selection == NULL
-					|| (ctx != NULL && ctx->env == lh->env_selection))) {
-				lh->logger(severity, msg, apid, lh->user_data);
-			}
-			node = list_next(loggers, node);
-		}
-		in_logger_invocation--;
+	assert(!in_logger_invocation);
+	if (ctx != NULL && ctx->plugin != NULL) {
+		apid = ctx->plugin->plugin->identifier;
 	}
+	in_logger_invocation++;
+	node = list_first(loggers);
+	while (node != NULL) {
+		logger_t *lh = lnode_get(node);
+		if (severity >= lh->min_severity
+			&& (lh->env_selection == NULL
+				|| (ctx != NULL && ctx->env == lh->env_selection))) {
+			lh->logger(severity, msg, apid, lh->user_data);
+		}
+		node = list_next(loggers, node);
+	}
+	in_logger_invocation--;
 	cpi_unlock_framework();
 }
 

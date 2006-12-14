@@ -414,7 +414,6 @@ struct cp_cfg_element_t {
 
 
 /** @name Plug-in state */
-
 /*@{*/
 
 /**
@@ -492,6 +491,12 @@ typedef enum cp_plugin_state_t {
  */
 typedef void (*cp_plugin_listener_t)(cp_context_t *ctx, const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *user_data);
 
+/*@}*/
+
+
+/** @name Plug-in control */
+/*@{*/
+
 /**
  * A start function called to start a plug-in. The start function must return
  * zero (CP_OK) on success and non-zero on failure. If the start fails then the
@@ -545,10 +550,8 @@ typedef enum cp_log_severity_t {
 /**
  * A logger function called to log selected plug-in framework messages. The
  * messages may be localized. Plug-in framework functions must not
- * be called from within a logger function invocation. All framework messages
- * emerging during a logger function invocation are ignored and not passed to
- * any logger. In a multi-threaded environment logger function invocations are
- * serialized by the framework.
+ * be called from within a logger function invocation. In a multi-threaded
+ * environment logger function invocations are serialized by the framework.
  *
  * @param severity the severity of the message (one of CP_LOG_... constants)
  * @param msg the message to be logged, possibly localized

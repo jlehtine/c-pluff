@@ -140,6 +140,7 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 				status = CP_ERR_RESOURCE;
 				break;
 			}
+			cpi_debugf(context, _("A dynamic dependency was created from plug-in %s to plug-in %s."), context->plugin->plugin->identifier, pp->plugin->identifier);
 		}
 		
 		// Increase usage counts
@@ -207,6 +208,7 @@ void CP_API cp_release_symbol(cp_context_t *context, void *ptr) {
 		if (symbol_info->usage_count == 0) {
 			hash_delete_free(context->symbols, node);
 			free(symbol_info);
+			cpi_debugf(context, _("Plug-in %s released symbol %p defined by plug-in %s."), context->plugin->plugin->identifier, ptr, provider_info->plugin->plugin->identifier);
 		}
 	
 		// Check if the symbol providing plug-in is not being used anymore
@@ -218,6 +220,7 @@ void CP_API cp_release_symbol(cp_context_t *context, void *ptr) {
 				cpi_ptrset_remove(context->plugin->imported, provider_info->plugin);
 				cpi_ptrset_remove(provider_info->plugin->importing, context->plugin);
 			}
+			cpi_debugf(context, _("A dynamic dependency from plug-in %s to plug-in %s was removed."), context->plugin->plugin->identifier, provider_info->plugin->plugin->identifier);
 			free(provider_info);
 		}
 		
