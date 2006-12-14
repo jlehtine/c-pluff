@@ -226,19 +226,14 @@ static void no_active_context(void) {
 	error(_("There is no active plug-in context."));
 }
 
-static void logger(cp_log_severity_t severity, const char *msg, cp_context_t *ctx, void *dummy) {
-	int ci = -1;
+static void logger(cp_log_severity_t severity, const char *msg, const char *apid, void *dummy) {
 	char *prefix;
 	
-	if (ctx != NULL) {
-		for (ci = 0; ci < MAX_NUM_CONTEXTS && contexts[ci] != ctx; ci++);
-	}
 	switch (severity) {
 		
 		case CP_LOG_ERROR:
-			if (ctx != NULL) {
-				assert(ci >= 0 && ci < MAX_NUM_CONTEXTS);
-				errorf(_("context %d: %s"), ci, msg);
+			if (apid != NULL) {
+				errorf("%s: %s", apid, msg);
 			} else {
 				error(msg);
 			}
@@ -260,9 +255,8 @@ static void logger(cp_log_severity_t severity, const char *msg, cp_context_t *ct
 			prefix = "UNKNOWN";
 			break;
 	}
-	if (ctx != NULL) {
-		assert(ci >= 0 && ci < MAX_NUM_CONTEXTS);
-		noticef(_("%s: context %d: %s"), prefix, ci, msg);
+	if (apid != NULL) {
+		noticef("%s: %s: %s", prefix, apid, msg);
 	} else {
 		noticef("%s: %s", prefix, msg);
 	}
@@ -287,7 +281,7 @@ static char *state_to_string(cp_plugin_state_t state) {
 	}
 }
 
-static void plugin_listener(cp_context_t *context, const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *user_data) {
+static void plugin_listener(const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *user_data) {
 	int i;
 	cp_context_t **cap = user_data;
 	
