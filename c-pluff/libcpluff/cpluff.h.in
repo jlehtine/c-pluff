@@ -482,14 +482,13 @@ typedef enum cp_plugin_state_t {
  * functions other than library, plug-in and extension information functions
  * must not be called from within a plug-in listener invocation.
  * 
- * @param ctx the associated plug-in context
  * @param plugin_id the plug-in identifier
  * @param old_state the old plug-in state
  * @param new_state the new plug-in state
  * @param user_data the user data pointer supplied at listener registration
  * @see cp_add_plugin_listener
  */
-typedef void (*cp_plugin_listener_t)(cp_context_t *ctx, const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *user_data);
+typedef void (*cp_plugin_listener_t)(const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *user_data);
 
 /*@}*/
 

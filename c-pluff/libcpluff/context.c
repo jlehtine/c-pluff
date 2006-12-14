@@ -30,17 +30,8 @@
  */
 typedef struct el_holder_t {
 	cp_plugin_listener_t plugin_listener;
-	cp_context_t *context;
 	void *user_data;
 } el_holder_t;
-
-/**
- * A holder structure for error handler parameters.
- */
-typedef struct eh_params_t {
-	cp_context_t *context;
-	char *msg;
-} eh_params_t;
 
 
 /* ------------------------------------------------------------------------
@@ -97,7 +88,7 @@ static int comp_el_holder(const void *h1, const void *h2) {
 static void process_event(list_t *list, lnode_t *node, void *event) {
 	el_holder_t *h = lnode_get(node);
 	cpi_plugin_event_t *e = event;
-	h->plugin_listener(h->context, e->plugin_id, e->old_state, e->new_state, h->user_data);
+	h->plugin_listener(e->plugin_id, e->old_state, e->new_state, h->user_data);
 }
 
 static void free_plugin_env(cp_plugin_env_t *env) {
@@ -374,7 +365,6 @@ int CP_API cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_t li
 	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
 	if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
 		holder->plugin_listener = listener;
-		holder->context = context;
 		holder->user_data = user_data;
 		if ((node = lnode_create(holder)) != NULL) {
 			list_append(context->env->plugin_listeners, node);
