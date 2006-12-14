@@ -108,7 +108,7 @@ void CP_API cp_release_info(void *info) {
 	hnode_t *node;
 	
 	assert(info != NULL);
-	cpi_check_invocation(NULL, __func__);
+	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_framework();
 	if (infos != NULL
 		&& (node = hash_lookup(infos, info)) != NULL) {
@@ -156,9 +156,9 @@ cp_plugin_info_t * CP_API cp_get_plugin_info(cp_context_t *context, const char *
 
 	assert(context != NULL);
 	assert(id != NULL);
-	cpi_check_invocation(NULL, __func__);
 
 	// Look up the plug-in and return information 
+	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);
 	node = hash_lookup(context->env->plugins, id);
 	if (node != NULL) {
@@ -193,8 +193,8 @@ cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *context, int *error
 	int status = CP_OK;
 	
 	assert(context != NULL);
-	cpi_check_invocation(NULL, __func__);
 	
+	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);
 	do {
 		hscan_t scan;
@@ -250,9 +250,9 @@ cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *context, const char *
 	hnode_t *hnode;
 	
 	assert(context != NULL);
-	cpi_check_invocation(NULL, __func__);
 	
 	// Look up the plug-in state 
+	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);
 	if ((hnode = hash_lookup(context->env->plugins, id)) != NULL) {
 		cp_plugin_t *rp = hnode_get(hnode);
@@ -278,8 +278,8 @@ cp_ext_point_t ** CP_API cp_get_ext_points_info(cp_context_t *context, int *erro
 	int status = CP_OK;
 	
 	assert(context != NULL);
-	cpi_check_invocation(NULL, __func__);
 	
+	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);
 	do {
 		hscan_t scan;
@@ -346,8 +346,8 @@ cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *context, const cha
 	int status = CP_OK;
 	
 	assert(context != NULL);
-	cpi_check_invocation(NULL, __func__);
 	
+	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);
 	do {
 		hscan_t scan;

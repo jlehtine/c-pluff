@@ -42,6 +42,21 @@ extern "C" {
 /// Preliminarily OK 
 #define CP_OK_PRELIMINARY (-1)
 
+/// Callback function logger function
+#define CPI_CF_LOGGER 1
+
+/// Callback function plug-in listener function
+#define CPI_CF_LISTENER 2
+
+/// Callback function start function
+#define CPI_CF_START 4
+
+/// Callback function stop function
+#define CPI_CF_STOP 8
+
+/// Bitmask corresponding to any callback function
+#define CPI_CF_ANY (~0)
+
 
 /* ------------------------------------------------------------------------
  * Macros
@@ -275,16 +290,16 @@ int CP_LOCAL cpi_is_logged(cp_log_severity_t severity);
 void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
 
 /**
- * Checks that we are currently not in a logger function, event listener,
- * start function or stop function invocation. Otherwise, reports a fatal
- * error. If no context is specified then only logger function invocations
- * are checked. If context is specified then the caller must have locked the
- * context before calling this function.
+ * Checks that we are currently not in a specific callback function invocation.
+ * Otherwise, reports a fatal error. If no context is specified then only
+ * logger function invocations are checked. If context is specified then the
+ * caller must have locked the context before calling this function.
  * 
  * @param ctx the associated plug-in context or NULL if none
+ * @param funcmask the bitmask of disallowed callback functions
  * @param func the current plug-in framework function
  */
-void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, const char *func);
+void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func);
 
 
 // Context management

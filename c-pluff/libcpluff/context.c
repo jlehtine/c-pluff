@@ -216,7 +216,7 @@ cp_context_t * CP_API cp_create_context(int *error) {
 	cp_context_t *context = NULL;
 	int status = CP_OK;
 
-	cpi_check_invocation(NULL, __func__);
+	cpi_check_invocation(NULL, CPI_CF_ANY, __func__);
 
 	// Initialize internal state
 	do {
@@ -311,7 +311,6 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 	assert(context != NULL);
 	assert(context->plugin == NULL);
 
-	cpi_check_invocation(NULL, __func__);
 	if (context->plugin != NULL) {
 		cpi_fatalf(_("Only the client program can destroy a plug-in context."));
 	}
@@ -323,7 +322,7 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 #endif
 
 	// Check invocation, although context not locked
-	cpi_check_invocation(context, __func__);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 
 	// Remove context from the context list
 	cpi_lock_framework();
@@ -371,8 +370,8 @@ int CP_API cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_t li
 	assert(context != NULL);
 	assert(listener != NULL);
 	
-	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
 	if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
 		holder->plugin_listener = listener;
 		holder->context = context;
@@ -398,9 +397,9 @@ void CP_API cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_
 	lnode_t *node;
 	
 	assert(context != NULL);
-	cpi_check_invocation(context, __func__);
 	holder.plugin_listener = listener;
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
 	node = list_find(context->env->plugin_listeners, &holder, comp_el_holder);
 	if (node != NULL) {
 		process_free_el_holder(context->env->plugin_listeners, node, NULL);
@@ -467,8 +466,8 @@ int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	assert(context != NULL);
 	assert(dir != NULL);
 	
-	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	do {
 	
 		// Check if directory has already been registered 
@@ -528,8 +527,8 @@ void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 	assert(context != NULL);
 	assert(dir != NULL);
 	
-	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	node = list_find(context->env->plugin_dirs, dir, (int (*)(const void *, const void *)) strcmp);
 	if (node != NULL) {
 		d = lnode_get(node);

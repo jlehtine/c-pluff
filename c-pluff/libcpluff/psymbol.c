@@ -64,8 +64,8 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 	assert(name != NULL);
 	
 	// Resolve the symbol
-	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY ^ CPI_CF_START, __func__);
 	do {
 
 		// Look up the symbol defining plug-in
@@ -186,6 +186,7 @@ void CP_API cp_release_symbol(cp_context_t *context, void *ptr) {
 	assert(ptr != NULL);
 
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
 	do {
 
 		// Look up the symbol

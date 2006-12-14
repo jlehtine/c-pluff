@@ -74,8 +74,8 @@ int CP_API cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 
 	assert(plugin != NULL);
 	
-	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	do {
 
 		// Check that there is no conflicting plug-in already loaded 
@@ -720,8 +720,8 @@ int CP_API cp_start_plugin(cp_context_t *context, const char *id) {
 	assert(id != NULL);
 
 	// Look up and start the plug-in 
-	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	node = hash_lookup(context->env->plugins, id);
 	if (node != NULL) {
 		status = cpi_start_plugin(context, hnode_get(node));
@@ -817,8 +817,8 @@ int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
 	assert(id != NULL);
 
 	// Look up and stop the plug-in 
-	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	node = hash_lookup(context->env->plugins, id);
 	if (node != NULL) {
 		plugin = hnode_get(node);
@@ -838,8 +838,8 @@ void CP_API cp_stop_all_plugins(cp_context_t *context) {
 	assert(context != NULL);
 	
 	// Stop the active plug-ins in the reverse order they were started 
-	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	while ((node = list_last(context->env->started_plugins)) != NULL) {
 		stop_plugin(context, lnode_get(node));
 	}
@@ -1029,8 +1029,8 @@ int CP_API cp_uninstall_plugin(cp_context_t *context, const char *id) {
 	assert(id != NULL);
 
 	// Look up and unload the plug-in 
-	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	node = hash_lookup(context->env->plugins, id);
 	if (node != NULL) {
 		uninstall_plugin(context, node);
@@ -1049,8 +1049,8 @@ void CP_API cp_uninstall_all_plugins(cp_context_t *context) {
 	
 	assert(context != NULL);
 	
-	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	cp_stop_all_plugins(context);
 	while (1) {
 		hash_scan_begin(&scan, context->env->plugins);

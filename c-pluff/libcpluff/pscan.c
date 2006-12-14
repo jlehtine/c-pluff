@@ -37,9 +37,9 @@ int CP_API cp_scan_plugins(cp_context_t *context, int flags) {
 	
 	assert(context != NULL);
 	
-	cpi_check_invocation(context, __func__);
-	cpi_debug(context, "Plug-in scan is starting.");
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
+	cpi_debug(context, "Plug-in scan is starting.");
 	do {
 		lnode_t *lnode;
 		hscan_t hscan;

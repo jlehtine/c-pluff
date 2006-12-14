@@ -171,6 +171,7 @@ int CP_API cp_init(void) {
 
 void CP_API cp_destroy(void) {
 	assert(initialized > 0);
+	cpi_check_invocation(NULL, CPI_CF_ANY, __func__);
 	initialized--;
 	if (!initialized) {
 #ifdef CP_THREADS
@@ -215,7 +216,7 @@ int CP_API cp_add_logger(cp_logger_t logger, void *user_data, cp_log_severity_t 
 	lnode_t *node;
 
 	assert(logger != NULL);
-	cpi_check_invocation(NULL, __func__);
+	cpi_check_invocation(NULL, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
 	
 	// Check if logger already exists and allocate new holder if necessary
 	l.logger = logger;
@@ -262,7 +263,7 @@ void CP_API cp_remove_logger(cp_logger_t logger) {
 	lnode_t *node;
 	
 	assert(logger != NULL);
-	cpi_check_invocation(NULL, __func__);
+	cpi_check_invocation(NULL, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
 	
 	l.logger = logger;
 	cpi_lock_framework();
@@ -352,26 +353,33 @@ void CP_LOCAL cpi_fatalf(const char *msg, ...) {
 	abort();
 }
 
-void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, const char *func) {
+void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func) {
 	assert(func != NULL);
-	cpi_lock_framework();
-	if (in_logger_invocation) {
-		cpi_fatalf(_("%s was called from within a logger invocation."), func);
+	assert(funcmask != 0);
+	assert(ctx == NULL || (funcmask & CPI_CF_LOGGER));
+	if (funcmask & CPI_CF_LOGGER) {
+		cpi_lock_framework();
+		if (in_logger_invocation) {
+			cpi_fatalf(_("%s was called from within a logger invocation."), func);
+		}
+		cpi_unlock_framework();
 	}
-	cpi_unlock_framework();
 	if (ctx != NULL) {
 #ifdef CP_THREADS
 		assert(cpi_is_mutex_locked(ctx->env->mutex));
 #else
 		assert(ctx->env->locked);
 #endif
-		if (ctx->env->in_event_listener_invocation) {
+		if ((funcmask & CPI_CF_LISTENER)
+			&& ctx->env->in_event_listener_invocation) {
 			cpi_fatalf(_("%s was called from within an event listener invocation."), func);
 		}
-		if (ctx->env->in_start_func_invocation) {
+		if ((funcmask & CPI_CF_START)
+			&& ctx->env->in_start_func_invocation) {
 			cpi_fatalf(_("%s was called from within a start function invocation."), func);
 		}
-		if (ctx->env->in_stop_func_invocation) {
+		if ((funcmask & CPI_CF_STOP)
+			&& ctx->env->in_stop_func_invocation) {
 			cpi_fatalf(_("%s was called from within a stop function invocation."), func);
 		}
 	}
