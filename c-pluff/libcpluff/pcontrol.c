@@ -638,14 +638,62 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	return status;
 }
 
+static void warn_dependency_loop(cp_context_t *context, cp_plugin_t *plugin, list_t *importing, int dynamic) {
+	char *msgbase;
+	char *msg;
+	int msgsize;
+	lnode_t *node;
+	
+	// Take the message base
+	if (dynamic) {
+		msgbase = _("Detected a plug-in dependency loop caused by a dynamically resolved symbol: ");
+	} else {
+		msgbase = _("Detected a plug-in dependency caused by imports: ");
+	}
+	
+	// Calculate the required message space
+	msgsize = strlen(msgbase);
+	msgsize += strlen(plugin->plugin->identifier);
+	msgsize += 2;
+	node = list_last(importing);
+	while (node != NULL) {
+		cp_plugin_t *p = lnode_get(node);
+		if (p == plugin) {
+			break;
+		}
+		msgsize += strlen(p->plugin->identifier);
+		msgsize += 2;
+		node = list_prev(importing, node);
+	}
+	msg = malloc(sizeof(char) * msgsize);
+	if (msg != NULL) {
+		strcpy(msg, msgbase);
+		strcat(msg, plugin->plugin->identifier);
+		node = list_last(importing);
+		while (node != NULL) {
+			cp_plugin_t *p = lnode_get(node);
+			if (p == plugin) {
+				break;
+			}
+			strcat(msg, ", ");
+			strcat(msg, p->plugin->identifier);
+			node = list_prev(importing, node);
+		}
+		strcat(msg, ".");
+		cpi_warn(context, msg);
+		free(msg);
+	}
+}
+
 /**
  * Starts the specified plug-in and its dependencies.
  * 
  * @param context the plug-in context
  * @param plugin the plug-in
+ * @param importing stack of importing plug-ins
  * @return CP_OK (zero) on success or an error code on failure
  */
-static int start_plugin_rec(cp_context_t *context, cp_plugin_t *plugin) {
+static int start_plugin_rec(cp_context_t *context, cp_plugin_t *plugin, list_t *importing) {
 	int status = CP_OK;
 	lnode_t *node;
 	
@@ -653,28 +701,34 @@ static int start_plugin_rec(cp_context_t *context, cp_plugin_t *plugin) {
 	if (plugin->state == CP_PLUGIN_ACTIVE) {
 		return CP_OK;
 	} else if (plugin->state == CP_PLUGIN_STARTING) {
-		cpi_warnf(context, _("Detected a dynamic dependency loop for plug-in %s."), plugin->plugin->identifier);
+		warn_dependency_loop(context, plugin, importing, 1);
 		return CP_OK;
 	}
 	assert(plugin->state == CP_PLUGIN_RESOLVED);
 	
 	// Check for dependency loops
-	if (plugin->processed) {
-		cpi_warnf(context, _("Detected a dependency loop for plug-in %s."), plugin->plugin->identifier);
+	if (cpi_ptrset_contains(importing, plugin)) {
+		warn_dependency_loop(context, plugin, importing, 0);
 		return CP_OK;
 	}
-	plugin->processed = 1;
+	if (!cpi_ptrset_add(importing, plugin)) {
+		cpi_errorf(context,
+			_("Plug-in %s could not be started due to insufficient memory."),
+			plugin->plugin->identifier);
+		return CP_ERR_RESOURCE;
+	}
 
 	// Start up dependencies
 	node = list_first(plugin->imported);
 	while (node != NULL) {
 		cp_plugin_t *ip = lnode_get(node);
 		
-		if ((status = start_plugin_rec(context, ip)) != CP_OK) {
+		if ((status = start_plugin_rec(context, ip, importing)) != CP_OK) {
 			break;
 		}
 		node = list_next(plugin->imported, node);
 	}
+	cpi_ptrset_remove(importing, plugin);
 	
 	// Start up this plug-in
 	if (status == CP_OK) {
@@ -684,34 +738,21 @@ static int start_plugin_rec(cp_context_t *context, cp_plugin_t *plugin) {
 	return status;
 }
 
-/**
- * Resets the processed flag of the specified plug-in and its dependencies.
- * 
- * @param plugin the plug-in
- */
-static void reset_processed_dependencies_rec(cp_plugin_t *plugin) {
-	lnode_t *node;
-	
-	// Check if already resetted
-	if (!plugin->processed) {
-		return;
-	}
-	plugin->processed = 0;
-	
-	// Recursively reset processed flag of dependencies
-	node = list_first(plugin->imported);
-	while (node != NULL) {
-		reset_processed_dependencies_rec((cp_plugin_t *) lnode_get(node));
-		node = list_next(plugin->imported, node);
-	}
-}
-
 int CP_LOCAL cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	int status;
 	
 	if ((status = resolve_plugin(context, plugin)) == CP_OK) {
-		status = start_plugin_rec(context, plugin);
-		reset_processed_dependencies_rec(plugin);
+		list_t *importing = list_create(LISTCOUNT_T_MAX);
+		if (importing != NULL) {
+			status = start_plugin_rec(context, plugin, importing);
+			assert(list_isempty(importing));
+			list_destroy(importing);
+		} else {
+			cpi_errorf(context,
+				_("Plug-in %s could not be started due to insufficient memory."),
+				plugin->plugin->identifier);
+			status = CP_ERR_RESOURCE;
+		}
 	}	
 	return status;
 }
