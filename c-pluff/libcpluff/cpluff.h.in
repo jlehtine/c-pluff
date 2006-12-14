@@ -704,8 +704,9 @@ void CP_API cp_remove_logger(cp_logger_t logger);
  * installed plug-ins. There can be several plug-in context instances if there
  * are several independent sets of plug-ins. However, different plug-in
  * contexts are not very isolated from each other in practice because the
- * global symbols exported by a plug-in runtime in one context are visible to
- * all plug-ins in all context instances.
+ * symbols exported by a plug-in runtime in one context are visible to
+ * all plug-ins in all context instances. This also means that having the
+ * same plug-in concurrently loaded in two different contexts causes problems.
  */
 /*@{*/
 

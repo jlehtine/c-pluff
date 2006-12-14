@@ -23,14 +23,14 @@
 /// Information about symbol providing plug-in
 typedef struct symbol_provider_info_t {
 	
+	// The providing plug-in
+	cp_plugin_t *plugin;
+	
 	// Whether there is also an import dependency for the plug-in
 	int imported;
 	
 	// Total symbol usage count
 	int usage_count;
-	
-	// Maps used symbols into symbol specific usage count information
-	hash_t *symbols;
 	
 } symbol_provider_info_t;
 
@@ -40,8 +40,8 @@ typedef struct symbol_info_t {
 	// Symbol usage count
 	int usage_count;
 	
-	// The name of the symbol
-	char *name;
+	// Information about providing plug-in
+	symbol_provider_info_t *provider_info;
 	
 } symbol_info_t;
 
@@ -105,12 +105,8 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 				break;
 			}
 			memset(provider_info, 0, sizeof(symbol_provider_info_t));
+			provider_info->plugin = pp;
 			provider_info->imported = cpi_ptrset_contains(context->plugin->imported, pp);
-			provider_info->symbols = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
-			if (provider_info->symbols == NULL) {
-				status = CP_ERR_RESOURCE;
-				break;
-			}
 			if (!hash_alloc_insert(context->symbol_providers, pp, provider_info)) {
 				status = CP_ERR_RESOURCE;
 				break;
@@ -118,7 +114,7 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 		}
 		
 		// Lookup or initialize symbol information
-		if ((node = hash_lookup(provider_info->symbols, symbol)) != NULL) {
+		if ((node = hash_lookup(context->symbols, symbol)) != NULL) {
 			symbol_info = hnode_get(node);
 		} else {
 			if ((symbol_info = malloc(sizeof(symbol_info_t))) == NULL) {
@@ -126,13 +122,8 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 				break;
 			}
 			memset(symbol_info, 0, sizeof(symbol_info_t));
-			symbol_info->usage_count = 0;
-			symbol_info->name = cpi_strdup(name);
-			if (symbol_info->name == NULL) {
-				status = CP_ERR_RESOURCE;
-				break;
-			}
-			if (!hash_alloc_insert(provider_info->symbols, symbol, symbol_info)) {
+			symbol_info->provider_info = provider_info;
+			if (!hash_alloc_insert(context->symbols, symbol, symbol_info)) {
 				status = CP_ERR_RESOURCE;
 				break;
 			}
@@ -156,25 +147,21 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 		provider_info->usage_count++;
 
 	} while (0);
-	cpi_unlock_context(context);
 
 	// Clean up
 	if (symbol_info != NULL && symbol_info->usage_count == 0) {
-		if ((node = hash_lookup(provider_info->symbols, symbol)) != NULL) {
-			hash_delete_free(provider_info->symbols, node);
-		}
-		if (symbol_info->name != NULL) {
-			free(symbol_info->name);
+		if ((node = hash_lookup(context->symbols, symbol)) != NULL) {
+			hash_delete_free(context->symbols, node);
 		}
 		free(symbol_info);
 	}
 	if (provider_info != NULL && provider_info->usage_count == 0) {
-		assert(provider_info->symbols == NULL || hash_isempty(provider_info->symbols));
 		if ((node = hash_lookup(context->symbol_providers, pp)) != NULL) {
 			hash_delete_free(context->symbol_providers, node);
 		}
 		free(provider_info);
 	}
+	cpi_unlock_context(context);
 
 	// Report insufficient memory error
 	if (status == CP_ERR_RESOURCE && !error_reported) {
@@ -191,9 +178,48 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 }
 
 void CP_API cp_release_symbol(cp_context_t *context, void *ptr) {
+	hnode_t *node;
+	symbol_info_t *symbol_info;
+	symbol_provider_info_t *provider_info;
 	
 	assert(context != NULL);
 	assert(ptr != NULL);
+
+	cpi_lock_context(context);
+	do {
+
+		// Look up the symbol
+		if ((node = hash_lookup(context->symbols, ptr)) == NULL) {
+			cpi_errorf(context, _("Could not release an unknown symbol %p."), ptr);
+			break;
+		}
+		symbol_info = hnode_get(node);
+		provider_info = symbol_info->provider_info;
 	
-	// TODO
+		// Decrease usage count
+		assert(symbol_info->usage_count > 0);
+		assert(provider_info->usage_count > 0);
+		symbol_info->usage_count--;
+		provider_info->usage_count--;
+	
+		// Check if the symbol is not being used anymore
+		if (symbol_info->usage_count == 0) {
+			hash_delete_free(context->symbols, node);
+			free(symbol_info);
+		}
+	
+		// Check if the symbol providing plug-in is not being used anymore
+		if (provider_info->usage_count == 0) {
+			node = hash_lookup(context->symbol_providers, provider_info->plugin);
+			assert(node != NULL);
+			hash_delete_free(context->symbol_providers, node);
+			if (!provider_info->imported) {
+				cpi_ptrset_remove(context->plugin->imported, provider_info->plugin);
+				cpi_ptrset_remove(provider_info->plugin->importing, context->plugin);
+			}
+			free(provider_info);
+		}
+		
+	} while (0);
+	cpi_unlock_context(context);
 }

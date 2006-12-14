@@ -121,7 +121,7 @@ void CP_API cp_release_info(void *info) {
 			cpi_debugf(NULL, "Information object %p was freed.", info);
 		}
 	} else {
-		cpi_error(NULL, _("Could not release an unknown information object."));
+		cpi_errorf(NULL, _("Could not release an unknown information object %p."), info);
 	}
 	cpi_unlock_framework();
 }

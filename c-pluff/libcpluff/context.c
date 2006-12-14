@@ -154,6 +154,10 @@ void CP_LOCAL cpi_free_context(cp_context_t *context) {
 	}
 
 	// Free context data
+	if (context->symbols != NULL) {
+		assert(hash_isempty(context->symbols));
+		hash_destroy(context->symbols);
+	}
 	if (context->symbol_providers != NULL) {
 		assert(hash_isempty(context->symbol_providers));
 		hash_destroy(context->symbol_providers);
@@ -181,8 +185,10 @@ cp_context_t * CP_LOCAL cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *en
 		// Initialize context
 		context->plugin = plugin;
 		context->env = env;
+		context->symbols = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
 		context->symbol_providers = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
-		if (context->symbol_providers == NULL) {
+		if (context->symbols == NULL
+			|| context->symbol_providers == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
@@ -191,6 +197,12 @@ cp_context_t * CP_LOCAL cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *en
 	
 	// Free context on error
 	if (status != CP_OK && context != NULL) {
+		if (context->symbols != NULL) {
+			hash_destroy(context->symbols);
+		}
+		if (context->symbol_providers != NULL) {
+			hash_destroy(context->symbol_providers);
+		}
 		free(context);
 		context = NULL;
 	}

@@ -76,6 +76,9 @@ struct cp_context_t {
 	/// The associated plug-in environment
 	cp_plugin_env_t *env;
 
+	/// Information about resolved symbols
+	hash_t *symbols;
+
 	/// Information about symbol providing plugins
 	hash_t *symbol_providers;
 
