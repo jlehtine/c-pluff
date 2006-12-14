@@ -50,8 +50,7 @@ typedef struct symbol_info_t {
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-void * CP_API cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *name, int *error) {
-	cp_context_t *context = pi->context;
+void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const char *name, int *error) {
 	int status = CP_OK;
 	int error_reported = 1;
 	hnode_t *node;
@@ -60,8 +59,8 @@ void * CP_API cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *na
 	symbol_provider_info_t *provider_info = NULL;
 	cp_plugin_t *pp = NULL;
 
-	assert(pi != NULL);	
-	assert(pid != NULL);
+	assert(context != NULL);	
+	assert(id != NULL);
 	assert(name != NULL);
 	
 	// Resolve the symbol
@@ -70,9 +69,9 @@ void * CP_API cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *na
 	do {
 
 		// Look up the symbol defining plug-in
-		node = hash_lookup(context->plugins, pid);
+		node = hash_lookup(context->env->plugins, id);
 		if (node == NULL) {
-			cpi_warnf(context, _("Symbol %s in unknown plug-in %s could not be resolved."), name, pid);
+			cpi_warnf(context, _("Symbol %s in unknown plug-in %s could not be resolved."), name, id);
 			status = CP_ERR_UNKNOWN;
 			break;
 		}
@@ -80,25 +79,25 @@ void * CP_API cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *na
 
 		// Make sure the plug-in has been started
 		if ((status = cpi_start_plugin(context, pp)) != CP_OK) {
-			cpi_errorf(context, _("Symbol %s in plug-in %s could not be resolved because the plug-in could not be started."), name, pid);
+			cpi_errorf(context, _("Symbol %s in plug-in %s could not be resolved because the plug-in could not be started."), name, id);
 			error_reported = 1;
 			break;
 		}
 
 		// Look up the symbol
 		if (pp->runtime_lib == NULL) {
-			cpi_warnf(context, _("Symbol %s in plug-in %s could not be resolved because the plug-in does not have runtime library."), name, pid);
+			cpi_warnf(context, _("Symbol %s in plug-in %s could not be resolved because the plug-in does not have runtime library."), name, id);
 			status = CP_ERR_UNKNOWN;
 			break;
 		}
 		if ((symbol = DLSYM(pp->runtime_lib, name)) == NULL) {
-			cpi_warnf(context, _("Symbol %s in plug-in %s could not be resolved because it is not defined."), name, pid);
+			cpi_warnf(context, _("Symbol %s in plug-in %s could not be resolved because it is not defined."), name, id);
 			status = CP_ERR_UNKNOWN;
 			break;
 		}
 
 		// Lookup or initialize symbol provider information
-		if ((node = hash_lookup(pi->symbol_providers, pp)) != NULL) {
+		if ((node = hash_lookup(context->symbol_providers, pp)) != NULL) {
 			provider_info = hnode_get(node);
 		} else {
 			if ((provider_info = malloc(sizeof(symbol_provider_info_t))) == NULL) {
@@ -106,13 +105,13 @@ void * CP_API cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *na
 				break;
 			}
 			memset(provider_info, 0, sizeof(symbol_provider_info_t));
-			provider_info->imported = cpi_ptrset_contains(pi->imported, pp);
+			provider_info->imported = cpi_ptrset_contains(context->plugin->imported, pp);
 			provider_info->symbols = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
 			if (provider_info->symbols == NULL) {
 				status = CP_ERR_RESOURCE;
 				break;
 			}
-			if (!hash_alloc_insert(pi->symbol_providers, pp, provider_info)) {
+			if (!hash_alloc_insert(context->symbol_providers, pp, provider_info)) {
 				status = CP_ERR_RESOURCE;
 				break;
 			}
@@ -141,12 +140,12 @@ void * CP_API cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *na
 		
 		// Add dependencies
 		if (!provider_info->imported && provider_info->usage_count == 0) {
-			if (!cpi_ptrset_add(pi->imported, pp)) {
+			if (!cpi_ptrset_add(context->plugin->imported, pp)) {
 				status = CP_ERR_RESOURCE;
 				break;
 			}
-			if (!cpi_ptrset_add(pp->importing, pi)) {
-				cpi_ptrset_remove(pi->imported, pp);
+			if (!cpi_ptrset_add(pp->importing, context->plugin)) {
+				cpi_ptrset_remove(context->plugin->imported, pp);
 				status = CP_ERR_RESOURCE;
 				break;
 			}
@@ -171,15 +170,15 @@ void * CP_API cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *na
 	}
 	if (provider_info != NULL && provider_info->usage_count == 0) {
 		assert(provider_info->symbols == NULL || hash_isempty(provider_info->symbols));
-		if ((node = hash_lookup(pi->symbol_providers, pp)) != NULL) {
-			hash_delete_free(pi->symbol_providers, node);
+		if ((node = hash_lookup(context->symbol_providers, pp)) != NULL) {
+			hash_delete_free(context->symbol_providers, node);
 		}
 		free(provider_info);
 	}
 
 	// Report insufficient memory error
 	if (status == CP_ERR_RESOURCE && !error_reported) {
-		cpi_errorf(context, _("Symbol %s in plug-in %s could not be resolved due to insufficient memory."), name, pid);
+		cpi_errorf(context, _("Symbol %s in plug-in %s could not be resolved due to insufficient memory."), name, id);
 	}
 
 	// Return error code
@@ -191,19 +190,9 @@ void * CP_API cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *na
 	return symbol;
 }
 
-int CP_API cp_pass_symbol(cp_plugin_t *passing_pi, cp_plugin_t *receiving_pi, void *ptr) {
+void CP_API cp_release_symbol(cp_context_t *context, void *ptr) {
 	
-	assert(passing_pi != NULL);
-	assert(receiving_pi != NULL);
-	assert(ptr != NULL);
-	
-	// TODO
-	return CP_OK;
-}
-
-void CP_API cp_release_symbol(cp_plugin_t *pi, void *ptr) {
-	
-	assert(pi != NULL);
+	assert(context != NULL);
 	assert(ptr != NULL);
 	
 	// TODO

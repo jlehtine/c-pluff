@@ -44,8 +44,8 @@ struct logger_t {
 	/// Minimum severity
 	cp_log_severity_t min_severity;
 	
-	/// Context criteria
-	cp_context_t *ctx_rule;
+	/// Selected environment or NULL
+	cp_plugin_env_t *env_selection;
 };
 
 
@@ -84,6 +84,9 @@ static list_t *loggers = NULL;
 /// Global minimum severity for logging
 static int log_min_severity = CP_LOG_NONE;
 
+/// Is logger currently being invoked
+static int in_logger_invocation = 0;
+
 /// Fatal error handler, or NULL for default 
 static cp_fatal_error_handler_t fatal_error_handler = NULL;
 
@@ -97,7 +100,7 @@ cp_implementation_info_t * CP_API cp_get_implementation_info(void) {
 }
 
 void CP_LOCAL cpi_lock_framework(void) {
-	#if defined(CP_THREADS)
+#if defined(CP_THREADS)
 	cpi_lock_mutex(framework_mutex);
 #elif !defined(NDEBUG)
 	framework_locked++;
@@ -212,6 +215,7 @@ int CP_API cp_add_logger(cp_logger_t logger, void *user_data, cp_log_severity_t 
 	lnode_t *node;
 
 	assert(logger != NULL);
+	cpi_check_invocation(NULL, __func__);
 	
 	// Check if logger already exists and allocate new holder if necessary
 	l.logger = logger;
@@ -239,7 +243,11 @@ int CP_API cp_add_logger(cp_logger_t logger, void *user_data, cp_log_severity_t 
 		
 	// Initialize or update the logger holder
 	lh->min_severity = min_severity;
-	lh->ctx_rule = ctx_rule;
+	if (ctx_rule != NULL) {
+		lh->env_selection = ctx_rule->env;
+	} else {
+		lh->env_selection = NULL;
+	}
 		
 	// Update global limits
 	update_logging_limits();
@@ -252,6 +260,9 @@ int CP_API cp_add_logger(cp_logger_t logger, void *user_data, cp_log_severity_t 
 void CP_API cp_remove_logger(cp_logger_t logger) {
 	logger_t l;
 	lnode_t *node;
+	
+	assert(logger != NULL);
+	cpi_check_invocation(NULL, __func__);
 	
 	l.logger = logger;
 	cpi_lock_framework();
@@ -270,17 +281,25 @@ static void log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) 
 	lnode_t *node;
 	
 	cpi_lock_framework();
-	cpi_inc_logger_invocation(ctx);
-	node = list_first(loggers);
-	while (node != NULL) {
-		logger_t *lh = lnode_get(node);
-		if (severity >= lh->min_severity
-			&& (lh->ctx_rule == NULL || ctx == lh->ctx_rule)) {
-			lh->logger(severity, msg, ctx, lh->user_data);
+	if (!in_logger_invocation) {
+		const char *apid = NULL;
+		
+		if (ctx != NULL && ctx->plugin != NULL) {
+			apid = ctx->plugin->plugin->identifier;
 		}
-		node = list_next(loggers, node);
+		in_logger_invocation++;
+		node = list_first(loggers);
+		while (node != NULL) {
+			logger_t *lh = lnode_get(node);
+			if (severity >= lh->min_severity
+				&& (lh->env_selection == NULL
+					|| (ctx != NULL && ctx->env == lh->env_selection))) {
+				lh->logger(severity, msg, apid, lh->user_data);
+			}
+			node = list_next(loggers, node);
+		}
+		in_logger_invocation--;
 	}
-	cpi_dec_logger_invocation(ctx);
 	cpi_unlock_framework();
 }
 
@@ -331,4 +350,29 @@ void CP_LOCAL cpi_fatalf(const char *msg, ...) {
 	
 	// Abort if still alive 
 	abort();
+}
+
+void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, const char *func) {
+	assert(func != NULL);
+	cpi_lock_framework();
+	if (in_logger_invocation) {
+		cpi_fatalf(_("%s was called from within a logger invocation."), func);
+	}
+	cpi_unlock_framework();
+	if (ctx != NULL) {
+#ifdef CP_THREADS
+		assert(cpi_is_mutex_locked(ctx->env->mutex));
+#else
+		assert(ctx->env->locked);
+#endif
+		if (ctx->env->in_event_listener_invocation) {
+			cpi_fatalf(_("%s was called from within an event listener invocation."), func);
+		}
+		if (ctx->env->in_start_func_invocation) {
+			cpi_fatalf(_("%s was called from within a start function invocation."), func);
+		}
+		if (ctx->env->in_stop_func_invocation) {
+			cpi_fatalf(_("%s was called from within a stop function invocation."), func);
+		}
+	}
 }

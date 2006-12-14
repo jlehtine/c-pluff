@@ -149,14 +149,16 @@ extern "C" {
 /*@{*/
 
 /**
- * An opaque type representing a plug-in context.
+ * A plug-in context represents the co-operation environment of a set of
+ * plug-ins from the perspective of a particular participating plug-in or
+ * the perspective of the client program. It is used as an opaque handle to
+ * the shared resources but the framework also uses the context to identify
+ * the plug-in or the client program invoking framework functions. Therefore
+ * a plug-in should not generally expose its context instance to other
+ * plug-ins or the client program and neither should the client program
+ * expose its context instance to plug-ins.
  */
 typedef struct cp_context_t cp_context_t;
-
-/**
- * An opaque type representing a plug-in instance.
- */
-typedef struct cp_plugin_t cp_plugin_t;
 
 /*@}*/
 
@@ -478,7 +480,7 @@ typedef enum cp_plugin_state_t {
 /**
  * A listener function called synchronously after a plugin state change.
  * The function should return promptly. Plug-in framework
- * functions causing plug-in context changes or changes to installed plug-ins
+ * functions other than library, plug-in and extension information functions
  * must not be called from within a plug-in listener invocation.
  * 
  * @param ctx the associated plug-in context
@@ -494,26 +496,28 @@ typedef void (*cp_plugin_listener_t)(cp_context_t *ctx, const char *plugin_id, c
  * A start function called to start a plug-in. The start function must return
  * zero (CP_OK) on success and non-zero on failure. If the start fails then the
  * stop function (if any) is called to clean up plug-in state. Plug-in
- * framework functions causing plug-in context changes or changes to installed
- * plugins must not be called from within a start function invocation.
+ * framework functions other than library, plug-in and extension
+ * information functions, logging functions and dynamic symbol functions must
+ * not be called from within a start function invocation.
  * 
  * @param ctx the associated plug-in context
- * @param pi the plug-in instance handle
  * @return non-zero on success, or zero on failure
  */
-typedef int (*cp_start_t)(cp_context_t *ctx, cp_plugin_t *pi);
+typedef int (*cp_start_t)(cp_context_t *ctx);
 
 /**
  * A stop function called to stop a plugin. Plug-in framework functions
- * causing plug-in context changes or changes to installed plug-ins
- * must not be called from within a stop function invocation.
+ * other than library, plug-in and extension information functions,
+ * logging functions and cp_release_symbol must not be
+ * called from within a stop function invocation. After the call to this
+ * function the plug-in context of this plug-in becomes invalid.
  */
 typedef void (*cp_stop_t)(void);
 
 /*@}*/
 
 
-/** @name Logging and error handling */
+/** @name Logging */
 /*@{*/
 
 /**
@@ -540,16 +544,25 @@ typedef enum cp_log_severity_t {
 
 /**
  * A logger function called to log selected plug-in framework messages. The
- * messages may be localized. Plug-in framework functions should not be called
- * from within a logger function invocation.
+ * messages may be localized. Plug-in framework functions must not
+ * be called from within a logger function invocation. All framework messages
+ * emerging during a logger function invocation are ignored and not passed to
+ * any logger. In a multi-threaded environment logger function invocations are
+ * serialized by the framework.
  *
  * @param severity the severity of the message (one of CP_LOG_... constants)
  * @param msg the message to be logged, possibly localized
- * @param ctx the related plug-in context or NULL if none
+ * @param apid the identifier of the activating plug-in or NULL for the client program
  * @param user_data the user data pointer given when the logger was registered
  * @see cp_add_logger
  */
-typedef void (*cp_logger_t)(cp_log_severity_t severity, const char *msg, cp_context_t *ctx, void *user_data);
+typedef void (*cp_logger_t)(cp_log_severity_t severity, const char *msg, const char *apid, void *user_data);
+
+/*@}*/
+
+
+/** @name Error handling */
+/*@{*/
 
 /**
  * A fatal error handler for handling unrecoverable errors. If the error
@@ -615,7 +628,7 @@ cp_implementation_info_t * CP_API cp_get_implementation_info(void);
  * should be released by calling \Ref{cp_destroy} when the framework is
  * not needed anymore.
  *
- * Additionally, to enable localization support, the main program should
+ * Additionally, to enable localization support, the client program should
  * set the current locale using setlocale(LC_ALL, "") before calling
  * this function.
  *
@@ -634,14 +647,25 @@ int CP_API cp_init(void);
  */
 void CP_API cp_destroy(void);
 
+/**
+ * Sets the fatal error handler called on non-recoverable errors. The default
+ * error handler prints the error message out to standard error and aborts
+ * the program. If the user specified error handler returns then the framework
+ * will abort the program. Setting NULL error handler will restore the default
+ * handler. This function is not thread-safe.
+ * 
+ * @param error_handler the fatal error handler
+ */
+void CP_API cp_set_fatal_error_handler(cp_fatal_error_handler_t error_handler);
+
 /*@}*/
 
 
 /**
- * @name Logging and error handling
+ * @name Logging
  *
- * These functions can be used to log plug-in framework messages and to
- * handle fatal errors. They are intended to be used by the client program.
+ * These functions can be used to log plug-in framework messages.
+ * They can be used by the client program or by a plug-in runtime.
  */
 /*@{*/
 
@@ -649,6 +673,8 @@ void CP_API cp_destroy(void);
  * Registers a new logger or updates the settings of a registered logger.
  * If the specified logger is not yet known, a new logger registration
  * is made, otherwise the settings for the existing logger are updated.
+ * If a plug-in registers a logger it must remove the logger registration
+ * when the plug-in is stopped.
  *
  * @param logger the logger function to be called
  * @param user_data the user data pointer passed to the logger
@@ -666,41 +692,30 @@ int CP_API cp_add_logger(cp_logger_t logger, void *user_data, cp_log_severity_t 
  */
 void CP_API cp_remove_logger(cp_logger_t logger);
 
-/**
- * Sets the fatal error handler called on non-recoverable errors. The default
- * error handler prints the error message out to standard error and aborts
- * the program. If the user specified error handler returns then the framework
- * will abort the program. Setting NULL error handler will restore the default
- * handler. This function is not thread-safe.
- * 
- * @param error_handler the fatal error handler
- */
-void CP_API cp_set_fatal_error_handler(cp_fatal_error_handler_t error_handler);
-
 /*@}*/
 
 
 /**
  * @name Plug-in context management
  *
- * These functions are used to manage plug-in context instances. They
- * are intended to be used by the client program. A
- * plug-in context is a container for installed plug-ins. There can
- * be several plug-in context instances if the client program has
- * several independent sets of plug-ins. However, different plug-in contexts
- * are not very isolated from each other in practice because the global
- * symbols exported by a plug-in runtime in one context are visible to
+ * These functions are used to manage plug-in contexts from the client
+ * program perspective. They are not intended to be used by a plug-in runtime.
+ * From the client program perspective a plug-in context is a container for
+ * installed plug-ins. There can be several plug-in context instances if there
+ * are several independent sets of plug-ins. However, different plug-in
+ * contexts are not very isolated from each other in practice because the
+ * global symbols exported by a plug-in runtime in one context are visible to
  * all plug-ins in all context instances.
  */
 /*@{*/
 
 /**
- * Creates a new plug-in context which is an instance of the C-Pluff plug-in framework.
- * Plug-ins are loaded and installed into a specific context. An application
- * may have more than one plug-in context but the plug-ins that interact with
- * each other should be placed in the same context. The resources associated with
- * the context are released by calling \Ref{cp_destroy_context} when the context is not
- * needed anymore.
+ * Creates a new plug-in context which can be used as a container for plug-ins.
+ * Plug-ins are loaded and installed into a specific context. The client
+ * program may have more than one plug-in context but the plug-ins that
+ * interact with each other should be placed in the same context. The
+ * resources associated with the context are released by calling
+ * \Ref{cp_destroy_context} when the context is not needed anymore.
  * 
  * @param error pointer to the location where error code or CP_OK is stored, or NULL
  * @return the newly created plugin context, or NULL on failure
@@ -710,34 +725,11 @@ cp_context_t * CP_API cp_create_context(int *error);
 /**
  * Destroys the specified plug-in context and releases the associated resources.
  * Stops and uninstalls all plug-ins in the context. The context must not be
- * accessed after calling this function. The client program must not have any
- * unreleased references to dynamic symbols provided by the plug-ins contained
- * in the context.
+ * accessed after calling this function.
  * 
  * @param ctx the context to be destroyed
  */
 void CP_API cp_destroy_context(cp_context_t *ctx);
-
-/**
- * Registers a plug-in listener with a plug-in context. The listener is called
- * synchronously immediately after a plug-in state change. There can be several
- * listeners registered with the same context.
- * 
- * @param ctx the plug-in context
- * @param listener the plug-in listener to be added
- * @param user_data user data pointer supplied to the listener
- * @return CP_OK (zero) on success, CP_ERR_RESOURCE if out of resources
- */
-int CP_API cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_t listener, void *user_data);
-
-/**
- * Removes a plug-in listener from a plug-in context. Does nothing if the
- * specified listener was not registered.
- * 
- * @param ctx the plug-in context
- * @param listener the plug-in listener to be removed
- */
-void CP_API cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_t listener);
 
 /**
  * Registers a directory of plug-ins with a plug-in context. The
@@ -895,8 +887,8 @@ void CP_API cp_uninstall_all_plugins(cp_context_t *ctx);
  * @name Plug-in and extension information
  *
  * These functions can be used to query information about the installed
- * plug-ins, extension points and extensions. They may be used by the client
- * program or by a plug-in runtime.
+ * plug-ins, extension points and extensions or to listen for plug-in state
+ * changes. They may be used by the client program or by a plug-in runtime.
  */
 /*@{*/
 
@@ -928,16 +920,6 @@ cp_plugin_info_t * CP_API cp_get_plugin_info(cp_context_t *ctx, const char *id, 
 cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *ctx, int *error, int *num);
 
 /**
- * Returns the current state of the specified plug-in. Returns
- * CP_PLUGIN_UNINSTALLED if the specified plug-in identifier is unknown.
- * 
- * @param ctx the plug-in context
- * @param id the plug-in identifier
- * @return the current state of the plug-in
- */
-cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *ctx, const char *id);
-
-/**
  * Returns static information about the currently installed extension points.
  * The returned data structures must not be modified and the caller must
  * release the information by calling \Ref{cp_release_info} when the
@@ -966,76 +948,6 @@ cp_ext_point_t ** CP_API cp_get_ext_points_info(cp_context_t *ctx, int *error, i
  */
 cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *ctx, const char *extpt_id, int *error, int *num);
 
-/*@}*/
-
-
-/**
- * @name Dynamic symbols
- *
- * These functions can be used to access dynamic symbols provided by the
- * plug-ins. They may be used by the client program or by a plug-in runtime.
- */
-/*@{*/
-
-/**
- * Resolves a named symbol provided by the specified plug-in.
- * The plug-in framework creates dynamically a dependency from the symbol using
- * plug-in to the symbol defining plug-in. When the symbol is not used anymore
- * it must be released using \Ref{cp_release_symbol} which also removes the
- * dependency. If the symbol is to be passed on to another plug-in then the
- * plug-in passing the symbol must use \Ref{cp_pass_symbol}.
- *
- * @param pi the plug-in instance resolving the symbol
- * @param pid the identifier of the symbol defining plug-in
- * @param name the name of the symbol
- * @param error filled with an error code if non-NULL
- * @return the pointer associated with the symbol or NULL on failure
- */
-void * CP_API cp_resolve_symbol(cp_plugin_t *pi, const char *pid, const char *name, int *error);
-
-/**
- * Passes a dynamically resolved symbol from one plug-in instance to another.
- * The plug-in framework creates dynamically a dependency from the symbol
- * receiving plug-in to the original symbol defining plug-in.
- * The symbol is released only after both plug-in instances have released
- * the symbol. This function must be called by a plug-in which is about
- * to pass a dynamically resolved symbol to another plug-in runtime as a
- * parameter or as part of a data structure. The documentation of such
- * interface should clearly indicate how the receiving plug-in should
- * release the symbol. This can happen either directly using
- * \Ref{cp_release_symbol} or indirectly using facilities provided by the
- * symbol passing plug-in. A plug-in instance can also pass a symbol to
- * itself which increases the usage count for the symbol.
- *
- * @param passing_pi the plug-in instance passing the symbol
- * @param receiving_pi the plug-in receiving the symbol
- * @param ptr the pointer associated with the symbol
- */
-int CP_API cp_pass_symbol(cp_plugin_t *passing_pi, cp_plugin_t *receiving_pi, void *ptr);
-
-/**
- * Releases a previously obtained symbol. The pointer must not be used by the
- * releasing plug-in after the symbol has been released. The symbol is released
- * only after as many calls to this function as there have been for
- * \Ref{cp_resolve_symbol} and \Ref{cp_pass_symbol} for the same plug-in and
- * symbol.
- *
- * @param pi the plug-in instance releasing the symbol
- * @param ptr the pointer associated with the symbol
- */
-void CP_API cp_release_symbol(cp_plugin_t *pi, void *ptr);
-
-/*@}*/
-
-
-/**
- * @name Resource management
- *
- * There is a single function which is used to release different
- * kind of dynamically allocated information returned by the framework.
- */
-/*@{*/
-
 /**
  * Releases previously obtained dynamically allocated information. The
  * documentation for functions returning such information refers
@@ -1047,7 +959,85 @@ void CP_API cp_release_symbol(cp_plugin_t *pi, void *ptr);
  */
 void CP_API cp_release_info(void *info);
 
+/**
+ * Returns the current state of the specified plug-in. Returns
+ * CP_PLUGIN_UNINSTALLED if the specified plug-in identifier is unknown.
+ * 
+ * @param ctx the plug-in context
+ * @param id the plug-in identifier
+ * @return the current state of the plug-in
+ */
+cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *ctx, const char *id);
+
+/**
+ * Registers a plug-in listener with a plug-in context. The listener is called
+ * synchronously immediately after a plug-in state change. There can be several
+ * listeners registered with the same context. If a plug-in registers a
+ * listener it must unregister it when the plug-in is stopped.
+ * 
+ * @param ctx the plug-in context
+ * @param listener the plug-in listener to be added
+ * @param user_data user data pointer supplied to the listener
+ * @return CP_OK (zero) on success, CP_ERR_RESOURCE if out of resources
+ */
+int CP_API cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_t listener, void *user_data);
+
+/**
+ * Removes a plug-in listener from a plug-in context. Does nothing if the
+ * specified listener was not registered.
+ * 
+ * @param ctx the plug-in context
+ * @param listener the plug-in listener to be removed
+ */
+void CP_API cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_t listener);
+
 /*@}*/
+
+
+/**
+ * @name Dynamic symbols
+ *
+ * These functions can be used to dynamically access symbols exported by the
+ * plug-ins. They may be used by the client program or by a plug-in runtime.
+ * The framework automatically maintains a dynamic dependency from the symbol
+ * using plug-in to the symbol defining plug-in. If the symbol defining plug-in
+ * is about to be stopped then the symbol using plug-in is stopped as well.
+ * However, the framework does not control the client program so if a client
+ * program dynamically resolves symbols defined by plug-ins then it is
+ * the responsibility of the client program to ensure it is not using a symbol
+ * after the defining plug-in has been uninstalled.
+ */
+/*@{*/
+
+/**
+ * Resolves a named symbol provided by the specified plug-in.
+ * The plug-in framework creates dynamically a dependency from the symbol using
+ * plug-in to the symbol defining plug-in. The symbol must be released using
+ * \Ref{cp_release_symbol} when it is not needed anymore or at latest when
+ * the symbol using plug-in is stopped. Pointers to dynamically resolved
+ * symbols must not be passed on to other plug-ins.
+ *
+ * @param ctx the plug-in context
+ * @param id the identifier of the symbol defining plug-in
+ * @param name the name of the symbol
+ * @param error filled with an error code if non-NULL
+ * @return the pointer associated with the symbol or NULL on failure
+ */
+void * CP_API cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *name, int *error);
+
+/**
+ * Releases a previously obtained symbol. The pointer must not be used by the
+ * releasing plug-in after the symbol has been released. The symbol is released
+ * only after as many calls to this function as there have been for
+ * \Ref{cp_resolve_symbol} for the same plug-in and symbol.
+ *
+ * @param ctx the plug-in context
+ * @param ptr the pointer associated with the symbol
+ */
+void CP_API cp_release_symbol(cp_context_t *ctx, void *ptr);
+
+/*@}*/
+
 
 /*@}*/
 /*@}*/

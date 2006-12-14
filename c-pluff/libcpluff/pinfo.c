@@ -108,6 +108,7 @@ void CP_API cp_release_info(void *info) {
 	hnode_t *node;
 	
 	assert(info != NULL);
+	cpi_check_invocation(NULL, __func__);
 	cpi_lock_framework();
 	if (infos != NULL
 		&& (node = hash_lookup(infos, info)) != NULL) {
@@ -155,10 +156,11 @@ cp_plugin_info_t * CP_API cp_get_plugin_info(cp_context_t *context, const char *
 
 	assert(context != NULL);
 	assert(id != NULL);
+	cpi_check_invocation(NULL, __func__);
 
 	// Look up the plug-in and return information 
 	cpi_lock_context(context);
-	node = hash_lookup(context->plugins, id);
+	node = hash_lookup(context->env->plugins, id);
 	if (node != NULL) {
 		cp_plugin_t *rp = hnode_get(node);
 		cpi_use_info(rp->plugin);
@@ -191,6 +193,7 @@ cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *context, int *error
 	int status = CP_OK;
 	
 	assert(context != NULL);
+	cpi_check_invocation(NULL, __func__);
 	
 	cpi_lock_context(context);
 	do {
@@ -198,14 +201,14 @@ cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *context, int *error
 		hnode_t *node;
 		
 		// Allocate space for pointer array 
-		n = hash_count(context->plugins);
+		n = hash_count(context->env->plugins);
 		if ((plugins = malloc(sizeof(cp_plugin_info_t *) * (n + 1))) == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
 		
 		// Get plug-in information structures 
-		hash_scan_begin(&scan, context->plugins);
+		hash_scan_begin(&scan, context->env->plugins);
 		i = 0;
 		while ((node = hash_scan_next(&scan)) != NULL) {
 			cp_plugin_t *rp = hnode_get(node);
@@ -247,10 +250,11 @@ cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *context, const char *
 	hnode_t *hnode;
 	
 	assert(context != NULL);
+	cpi_check_invocation(NULL, __func__);
 	
 	// Look up the plug-in state 
 	cpi_lock_context(context);
-	if ((hnode = hash_lookup(context->plugins, id)) != NULL) {
+	if ((hnode = hash_lookup(context->env->plugins, id)) != NULL) {
 		cp_plugin_t *rp = hnode_get(hnode);
 		state = rp->state;
 	}
@@ -274,6 +278,7 @@ cp_ext_point_t ** CP_API cp_get_ext_points_info(cp_context_t *context, int *erro
 	int status = CP_OK;
 	
 	assert(context != NULL);
+	cpi_check_invocation(NULL, __func__);
 	
 	cpi_lock_context(context);
 	do {
@@ -281,14 +286,14 @@ cp_ext_point_t ** CP_API cp_get_ext_points_info(cp_context_t *context, int *erro
 		hnode_t *node;
 		
 		// Allocate space for pointer array 
-		n = hash_count(context->ext_points);
+		n = hash_count(context->env->ext_points);
 		if ((ext_points = malloc(sizeof(cp_ext_point_t *) * (n + 1))) == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
 		
 		// Get extension point information structures 
-		hash_scan_begin(&scan, context->ext_points);
+		hash_scan_begin(&scan, context->env->ext_points);
 		i = 0;
 		while ((node = hash_scan_next(&scan)) != NULL) {
 			cp_ext_point_t *ep = hnode_get(node);
@@ -341,6 +346,7 @@ cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *context, const cha
 	int status = CP_OK;
 	
 	assert(context != NULL);
+	cpi_check_invocation(NULL, __func__);
 	
 	cpi_lock_context(context);
 	do {
@@ -349,7 +355,7 @@ cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *context, const cha
 
 		// Count the number of extensions
 		if (extpt_id != NULL) {
-			if ((hnode = hash_lookup(context->extensions, extpt_id)) != NULL) {
+			if ((hnode = hash_lookup(context->env->extensions, extpt_id)) != NULL) {
 				n = list_count((list_t *) hnode_get(hnode));
 			} else {
 				n = 0;
@@ -358,7 +364,7 @@ cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *context, const cha
 			hscan_t scan;
 			
 			n = 0;
-			hash_scan_begin(&scan, context->extensions);
+			hash_scan_begin(&scan, context->env->extensions);
 			while ((hnode = hash_scan_next(&scan)) != NULL) {
 				n += list_count((list_t *) hnode_get(hnode));
 			}
@@ -371,7 +377,7 @@ cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *context, const cha
 		}
 		
 		// Get extension information structures 
-		hash_scan_begin(&scan, context->extensions);
+		hash_scan_begin(&scan, context->env->extensions);
 		i = 0;
 		while ((hnode = hash_scan_next(&scan)) != NULL) {
 			list_t *el = hnode_get(hnode);

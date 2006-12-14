@@ -52,7 +52,7 @@ int CP_API cp_scan_plugins(cp_context_t *context, int flags) {
 		}
 	
 		// Scan plug-in directories for available plug-ins 
-		lnode = list_first(context->plugin_dirs);
+		lnode = list_first(context->env->plugin_dirs);
 		while (lnode != NULL) {
 			const char *dir_path;
 			DIR *dir;
@@ -142,7 +142,7 @@ int CP_API cp_scan_plugins(cp_context_t *context, int flags) {
 				// continue loading plug-ins from other directories 
 			}
 			
-			lnode = list_next(context->plugin_dirs, lnode);
+			lnode = list_next(context->env->plugin_dirs, lnode);
 		}
 		
 		// Copy the list of started plug-ins, if necessary 

@@ -100,48 +100,153 @@ static void process_event(list_t *list, lnode_t *node, void *event) {
 	h->plugin_listener(h->context, e->plugin_id, e->old_state, e->new_state, h->user_data);
 }
 
+static void free_plugin_env(cp_plugin_env_t *env) {
+	assert(env != NULL);
+	
+	// Free environment data
+	if (env->plugins != NULL) {
+		assert(hash_isempty(env->plugins));
+		hash_destroy(env->plugins);
+		env->plugins = NULL;
+	}
+	if (env->started_plugins != NULL) {
+		assert(list_isempty(env->started_plugins));
+		list_destroy(env->started_plugins);
+		env->started_plugins = NULL;
+	}
+	if (env->plugin_dirs != NULL) {
+		list_process(env->plugin_dirs, NULL, cpi_process_free_ptr);
+		list_destroy(env->plugin_dirs);
+		env->plugin_dirs = NULL;
+	}
+	if (env->plugin_listeners != NULL) {
+		list_process(env->plugin_listeners, NULL, process_free_el_holder);
+		list_destroy(env->plugin_listeners);
+		env->plugin_listeners = NULL;
+	}
+	if (env->ext_points != NULL) {
+		assert(hash_isempty(env->ext_points));
+		hash_destroy(env->ext_points);
+	}
+	if (env->extensions != NULL) {
+		assert(hash_isempty(env->extensions));
+		hash_destroy(env->extensions);
+	}
+	
+	// Destroy mutex 
+#ifdef CP_THREADS
+	if (env->mutex != NULL) {
+		cpi_destroy_mutex(env->mutex);
+	}
+#endif
 
-// Initialization and destroy 
+	// Free environment
+	free(env);
 
-cp_context_t * CP_API cp_create_context(int *error) {
+}
+
+void CP_LOCAL cpi_free_context(cp_context_t *context) {
+	assert(context != NULL);
+	
+	// Free environment if this is the client program context
+	if (context->plugin == NULL && context->env != NULL) {
+		free_plugin_env(context->env);
+	}
+
+	// Free context data
+	if (context->symbol_providers != NULL) {
+		assert(hash_isempty(context->symbol_providers));
+		hash_destroy(context->symbol_providers);
+	}
+
+	// Free context
+	free(context);	
+}
+
+cp_context_t * CP_LOCAL cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *env, int *error) {
 	cp_context_t *context = NULL;
 	int status = CP_OK;
-
-	// Initialize internal state 
-	do {
 	
-		// Allocate memory for the context 
+	assert(env != NULL);
+	assert(error != NULL);
+	
+	do {
+		
+		// Allocate memory for the context
 		if ((context = malloc(sizeof(cp_context_t))) == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
-		}		
-	
-		// Initialize data structures as necessary 
-		memset(context, 0, sizeof(cp_context_t));
-#ifdef CP_THREADS
-		context->mutex = cpi_create_mutex();
-#endif
-		context->plugin_listeners = list_create(LISTCOUNT_T_MAX);
-		context->plugin_dirs = list_create(LISTCOUNT_T_MAX);
-		context->plugins = hash_create(HASHCOUNT_T_MAX,
-			(int (*)(const void *, const void *)) strcmp, NULL);
-		context->started_plugins = list_create(LISTCOUNT_T_MAX);
-		context->ext_points = hash_create(HASHCOUNT_T_MAX,
-			(int (*)(const void *, const void *)) strcmp, NULL);
-		context->extensions = hash_create(HASHCOUNT_T_MAX,
-			(int (*)(const void *, const void *)) strcmp, NULL);
-		if (context->plugin_listeners == NULL
-#ifdef CP_THREADS
-			|| context->mutex == NULL
-#endif
-			|| context->plugin_dirs == NULL
-			|| context->plugins == NULL
-			|| context->started_plugins == NULL
-			|| context->ext_points == NULL
-			|| context->extensions == NULL) {
+		}
+		
+		// Initialize context
+		context->plugin = plugin;
+		context->env = env;
+		context->symbol_providers = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
+		if (context->symbol_providers == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
+		
+	} while (0);
+	
+	// Free context on error
+	if (status != CP_OK && context != NULL) {
+		free(context);
+		context = NULL;
+	}
+	
+	*error = status;
+	return context;
+}
+
+cp_context_t * CP_API cp_create_context(int *error) {
+	cp_plugin_env_t *env = NULL;
+	cp_context_t *context = NULL;
+	int status = CP_OK;
+
+	cpi_check_invocation(NULL, __func__);
+
+	// Initialize internal state
+	do {
+	
+		// Allocate memory for the plug-in environment
+		if ((env = malloc(sizeof(cp_plugin_env_t))) == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+	
+		// Initialize plug-in environment
+		memset(env, 0, sizeof(cp_plugin_env_t));
+#ifdef CP_THREADS
+		env->mutex = cpi_create_mutex();
+#endif
+		env->plugin_listeners = list_create(LISTCOUNT_T_MAX);
+		env->plugin_dirs = list_create(LISTCOUNT_T_MAX);
+		env->plugins = hash_create(HASHCOUNT_T_MAX,
+			(int (*)(const void *, const void *)) strcmp, NULL);
+		env->started_plugins = list_create(LISTCOUNT_T_MAX);
+		env->ext_points = hash_create(HASHCOUNT_T_MAX,
+			(int (*)(const void *, const void *)) strcmp, NULL);
+		env->extensions = hash_create(HASHCOUNT_T_MAX,
+			(int (*)(const void *, const void *)) strcmp, NULL);
+		if (env->plugin_listeners == NULL
+#ifdef CP_THREADS
+			|| env->mutex == NULL
+#endif
+			|| env->plugin_dirs == NULL
+			|| env->plugins == NULL
+			|| env->started_plugins == NULL
+			|| env->ext_points == NULL
+			|| env->extensions == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+		
+		// Create the plug-in context
+		if ((context = cpi_new_context(NULL, env, &status)) == NULL) {
+			break;
+		}
+		env = NULL;
 
 		// Create a context list, if necessary, and add context to the list
 		cpi_lock_framework();
@@ -170,9 +275,14 @@ cp_context_t * CP_API cp_create_context(int *error) {
 		cpi_debugf(NULL, "Plug-in context %p was created.", (void *) context);
 	}
 	
-	// Rollback initialization on failure 
-	if (status != CP_OK && context != NULL) {
-		cp_destroy_context(context);
+	// Release resources on failure 
+	if (status != CP_OK) {
+		if (env != NULL) {
+			free_plugin_env(env);
+		}
+		if (context != NULL) {
+			cpi_free_context(context);
+		}
 		context = NULL;
 	}
 
@@ -187,10 +297,17 @@ cp_context_t * CP_API cp_create_context(int *error) {
 
 void CP_API cp_destroy_context(cp_context_t *context) {
 	assert(context != NULL);
+	assert(context->plugin == NULL);
+
+	cpi_check_invocation(NULL, __func__);
+	if (context->plugin != NULL) {
+		cpi_fatalf(_("Only the client program can destroy a plug-in context."));
+	}
+
 #ifdef CP_THREADS
-	assert(context->mutex == NULL || !cpi_is_mutex_locked(context->mutex));
+	assert(context->env->mutex == NULL || !cpi_is_mutex_locked(context->env->mutex));
 #else
-	assert(!context->locked);
+	assert(!context->env->locked);
 #endif
 
 	// Check invocation, although context not locked
@@ -209,49 +326,7 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 	cpi_unlock_framework();
 
 	// Unload all plug-ins 
-	if (context->plugins != NULL && !hash_isempty(context->plugins)) {
-		cp_uninstall_all_plugins(context);
-	}
-	
-	// Release data structures 
-	if (context->plugins != NULL) {
-		assert(hash_isempty(context->plugins));
-		hash_destroy(context->plugins);
-		context->plugins = NULL;
-	}
-	if (context->started_plugins != NULL) {
-		assert(list_isempty(context->started_plugins));
-		list_destroy(context->started_plugins);
-		context->started_plugins = NULL;
-	}
-	if (context->plugin_dirs != NULL) {
-		list_process(context->plugin_dirs, NULL, cpi_process_free_ptr);
-		list_destroy(context->plugin_dirs);
-		context->plugin_dirs = NULL;
-	}
-	if (context->plugin_listeners != NULL) {
-		list_process(context->plugin_listeners, NULL, process_free_el_holder);
-		list_destroy(context->plugin_listeners);
-		context->plugin_listeners = NULL;
-	}
-	if (context->ext_points != NULL) {
-		assert(hash_isempty(context->ext_points));
-		hash_destroy(context->ext_points);
-	}
-	if (context->extensions != NULL) {
-		assert(hash_isempty(context->extensions));
-		hash_destroy(context->extensions);
-	}
-	
-	// Release mutex 
-#ifdef CP_THREADS
-	if (context->mutex != NULL) {
-		cpi_destroy_mutex(context->mutex);
-	}
-#endif
-
-	// Release context data structure
-	free(context);
+	cp_uninstall_all_plugins(context);
 	
 	// Log event
 	cpi_debugf(NULL, "Plug-in context %p was destroyed.", (void *) context);
@@ -291,7 +366,7 @@ int CP_API cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_t li
 		holder->context = context;
 		holder->user_data = user_data;
 		if ((node = lnode_create(holder)) != NULL) {
-			list_append(context->plugin_listeners, node);
+			list_append(context->env->plugin_listeners, node);
 			status = CP_OK;
 		} else {
 			free(holder);
@@ -314,9 +389,9 @@ void CP_API cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_
 	cpi_check_invocation(context, __func__);
 	holder.plugin_listener = listener;
 	cpi_lock_context(context);
-	node = list_find(context->plugin_listeners, &holder, comp_el_holder);
+	node = list_find(context->env->plugin_listeners, &holder, comp_el_holder);
 	if (node != NULL) {
-		process_free_el_holder(context->plugin_listeners, node, NULL);
+		process_free_el_holder(context->env->plugin_listeners, node, NULL);
 	}
 	cpi_unlock_context(context);
 	cpi_debugf(context, "Plug-in listener %p was removed.", (void *) listener);
@@ -326,9 +401,9 @@ void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t 
 	assert(event != NULL);
 	assert(event->plugin_id != NULL);
 	cpi_lock_context(context);
-	cpi_inc_event_invocation(context);
-	list_process(context->plugin_listeners, (void *) event, process_event);
-	cpi_dev_event_invocation(context);
+	context->env->in_event_listener_invocation++;
+	list_process(context->env->plugin_listeners, (void *) event, process_event);
+	context->env->in_event_listener_invocation--;
 	cpi_unlock_context(context);
 	if (cpi_is_logged(CP_LOG_INFO)) {
 		char *str;
@@ -385,7 +460,7 @@ int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	do {
 	
 		// Check if directory has already been registered 
-		if (list_find(context->plugin_dirs, dir, (int (*)(const void *, const void *)) strcmp) != NULL) {
+		if (list_find(context->env->plugin_dirs, dir, (int (*)(const void *, const void *)) strcmp) != NULL) {
 			break;
 		}
 	
@@ -399,7 +474,7 @@ int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	
 		// Register directory 
 		strcpy(d, dir);
-		list_append(context->plugin_dirs, node);
+		list_append(context->env->plugin_dirs, node);
 		
 	} while (0);
 	cpi_unlock_context(context);
@@ -443,10 +518,10 @@ void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 	
 	cpi_check_invocation(context, __func__);
 	cpi_lock_context(context);
-	node = list_find(context->plugin_dirs, dir, (int (*)(const void *, const void *)) strcmp);
+	node = list_find(context->env->plugin_dirs, dir, (int (*)(const void *, const void *)) strcmp);
 	if (node != NULL) {
 		d = lnode_get(node);
-		list_delete(context->plugin_dirs, node);
+		list_delete(context->env->plugin_dirs, node);
 		lnode_destroy(node);
 		free(d);
 	}
@@ -461,39 +536,19 @@ void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 
 void CP_LOCAL cpi_lock_context(cp_context_t *context) {
 #if defined(CP_THREADS)
-	cpi_lock_mutex(context->mutex);
+	cpi_lock_mutex(context->env->mutex);
 #elif !defined(NDEBUG)
-	context->locked++;
+	context->env->locked++;
 #endif
 }
 
 void CP_LOCAL cpi_unlock_context(cp_context_t *context) {
 #if defined(CP_THREADS)
-	cpi_unlock_mutex(context->mutex);
+	cpi_unlock_mutex(context->env->mutex);
 #elif !defined(NDEBUG)
-	assert(context->locked > 0);
-	context->locked--;
+	assert(context->env->locked > 0);
+	context->env->locked--;
 #endif
-}
-
-
-// Invocation checking
-
-void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, const char *func) {
-	assert(ctx != NULL);
-	assert(func != NULL);
-	if (ctx->in_logger_invocation) {
-		cpi_fatalf(_("%s was called from within a logger invocation."), func);
-	}
-	if (ctx->in_event_listener_invocation) {
-		cpi_fatalf(_("%s was called from within an event listener invocation."), func);
-	}
-	if (ctx->in_start_func_invocation) {
-		cpi_fatalf(_("%s was called from within a start function invocation."), func);
-	}
-	if (ctx->in_stop_func_invocation) {
-		cpi_fatalf(_("%s was called from within a stop function invocation."), func);
-	}
 }
 
 #endif

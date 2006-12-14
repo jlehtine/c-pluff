@@ -47,15 +47,6 @@ extern "C" {
  * Macros
  * ----------------------------------------------------------------------*/
 
-#define cpi_inc_logger_invocation(context) ((context)->in_logger_invocation++)
-#define cpi_dec_logger_invocation(context) ((context)->in_logger_invocation--)
-#define cpi_inc_event_invocation(context) ((context)->in_event_listener_invocation++)
-#define cpi_dev_event_invocation(context) ((context)->in_event_listener_invocation--)
-#define cpi_inc_start_invocation(context) ((context)->in_start_func_invocation++)
-#define cpi_dec_start_invocation(context) ((context)->in_start_func_invocation--)
-#define cpi_inc_stop_invocation(context) ((context)->in_stop_func_invocation++)
-#define cpi_dec_stop_invocation(context) ((context)->in_stop_func_invocation--)
-
 #if defined(HAVE_LIBDL)
 #define DLHANDLE void *
 #define DLOPEN(name) dlopen((name), RTLD_LAZY | RTLD_GLOBAL)
@@ -73,12 +64,29 @@ extern "C" {
  * Data types
  * ----------------------------------------------------------------------*/
 
-// Plug-in context 
+typedef struct cp_plugin_t cp_plugin_t;
+typedef struct cp_plugin_env_t cp_plugin_env_t;
+
+// Plug-in context
 struct cp_context_t {
+	
+	/// The associated plug-in instance or NULL for the client program
+	cp_plugin_t *plugin;
+	
+	/// The associated plug-in environment
+	cp_plugin_env_t *env;
+
+	/// Information about symbol providing plugins
+	hash_t *symbol_providers;
+
+};
+
+// Plug-in environment
+struct cp_plugin_env_t {
 
 #if defined(CP_THREADS)
 
-	/// Mutex for accessing plug-in context 
+	/// Mutex for accessing plug-in environment
 	cpi_mutex_t *mutex;
 	
 #elif !defined(NDEBUG)
@@ -103,9 +111,6 @@ struct cp_context_t {
 	/// Maps extension point names to installed extensions
 	hash_t *extensions;
 
-	/// Whether currently in logger invocation 
-	int in_logger_invocation;
-	
 	/// Whether currently in event listener invocation
 	int in_event_listener_invocation;
 	
@@ -120,7 +125,7 @@ struct cp_context_t {
 // Plug-in instance
 struct cp_plugin_t {
 	
-	/// The enclosing context
+	/// The enclosing context or NULL if none exists
 	cp_context_t *context;
 	
 	/// Plug-in information 
@@ -147,9 +152,6 @@ struct cp_plugin_t {
 	/// Used by recursive operations: has this plug-in been processed already
 	int processed;
 	
-	/// Information about symbol providing plugins, or NULL if not resolved
-	hash_t *symbol_providers;
-
 };
 
 
@@ -194,7 +196,8 @@ void CP_LOCAL cpi_lock_framework(void);
 void CP_LOCAL cpi_unlock_framework(void);
 
 /**
- * Acquires exclusive access to a plug-in context.
+ * Acquires exclusive access to a plug-in context and the associated
+ * plug-in environment.
  * 
  * @param context the plug-in context
  */
@@ -269,17 +272,38 @@ int CP_LOCAL cpi_is_logged(cp_log_severity_t severity);
 void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
 
 /**
- * Checks that we are currently not in an error handler, event listener,
+ * Checks that we are currently not in a logger function, event listener,
  * start function or stop function invocation. Otherwise, reports a fatal
- * error.
+ * error. If no context is specified then only logger function invocations
+ * are checked. If context is specified then the caller must have locked the
+ * context before calling this function.
  * 
- * @param ctx the associated plug-in context
+ * @param ctx the associated plug-in context or NULL if none
  * @param func the current plug-in framework function
  */
 void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, const char *func);
 
 
 // Context management
+
+/**
+ * Allocates a new plug-in context.
+ * 
+ * @param plugin the associated plug-in or NULL for the client program
+ * @param env the associated plug-in environment
+ * @param error filled with the error code
+ * @return the newly allocated context or NULL on failure
+ */
+cp_context_t * CP_LOCAL cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *env, int *error);
+
+/**
+ * Frees the resources associated with a plug-in context. Also frees the
+ * associated plug-in environment if the context is a client program plug-in
+ * context.
+ * 
+ * @param context the plug-in context to free
+ */
+void CP_LOCAL cpi_free_context(cp_context_t *context);
 
 /**
  * Destroys all contexts and releases the context list resources.
