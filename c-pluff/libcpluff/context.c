@@ -306,14 +306,16 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 		cpi_fatalf(_("Only the client program can destroy a plug-in context."));
 	}
 
+	// Check invocation
+	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
+	cpi_unlock_context(context);
+
 #ifdef CP_THREADS
 	assert(context->env->mutex == NULL || !cpi_is_mutex_locked(context->env->mutex));
 #else
 	assert(!context->env->locked);
 #endif
-
-	// Check invocation, although context not locked
-	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 
 	// Remove context from the context list
 	cpi_lock_framework();
