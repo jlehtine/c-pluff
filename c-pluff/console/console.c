@@ -47,6 +47,11 @@ static void cmd_list_plugins(int argc, char *argv[]);
 static void cmd_show_plugin_info(int argc, char *argv[]);
 static void cmd_list_ext_points(int argc, char *argv[]);
 static void cmd_list_extensions(int argc, char *argv[]);
+static void cmd_start_plugin(int argc, char *argv[]);
+static void cmd_stop_plugin(int argc, char *argv[]);
+static void cmd_stop_all_plugins(int argc, char *argv[]);
+static void cmd_uninstall_plugin(int argc, char *argv[]);
+static void cmd_uninstall_all_plugins(int argc, char *argv[]);
 static void cmd_exit(int argc, char *argv[]);
 
 /* ------------------------------------------------------------------------
@@ -72,6 +77,11 @@ const command_info_t commands[] = {
 	{ "remove-plugin-dir", N_("unregisters a plug-in directory"), cmd_remove_plugin_dir },
 	{ "load-plugin", N_("loads and installs a plug-in from the specified path"), cmd_load_plugin },
 	{ "scan-plugins", N_("scans plug-ins in the registered plug-in directories"), cmd_scan_plugins },
+	{ "start-plugin", N_("starts a plug-in"), cmd_start_plugin },
+	{ "stop-plugin", N_("stops a plug-in"), cmd_stop_plugin },
+	{ "stop-all-plugins", N_("stops all plug-ins"), cmd_stop_all_plugins },
+	{ "uninstall-plugin", N_("uninstalls a plug-in"), cmd_uninstall_plugin },
+	{ "uninstall-all-plugins", N_("uninstalls all plug-ins"), cmd_uninstall_all_plugins },
 	{ "list-plugins", N_("lists the installed plug-ins"), cmd_list_plugins },
 	{ "list-ext-points", N_("lists the installed extension points"), cmd_list_ext_points },
 	{ "list-extensions", N_("lists the installed extensions"), cmd_list_extensions },
@@ -448,7 +458,7 @@ static void cmd_load_plugin(int argc, char *argv[]) {
 		errorf(_("cp_install_plugin failed with error code %d."), status);
 		cp_release_info(plugin);
 	} else {
-		noticef(_("Loaded plug-in %s into plug-in context %d."), plugin->identifier, active_context);
+		noticef(_("Installed plug-in %s into plug-in context %d."), plugin->identifier, active_context);
 		cp_release_info(plugin);
 	}
 }
@@ -844,6 +854,64 @@ static void cmd_list_extensions(int argc, char *argv[]) {
 		}
 		cp_release_info(extensions);
 	}	
+}
+
+static void cmd_start_plugin(int argc, char *argv[]) {
+	int status;
+	
+	if (argc != 2) {
+		error(_("Usage: start-plugin <plugin>"));
+	} else if (active_context == -1) {
+		no_active_context();
+	} else if ((status = cp_start_plugin(contexts[active_context], argv[1])) != CP_OK) {
+		errorf(_("cp_start_plugin failed with error code %d."), status);
+	} else {
+		noticef(_("Started plug-in %s."), argv[1]);
+	}
+}
+
+static void cmd_stop_plugin(int argc, char *argv[]) {
+	if (argc != 2) {
+		error(_("Usage: stop-plugin <plugin>"));
+	} else if (active_context == -1) {
+		no_active_context();
+	} else {
+		cp_stop_plugin(contexts[active_context], argv[1]);
+		noticef(_("Stopped plug-in %s."), argv[1]);
+	}
+}
+
+static void cmd_stop_all_plugins(int argc, char *argv[]) {
+	if (argc != 1) {
+		error(_("Usage: stop-all-plugins"));
+	} else if (active_context == -1) {
+		no_active_context();
+	} else {
+		cp_stop_all_plugins(contexts[active_context]);
+		noticef(_("Stopped all plug-ins in context %d."), active_context);
+	}
+}
+
+static void cmd_uninstall_plugin(int argc, char *argv[]) {
+	if (argc != 2) {
+		error(_("Usage: uninstall-plugin <plugin>"));
+	} else if (active_context == -1) {
+		no_active_context();
+	} else {
+		cp_stop_plugin(contexts[active_context], argv[1]);
+		noticef(_("Uninstalled plug-in %s."), argv[1]);
+	}
+}
+
+static void cmd_uninstall_all_plugins(int argc, char *argv[]) {
+	if (argc != 1) {
+		error(_("Usage: uninstall-all-plugins"));
+	} else if (active_context == -1) {
+		no_active_context();
+	} else {
+		cp_uninstall_all_plugins(contexts[active_context]);
+		noticef(_("Uninstalled all plug-ins in context %d."), active_context);
+	}
 }
 
 int main(int argc, char *argv[]) {
