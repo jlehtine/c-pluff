@@ -545,6 +545,7 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	cpi_plugin_event_t event;
 	lnode_t *node = NULL;
 
+	event.plugin_id = plugin->plugin->identifier;
 	do {
 
 		// Allocate space for the list node 
@@ -564,7 +565,6 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			}
 
 			// About to start the plug-in 
-			event.plugin_id = plugin->plugin->identifier;
 			event.old_state = plugin->state;
 			event.new_state = plugin->state = CP_PLUGIN_STARTING;
 			cpi_deliver_event(context, &event);
@@ -789,11 +789,11 @@ int CP_API cp_start_plugin(cp_context_t *context, const char *id) {
 static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	cpi_plugin_event_t event;
 	
-	// Stop the plug-in 
+	// Stop the plug-in
+	event.plugin_id = plugin->plugin->identifier;
 	if (plugin->stop_func != NULL) {
 
 		// About to stop the plug-in 
-		event.plugin_id = plugin->plugin->identifier;
 		event.old_state = plugin->state;
 		event.new_state = plugin->state = CP_PLUGIN_STOPPING;
 		cpi_deliver_event(context, &event);
@@ -921,6 +921,9 @@ static void unresolve_plugin_rec(cp_context_t *context, cp_plugin_t *plugin) {
 		list_delete(plugin->imported, node);
 		lnode_destroy(node);
 	}
+	assert(list_isempty(plugin->imported));
+	list_destroy(plugin->imported);
+	plugin->imported = NULL;
 	event.plugin_id = plugin->plugin->identifier;
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_INSTALLED;
