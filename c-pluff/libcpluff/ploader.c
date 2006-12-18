@@ -736,6 +736,7 @@ static void XMLCALL start_element_handler(
 						&& (import->version == NULL || import->version[0] == '\0')) {
 						descriptor_errorf(plcontext, 0, _("unable to match unspecified or empty version"));
 					}
+					plcontext->plugin->num_imports++;
 				}
 			} else {
 				unexpected_element(plcontext, name);

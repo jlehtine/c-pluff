@@ -646,9 +646,9 @@ static void warn_dependency_loop(cp_context_t *context, cp_plugin_t *plugin, lis
 	
 	// Take the message base
 	if (dynamic) {
-		msgbase = _("Detected a plug-in dependency loop caused by a dynamically resolved symbol: ");
+		msgbase = _("Detected a dynamic plug-in dependency loop: ");
 	} else {
-		msgbase = _("Detected a plug-in dependency caused by imports: ");
+		msgbase = _("Detected a static plug-in dependency loop: ");
 	}
 	
 	// Calculate the required message space
