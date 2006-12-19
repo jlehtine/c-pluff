@@ -30,6 +30,21 @@
 
 // Plug-in control
 
+#ifndef NDEBUG
+static void assert_processed_zero(cp_context_t *context) {
+	hscan_t scan;
+	hnode_t *node;
+	
+	hash_scan_begin(&scan, context->env->plugins);
+	while ((node = hash_scan_next(&scan)) != NULL) {
+		cp_plugin_t *plugin = hnode_get(node);
+		assert(plugin->processed == 0);
+	}
+}
+#else
+#define assert_processed_zero(c) do {} while (0)
+#endif
+
 static void unregister_extensions(cp_context_t *context, cp_plugin_info_t *plugin) {
 	int i;
 	
@@ -425,6 +440,7 @@ static int resolve_plugin_prel_rec(cp_context_t *context, cp_plugin_t *plugin) {
 		if (status == CP_OK) {
 			cpi_plugin_event_t event;
 			
+			plugin->processed = 0;
 			event.plugin_id = plugin->plugin->identifier;
 			event.old_state = plugin->state;
 			event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
@@ -528,6 +544,7 @@ static int resolve_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	} else {
 		resolve_plugin_failed_rec(plugin);
 	}
+	assert_processed_zero(context);
 	return status;
 }
 
@@ -753,7 +770,7 @@ int CP_LOCAL cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 				plugin->plugin->identifier);
 			status = CP_ERR_RESOURCE;
 		}
-	}	
+	}
 	return status;
 }
 
@@ -823,7 +840,7 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
  * @param context the plug-in context
  * @param plugin the plug-in
  */
-static void stop_plugin(cp_context_t *context, cp_plugin_t *plugin) {
+static void stop_plugin_rec(cp_context_t *context, cp_plugin_t *plugin) {
 	lnode_t *node;
 	
 	// Check if already stopped
@@ -840,7 +857,7 @@ static void stop_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	// Stop the depending plug-ins
 	node = list_first(plugin->importing);
 	while (node != NULL) {
-		stop_plugin(context, lnode_get(node));
+		stop_plugin_rec(context, lnode_get(node));
 		node = list_next(plugin->importing, node);
 	}
 
@@ -851,6 +868,11 @@ static void stop_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	
 	// Clear processed flag
 	plugin->processed = 0;
+}
+
+static void stop_plugin(cp_context_t *context, cp_plugin_t *plugin) {
+	stop_plugin_rec(context, plugin);
+	assert_processed_zero(context);
 }
 
 int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
@@ -906,14 +928,8 @@ static void unresolve_plugin_rec(cp_context_t *context, cp_plugin_t *plugin) {
 		return;
 	}
 	plugin->processed = 1;
-	
-	// Unresolve depending plugins
-	while ((node = list_first(plugin->importing)) != NULL) {
-		unresolve_plugin_rec(context, lnode_get(node));
-	}
-	
-	// Unresolve this plug-in
-	unresolve_plugin_runtime(plugin);
+
+	// Clear the list of imported plug-ins	
 	while ((node = list_first(plugin->imported)) != NULL) {
 		cp_plugin_t *ip = lnode_get(node);
 		
@@ -924,6 +940,14 @@ static void unresolve_plugin_rec(cp_context_t *context, cp_plugin_t *plugin) {
 	assert(list_isempty(plugin->imported));
 	list_destroy(plugin->imported);
 	plugin->imported = NULL;
+
+	// Unresolve depending plugins
+	while ((node = list_first(plugin->importing)) != NULL) {
+		unresolve_plugin_rec(context, lnode_get(node));
+	}
+	
+	// Unresolve this plug-in
+	unresolve_plugin_runtime(plugin);
 	event.plugin_id = plugin->plugin->identifier;
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_INSTALLED;
@@ -942,6 +966,7 @@ static void unresolve_plugin_rec(cp_context_t *context, cp_plugin_t *plugin) {
 static void unresolve_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	stop_plugin(context, plugin);
 	unresolve_plugin_rec(context, plugin);
+	assert_processed_zero(context);
 }
 
 static void free_plugin_import_content(cp_plugin_import_t *import) {
