@@ -923,13 +923,7 @@ static void unresolve_plugin_rec(cp_context_t *context, cp_plugin_t *plugin) {
 	}
 	assert(plugin->state == CP_PLUGIN_RESOLVED);
 	
-	// Check for dependency loop
-	if (plugin->processed) {
-		return;
-	}
-	plugin->processed = 1;
-
-	// Clear the list of imported plug-ins	
+	// Clear the list of imported plug-ins (also breaks dependency loops)
 	while ((node = list_first(plugin->imported)) != NULL) {
 		cp_plugin_t *ip = lnode_get(node);
 		
@@ -952,9 +946,6 @@ static void unresolve_plugin_rec(cp_context_t *context, cp_plugin_t *plugin) {
 	event.old_state = plugin->state;
 	event.new_state = plugin->state = CP_PLUGIN_INSTALLED;
 	cpi_deliver_event(context, &event);
-	
-	// Clear processed flag
-	plugin->processed = 0;
 }
 
 /**
@@ -966,7 +957,6 @@ static void unresolve_plugin_rec(cp_context_t *context, cp_plugin_t *plugin) {
 static void unresolve_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	stop_plugin(context, plugin);
 	unresolve_plugin_rec(context, plugin);
-	assert_processed_zero(context);
 }
 
 static void free_plugin_import_content(cp_plugin_import_t *import) {
