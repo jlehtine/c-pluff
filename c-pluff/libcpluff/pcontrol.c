@@ -87,8 +87,8 @@ int CP_API cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 	cpi_plugin_event_t event;
 	int i;
 
-	cpi_check_not_null(context);
-	cpi_check_not_null(plugin);
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(plugin);
 	
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
@@ -130,6 +130,7 @@ int CP_API cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 		rp->runtime_lib = NULL;
 		rp->start_func = NULL;
 		rp->stop_func = NULL;
+		rp->symbol_func = NULL;
 		rp->importing = list_create(LISTCOUNT_T_MAX);
 		if (rp->importing == NULL) {
 			status = CP_ERR_RESOURCE;
@@ -223,6 +224,7 @@ int CP_API cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 static void unresolve_plugin_runtime(cp_plugin_t *plugin) {
 	plugin->start_func = NULL;
 	plugin->stop_func = NULL;
+	plugin->symbol_func = NULL;
 	if (plugin->runtime_lib != NULL) {
 		DLCLOSE(plugin->runtime_lib);
 		plugin->runtime_lib = NULL;
@@ -272,7 +274,7 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		
 		// Resolve start and stop functions 
 		if (plugin->plugin->start_func_name != NULL) {
-			plugin->start_func = (cp_start_t) DLSYM(plugin->runtime_lib, plugin->plugin->start_func_name);
+			plugin->start_func = (cp_start_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->start_func_name);
 			if (plugin->start_func == NULL) {
 				cpi_errorf(context, _("Plug-in %s start function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->start_func_name);
 				status = CP_ERR_RUNTIME;
@@ -280,9 +282,17 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			}
 		}
 		if (plugin->plugin->stop_func_name != NULL) {
-			plugin->stop_func = (cp_stop_t) DLSYM(plugin->runtime_lib, plugin->plugin->stop_func_name);
+			plugin->stop_func = (cp_stop_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->stop_func_name);
 			if (plugin->stop_func == NULL) {
 				cpi_errorf(context, _("Plug-in %s stop function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->stop_func_name);
+				status = CP_ERR_RUNTIME;
+				break;
+			}
+		}
+		if (plugin->plugin->symbol_func_name != NULL) {
+			plugin->symbol_func = (cp_symbol_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->symbol_func_name);
+			if (plugin->symbol_func == NULL) {
+				cpi_errorf(context, _("Plug-in %s symbol resolving function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->symbol_func_name);
 				status = CP_ERR_RUNTIME;
 				break;
 			}
@@ -796,8 +806,8 @@ int CP_API cp_start_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	int status = CP_OK;
 
-	cpi_check_not_null(context);
-	cpi_check_not_null(id);
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(id);
 
 	// Look up and start the plug-in 
 	cpi_lock_context(context);
@@ -898,8 +908,8 @@ int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
 	cp_plugin_t *plugin;
 	int status = CP_OK;
 
-	cpi_check_not_null(context);
-	cpi_check_not_null(id);
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(id);
 
 	// Look up and stop the plug-in 
 	cpi_lock_context(context);
@@ -920,7 +930,7 @@ int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
 void CP_API cp_stop_all_plugins(cp_context_t *context) {
 	lnode_t *node;
 	
-	cpi_check_not_null(context);
+	CHECK_NOT_NULL(context);
 	
 	// Stop the active plug-ins in the reverse order they were started 
 	cpi_lock_context(context);
@@ -1106,8 +1116,8 @@ int CP_API cp_uninstall_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	int status = CP_OK;
 
-	cpi_check_not_null(context);
-	cpi_check_not_null(id);
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(id);
 
 	// Look up and unload the plug-in 
 	cpi_lock_context(context);
@@ -1128,7 +1138,7 @@ void CP_API cp_uninstall_all_plugins(cp_context_t *context) {
 	hscan_t scan;
 	hnode_t *node;
 	
-	cpi_check_not_null(context);
+	CHECK_NOT_NULL(context);
 	
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);

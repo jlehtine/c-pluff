@@ -84,7 +84,7 @@ extern "C" {
  * 
  * @param arg the argument
  */
-#define cpi_check_not_null(arg) if ((arg) == NULL) { cpi_fatal_null_arg(#arg, __func__); }
+#define CHECK_NOT_NULL(arg) do { if ((arg) == NULL) cpi_fatal_null_arg(#arg, __func__); } while (0)
 
 
 /* ------------------------------------------------------------------------
@@ -174,10 +174,13 @@ struct cp_plugin_t {
 	DLHANDLE runtime_lib;
 	
 	/// The start function, or NULL if none or not resolved 
-	cp_start_t start_func;
+	cp_start_func_t start_func;
 	
 	/// The stop function, or NULL if none or not resolved 
-	cp_stop_t stop_func;
+	cp_stop_func_t stop_func;
+	
+	/// The symbol resolving function, or NULL if none or not resolved
+	cp_symbol_func_t symbol_func;
 
 	/// Used by recursive operations: has this plug-in been processed already
 	int processed;

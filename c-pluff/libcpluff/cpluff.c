@@ -36,7 +36,7 @@ typedef struct logger_t logger_t;
 struct logger_t {
 	
 	/// Pointer to logger
-	cp_logger_t logger;
+	cp_logger_func_t logger;
 	
 	/// User data pointer
 	void *user_data;
@@ -88,7 +88,7 @@ static int log_min_severity = CP_LOG_NONE;
 static int in_logger_invocation = 0;
 
 /// Fatal error handler, or NULL for default 
-static cp_fatal_error_handler_t fatal_error_handler = NULL;
+static cp_fatal_error_func_t fatal_error_handler = NULL;
 
 
 /* ------------------------------------------------------------------------
@@ -210,12 +210,12 @@ static int comp_logger(const void *p1, const void *p2) {
 	return l1->logger != l2->logger;
 }
 
-int CP_API cp_add_logger(cp_logger_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule) {
+int CP_API cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule) {
 	logger_t l;
 	logger_t *lh;
 	lnode_t *node;
 
-	cpi_check_not_null(logger);
+	CHECK_NOT_NULL(logger);
 	cpi_check_invocation(NULL, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
 	
 	// Check if logger already exists and allocate new holder if necessary
@@ -258,11 +258,11 @@ int CP_API cp_add_logger(cp_logger_t logger, void *user_data, cp_log_severity_t 
 	return CP_OK;
 }
 
-void CP_API cp_remove_logger(cp_logger_t logger) {
+void CP_API cp_remove_logger(cp_logger_func_t logger) {
 	logger_t l;
 	lnode_t *node;
 	
-	cpi_check_not_null(logger);
+	CHECK_NOT_NULL(logger);
 	cpi_check_invocation(NULL, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
 	
 	l.logger = logger;
@@ -325,7 +325,7 @@ int CP_LOCAL cpi_is_logged(cp_log_severity_t severity) {
 	return severity >= log_min_severity;
 }
 
-void CP_API cp_set_fatal_error_handler(cp_fatal_error_handler_t error_handler) {
+void CP_API cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler) {
 	fatal_error_handler = error_handler;
 }
 

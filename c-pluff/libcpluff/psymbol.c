@@ -59,9 +59,9 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 	symbol_provider_info_t *provider_info = NULL;
 	cp_plugin_t *pp = NULL;
 
-	cpi_check_not_null(context);
-	cpi_check_not_null(id);
-	cpi_check_not_null(name);
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(id);
+	CHECK_NOT_NULL(name);
 	
 	// Resolve the symbol
 	cpi_lock_context(context);
@@ -84,13 +84,14 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 			break;
 		}
 
-		// Look up the symbol
-		if (pp->runtime_lib == NULL) {
-			cpi_warnf(context, _("Symbol %s in plug-in %s could not be resolved because the plug-in does not have runtime library."), name, id);
-			status = CP_ERR_UNKNOWN;
-			break;
+		// Use the symbol resolving function or fall back to global symbols
+		if (pp->symbol_func != NULL) {
+			symbol = pp->symbol_func(pp->context, name);
 		}
-		if ((symbol = DLSYM(pp->runtime_lib, name)) == NULL) {
+		if (symbol == NULL && pp->runtime_lib != NULL) {
+			symbol = DLSYM(pp->runtime_lib, name);
+		}
+		if (symbol == NULL) {
 			cpi_warnf(context, _("Symbol %s in plug-in %s could not be resolved because it is not defined."), name, id);
 			status = CP_ERR_UNKNOWN;
 			break;
@@ -183,8 +184,8 @@ void CP_API cp_release_symbol(cp_context_t *context, void *ptr) {
 	symbol_info_t *symbol_info;
 	symbol_provider_info_t *provider_info;
 	
-	cpi_check_not_null(context);
-	cpi_check_not_null(ptr);
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(ptr);
 
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);

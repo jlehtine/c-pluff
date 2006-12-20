@@ -29,7 +29,7 @@
  * A holder structure for a plug-in listener.
  */
 typedef struct el_holder_t {
-	cp_plugin_listener_t plugin_listener;
+	cp_plugin_listener_func_t plugin_listener;
 	void *user_data;
 } el_holder_t;
 
@@ -299,7 +299,7 @@ cp_context_t * CP_API cp_create_context(int *error) {
 }
 
 void CP_API cp_destroy_context(cp_context_t *context) {
-	cpi_check_not_null(context);
+	CHECK_NOT_NULL(context);
 	if (context->plugin != NULL) {
 		cpi_fatalf(_("Only the client program can destroy a plug-in context."));
 	}
@@ -353,13 +353,13 @@ void CP_LOCAL cpi_destroy_all_contexts(void) {
 
 // Plug-in listeners 
 
-int CP_API cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_t listener, void *user_data) {
+int CP_API cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener, void *user_data) {
 	int status = CP_ERR_RESOURCE;
 	el_holder_t *holder;
 	lnode_t *node;
 
-	cpi_check_not_null(context);
-	cpi_check_not_null(listener);
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(listener);
 	
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
@@ -382,11 +382,11 @@ int CP_API cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_t li
 	return status;
 }
 
-void CP_API cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_t listener) {
+void CP_API cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener) {
 	el_holder_t holder;
 	lnode_t *node;
 	
-	cpi_check_not_null(context);
+	CHECK_NOT_NULL(context);
 	holder.plugin_listener = listener;
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
@@ -453,8 +453,8 @@ int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	lnode_t *node = NULL;
 	int status = CP_OK;
 	
-	cpi_check_not_null(context);
-	cpi_check_not_null(dir);
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(dir);
 	
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
@@ -514,8 +514,8 @@ void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 	char *d;
 	lnode_t *node;
 	
-	cpi_check_not_null(context);
-	cpi_check_not_null(dir);
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(dir);
 	
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);

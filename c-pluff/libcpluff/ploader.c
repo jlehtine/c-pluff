@@ -549,6 +549,9 @@ static void XMLCALL start_element_handler(
 						} else if (!strcmp(atts[i], "stop-func")) {
 							plcontext->plugin->stop_func_name
 								= parser_strdup(plcontext, atts[i+1]);
+						} else if (!strcmp(atts[1], "symbol-func")) {
+							plcontext->plugin->symbol_func_name
+								= parser_strdup(plcontext, atts[i+1]);
 						}
 					}
 				}
@@ -956,7 +959,7 @@ cp_plugin_info_t * CP_API cp_load_plugin_descriptor(cp_context_t *context, const
 	ploader_context_t *plcontext = NULL;
 	cp_plugin_info_t *plugin = NULL;
 
-	cpi_check_not_null(path);
+	CHECK_NOT_NULL(path);
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	cpi_unlock_context(context);
@@ -1023,6 +1026,7 @@ cp_plugin_info_t * CP_API cp_load_plugin_descriptor(cp_context_t *context, const
 		plcontext->plugin->lib_path = NULL;
 		plcontext->plugin->start_func_name = NULL;
 		plcontext->plugin->stop_func_name = NULL;
+		plcontext->plugin->symbol_func_name = NULL;
 		plcontext->plugin->ext_points = NULL;
 		plcontext->plugin->extensions = NULL;
 		XML_SetUserData(parser, plcontext);

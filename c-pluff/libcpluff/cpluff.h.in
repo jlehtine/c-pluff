@@ -249,6 +249,9 @@ struct cp_plugin_info_t {
     
     /** The name of the stop function, or NULL if none */
     char *stop_func_name;
+    
+    /** The name of the symbol resolving function, or NULL if none */
+    char *symbol_func_name;
 
 	/** Number of extension points provided by this plug-in */
 	unsigned int num_ext_points;
@@ -498,12 +501,12 @@ typedef enum cp_plugin_state_t {
  * @param user_data the user data pointer supplied at listener registration
  * @see cp_add_plugin_listener
  */
-typedef void (*cp_plugin_listener_t)(const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *user_data);
+typedef void (*cp_plugin_listener_func_t)(const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *user_data);
 
 /*@}*/
 
 
-/** @name Plug-in control */
+/** @name Plug-in functions */
 /*@{*/
 
 /**
@@ -521,7 +524,7 @@ typedef void (*cp_plugin_listener_t)(const char *plugin_id, cp_plugin_state_t ol
  * @param ctx the associated plug-in context
  * @return non-zero on success, or zero on failure
  */
-typedef int (*cp_start_t)(cp_context_t *ctx);
+typedef int (*cp_start_func_t)(cp_context_t *ctx);
 
 /**
  * A stop function called to stop a plugin for a specific context. Plug-in
@@ -534,7 +537,21 @@ typedef int (*cp_start_t)(cp_context_t *ctx);
  *
  * @param ctx the associated plug-in context
  */
-typedef void (*cp_stop_t)(cp_context_t *ctx);
+typedef void (*cp_stop_func_t)(cp_context_t *ctx);
+
+/**
+ * A symbol function called to resolve a named virtual symbol. The symbol value
+ * may be context specific (for example, to use context specific state). This
+ * function is only invoked on an active (started) plug-in. If the function
+ * returns NULL then the framework will fall back to resolving a global
+ * symbol exported by the plug-in runtime library.
+ *
+ * @param ctx the associated plug-in context
+ * @param name the symbol name
+ * @return the symbol value or NULL to fall back to resolving a global symbol
+ */
+typedef void * (*cp_symbol_func_t)(cp_context_t *ctx, const char *name);
+
 
 /*@}*/
 
@@ -576,7 +593,7 @@ typedef enum cp_log_severity_t {
  * @param user_data the user data pointer given when the logger was registered
  * @see cp_add_logger
  */
-typedef void (*cp_logger_t)(cp_log_severity_t severity, const char *msg, const char *apid, void *user_data);
+typedef void (*cp_logger_func_t)(cp_log_severity_t severity, const char *msg, const char *apid, void *user_data);
 
 /*@}*/
 
@@ -592,7 +609,7 @@ typedef void (*cp_logger_t)(cp_log_severity_t severity, const char *msg, const c
  * @param msg the possibly localized error message
  * @see cp_set_fatal_error_handler
  */
-typedef void (*cp_fatal_error_handler_t)(const char *msg);
+typedef void (*cp_fatal_error_func_t)(const char *msg);
 
 /*@}*/
 /*@}*/
@@ -677,7 +694,7 @@ void CP_API cp_destroy(void);
  * 
  * @param error_handler the fatal error handler
  */
-void CP_API cp_set_fatal_error_handler(cp_fatal_error_handler_t error_handler);
+void CP_API cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler);
 
 /*@}*/
 
@@ -704,14 +721,14 @@ void CP_API cp_set_fatal_error_handler(cp_fatal_error_handler_t error_handler);
  *			are passed to logger if non-NULL
  * @return CP_OK (zero) on success or CP_ERR_RESOURCE if insufficient memory
  */
-int CP_API cp_add_logger(cp_logger_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule);
+int CP_API cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule);
 
 /**
  * Removes a logger registration.
  *
  * @param logger the logger function to be unregistered
  */
-void CP_API cp_remove_logger(cp_logger_t logger);
+void CP_API cp_remove_logger(cp_logger_func_t logger);
 
 /*@}*/
 
@@ -906,6 +923,20 @@ void CP_API cp_uninstall_all_plugins(cp_context_t *ctx);
 
 
 /**
+ * @name Context data
+ *
+ * These functions can be used to access context specific plug-in or client
+ * program data. They may be used by the client program or by a plug-in
+ * runtime.
+ */
+/*@{*/
+
+
+
+/*@}*/
+
+
+/**
  * @name Plug-in and extension information
  *
  * These functions can be used to query information about the installed
@@ -1002,7 +1033,7 @@ cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *ctx, const char *id);
  * @param user_data user data pointer supplied to the listener
  * @return CP_OK (zero) on success, CP_ERR_RESOURCE if out of resources
  */
-int CP_API cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_t listener, void *user_data);
+int CP_API cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener, void *user_data);
 
 /**
  * Removes a plug-in listener from a plug-in context. Does nothing if the
@@ -1011,7 +1042,7 @@ int CP_API cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_t listen
  * @param ctx the plug-in context
  * @param listener the plug-in listener to be removed
  */
-void CP_API cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_t listener);
+void CP_API cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener);
 
 /*@}*/
 
@@ -1032,7 +1063,10 @@ void CP_API cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_t li
 /*@{*/
 
 /**
- * Resolves a named symbol provided by the specified plug-in.
+ * Resolves a named symbol provided by the specified plug-in. The symbol may
+ * be context specific. The framework first uses the symbol resolving function
+ * of the specified plug-in (if any) and then falls back to resolving a
+ * global symbol exported by the plug-in runtime library.
  * The plug-in framework creates dynamically a dependency from the symbol using
  * plug-in to the symbol defining plug-in. The symbol must be released using
  * \Ref{cp_release_symbol} when it is not needed anymore or at latest when
