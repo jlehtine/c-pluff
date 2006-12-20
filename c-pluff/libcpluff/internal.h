@@ -54,6 +54,9 @@ extern "C" {
 /// Callback function stop function
 #define CPI_CF_STOP 8
 
+/// Callback function symbol function
+#define CPI_CF_SYMBOL 16
+
 /// Bitmask corresponding to any callback function
 #define CPI_CF_ANY (~0)
 
@@ -149,6 +152,9 @@ struct cp_plugin_env_t {
 	
 	// Whether currently in stop function invocation
 	int in_stop_func_invocation;
+	
+	// Whether currently in symbol function invocation
+	int in_symbol_func_invocation;
 	
 };
 

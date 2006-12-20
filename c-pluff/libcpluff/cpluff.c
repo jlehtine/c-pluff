@@ -216,7 +216,7 @@ int CP_API cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severi
 	lnode_t *node;
 
 	CHECK_NOT_NULL(logger);
-	cpi_check_invocation(NULL, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
+	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	
 	// Check if logger already exists and allocate new holder if necessary
 	l.logger = logger;
@@ -263,7 +263,7 @@ void CP_API cp_remove_logger(cp_logger_func_t logger) {
 	lnode_t *node;
 	
 	CHECK_NOT_NULL(logger);
-	cpi_check_invocation(NULL, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
+	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	
 	l.logger = logger;
 	cpi_lock_framework();
@@ -383,6 +383,10 @@ void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *
 		if ((funcmask & CPI_CF_STOP)
 			&& ctx->env->in_stop_func_invocation) {
 			cpi_fatalf(_("%s was called from within a stop function invocation."), func);
+		}
+		if ((funcmask & CPI_CF_SYMBOL)
+			&& ctx->env->in_symbol_func_invocation) {
+			cpi_fatalf(_("%s was called from within a symbol function invocation."), func);
 		}
 	}
 }

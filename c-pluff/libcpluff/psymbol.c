@@ -65,7 +65,7 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 	
 	// Resolve the symbol
 	cpi_lock_context(context);
-	cpi_check_invocation(context, CPI_CF_ANY ^ CPI_CF_START, __func__);
+	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER | CPI_CF_STOP, __func__);
 	do {
 
 		// Look up the symbol defining plug-in
@@ -86,7 +86,9 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 
 		// Use the symbol resolving function or fall back to global symbols
 		if (pp->symbol_func != NULL) {
+			context->env->in_symbol_func_invocation++;
 			symbol = pp->symbol_func(pp->context, name);
+			context->env->in_symbol_func_invocation--;
 		}
 		if (symbol == NULL && pp->runtime_lib != NULL) {
 			symbol = DLSYM(pp->runtime_lib, name);
@@ -188,7 +190,7 @@ void CP_API cp_release_symbol(cp_context_t *context, void *ptr) {
 	CHECK_NOT_NULL(ptr);
 
 	cpi_lock_context(context);
-	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
+	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
 	do {
 
 		// Look up the symbol

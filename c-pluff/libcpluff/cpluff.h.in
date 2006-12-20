@@ -490,9 +490,9 @@ typedef enum cp_plugin_state_t {
 
 /**
  * A listener function called synchronously after a plugin state change.
- * The function should return promptly. Plug-in framework core
- * functions other than library, plug-in and extension information functions
- * and cp_release_symbol must not be called from within a plug-in listener
+ * The function should return promptly. Library initialization, plug-in context
+ * management, plug-in management, plug-in listener registration and dynamic
+ * symbol functions must not be called from within a plug-in listener
  * invocation.
  * 
  * @param plugin_id the plug-in identifier
@@ -513,13 +513,12 @@ typedef void (*cp_plugin_listener_func_t)(const char *plugin_id, cp_plugin_state
  * A start function called to start a plug-in for a specific context. The
  * start function must return
  * zero (CP_OK) on success and non-zero on failure. If the start fails then the
- * stop function (if any) is called to clean up plug-in state. Plug-in
- * framework core functions other than library, plug-in and extension
- * information functions, logging functions and dynamic symbol functions must
- * not be called from within a start function invocation. Plug-in may use
- * context user data pointer to store any context specific state information.
- * This makes it possible to have several instances of the same plug-in in the
- * same application.
+ * stop function (if any) is called to clean up plug-in state. Library
+ * initialization, plug-in context management and plug-in management
+ * functions must not be called from within a start function invocation.
+ * Plug-in may use context user data pointer to store any context specific
+ * state information. This makes it possible to have several instances of the
+ * same plug-in in the same application.
  * 
  * @param ctx the associated plug-in context
  * @return non-zero on success, or zero on failure
@@ -527,13 +526,12 @@ typedef void (*cp_plugin_listener_func_t)(const char *plugin_id, cp_plugin_state
 typedef int (*cp_start_func_t)(cp_context_t *ctx);
 
 /**
- * A stop function called to stop a plugin for a specific context. Plug-in
- * framework core functions
- * other than library, plug-in and extension information functions,
- * logging functions and cp_release_symbol must not be
- * called from within a stop function invocation. After the call to this
- * function the plug-in context becomes invalid. The plug-in should release
- * any internal state information associated with the context.
+ * A stop function called to stop a plugin for a specific context. Library
+ * initialization, plug-in context management, plug-in management functions and
+ * cp_resolve_symbol must not be called from within a stop function invocation.
+ * After the call to this function the plug-in context becomes invalid. The
+ * plug-in should release any internal state information associated with the
+ * context.
  *
  * @param ctx the associated plug-in context
  */
@@ -542,9 +540,13 @@ typedef void (*cp_stop_func_t)(cp_context_t *ctx);
 /**
  * A symbol function called to resolve a named virtual symbol. The symbol value
  * may be context specific (for example, to use context specific state). This
- * function is only invoked on an active (started) plug-in. If the function
- * returns NULL then the framework will fall back to resolving a global
- * symbol exported by the plug-in runtime library.
+ * function is only invoked on an active plug-in or, if there is a
+ * dynamic dependency loop, on a plug-in which is currently starting and has
+ * invoked cp_resolve_symbol. Library initialization, plug-in context
+ * management and plug-in management functions must not be called from within
+ * a symbol function invocation. If the function returns NULL then the
+ * framework will fall back to resolving a global symbol exported by the
+ * plug-in runtime library.
  *
  * @param ctx the associated plug-in context
  * @param name the symbol name
@@ -931,7 +933,21 @@ void CP_API cp_uninstall_all_plugins(cp_context_t *ctx);
  */
 /*@{*/
 
+/**
+ * Sets the context data pointer.
+ *
+ * @param ctx the plug-in context
+ * @param user_data the pointer to user data, or NULL to unset
+ */
+void CP_API cp_set_context_data(cp_context_t *ctx, void *user_data);
 
+/**
+ * Returns the context data pointer.
+ *
+ * @param ctx the plug-in context
+ * @return a pointer to user data, or NULL if not set
+ */
+void * CP_API cp_get_context_data(cp_context_t *ctx);
 
 /*@}*/
 
@@ -1096,7 +1112,8 @@ char * CP_API cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
 /*@{*/
 
 /**
- * Resolves a named symbol provided by the specified plug-in. The symbol may
+ * Resolves a named symbol provided by the specified plug-in which is started
+ * automatically if it is not already active. The symbol may
  * be context specific. The framework first uses the symbol resolving function
  * of the specified plug-in (if any) and then falls back to resolving a
  * global symbol exported by the plug-in runtime library.
