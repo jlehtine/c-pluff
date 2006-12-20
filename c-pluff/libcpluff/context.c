@@ -178,6 +178,7 @@ cp_context_t * CP_LOCAL cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *en
 		context->env = env;
 		context->symbols = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
 		context->symbol_providers = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
+		context->user_data = NULL;
 		if (context->symbols == NULL
 			|| context->symbol_providers == NULL) {
 			status = CP_ERR_RESOURCE;
@@ -528,6 +529,26 @@ void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 	}
 	cpi_unlock_context(context);
 	cpi_debugf(context, "Plug-in directory %s was removed.", dir);
+}
+
+
+// Context data
+
+void CP_API cp_set_context_data(cp_context_t *ctx, void *user_data) {
+	CHECK_NOT_NULL(ctx);
+	cpi_lock_context(ctx);
+	ctx->user_data = user_data;
+	cpi_unlock_context(ctx);
+}
+
+void * CP_API cp_get_context_data(cp_context_t *ctx) {
+	void *user_data;
+	
+	CHECK_NOT_NULL(ctx);
+	cpi_lock_context(ctx);
+	user_data = ctx->user_data;
+	cpi_unlock_context(ctx);
+	return user_data;
 }
 
 

@@ -111,6 +111,9 @@ struct cp_context_t {
 
 	/// Information about symbol providing plugins
 	hash_t *symbol_providers;
+	
+	/// User data associated with the context
+	void *user_data;
 
 };
 
