@@ -421,3 +421,75 @@ cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *context, const cha
 	}
 	return extensions;
 }
+
+static cp_cfg_element_t * lookup_cfg_element(cp_cfg_element_t *base, const char *path, int len) {
+	int start = 0;
+	
+	CHECK_NOT_NULL(base);
+	CHECK_NOT_NULL(path);
+	
+	// Traverse the path
+	while (base != NULL && path[start] != '\0' && (len == -1 || start < len)) {
+		int end = start;
+		while (path[end] != '\0' && path[end] != '/' && (len == -1 || end < len))
+			end++;
+		if (end - start == 2 && !strncmp(path + start, "..", 2)) {
+			base = base->parent;
+		} else {
+			int i;
+			int found = 0;
+			
+			for (i = 0; !found && i < base->num_children; i++) {
+				cp_cfg_element_t *e = base->children + i;
+				if (end - start == strlen(e->name)
+					&& !strncmp(path + start, e->name, end - start)) {
+					base = e;
+					found = 1;
+				}
+			}
+			if (!found) {
+				base = NULL;
+			}
+		}
+		start = end;
+		if (path[start] == '/') {
+			start++;
+		}
+	}
+	return base;
+}
+
+cp_cfg_element_t * CP_API cp_lookup_cfg_element(cp_cfg_element_t *base, const char *path) {
+	return lookup_cfg_element(base, path, -1);
+}
+
+char * CP_API cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path) {
+	cp_cfg_element_t *e;
+	const char *attr;
+	
+	CHECK_NOT_NULL(base);
+	CHECK_NOT_NULL(path);
+	
+	if ((attr = strrchr(path, '@')) == NULL) {
+		e = lookup_cfg_element(base, path, -1);
+	} else {
+		e = lookup_cfg_element(base, path, attr - path);
+		attr++;
+	}
+	if (e != NULL) {
+		if (attr == NULL) {
+			return e->value;
+		} else {
+			int i;
+			
+			for (i = 0; i < e->num_atts; i++) {
+				if (!strcmp(attr, e->atts[2*i])) {
+					return e->atts[2*i + 1];
+				}
+			}
+			return NULL;
+		}
+	} else {
+		return NULL;
+	}
+}

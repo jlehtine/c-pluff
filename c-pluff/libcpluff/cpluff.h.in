@@ -1044,6 +1044,39 @@ int CP_API cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t l
  */
 void CP_API cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener);
 
+/**
+ * Traverses a configuration element tree and returns the specified element.
+ * The target element is specified by a base element and a relative path from
+ * the base element to the target element. The path includes element names
+ * separated by slash '/'. Two dots ".." can be used to designate a parent
+ * element. Returns NULL if the specified element does not exist. If there are
+ * several subelements with the same name, this function chooses the first one
+ * when traversing the tree.
+ *
+ * @param base the base configuration element
+ * @param path the path to the target element
+ * @return the target element or NULL if nonexisting
+ */
+cp_cfg_element_t * CP_API cp_lookup_cfg_element(cp_cfg_element_t *base, const char *path);
+
+/**
+ * Traverses a configuration element tree and returns the value of the
+ * specified element or attribute. The target element or attribute is specified
+ * by a base element and a relative path from the base element to the target
+ * element or attributes. The path includes element names
+ * separated by slash '/'. Two dots ".." can be used to designate a parent
+ * element. The path may end with '@' followed by an attribute name
+ * to select an attribute. Returns NULL if the specified element or attribute
+ * does not exist or does not have a value. If there are several subelements
+ * with the same name, this function chooses the first one when traversing the
+ * tree.
+ *
+ * @param base the base configuration element
+ * @param path the path to the target element
+ * @return the value of the target element or attribute or NULL
+ */
+char * CP_API cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
+
 /*@}*/
 
 
