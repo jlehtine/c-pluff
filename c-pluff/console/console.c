@@ -898,7 +898,7 @@ static void cmd_uninstall_plugin(int argc, char *argv[]) {
 	} else if (active_context == -1) {
 		no_active_context();
 	} else {
-		cp_stop_plugin(contexts[active_context], argv[1]);
+		cp_uninstall_plugin(contexts[active_context], argv[1]);
 		noticef(_("Uninstalled plug-in %s."), argv[1]);
 	}
 }
