@@ -301,7 +301,11 @@ typedef enum cp_version_match_t {
  */
 struct cp_plugin_import_t {
 	
-	/** Identifier of the imported plug-in */
+	/**
+	 * Identifier of the imported plug-in. The reserved identifier
+	 * "org.cpluff.core" can be used to define a versioned dependency to the
+	 * core framework library.
+	 */
 	char *plugin_id;
 	
 	/** Version to be matched, or NULL if none */
@@ -442,8 +446,9 @@ typedef enum cp_plugin_state_t {
 	/**
 	 * Plug-in dependencies have been resolved. At this stage it has
 	 * been verified that the dependencies of the plug-in are satisfied
-	 * and the plug-in runtime has been loaded but not started.
-	 * Plug-in is resolved when dependent plug-ins are being
+	 * and the plug-in runtime has been loaded but it is not active
+	 * (it has not been started or it has been stopped).
+	 * Plug-in is resolved when a dependent plug-in is being
 	 * resolved or before the plug-in is started. Plug-in is put
 	 * back to installed stage if its dependencies are being
 	 * uninstalled.
@@ -454,17 +459,21 @@ typedef enum cp_plugin_state_t {
 	 * Plug-in is starting. The plug-in has been resolved and the start
 	 * function (if any) of the plug-in runtime is about to be called.
 	 * A plug-in is started when explicitly requested by the client
-	 * program or by some other plug-in.
+	 * program or when a dependent plug-in is about to be started or when
+	 * a dynamic symbol defined by the plug-in is being resolved. This state
+	 * is omitted and the state changes directly from resolved to active
+	 * if the plug-in runtime does not define a start function.
 	 */
 	CP_PLUGIN_STARTING,
 	
 	/**
 	 * Plug-in is stopping. The stop function (if any) of the plug-in
 	 * runtime is about to be called. A plug-in is stopped if the start
-	 * function fails or if it is active and stopping is explicitly
-	 * requested by the client program or by some other plug-in or if
-	 * it is active and its dependencies or the plug-in itself is being
-	 * uninstalled.
+	 * function fails or when stopping is explicitly
+	 * requested by the client program or when its dependencies are being
+	 * stopped. This state is omitted and the state changes directly from
+	 * active to resolved if the plug-in runtime does not define a stop
+	 * function.
 	 */
 	CP_PLUGIN_STOPPING,
 	
@@ -478,9 +487,10 @@ typedef enum cp_plugin_state_t {
 
 /**
  * A listener function called synchronously after a plugin state change.
- * The function should return promptly. Plug-in framework
+ * The function should return promptly. Plug-in framework core
  * functions other than library, plug-in and extension information functions
- * must not be called from within a plug-in listener invocation.
+ * and cp_release_symbol must not be called from within a plug-in listener
+ * invocation.
  * 
  * @param plugin_id the plug-in identifier
  * @param old_state the old plug-in state
@@ -497,12 +507,16 @@ typedef void (*cp_plugin_listener_t)(const char *plugin_id, cp_plugin_state_t ol
 /*@{*/
 
 /**
- * A start function called to start a plug-in. The start function must return
+ * A start function called to start a plug-in for a specific context. The
+ * start function must return
  * zero (CP_OK) on success and non-zero on failure. If the start fails then the
  * stop function (if any) is called to clean up plug-in state. Plug-in
- * framework functions other than library, plug-in and extension
+ * framework core functions other than library, plug-in and extension
  * information functions, logging functions and dynamic symbol functions must
- * not be called from within a start function invocation.
+ * not be called from within a start function invocation. Plug-in may use
+ * context user data pointer to store any context specific state information.
+ * This makes it possible to have several instances of the same plug-in in the
+ * same application.
  * 
  * @param ctx the associated plug-in context
  * @return non-zero on success, or zero on failure
@@ -510,13 +524,17 @@ typedef void (*cp_plugin_listener_t)(const char *plugin_id, cp_plugin_state_t ol
 typedef int (*cp_start_t)(cp_context_t *ctx);
 
 /**
- * A stop function called to stop a plugin. Plug-in framework functions
+ * A stop function called to stop a plugin for a specific context. Plug-in
+ * framework core functions
  * other than library, plug-in and extension information functions,
  * logging functions and cp_release_symbol must not be
  * called from within a stop function invocation. After the call to this
- * function the plug-in context of this plug-in becomes invalid.
+ * function the plug-in context becomes invalid. The plug-in should release
+ * any internal state information associated with the context.
+ *
+ * @param ctx the associated plug-in context
  */
-typedef void (*cp_stop_t)(void);
+typedef void (*cp_stop_t)(cp_context_t *ctx);
 
 /*@}*/
 
@@ -548,7 +566,7 @@ typedef enum cp_log_severity_t {
 
 /**
  * A logger function called to log selected plug-in framework messages. The
- * messages may be localized. Plug-in framework functions must not
+ * messages may be localized. Plug-in framework core functions must not
  * be called from within a logger function invocation. In a multi-threaded
  * environment logger function invocations are serialized by the framework.
  *
@@ -587,10 +605,11 @@ typedef void (*cp_fatal_error_handler_t)(const char *msg);
 /**
  * @name Functions
  *
- * C-Pluff framework functions and any exposed data are thread-safe if
- * the library has been compiled with multi-threading support. The
- * initialization functions \Ref{cp_init}, \Ref{cp_destroy} and
- * \Ref{cp_set_fatal_error_handler} are exceptions, they are not thread-safe.
+ * The C-Pluff framework core functions are defined here. The functions and
+ * any data exposed by them are thread-safe if the library has been compiled
+ * with multi-threading support. The initialization functions \Ref{cp_init},
+ * \Ref{cp_destroy} and \Ref{cp_set_fatal_error_handler} are exceptions,
+ * they are not thread-safe.
  */
 /*@{*/
 

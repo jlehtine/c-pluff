@@ -956,7 +956,7 @@ cp_plugin_info_t * CP_API cp_load_plugin_descriptor(cp_context_t *context, const
 	ploader_context_t *plcontext = NULL;
 	cp_plugin_info_t *plugin = NULL;
 
-	assert(path != NULL);
+	cpi_check_not_null(path);
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	cpi_unlock_context(context);

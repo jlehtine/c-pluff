@@ -107,7 +107,7 @@ void CP_LOCAL cpi_use_info(void *res) {
 void CP_API cp_release_info(void *info) {
 	hnode_t *node;
 	
-	assert(info != NULL);
+	cpi_check_not_null(info);
 	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_framework();
 	if (infos != NULL
@@ -154,8 +154,8 @@ cp_plugin_info_t * CP_API cp_get_plugin_info(cp_context_t *context, const char *
 	cp_plugin_info_t *plugin = NULL;
 	int status = CP_OK;
 
-	assert(context != NULL);
-	assert(id != NULL);
+	cpi_check_not_null(context);
+	cpi_check_not_null(id);
 
 	// Look up the plug-in and return information 
 	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
@@ -192,7 +192,7 @@ cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *context, int *error
 	int i, n;
 	int status = CP_OK;
 	
-	assert(context != NULL);
+	cpi_check_not_null(context);
 	
 	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);
@@ -249,7 +249,8 @@ cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *context, const char *
 	cp_plugin_state_t state = CP_PLUGIN_UNINSTALLED;
 	hnode_t *hnode;
 	
-	assert(context != NULL);
+	cpi_check_not_null(context);
+	cpi_check_not_null(id);
 	
 	// Look up the plug-in state 
 	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
@@ -277,7 +278,7 @@ cp_ext_point_t ** CP_API cp_get_ext_points_info(cp_context_t *context, int *erro
 	int i, n;
 	int status = CP_OK;
 	
-	assert(context != NULL);
+	cpi_check_not_null(context);
 	
 	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);
@@ -345,7 +346,7 @@ cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *context, const cha
 	int i, n;
 	int status = CP_OK;
 	
-	assert(context != NULL);
+	cpi_check_not_null(context);
 	
 	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);

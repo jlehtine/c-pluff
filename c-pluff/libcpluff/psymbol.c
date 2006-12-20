@@ -59,9 +59,9 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 	symbol_provider_info_t *provider_info = NULL;
 	cp_plugin_t *pp = NULL;
 
-	assert(context != NULL);	
-	assert(id != NULL);
-	assert(name != NULL);
+	cpi_check_not_null(context);
+	cpi_check_not_null(id);
+	cpi_check_not_null(name);
 	
 	// Resolve the symbol
 	cpi_lock_context(context);
@@ -183,11 +183,11 @@ void CP_API cp_release_symbol(cp_context_t *context, void *ptr) {
 	symbol_info_t *symbol_info;
 	symbol_provider_info_t *provider_info;
 	
-	assert(context != NULL);
-	assert(ptr != NULL);
+	cpi_check_not_null(context);
+	cpi_check_not_null(ptr);
 
 	cpi_lock_context(context);
-	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
+	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
 	do {
 
 		// Look up the symbol

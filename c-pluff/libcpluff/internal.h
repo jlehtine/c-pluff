@@ -57,6 +57,9 @@ extern "C" {
 /// Bitmask corresponding to any callback function
 #define CPI_CF_ANY (~0)
 
+/// Core framework identifier
+#define CPI_CORE_IDENTIFIER "org.cpluff.core"
+
 
 /* ------------------------------------------------------------------------
  * Macros
@@ -73,6 +76,15 @@ extern "C" {
 #define DLSYM(handle, symbol) lt_dlsym((handle), (symbol))
 #define DLCLOSE(handle) lt_dlclose(handle)
 #endif
+
+
+/**
+ * Checks that the specified function argument is not NULL.
+ * Otherwise, reports a fatal error.
+ * 
+ * @param arg the argument
+ */
+#define cpi_check_not_null(arg) if ((arg) == NULL) { cpi_fatal_null_arg(#arg, __func__); }
 
 
 /* ------------------------------------------------------------------------
@@ -288,6 +300,14 @@ int CP_LOCAL cpi_is_logged(cp_log_severity_t severity);
  * @param ... parameters
  */
 void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
+
+/**
+ * Reports a fatal NULL argument to an API function.
+ * 
+ * @param arg the argument name
+ * @param func the API function name
+ */
+void CP_LOCAL cpi_fatal_null_arg(const char *arg, const char *func) CP_NORETURN;
 
 /**
  * Checks that we are currently not in a specific callback function invocation.

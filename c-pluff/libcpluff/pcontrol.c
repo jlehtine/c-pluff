@@ -42,7 +42,7 @@ static void assert_processed_zero(cp_context_t *context) {
 	}
 }
 #else
-#define assert_processed_zero(c) do {} while (0)
+#define assert_processed_zero(c) assert(1)
 #endif
 
 static void unregister_extensions(cp_context_t *context, cp_plugin_info_t *plugin) {
@@ -87,11 +87,21 @@ int CP_API cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 	cpi_plugin_event_t event;
 	int i;
 
-	assert(plugin != NULL);
+	cpi_check_not_null(context);
+	cpi_check_not_null(plugin);
 	
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	do {
+		
+		// Check that the identifier is not reserved
+		if (!strcmp(plugin->identifier, CPI_CORE_IDENTIFIER)) {
+			cpi_errorf(context,
+				_("Plug-in %s could not be installed because it uses a reserved identifier."),
+				plugin->identifier);
+			status = CP_ERR_CONFLICT;
+			break;
+		}
 
 		// Check that there is no conflicting plug-in already loaded 
 		if (hash_lookup(context->env->plugins, plugin->identifier) != NULL) {
@@ -301,18 +311,26 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
  */
 static int resolve_plugin_import(cp_context_t *context, cp_plugin_t *plugin, cp_plugin_import_t *import, cp_plugin_t **ipptr) {
 	cp_plugin_t *ip = NULL;
+	const char *iv = NULL;
 	hnode_t *node;
 	int vermismatch = 0;
 
-	// Lookup the plug-in 
-	node = hash_lookup(context->env->plugins, import->plugin_id);
-	if (node != NULL) {
-		ip = hnode_get(node);
+	// Check for a reserved identifier
+	if (!strcmp(import->plugin_id, CPI_CORE_IDENTIFIER)) {
+		iv = CP_RELEASE_VERSION;
+	}
+
+	// Otherwise lookup the plug-in 
+	else {
+		node = hash_lookup(context->env->plugins, import->plugin_id);
+		if (node != NULL) {
+			ip = hnode_get(node);
+			iv = ip->plugin->version;
+		}
 	}
 			
 	// Check plug-in version 
-	if (ip != NULL && import->version != NULL) {
-		const char *iv = ip->plugin->version;
+	if (iv != NULL && import->version != NULL) {
 		const char *rv = import->version;
 				
 		switch (import->match) {
@@ -349,7 +367,7 @@ static int resolve_plugin_import(cp_context_t *context, cp_plugin_t *plugin, cp_
 	}
 	
 	// Check if missing mandatory plug-in
-	if (ip == NULL && !import->optional) {
+	if (iv == NULL && !import->optional) {
 		cpi_errorf(context,
 			_("Plug-in %s could not be resolved because it depends on plug-in %s which is not installed."),
 			plugin->plugin->identifier,
@@ -603,7 +621,7 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 					
 					// Call stop function
 					context->env->in_stop_func_invocation++;
-					plugin->stop_func();
+					plugin->stop_func(plugin->context);
 					context->env->in_stop_func_invocation--;
 				}
 			
@@ -778,8 +796,8 @@ int CP_API cp_start_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	int status = CP_OK;
 
-	assert(context != NULL);
-	assert(id != NULL);
+	cpi_check_not_null(context);
+	cpi_check_not_null(id);
 
 	// Look up and start the plug-in 
 	cpi_lock_context(context);
@@ -817,7 +835,7 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	
 		// Invoke stop function	
 		context->env->in_stop_func_invocation++;
-		plugin->stop_func();
+		plugin->stop_func(plugin->context);
 		context->env->in_stop_func_invocation--;
 	}
 	
@@ -880,8 +898,8 @@ int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
 	cp_plugin_t *plugin;
 	int status = CP_OK;
 
-	assert(context != NULL);
-	assert(id != NULL);
+	cpi_check_not_null(context);
+	cpi_check_not_null(id);
 
 	// Look up and stop the plug-in 
 	cpi_lock_context(context);
@@ -902,7 +920,7 @@ int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
 void CP_API cp_stop_all_plugins(cp_context_t *context) {
 	lnode_t *node;
 	
-	assert(context != NULL);
+	cpi_check_not_null(context);
 	
 	// Stop the active plug-ins in the reverse order they were started 
 	cpi_lock_context(context);
@@ -1088,8 +1106,8 @@ int CP_API cp_uninstall_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	int status = CP_OK;
 
-	assert(context != NULL);
-	assert(id != NULL);
+	cpi_check_not_null(context);
+	cpi_check_not_null(id);
 
 	// Look up and unload the plug-in 
 	cpi_lock_context(context);
@@ -1110,7 +1128,7 @@ void CP_API cp_uninstall_all_plugins(cp_context_t *context) {
 	hscan_t scan;
 	hnode_t *node;
 	
-	assert(context != NULL);
+	cpi_check_not_null(context);
 	
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);

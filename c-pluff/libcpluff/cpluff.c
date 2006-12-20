@@ -215,7 +215,7 @@ int CP_API cp_add_logger(cp_logger_t logger, void *user_data, cp_log_severity_t 
 	logger_t *lh;
 	lnode_t *node;
 
-	assert(logger != NULL);
+	cpi_check_not_null(logger);
 	cpi_check_invocation(NULL, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
 	
 	// Check if logger already exists and allocate new holder if necessary
@@ -262,7 +262,7 @@ void CP_API cp_remove_logger(cp_logger_t logger) {
 	logger_t l;
 	lnode_t *node;
 	
-	assert(logger != NULL);
+	cpi_check_not_null(logger);
 	cpi_check_invocation(NULL, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
 	
 	l.logger = logger;
@@ -344,11 +344,15 @@ void CP_LOCAL cpi_fatalf(const char *msg, ...) {
 	if (fatal_error_handler != NULL) {
 		fatal_error_handler(fmsg);
 	} else {
-		fprintf(stderr, _(PACKAGE_NAME ": FATAL ERROR: %s\n"), fmsg);
+		fprintf(stderr, _("C-Pluff: FATAL ERROR: %s\n"), fmsg);
 	}
 	
 	// Abort if still alive 
 	abort();
+}
+
+void CP_LOCAL cpi_fatal_null_arg(const char *arg, const char *func) {
+	cpi_fatalf(_("Argument %s has illegal NULL value in call to function %s."), arg, func);
 }
 
 void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func) {
