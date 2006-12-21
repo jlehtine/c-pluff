@@ -167,7 +167,7 @@ typedef struct cp_context_t cp_context_t;
 
 
 /* Forward type definitions */
-typedef struct cp_implementation_info_t cp_implementation_info_t;
+typedef struct cp_core_info_t cp_core_info_t;
 typedef struct cp_plugin_import_t cp_plugin_import_t;
 typedef struct cp_ext_point_t cp_ext_point_t;
 typedef struct cp_cfg_element_t cp_cfg_element_t;
@@ -182,9 +182,9 @@ typedef struct cp_plugin_info_t cp_plugin_info_t;
  * Implementation information structure contains information about
  * the C-Pluff core library implementation.
  *
- * @see cp_get_implementation_info
+ * @see cp_get_core_info
  */
-struct cp_implementation_info_t {
+struct cp_core_info_t {
 
 	/** The C-Pluff release version */
 	char *release_version;
@@ -653,7 +653,7 @@ typedef void (*cp_fatal_error_func_t)(const char *msg);
  *
  * @return static information about the library implementation
  */
-cp_implementation_info_t * CP_API cp_get_implementation_info(void);
+cp_core_info_t * CP_API cp_get_core_info(void);
 
 /*@}*/
 
