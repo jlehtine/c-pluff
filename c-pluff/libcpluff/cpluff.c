@@ -56,9 +56,10 @@ struct logger_t {
 /// Implementation information 
 static cp_implementation_info_t implementation_info = {
 	CP_RELEASE_VERSION,
-	CP_API_VERSION,
-	CP_API_REVISION,
-	CP_API_AGE,
+	CP_CORE_VERSION,
+	CP_CORE_API_VERSION,
+	CP_CORE_API_REVISION,
+	CP_CORE_API_AGE,
 	CP_HOST,
 	CP_THREADS
 };

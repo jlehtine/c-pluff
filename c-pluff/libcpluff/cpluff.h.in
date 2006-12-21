@@ -49,14 +49,17 @@ extern "C" {
 /** The C-Pluff release version string */
 #define CP_RELEASE_VERSION "@PACKAGE_VERSION@"
 
-/** The C-Pluff API version (integer) */
-#define CP_API_VERSION @CP_API_CURRENT@
+/** The C-Pluff framework core version string */
+#define CP_CORE_VERSION "@CP_CORE_VERSION@"
 
-/** The C-Pluff API revision (integer) */
-#define CP_API_REVISION @CP_API_REVISION@
+/** The C-Pluff framework core API version (integer) */
+#define CP_CORE_API_VERSION @CP_CORE_API_CURRENT@
 
-/** The C-Pluff API backwards compatibility age (integer) */
-#define CP_API_AGE @CP_API_AGE@
+/** The C-Pluff framework core API revision (integer) */
+#define CP_CORE_API_REVISION @CP_CORE_API_REVISION@
+
+/** The C-Pluff framework core API backwards compatibility age (integer) */
+#define CP_CORE_API_AGE @CP_CORE_API_AGE@
 
 /*@}*/
 
@@ -177,23 +180,26 @@ typedef struct cp_plugin_info_t cp_plugin_info_t;
 
 /**
  * Implementation information structure contains information about
- * the library implementation.
+ * the C-Pluff core library implementation.
  *
  * @see cp_get_implementation_info
  */
 struct cp_implementation_info_t {
 
-	/** The release version */
+	/** The C-Pluff release version */
 	char *release_version;
 	
-	/** The version of the library API */
-	int api_version;
+	/** The C-Pluff core library version */
+	char *core_version;
 	
-	/** The revision of the library API */
-	int api_revision;
+	/** The version of the core library API */
+	int core_api_version;
 	
-	/** The backwards compatibility age of the library API */
-	int api_age;
+	/** The revision of the core library API */
+	int core_api_revision;
+	
+	/** The backwards compatibility age of the core library API */
+	int core_api_age;
   
 	/** The canonical host type */
 	char *host_type;

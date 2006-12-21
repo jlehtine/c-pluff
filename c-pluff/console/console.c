@@ -932,26 +932,21 @@ int main(int argc, char *argv[]) {
 	// Display startup information 
 	ii = cp_get_implementation_info();
 	noticef(
-		/* TRANSLATORS: This is the version string displayed on startup.
-	       The first parameter is the package name, C-Pluff. */
-		_("%s console, version %s [%d:%d:%d]"),
-		PACKAGE_NAME, PACKAGE_VERSION, CP_API_VERSION, CP_API_REVISION, CP_API_AGE);
+		/* TRANSLATORS: This is the version string displayed on startup. */
+		_("C-Pluff console, version %s (compiled for core %s)"),
+		PACKAGE_VERSION, CP_CORE_VERSION);
 	if (ii->multi_threading_type != NULL) {
 		
 		noticef(
-			/* TRANSLATORS: This is the version string displayed on startup.
-		   	   The first parameter is the package name, C-Pluff. */
-		   	_("%s library, version %s [%d:%d:%d] for %s with %s threads"),
-			PACKAGE_NAME, ii->release_version, ii->api_version,
-			ii->api_revision, ii->api_age, ii->host_type,
-			ii->multi_threading_type);
+			/* TRANSLATORS: This is the version string displayed on startup. */
+		   	_("C-Pluff framework, version %s (core %s) for %s with %s threads"),
+			ii->release_version, ii->core_version,
+			ii->host_type, ii->multi_threading_type);
 	} else {
 		noticef(
-			/* TRANSLATORS: This is the version string displayed on startup.
-		   	   The first parameter is the package name, C-Pluff. */
-			_("%s library, version %s [%d:%d:%d] for %s without threads"),
-			PACKAGE_NAME, ii->release_version, ii->api_version,
-			ii->api_revision, ii->api_age, ii->host_type);
+			/* TRANSLATORS: This is the version string displayed on startup. */
+			_("C-Pluff framework, version %s (core %s) for %s without threads"),
+			ii->release_version, ii->core_version, ii->host_type);
 	}
 	notice(_("Type \"help\" for help on available commands."));
 
