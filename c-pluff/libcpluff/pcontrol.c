@@ -327,7 +327,7 @@ static int resolve_plugin_import(cp_context_t *context, cp_plugin_t *plugin, cp_
 
 	// Check for a reserved identifier
 	if (!strcmp(import->plugin_id, CPI_CORE_IDENTIFIER)) {
-		iv = CP_RELEASE_VERSION;
+		iv = CP_CORE_VERSION;
 	}
 
 	// Otherwise lookup the plug-in 
