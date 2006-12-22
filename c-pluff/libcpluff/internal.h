@@ -190,6 +190,12 @@ struct cp_plugin_t {
 	
 	/// The symbol resolving function, or NULL if none or not resolved
 	cp_symbol_func_t symbol_func;
+	
+	/// The plug-in factory function, or NULL if none or not resolved
+	cp_factory_func_t factory_func;
+	
+	/// The plug-in destroy function, or NULL if none or not resolved
+	cp_destroy_func_t destroy_func;
 
 	/// Used by recursive operations: has this plug-in been processed already
 	int processed;

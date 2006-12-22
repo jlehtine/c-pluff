@@ -131,6 +131,8 @@ int CP_API cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 		rp->start_func = NULL;
 		rp->stop_func = NULL;
 		rp->symbol_func = NULL;
+		rp->factory_func = NULL;
+		rp->destroy_func = NULL;
 		rp->importing = list_create(LISTCOUNT_T_MAX);
 		if (rp->importing == NULL) {
 			status = CP_ERR_RESOURCE;
@@ -225,6 +227,7 @@ static void unresolve_plugin_runtime(cp_plugin_t *plugin) {
 	plugin->start_func = NULL;
 	plugin->stop_func = NULL;
 	plugin->symbol_func = NULL;
+	plugin->factory_func = NULL;
 	if (plugin->runtime_lib != NULL) {
 		DLCLOSE(plugin->runtime_lib);
 		plugin->runtime_lib = NULL;
@@ -272,29 +275,38 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			break;
 		}
 		
-		// Resolve start and stop functions 
-		if (plugin->plugin->start_func_name != NULL) {
-			plugin->start_func = (cp_start_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->start_func_name);
-			if (plugin->start_func == NULL) {
-				cpi_errorf(context, _("Plug-in %s start function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->start_func_name);
+		// Resolve plug-in functions 
+		if (plugin->plugin->factory_func_name != NULL) {
+			plugin->factory_func = (cp_factory_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->factory_func_name);
+			if (plugin->factory_func == NULL) {
+				cpi_errorf(context, _("Plug-in %s factory function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->factory_func_name);
 				status = CP_ERR_RUNTIME;
 				break;
 			}
-		}
-		if (plugin->plugin->stop_func_name != NULL) {
-			plugin->stop_func = (cp_stop_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->stop_func_name);
-			if (plugin->stop_func == NULL) {
-				cpi_errorf(context, _("Plug-in %s stop function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->stop_func_name);
-				status = CP_ERR_RUNTIME;
-				break;
+		} else {
+			if (plugin->plugin->start_func_name != NULL) {
+				plugin->start_func = (cp_start_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->start_func_name);
+				if (plugin->start_func == NULL) {
+					cpi_errorf(context, _("Plug-in %s start function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->start_func_name);
+					status = CP_ERR_RUNTIME;
+					break;
+				}
 			}
-		}
-		if (plugin->plugin->symbol_func_name != NULL) {
-			plugin->symbol_func = (cp_symbol_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->symbol_func_name);
-			if (plugin->symbol_func == NULL) {
-				cpi_errorf(context, _("Plug-in %s symbol resolving function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->symbol_func_name);
-				status = CP_ERR_RUNTIME;
-				break;
+			if (plugin->plugin->stop_func_name != NULL) {
+				plugin->stop_func = (cp_stop_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->stop_func_name);
+				if (plugin->stop_func == NULL) {
+					cpi_errorf(context, _("Plug-in %s stop function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->stop_func_name);
+					status = CP_ERR_RUNTIME;
+					break;
+				}
+			}
+			if (plugin->plugin->symbol_func_name != NULL) {
+				plugin->symbol_func = (cp_symbol_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->symbol_func_name);
+				if (plugin->symbol_func == NULL) {
+					cpi_errorf(context, _("Plug-in %s symbol resolving function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->symbol_func_name);
+					status = CP_ERR_RUNTIME;
+					break;
+				}
 			}
 		}
 
@@ -600,15 +612,31 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			break;
 		}
 		
-		// Create context and start the plug-in 
-		if (plugin->start_func != NULL) {
-			int s;
-			
-			// Create context
+		// Create context
+		if (plugin->start_func != NULL || plugin->factory_func != NULL) {
 			if ((plugin->context = cpi_new_context(plugin, context->env, &status)) == NULL) {
 				break;
 			}
-
+		}
+		
+		// Create a plug-in object if factory defined
+		if (plugin->factory_func != NULL) {
+			cp_plugin_funcs_t funcs;
+			
+			if (plugin->factory_func(plugin->context, &funcs) != CP_OK) {
+				status = CP_ERR_RUNTIME;
+				break;
+			}
+			plugin->start_func = funcs.start_func;
+			plugin->stop_func = funcs.stop_func;
+			plugin->symbol_func = funcs.symbol_func;
+			plugin->destroy_func = funcs.destroy_func;
+		}
+			
+		// Start plug-in
+		if (plugin->start_func != NULL) {
+			int s;
+			
 			// About to start the plug-in 
 			event.old_state = plugin->state;
 			event.new_state = plugin->state = CP_PLUGIN_STARTING;
@@ -634,13 +662,18 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 					plugin->stop_func(plugin->context);
 					context->env->in_stop_func_invocation--;
 				}
+				
+				// Destroy plug-in object
+				if (plugin->destroy_func != NULL) {
+					plugin->destroy_func(plugin->context);
+				}
 			
 				status = CP_ERR_RUNTIME;
 				break;
 			}
 		}
 		
-		// Plug-in started 
+		// Plug-in active 
 		list_append(context->env->started_plugins, node);
 		event.old_state = plugin->state;
 		event.new_state = plugin->state = CP_PLUGIN_ACTIVE;
@@ -661,6 +694,12 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			event.old_state = plugin->state;
 			event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
 			cpi_deliver_event(context, &event);
+		}
+		if (plugin->factory_func != NULL) {
+			plugin->start_func = NULL;
+			plugin->stop_func = NULL;
+			plugin->symbol_func = NULL;
+			plugin->destroy_func = NULL;
 		}
 	}
 
@@ -847,6 +886,17 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		context->env->in_stop_func_invocation++;
 		plugin->stop_func(plugin->context);
 		context->env->in_stop_func_invocation--;
+	}
+	
+	// Destroy the plug-in object
+	if (plugin->destroy_func != NULL) {
+		plugin->destroy_func(plugin->context);
+	}
+	if (plugin->factory_func != NULL) {
+		plugin->start_func = NULL;
+		plugin->stop_func = NULL;
+		plugin->symbol_func = NULL;
+		plugin->destroy_func = NULL;
 	}
 	
 	// Free plug-in context

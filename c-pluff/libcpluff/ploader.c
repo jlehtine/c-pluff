@@ -549,10 +549,19 @@ static void XMLCALL start_element_handler(
 						} else if (!strcmp(atts[i], "stop-func")) {
 							plcontext->plugin->stop_func_name
 								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[1], "symbol-func")) {
+						} else if (!strcmp(atts[i], "symbol-func")) {
 							plcontext->plugin->symbol_func_name
 								= parser_strdup(plcontext, atts[i+1]);
+						} else if (!strcmp(atts[i], "factory-func")) {
+							plcontext->plugin->factory_func_name
+								= parser_strdup(plcontext, atts[i+1]);
 						}
+					}
+					if (plcontext->plugin->factory_func_name != NULL
+						&& (plcontext->plugin->start_func_name != NULL
+							|| plcontext->plugin->stop_func_name != NULL
+							|| plcontext->plugin->symbol_func_name != NULL)) {
+						descriptor_errorf(plcontext, 0, _("a factory function overrides other plug-in functions"));
 					}
 				}
 			} else if (!strcmp(name, "extension-point")) {
@@ -1027,6 +1036,7 @@ cp_plugin_info_t * CP_API cp_load_plugin_descriptor(cp_context_t *context, const
 		plcontext->plugin->start_func_name = NULL;
 		plcontext->plugin->stop_func_name = NULL;
 		plcontext->plugin->symbol_func_name = NULL;
+		plcontext->plugin->factory_func_name = NULL;
 		plcontext->plugin->ext_points = NULL;
 		plcontext->plugin->extensions = NULL;
 		XML_SetUserData(parser, plcontext);

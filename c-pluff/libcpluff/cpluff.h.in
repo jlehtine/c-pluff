@@ -4,7 +4,7 @@
  *-----------------------------------------------------------------------*/
 
 /*
- * The public API header file
+ * The public C API header file
  */
 
 #ifndef CPLUFF_H_
@@ -173,6 +173,7 @@ typedef struct cp_ext_point_t cp_ext_point_t;
 typedef struct cp_cfg_element_t cp_cfg_element_t;
 typedef struct cp_extension_t cp_extension_t;
 typedef struct cp_plugin_info_t cp_plugin_info_t;
+typedef struct cp_plugin_funcs_t cp_plugin_funcs_t;
 
 
 /** @name Library information */
@@ -258,6 +259,9 @@ struct cp_plugin_info_t {
     
     /** The name of the symbol resolving function, or NULL if none */
     char *symbol_func_name;
+    
+    /** The name of the plug-in factory function, or NULL if none */
+    char *factory_func_name;
 
 	/** Number of extension points provided by this plug-in */
 	unsigned int num_ext_points;
@@ -560,6 +564,72 @@ typedef void (*cp_stop_func_t)(cp_context_t *ctx);
  */
 typedef void * (*cp_symbol_func_t)(cp_context_t *ctx, const char *name);
 
+/*@}*/
+
+
+/**
+ * @name Plug-in factory
+ *
+ * A plug-in factory is used by C++ plug-ins and other object
+ * oriented plug-ins. The plug-in factory creates a plug-in object and
+ * redirects the usual plug-in function invocations to the plug-in object.
+ * The plug-in object pointer is stored into the plug-in context as
+ * user data. The C++ API implements a factory for C++ plug-ins. C++ plug-in
+ * implementors do not therefore need to use these facilities directly.
+ */
+/*@{*/
+
+/**
+ * A plug-in object destroy function called to destroy a plug-in object.
+ * This function is called to instruct the factory implementation to
+ * destroy the actual plug-in object. The plug-in is stopped before this
+ * function is called.
+ */
+typedef void (*cp_destroy_func_t)(cp_context_t *ctx);
+
+/**
+ * A container for plug-in function redirection pointers. Filled in by a
+ * plug-in factory which acts as a bridge to invoke methods on the actual
+ * plug-in object.
+ */
+struct cp_plugin_funcs_t {
+
+	/**
+	 * Start function redirection implementation which invokes the start
+	 * method of the actual plug-in object.
+	 */
+	cp_start_func_t start_func;
+	
+	/**
+	 * Stop function redirection implementation which invokes the stop
+	 * method of the actual plug-in object.
+	 */
+	cp_stop_func_t stop_func;
+	
+	/**
+	 * Symbol function redirection implementation which invokes the symbol
+	 * method of the actual plug-in object.
+	 */
+	cp_symbol_func_t symbol_func;
+	
+	/**
+	 * Destroy function which destroys the actual plug-in object.
+	 */
+	cp_destroy_func_t destroy_func;
+};
+
+/**
+ * A factory function called to create a plug-in object and to retrieve
+ * pointers to the factory redirection functions. Plug-in factory should
+ * create a plug-in object and setup the plug-in context user data and
+ * plug-in function redirection pointers so that it can properly redirect
+ * plug-in function invocations to the corresponding plug-in object methods.
+ *
+ * @param ctx the associated plug-in context
+ * @param funcs the container for plug-in function redirection pointers
+ * @return CP_OK (zero) on success or non-zero on failure
+ */
+typedef int (*cp_factory_func_t)(cp_context_t *ctx, cp_plugin_funcs_t *funcs);
 
 /*@}*/
 
@@ -669,7 +739,8 @@ cp_core_info_t * CP_API cp_get_core_info(void);
 /**
  * Initializes the plug-in framework. This function must be called
  * by the client program before calling any other plug-in framework
- * functions except \Ref{cp_get_implementation_info}. This function may be
+ * functions except \Ref{cp_get_implementation_info} and
+ * \Ref{cp_set_fatal_error_handler}. This function may be
  * called several times but it is not thread-safe. Library resources
  * should be released by calling \Ref{cp_destroy} when the framework is
  * not needed anymore.
@@ -686,10 +757,11 @@ int CP_API cp_init(void);
  * Destroys the plug-in framework and releases the resources used by it.
  * The plug-in framework is only destroyed after this function has
  * been called as many times as \Ref{cp_init}. This function is not
- * thread-safe. Plug-in framework functions other than \Ref{cp_init}
- * and \Ref{cp_get_implementation_info} must not be called
- * after the plug-in framework has been destroyed. All contexts are
- * destroyed and all data references returned by the framework become invalid.
+ * thread-safe. Plug-in framework functions other than \Ref{cp_init},
+ * \Ref{cp_get_implementation_info} and \Ref{cp_set_fatal_error_handler}
+ * must not be called after the plug-in framework has been destroyed.
+ * All contexts are destroyed and all data references returned by the
+ * framework become invalid.
  */
 void CP_API cp_destroy(void);
 
@@ -698,7 +770,8 @@ void CP_API cp_destroy(void);
  * error handler prints the error message out to standard error and aborts
  * the program. If the user specified error handler returns then the framework
  * will abort the program. Setting NULL error handler will restore the default
- * handler. This function is not thread-safe.
+ * handler. This function is not thread-safe and it should be called
+ * before initializing the framework to catch all fatal errors.
  * 
  * @param error_handler the fatal error handler
  */
