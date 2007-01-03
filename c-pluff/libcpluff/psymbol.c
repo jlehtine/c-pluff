@@ -7,6 +7,7 @@
  * Dynamic plug-in symbols
  */
 
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 #include "../kazlib/hash.h"
@@ -50,7 +51,7 @@ typedef struct symbol_info_t {
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const char *name, int *error) {
+CP_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const char *name, int *error) {
 	int status = CP_OK;
 	int error_reported = 1;
 	hnode_t *node;
@@ -181,7 +182,7 @@ void * CP_API cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 	return symbol;
 }
 
-void CP_API cp_release_symbol(cp_context_t *context, void *ptr) {
+CP_API void cp_release_symbol(cp_context_t *context, void *ptr) {
 	hnode_t *node;
 	symbol_info_t *symbol_info;
 	symbol_provider_info_t *provider_info;

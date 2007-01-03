@@ -35,14 +35,14 @@ typedef struct cpi_mutex_t cpi_mutex_t;
  * 
  * @return the created mutex or NULL if no resources available
  */
-cpi_mutex_t * CP_LOCAL cpi_create_mutex(void);
+CP_HIDDEN cpi_mutex_t * cpi_create_mutex(void);
 
 /**
  * Destroys the specified mutex.
  * 
  * @param mutex the mutex
  */
-void CP_LOCAL cpi_destroy_mutex(cpi_mutex_t *mutex);
+CP_HIDDEN void cpi_destroy_mutex(cpi_mutex_t *mutex);
 
 /**
  * Waits for the specified mutex to become available and locks it.
@@ -51,7 +51,7 @@ void CP_LOCAL cpi_destroy_mutex(cpi_mutex_t *mutex);
  * 
  * @param mutex the mutex
  */
-void CP_LOCAL cpi_lock_mutex(cpi_mutex_t *mutex);
+CP_HIDDEN void cpi_lock_mutex(cpi_mutex_t *mutex);
 
 /**
  * Unlocks the specified mutex which must have been previously locked
@@ -61,7 +61,7 @@ void CP_LOCAL cpi_lock_mutex(cpi_mutex_t *mutex);
  * 
  * @param mutex the mutex
  */
-void CP_LOCAL cpi_unlock_mutex(cpi_mutex_t *mutex);
+CP_HIDDEN void cpi_unlock_mutex(cpi_mutex_t *mutex);
 
 #if !defined(NDEBUG)
 
@@ -70,7 +70,7 @@ void CP_LOCAL cpi_unlock_mutex(cpi_mutex_t *mutex);
  * is only intended to be used for assertions. The returned state
  * reflects the state of the mutex only at the time of inspection.
  */
-int CP_LOCAL cpi_is_mutex_locked(cpi_mutex_t *mutex);
+CP_HIDDEN int cpi_is_mutex_locked(cpi_mutex_t *mutex);
 
 #endif
 

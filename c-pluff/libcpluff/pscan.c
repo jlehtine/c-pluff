@@ -26,7 +26,7 @@
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-int CP_API cp_scan_plugins(cp_context_t *context, int flags) {
+CP_API int cp_scan_plugins(cp_context_t *context, int flags) {
 	hash_t *avail_plugins = NULL;
 	list_t *started_plugins = NULL;
 	cp_plugin_info_t **plugins = NULL;

@@ -136,7 +136,7 @@ static void free_plugin_env(cp_plugin_env_t *env) {
 
 }
 
-void CP_LOCAL cpi_free_context(cp_context_t *context) {
+CP_HIDDEN void cpi_free_context(cp_context_t *context) {
 	assert(context != NULL);
 	
 	// Free environment if this is the client program context
@@ -158,7 +158,7 @@ void CP_LOCAL cpi_free_context(cp_context_t *context) {
 	free(context);	
 }
 
-cp_context_t * CP_LOCAL cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *env, int *error) {
+CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *env, int *error) {
 	cp_context_t *context = NULL;
 	int status = CP_OK;
 	
@@ -203,7 +203,7 @@ cp_context_t * CP_LOCAL cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *en
 	return context;
 }
 
-cp_context_t * CP_API cp_create_context(int *error) {
+CP_API cp_context_t * cp_create_context(int *error) {
 	cp_plugin_env_t *env = NULL;
 	cp_context_t *context = NULL;
 	int status = CP_OK;
@@ -299,7 +299,7 @@ cp_context_t * CP_API cp_create_context(int *error) {
 	return context;
 }
 
-void CP_API cp_destroy_context(cp_context_t *context) {
+CP_API void cp_destroy_context(cp_context_t *context) {
 	CHECK_NOT_NULL(context);
 	if (context->plugin != NULL) {
 		cpi_fatalf(_("Only the client program can destroy a plug-in context."));
@@ -335,7 +335,7 @@ void CP_API cp_destroy_context(cp_context_t *context) {
 	cpi_debugf(NULL, "Plug-in context %p was destroyed.", (void *) context);
 }
 
-void CP_LOCAL cpi_destroy_all_contexts(void) {
+CP_HIDDEN void cpi_destroy_all_contexts(void) {
 	cpi_lock_framework();
 	if (contexts != NULL) {
 		lnode_t *node;
@@ -354,7 +354,7 @@ void CP_LOCAL cpi_destroy_all_contexts(void) {
 
 // Plug-in listeners 
 
-int CP_API cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener, void *user_data) {
+CP_API int cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener, void *user_data) {
 	int status = CP_ERR_RESOURCE;
 	el_holder_t *holder;
 	lnode_t *node;
@@ -378,12 +378,12 @@ int CP_API cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_func
 	if (status != CP_OK) {
 		cpi_error(context, _("A plug-in listener could not be registered due to insufficient system resources."));
 	} else {
-		cpi_debugf(context, "Plug-in listener %p was added.", (void *) listener);
+		cpi_debugf(context, "A plug-in listener was added by %s.", cpi_context_owner(context));
 	}
 	return status;
 }
 
-void CP_API cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener) {
+CP_API void cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener) {
 	el_holder_t holder;
 	lnode_t *node;
 	
@@ -396,10 +396,10 @@ void CP_API cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_
 		process_free_el_holder(context->env->plugin_listeners, node, NULL);
 	}
 	cpi_unlock_context(context);
-	cpi_debugf(context, "Plug-in listener %p was removed.", (void *) listener);
+	cpi_debugf(context, "A plug-in listener was removed by %s.", cpi_context_owner(context));
 }
 
-void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t *event) {
+CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t *event) {
 	assert(event != NULL);
 	assert(event->plugin_id != NULL);
 	cpi_lock_context(context);
@@ -449,7 +449,7 @@ void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t 
 
 // Plug-in directories 
 
-int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
+CP_API int cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	char *d = NULL;
 	lnode_t *node = NULL;
 	int status = CP_OK;
@@ -511,7 +511,7 @@ int CP_API cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	return status;
 }
 
-void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
+CP_API void cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 	char *d;
 	lnode_t *node;
 	
@@ -534,14 +534,14 @@ void CP_API cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 
 // Context data
 
-void CP_API cp_set_context_data(cp_context_t *ctx, void *user_data) {
+CP_API void cp_set_context_data(cp_context_t *ctx, void *user_data) {
 	CHECK_NOT_NULL(ctx);
 	cpi_lock_context(ctx);
 	ctx->user_data = user_data;
 	cpi_unlock_context(ctx);
 }
 
-void * CP_API cp_get_context_data(cp_context_t *ctx) {
+CP_API void * cp_get_context_data(cp_context_t *ctx) {
 	void *user_data;
 	
 	CHECK_NOT_NULL(ctx);
@@ -556,7 +556,7 @@ void * CP_API cp_get_context_data(cp_context_t *ctx) {
 
 #if defined(CP_THREADS) || !defined(NDEBUG)
 
-void CP_LOCAL cpi_lock_context(cp_context_t *context) {
+CP_HIDDEN void cpi_lock_context(cp_context_t *context) {
 #if defined(CP_THREADS)
 	cpi_lock_mutex(context->env->mutex);
 #elif !defined(NDEBUG)
@@ -564,7 +564,7 @@ void CP_LOCAL cpi_lock_context(cp_context_t *context) {
 #endif
 }
 
-void CP_LOCAL cpi_unlock_context(cp_context_t *context) {
+CP_HIDDEN void cpi_unlock_context(cp_context_t *context) {
 #if defined(CP_THREADS)
 	cpi_unlock_mutex(context->env->mutex);
 #elif !defined(NDEBUG)

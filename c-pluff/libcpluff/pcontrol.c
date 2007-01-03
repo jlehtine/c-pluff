@@ -81,7 +81,7 @@ static void unregister_extensions(cp_context_t *context, cp_plugin_info_t *plugi
 	}
 }
 
-int CP_API cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
+CP_API int cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 	cp_plugin_t *rp = NULL;
 	int status = CP_OK;
 	cpi_plugin_event_t event;
@@ -822,7 +822,7 @@ static int start_plugin_rec(cp_context_t *context, cp_plugin_t *plugin, list_t *
 	return status;
 }
 
-int CP_LOCAL cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin) {
+CP_HIDDEN int cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	int status;
 	
 	if ((status = resolve_plugin(context, plugin)) == CP_OK) {
@@ -841,7 +841,7 @@ int CP_LOCAL cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	return status;
 }
 
-int CP_API cp_start_plugin(cp_context_t *context, const char *id) {
+CP_API int cp_start_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	int status = CP_OK;
 
@@ -953,7 +953,7 @@ static void stop_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	assert_processed_zero(context);
 }
 
-int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
+CP_API int cp_stop_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	cp_plugin_t *plugin;
 	int status = CP_OK;
@@ -977,7 +977,7 @@ int CP_API cp_stop_plugin(cp_context_t *context, const char *id) {
 	return status;
 }
 
-void CP_API cp_stop_all_plugins(cp_context_t *context) {
+CP_API void cp_stop_all_plugins(cp_context_t *context) {
 	lnode_t *node;
 	
 	CHECK_NOT_NULL(context);
@@ -1073,7 +1073,7 @@ static void free_cfg_element_content(cp_cfg_element_t *ce) {
 	free(ce->children);
 }
 
-void CP_LOCAL cpi_free_plugin(cp_plugin_info_t *plugin) {
+CP_HIDDEN void cpi_free_plugin(cp_plugin_info_t *plugin) {
 	int i;
 	
 	assert(plugin != NULL);
@@ -1162,7 +1162,7 @@ static void uninstall_plugin(cp_context_t *context, hnode_t *node) {
 	free_registered_plugin(plugin);
 }
 
-int CP_API cp_uninstall_plugin(cp_context_t *context, const char *id) {
+CP_API int cp_uninstall_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	int status = CP_OK;
 
@@ -1184,7 +1184,7 @@ int CP_API cp_uninstall_plugin(cp_context_t *context, const char *id) {
 	return status;
 }
 
-void CP_API cp_uninstall_all_plugins(cp_context_t *context) {
+CP_API void cp_uninstall_all_plugins(cp_context_t *context) {
 	hscan_t scan;
 	hnode_t *node;
 	

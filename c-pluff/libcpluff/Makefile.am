@@ -17,7 +17,7 @@ endif
 libcpluff_la_CPPFLAGS = -DCP_BUILD -DCP_HOST="\"$(host)\"" -DCP_DATADIR="\"$(datadir)\""
 libcpluff_la_LDFLAGS = -version-info $(CP_CORE_API_VERSION) -no-undefined
 
-include_HEADERS = cpluff.h
+include_HEADERS = cpluff.h cpluffdef.h
 noinst_HEADERS = internal.h util.h defines.h
 
 doc: $(top_srcdir)/doc/reference/html/index.html

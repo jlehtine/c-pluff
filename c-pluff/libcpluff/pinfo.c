@@ -7,6 +7,7 @@
  * Plug-in information functions
  */
 
+#include <string.h>
 #include <stdlib.h>
 #include <assert.h>
 #include "../kazlib/hash.h"
@@ -50,7 +51,7 @@ static hash_t *infos = NULL;
 
 // General information object management
 
-int CP_LOCAL cpi_register_info(void *res, cpi_dealloc_func_t df) {
+CP_HIDDEN int cpi_register_info(void *res, cpi_dealloc_func_t df) {
 	int status = CP_OK;
 	info_resource_t *ir = NULL;
 	
@@ -90,7 +91,7 @@ int CP_LOCAL cpi_register_info(void *res, cpi_dealloc_func_t df) {
 	return status;
 }
 
-void CP_LOCAL cpi_use_info(void *res) {
+CP_HIDDEN void cpi_use_info(void *res) {
 	hnode_t *node;
 	
 	cpi_lock_framework();
@@ -104,7 +105,7 @@ void CP_LOCAL cpi_use_info(void *res) {
 	cpi_unlock_framework();
 }
 
-void CP_API cp_release_info(void *info) {
+CP_API void cp_release_info(void *info) {
 	hnode_t *node;
 	
 	CHECK_NOT_NULL(info);
@@ -126,7 +127,7 @@ void CP_API cp_release_info(void *info) {
 	cpi_unlock_framework();
 }
 
-void CP_LOCAL cpi_destroy_all_infos(void) {
+CP_HIDDEN void cpi_destroy_all_infos(void) {
 	cpi_lock_framework();
 	if (infos != NULL) {
 		hscan_t scan;
@@ -149,7 +150,7 @@ void CP_LOCAL cpi_destroy_all_infos(void) {
 
 // Information acquiring functions
 
-cp_plugin_info_t * CP_API cp_get_plugin_info(cp_context_t *context, const char *id, int *error) {
+CP_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *context, const char *id, int *error) {
 	hnode_t *node;
 	cp_plugin_info_t *plugin = NULL;
 	int status = CP_OK;
@@ -187,7 +188,7 @@ static void dealloc_plugins_info(cp_plugin_info_t **plugins) {
 	free(plugins);
 }
 
-cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *context, int *error, int *num) {
+CP_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *context, int *error, int *num) {
 	cp_plugin_info_t **plugins = NULL;
 	int i, n;
 	int status = CP_OK;
@@ -245,7 +246,7 @@ cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *context, int *error
 	return plugins;
 }
 
-cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *context, const char *id) {
+CP_API cp_plugin_state_t cp_get_plugin_state(cp_context_t *context, const char *id) {
 	cp_plugin_state_t state = CP_PLUGIN_UNINSTALLED;
 	hnode_t *hnode;
 	
@@ -273,7 +274,7 @@ static void dealloc_ext_points_info(cp_ext_point_t **ext_points) {
 	free(ext_points);
 }
 
-cp_ext_point_t ** CP_API cp_get_ext_points_info(cp_context_t *context, int *error, int *num) {
+CP_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *context, int *error, int *num) {
 	cp_ext_point_t **ext_points = NULL;
 	int i, n;
 	int status = CP_OK;
@@ -341,7 +342,7 @@ static void dealloc_extensions_info(cp_extension_t **extensions) {
 	free(extensions);
 }
 
-cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *context, const char *extpt_id, int *error, int *num) {
+CP_API cp_extension_t ** cp_get_extensions_info(cp_context_t *context, const char *extpt_id, int *error, int *num) {
 	cp_extension_t **extensions = NULL;
 	int i, n;
 	int status = CP_OK;
@@ -459,11 +460,11 @@ static cp_cfg_element_t * lookup_cfg_element(cp_cfg_element_t *base, const char 
 	return base;
 }
 
-cp_cfg_element_t * CP_API cp_lookup_cfg_element(cp_cfg_element_t *base, const char *path) {
+CP_API cp_cfg_element_t * cp_lookup_cfg_element(cp_cfg_element_t *base, const char *path) {
 	return lookup_cfg_element(base, path, -1);
 }
 
-char * CP_API cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path) {
+CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path) {
 	cp_cfg_element_t *e;
 	const char *attr;
 	

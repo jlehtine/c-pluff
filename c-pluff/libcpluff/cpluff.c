@@ -7,6 +7,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
 #include <assert.h>
 #include "cpluff.h"
@@ -96,11 +97,11 @@ static cp_fatal_error_func_t fatal_error_handler = NULL;
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-cp_core_info_t * CP_API cp_get_core_info(void) {
+CP_API cp_core_info_t * cp_get_core_info(void) {
 	return &implementation_info;
 }
 
-void CP_LOCAL cpi_lock_framework(void) {
+CP_HIDDEN void cpi_lock_framework(void) {
 #if defined(CP_THREADS)
 	cpi_lock_mutex(framework_mutex);
 #elif !defined(NDEBUG)
@@ -108,7 +109,7 @@ void CP_LOCAL cpi_lock_framework(void) {
 #endif
 }
 
-void CP_LOCAL cpi_unlock_framework(void) {
+CP_HIDDEN void cpi_unlock_framework(void) {
 #if defined(CP_THREADS)
 	cpi_unlock_mutex(framework_mutex);
 #elif !defined(NDEBUG)
@@ -138,7 +139,7 @@ static void reset(void) {
 #endif
 }
 
-int CP_API cp_init(void) {
+CP_API int cp_init(void) {
 	int status = CP_OK;
 	
 	// Initialize if necessary
@@ -170,7 +171,7 @@ int CP_API cp_init(void) {
 	return status;
 }
 
-void CP_API cp_destroy(void) {
+CP_API void cp_destroy(void) {
 	assert(initialized > 0);
 	cpi_check_invocation(NULL, CPI_CF_ANY, __func__);
 	initialized--;
@@ -211,7 +212,7 @@ static int comp_logger(const void *p1, const void *p2) {
 	return l1->logger != l2->logger;
 }
 
-int CP_API cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule) {
+CP_API int cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule) {
 	logger_t l;
 	logger_t *lh;
 	lnode_t *node;
@@ -255,11 +256,11 @@ int CP_API cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severi
 	update_logging_limits();
 	cpi_unlock_framework();
 
-	cpi_debugf(NULL, "Logger %p was added or updated with minimum severity %d.", (void *) logger, min_severity);
+	cpi_debugf(NULL, "A logger was added or updated with minimum severity %d.", min_severity);
 	return CP_OK;
 }
 
-void CP_API cp_remove_logger(cp_logger_func_t logger) {
+CP_API void cp_remove_logger(cp_logger_func_t logger) {
 	logger_t l;
 	lnode_t *node;
 	
@@ -276,10 +277,10 @@ void CP_API cp_remove_logger(cp_logger_func_t logger) {
 		update_logging_limits();
 	}
 	cpi_unlock_framework();
-	cpi_debugf(NULL, "Logger %p was removed.", (void *) logger);
+	cpi_debug(NULL, "A logger was removed.");
 }
 
-static void log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) {
+static void do_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) {
 	lnode_t *node;
 	const char *apid = NULL;
 	
@@ -303,13 +304,13 @@ static void log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) 
 	cpi_unlock_framework();
 }
 
-void CP_LOCAL cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) {
+CP_HIDDEN void cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) {
 	if (severity >= log_min_severity) {
-		log(ctx, severity, msg);
+		do_log(ctx, severity, msg);
 	}
 }
 
-void CP_LOCAL cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char *msg, ...) {
+CP_HIDDEN void cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char *msg, ...) {
 	if (severity >= log_min_severity) {
 		char buffer[256];
 		va_list va;
@@ -318,19 +319,33 @@ void CP_LOCAL cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char
 		vsnprintf(buffer, sizeof(buffer), msg, va);
 		va_end(va);
 		buffer[sizeof(buffer)/sizeof(char) - 1] = '\0';
-		log(ctx, severity, buffer);
+		do_log(ctx, severity, buffer);
 	}
 }
 
-int CP_LOCAL cpi_is_logged(cp_log_severity_t severity) {
+#ifndef NDEBUG
+CP_HIDDEN const char *cpi_context_owner(cp_context_t *ctx) {
+	static char buffer[64];
+	
+	if (ctx->plugin != NULL) {
+		snprintf(buffer, sizeof(buffer), "plugin %s", ctx->plugin->plugin->identifier);
+	} else {
+		strncpy(buffer, "the client program", sizeof(buffer));
+	}
+	buffer[sizeof(buffer)/sizeof(char) - 1] = '\0';
+	return buffer;
+}
+#endif
+
+CP_HIDDEN int cpi_is_logged(cp_log_severity_t severity) {
 	return severity >= log_min_severity;
 }
 
-void CP_API cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler) {
+CP_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler) {
 	fatal_error_handler = error_handler;
 }
 
-void CP_LOCAL cpi_fatalf(const char *msg, ...) {
+CP_HIDDEN void cpi_fatalf(const char *msg, ...) {
 	va_list params;
 	char fmsg[256];
 		
@@ -352,11 +367,11 @@ void CP_LOCAL cpi_fatalf(const char *msg, ...) {
 	abort();
 }
 
-void CP_LOCAL cpi_fatal_null_arg(const char *arg, const char *func) {
+CP_HIDDEN void cpi_fatal_null_arg(const char *arg, const char *func) {
 	cpi_fatalf(_("Argument %s has illegal NULL value in call to function %s."), arg, func);
 }
 
-void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func) {
+CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func) {
 	assert(func != NULL);
 	assert(funcmask != 0);
 	assert(ctx == NULL || (funcmask & CPI_CF_LOGGER));

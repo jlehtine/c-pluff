@@ -6,7 +6,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libcpluff console po
+SUBDIRS = libcpluff plugins console po
 
 check-copyright: COPYRIGHT_HOLDER = Johannes Lehtinen
 check-copyright:

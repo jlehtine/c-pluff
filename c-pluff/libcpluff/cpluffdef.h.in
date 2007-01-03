@@ -1,0 +1,183 @@
+/*-------------------------------------------------------------------------
+ * C-Pluff, a plug-in framework for C
+ * Copyright 2006 Johannes Lehtinen
+ *-----------------------------------------------------------------------*/
+
+/*
+ * The macros common to C/C++ API
+ */
+
+#ifndef CPLUFFDEF_H_
+#define CPLUFFDEF_H_
+
+
+/* ------------------------------------------------------------------------
+ * Symbol visibility
+ * ----------------------------------------------------------------------*/
+
+/**
+ * @name Symbol visibility
+ *
+ * Symbol visibility is controlled using generic macros which have
+ * a platform dependent value. The macros may also have an empty value
+ * if the platform does not support corresponding functionality.
+ * These macros are used by the library implementation but it is
+ * recommended that plug-in implementations would use them as well
+ * for better portability.
+ */
+/*@{*/
+
+/* Define CP_EXPORTED and CP_HIDDEN for exported and internal symbols */
+#if defined(__WIN32__)
+#if defined(CP_BUILD) && defined(DLL_EXPORT)
+#define CP_EXPORTED __declspec(dllexport)
+#elif !defined(CP_BUILD) && !defined(CP_STATIC)
+#define CP_EXPORTED __declspec(dllimport)
+#else
+#define CP_EXPORTED
+#endif
+#define CP_HIDDEN
+#elif defined(CP_BUILD) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3))
+#define CP_EXPORTED __attribute__ ((visibility ("default")))
+#define CP_HIDDEN __attribute__ ((visibility ("hidden")))
+#else /* Not restricting link time visibility of non-API symbols */
+#define CP_EXPORTED
+#define CP_HIDDEN
+#endif
+
+ /* Documentation only */
+#if 0
+
+/**
+ * Declares an exported symbol. This macro should be placed at the start
+ * of function or variable declaration.
+ */
+#define CP_EXPORTED
+
+/**
+ * Declares a hidden symbol. This macro should be placed at the start of
+ * function or variable declaration. It is not intended to be
+ * used with functions and variables declared as "static" which are
+ * already internal to the object file.
+ */
+#define CP_HIDDEN
+
+#endif
+
+/**
+ * Explicitly marks public API symbols. This is
+ * functionally equivalent to \Ref{CP_EXPORTED}.
+ */
+#define CP_API CP_EXPORTED
+
+/*@}*/
+
+
+/* ------------------------------------------------------------------------
+ * Constants
+ * ----------------------------------------------------------------------*/
+
+/** @name Constants */
+/*@{*/
+
+/**
+ * @name Version information
+ * Header file version information can be used for compile time checks.
+ */
+/*@{*/
+
+/** The C-Pluff release version string */
+#define CP_RELEASE_VERSION "@PACKAGE_VERSION@"
+
+/** The C-Pluff framework core version string */
+#define CP_CORE_VERSION "@CP_CORE_VERSION@"
+
+/** The C-Pluff framework core API version (integer) */
+#define CP_CORE_API_VERSION @CP_CORE_API_CURRENT@
+
+/** The C-Pluff framework core API revision (integer) */
+#define CP_CORE_API_REVISION @CP_CORE_API_REVISION@
+
+/** The C-Pluff framework core API backwards compatibility age (integer) */
+#define CP_CORE_API_AGE @CP_CORE_API_AGE@
+
+/*@}*/
+
+
+/**
+ * @name Error codes
+ *
+ * Most of the interface functions return error codes. The returned
+ * error code either indicates successful completion of the operation
+ * or some specific kind of error. Some functions do not return an error
+ * code because they never fail.
+ */
+/*@{*/
+
+/** Operation was performed successfully (has zero value) */
+#define CP_OK 0
+
+/** An unspecified error occurred */
+#define CP_ERR_UNSPECIFIED 1
+
+/** Not enough memory or other operating system resources available */
+#define CP_ERR_RESOURCE 2
+
+/** The specified object is unknown to the framework */
+#define CP_ERR_UNKNOWN 3
+
+/** An I/O error occurred */
+#define CP_ERR_IO 4
+
+/** Malformed plug-in descriptor was encountered when loading a plug-in */
+#define CP_ERR_MALFORMED 5
+
+/** Plug-in conflicts with an existing plug-in when installing a plug-in */
+#define CP_ERR_CONFLICT 6
+
+/** Plug-in dependencies could not be satisfied */
+#define CP_ERR_DEPENDENCY 7
+
+/** An error in a plug-in runtime or plug-in framework runtime */
+#define CP_ERR_RUNTIME 8
+
+/*@}*/
+
+
+/**
+ * @name Flags for cp_load_plugins
+ * These constants can be orred together for the flags
+ * parameter of \Ref{cp_load_plugins}.
+ */
+/*@{*/
+
+/** 
+ * This flag enables upgrades of installed plug-ins by unloading
+ * the old version and installing the new version.
+ */
+#define CP_LP_UPGRADE 0x01
+
+/**
+ * This flag causes all plug-ins to be stopped before any
+ * plug-ins are to be upgraded.
+ */
+#define CP_LP_STOP_ALL_ON_UPGRADE 0x02
+
+/**
+ * This flag causes all plug-ins to be stopped before any
+ * plugins are to be installed (also if new version is to be installed
+ * as part of an upgrade).
+ */
+#define CP_LP_STOP_ALL_ON_INSTALL 0x04
+
+/**
+ * Setting this flag causes the currently active plug-ins to be restarted
+ * after all changes to the plug-ins have been made (if they were stopped).
+ */
+#define CP_LP_RESTART_ACTIVE 0x08
+
+/*@}*/
+/*@}*/
+
+
+#endif /*CPLUFFDEF_H_*/

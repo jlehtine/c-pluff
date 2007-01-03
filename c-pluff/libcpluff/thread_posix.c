@@ -42,7 +42,7 @@ struct cpi_mutex_t {
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-cpi_mutex_t * CP_LOCAL cpi_create_mutex(void) {
+CP_HIDDEN cpi_mutex_t * cpi_create_mutex(void) {
 	cpi_mutex_t *mutex;
 	
 	if ((mutex = malloc(sizeof(cpi_mutex_t))) == NULL) {
@@ -61,7 +61,7 @@ cpi_mutex_t * CP_LOCAL cpi_create_mutex(void) {
 	return mutex;
 }
 
-void CP_LOCAL cpi_destroy_mutex(cpi_mutex_t *mutex) {
+CP_HIDDEN void cpi_destroy_mutex(cpi_mutex_t *mutex) {
 	int ec;
 	
 	assert(mutex != NULL);
@@ -89,7 +89,7 @@ static void unlock_mutex(pthread_mutex_t *mutex) {
 	}
 }
 
-void CP_LOCAL cpi_lock_mutex(cpi_mutex_t *mutex) {
+CP_HIDDEN void cpi_lock_mutex(cpi_mutex_t *mutex) {
 	pthread_t self = pthread_self();
 	
 	assert(mutex != NULL);
@@ -107,7 +107,7 @@ void CP_LOCAL cpi_lock_mutex(cpi_mutex_t *mutex) {
 	unlock_mutex(&(mutex->os_mutex));
 }
 
-void CP_LOCAL cpi_unlock_mutex(cpi_mutex_t *mutex) {
+CP_HIDDEN void cpi_unlock_mutex(cpi_mutex_t *mutex) {
 	pthread_t self = pthread_self();
 	
 	assert(mutex != NULL);
@@ -128,7 +128,7 @@ void CP_LOCAL cpi_unlock_mutex(cpi_mutex_t *mutex) {
 }
 
 #if !defined(NDEBUG)
-int CP_LOCAL cpi_is_mutex_locked(cpi_mutex_t *mutex) {
+CP_HIDDEN int cpi_is_mutex_locked(cpi_mutex_t *mutex) {
 	int locked;
 	
 	lock_mutex(&(mutex->os_mutex));

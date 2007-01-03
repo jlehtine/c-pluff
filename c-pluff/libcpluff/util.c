@@ -19,15 +19,15 @@
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-int CP_LOCAL cpi_comp_ptr(const void *ptr1, const void *ptr2) {
+CP_HIDDEN int cpi_comp_ptr(const void *ptr1, const void *ptr2) {
 	return !(ptr1 == ptr2);
 }
 
-hash_val_t CP_LOCAL cpi_hashfunc_ptr(const void *ptr) {
+CP_HIDDEN hash_val_t cpi_hashfunc_ptr(const void *ptr) {
 	return (hash_val_t) ptr;
 }
 
-int CP_LOCAL cpi_ptrset_add(list_t *set, void *ptr) {
+CP_HIDDEN int cpi_ptrset_add(list_t *set, void *ptr) {
 	
 
 	// Only add the pointer if it is not already included 
@@ -47,7 +47,7 @@ int CP_LOCAL cpi_ptrset_add(list_t *set, void *ptr) {
 	
 }
 
-int CP_LOCAL cpi_ptrset_remove(list_t *set, const void *ptr) {
+CP_HIDDEN int cpi_ptrset_remove(list_t *set, const void *ptr) {
 	lnode_t *node;
 	
 	// Find the pointer if it is in the set 
@@ -61,18 +61,18 @@ int CP_LOCAL cpi_ptrset_remove(list_t *set, const void *ptr) {
 	}
 }
 
-int CP_LOCAL cpi_ptrset_contains(list_t *set, const void *ptr) {
+CP_HIDDEN int cpi_ptrset_contains(list_t *set, const void *ptr) {
 	return list_find(set, ptr, cpi_comp_ptr) != NULL;
 }
 
-void CP_LOCAL cpi_process_free_ptr(list_t *list, lnode_t *node, void *dummy) {
+CP_HIDDEN void cpi_process_free_ptr(list_t *list, lnode_t *node, void *dummy) {
 	void *ptr = lnode_get(node);
 	list_delete(list, node);
 	lnode_destroy(node);
 	free(ptr);
 }
 
-int CP_LOCAL cpi_version_isvalid(const char *v) {
+CP_HIDDEN int cpi_version_isvalid(const char *v) {
 	int i, ci;
 	
 	if (v == NULL) {
@@ -106,7 +106,7 @@ int CP_LOCAL cpi_version_isvalid(const char *v) {
 	return v[i] == '\0';
 }
 
-int CP_LOCAL cpi_version_cmp(const char *v1, const char *v2, int nc) {
+CP_HIDDEN int cpi_version_cmp(const char *v1, const char *v2, int nc) {
 	int i1, i2, ci;
 	
 	i1 = 0;
@@ -147,9 +147,9 @@ int CP_LOCAL cpi_version_cmp(const char *v1, const char *v2, int nc) {
 }
 
 #ifdef HAVE_DMALLOC_H
-char * CP_LOCAL cpi_strdup_dm(const char *src, const char *file, int line) {
+CP_HIDDEN char * cpi_strdup_dm(const char *src, const char *file, int line) {
 #else
-char * CP_LOCAL cpi_strdup(const char *src) {
+CP_HIDDEN char * cpi_strdup(const char *src) {
 #endif
 	char *dst;
 	size_t size = sizeof(char) * (strlen(src) + 1);

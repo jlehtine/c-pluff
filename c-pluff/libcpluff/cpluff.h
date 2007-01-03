@@ -10,134 +10,15 @@
 #ifndef CPLUFF_H_
 #define CPLUFF_H_
 
-/* Define CP_API to declare API functions */
-#if defined(__WIN32__)
-#if defined(CP_BUILD) && defined(DLL_EXPORT)
-#define CP_API __declspec(dllexport)
-#elif !defined(CP_BUILD) && !defined(CP_STATIC)
-#define CP_API __declspec(dllimport)
-#else
-#define CP_API
-#endif
-#elif defined(CP_BUILD) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3))
-#define CP_API __attribute__ ((visibility ("default")))
-#else /* Not restricting link time visibility of non-API symbols */
-#define CP_API
-#endif
+/** @name C-Pluff C API */
+/*@{*/
+
+#include "cpluffdef.h"
+/*@Include: cpluffdef.h*/
 
 #ifdef __cplusplus
 extern "C" {
 #endif /*__cplusplus*/
-
-/** @name C-Pluff interface */
-/*@{*/
-
-
-/* ------------------------------------------------------------------------
- * Constants
- * ----------------------------------------------------------------------*/
-
-/** @name Constants */
-/*@{*/
-
-/**
- * @name Version information
- * Header file version information can be used for compile time checks.
- */
-/*@{*/
-
-/** The C-Pluff release version string */
-#define CP_RELEASE_VERSION "@PACKAGE_VERSION@"
-
-/** The C-Pluff framework core version string */
-#define CP_CORE_VERSION "@CP_CORE_VERSION@"
-
-/** The C-Pluff framework core API version (integer) */
-#define CP_CORE_API_VERSION @CP_CORE_API_CURRENT@
-
-/** The C-Pluff framework core API revision (integer) */
-#define CP_CORE_API_REVISION @CP_CORE_API_REVISION@
-
-/** The C-Pluff framework core API backwards compatibility age (integer) */
-#define CP_CORE_API_AGE @CP_CORE_API_AGE@
-
-/*@}*/
-
-
-/**
- * @name Error codes
- *
- * Most of the interface functions return error codes. The returned
- * error code either indicates successful completion of the operation
- * or some specific kind of error. Some functions do not return an error
- * code because they never fail.
- */
-/*@{*/
-
-/** Operation was performed successfully (has zero value) */
-#define CP_OK 0
-
-/** An unspecified error occurred */
-#define CP_ERR_UNSPECIFIED 1
-
-/** Not enough memory or other operating system resources available */
-#define CP_ERR_RESOURCE 2
-
-/** The specified object is unknown to the framework */
-#define CP_ERR_UNKNOWN 3
-
-/** An I/O error occurred */
-#define CP_ERR_IO 4
-
-/** Malformed plug-in descriptor was encountered when loading a plug-in */
-#define CP_ERR_MALFORMED 5
-
-/** Plug-in conflicts with an existing plug-in when installing a plug-in */
-#define CP_ERR_CONFLICT 6
-
-/** Plug-in dependencies could not be satisfied */
-#define CP_ERR_DEPENDENCY 7
-
-/** An error in a plug-in runtime or plug-in framework runtime */
-#define CP_ERR_RUNTIME 8
-
-/*@}*/
-
-
-/**
- * @name Flags for cp_load_plugins
- * These constants can be orred together for the flags
- * parameter of \Ref{cp_load_plugins}.
- */
-/*@{*/
-
-/** 
- * This flag enables upgrades of installed plug-ins by unloading
- * the old version and installing the new version.
- */
-#define CP_LP_UPGRADE 0x01
-
-/**
- * This flag causes all plug-ins to be stopped before any
- * plug-ins are to be upgraded.
- */
-#define CP_LP_STOP_ALL_ON_UPGRADE 0x02
-
-/**
- * This flag causes all plug-ins to be stopped before any
- * plugins are to be installed (also if new version is to be installed
- * as part of an upgrade).
- */
-#define CP_LP_STOP_ALL_ON_INSTALL 0x04
-
-/**
- * Setting this flag causes the currently active plug-ins to be restarted
- * after all changes to the plug-ins have been made (if they were stopped).
- */
-#define CP_LP_RESTART_ACTIVE 0x08
-
-/*@}*/
-/*@}*/
 
 
 /* ------------------------------------------------------------------------
@@ -723,7 +604,7 @@ typedef void (*cp_fatal_error_func_t)(const char *msg);
  *
  * @return static information about the library implementation
  */
-cp_core_info_t * CP_API cp_get_core_info(void);
+CP_API cp_core_info_t *cp_get_core_info(void);
 
 /*@}*/
 
@@ -751,7 +632,7 @@ cp_core_info_t * CP_API cp_get_core_info(void);
  *
  * @return CP_OK (zero) on success or error code on failure
  */
-int CP_API cp_init(void);
+CP_API int cp_init(void);
 
 /**
  * Destroys the plug-in framework and releases the resources used by it.
@@ -763,7 +644,7 @@ int CP_API cp_init(void);
  * All contexts are destroyed and all data references returned by the
  * framework become invalid.
  */
-void CP_API cp_destroy(void);
+CP_API void cp_destroy(void);
 
 /**
  * Sets the fatal error handler called on non-recoverable errors. The default
@@ -775,7 +656,7 @@ void CP_API cp_destroy(void);
  * 
  * @param error_handler the fatal error handler
  */
-void CP_API cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler);
+CP_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler);
 
 /*@}*/
 
@@ -802,14 +683,14 @@ void CP_API cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler);
  *			are passed to logger if non-NULL
  * @return CP_OK (zero) on success or CP_ERR_RESOURCE if insufficient memory
  */
-int CP_API cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule);
+CP_API int cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule);
 
 /**
  * Removes a logger registration.
  *
  * @param logger the logger function to be unregistered
  */
-void CP_API cp_remove_logger(cp_logger_func_t logger);
+CP_API void cp_remove_logger(cp_logger_func_t logger);
 
 /*@}*/
 
@@ -840,7 +721,7 @@ void CP_API cp_remove_logger(cp_logger_func_t logger);
  * @param error pointer to the location where error code or CP_OK is stored, or NULL
  * @return the newly created plugin context, or NULL on failure
  */
-cp_context_t * CP_API cp_create_context(int *error);
+CP_API cp_context_t * cp_create_context(int *error);
 
 /**
  * Destroys the specified plug-in context and releases the associated resources.
@@ -849,7 +730,7 @@ cp_context_t * CP_API cp_create_context(int *error);
  * 
  * @param ctx the context to be destroyed
  */
-void CP_API cp_destroy_context(cp_context_t *ctx);
+CP_API void cp_destroy_context(cp_context_t *ctx);
 
 /**
  * Registers a directory of plug-ins with a plug-in context. The
@@ -860,7 +741,7 @@ void CP_API cp_destroy_context(cp_context_t *ctx);
  * @param dir the directory
  * @return CP_OK (zero) on success, or CP_ERR_RESOURCE if insufficient system resources
  */
-int CP_API cp_add_plugin_dir(cp_context_t *ctx, const char *dir);
+CP_API int cp_add_plugin_dir(cp_context_t *ctx, const char *dir);
 
 /**
  * Unregisters a previously registered directory of plug-ins from a plug-in context.
@@ -871,7 +752,7 @@ int CP_API cp_add_plugin_dir(cp_context_t *ctx, const char *dir);
  * @param ctx the plug-in context
  * @param dir the previously registered directory
  */
-void CP_API cp_remove_plugin_dir(cp_context_t *ctx, const char *dir);
+CP_API void cp_remove_plugin_dir(cp_context_t *ctx, const char *dir);
 
 /*@}*/
 
@@ -899,7 +780,7 @@ void CP_API cp_remove_plugin_dir(cp_context_t *ctx, const char *dir);
  * @param error pointer to the location for the returned error code, or NULL
  * @return pointer to the information structure or NULL if error occurs
  */
-cp_plugin_info_t * CP_API cp_load_plugin_descriptor(cp_context_t *ctx, const char *path, int *error);
+CP_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const char *path, int *error);
 
 /**
  * Installs the plug-in described by the specified plug-in information
@@ -916,7 +797,7 @@ cp_plugin_info_t * CP_API cp_load_plugin_descriptor(cp_context_t *ctx, const cha
  * @param pi plug-in information structure
  * @return CP_OK (zero) on success or error code on failure
  */
-int CP_API cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi);
+CP_API int cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi);
 
 /**
  * Scans for plug-ins in the registered plug-in directories, installing
@@ -941,7 +822,7 @@ int CP_API cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi);
  * @param flags the bitmask of flags
  * @return CP_OK (zero) on success, an error code on failure
  */
-int CP_API cp_scan_plugins(cp_context_t *ctx, int flags);
+CP_API int cp_scan_plugins(cp_context_t *ctx, int flags);
 
 /**
  * Starts a plug-in. Also starts any imported plug-ins. If the plug-in is
@@ -955,7 +836,7 @@ int CP_API cp_scan_plugins(cp_context_t *ctx, int flags);
  * @param id identifier of the plug-in to be started
  * @return CP_OK (zero) on success, an error code on failure
  */
-int CP_API cp_start_plugin(cp_context_t *ctx, const char *id);
+CP_API int cp_start_plugin(cp_context_t *ctx, const char *id);
 
 /**
  * Stops a plug-in. First stops any dependent plug-ins that are currently
@@ -969,14 +850,14 @@ int CP_API cp_start_plugin(cp_context_t *ctx, const char *id);
  * @param id identifier of the plug-in to be stopped
  * @return CP_OK (zero) on success or CP_ERR_UNKNOWN if unknown plug-in
  */
-int CP_API cp_stop_plugin(cp_context_t *ctx, const char *id);
+CP_API int cp_stop_plugin(cp_context_t *ctx, const char *id);
 
 /**
  * Stops all active plug-ins.
  * 
  * @param ctx the plug-in context
  */
-void CP_API cp_stop_all_plugins(cp_context_t *ctx);
+CP_API void cp_stop_all_plugins(cp_context_t *ctx);
 
 /**
  * Uninstalls the specified plug-in. The plug-in is first stopped if it is active.
@@ -988,7 +869,7 @@ void CP_API cp_stop_all_plugins(cp_context_t *ctx);
  * @param id identifier of the plug-in to be unloaded
  * @return CP_OK (zero) on success or CP_ERR_UNKNOWN if unknown plug-in
  */
-int CP_API cp_uninstall_plugin(cp_context_t *ctx, const char *id);
+CP_API int cp_uninstall_plugin(cp_context_t *ctx, const char *id);
 
 /**
  * Uninstalls all plug-ins. All plug-ins are first stopped and then
@@ -998,7 +879,7 @@ int CP_API cp_uninstall_plugin(cp_context_t *ctx, const char *id);
  * 
  * @param ctx the plug-in context
  */
-void CP_API cp_uninstall_all_plugins(cp_context_t *ctx);
+CP_API void cp_uninstall_all_plugins(cp_context_t *ctx);
 
 /*@}*/
 
@@ -1018,7 +899,7 @@ void CP_API cp_uninstall_all_plugins(cp_context_t *ctx);
  * @param ctx the plug-in context
  * @param user_data the pointer to user data, or NULL to unset
  */
-void CP_API cp_set_context_data(cp_context_t *ctx, void *user_data);
+CP_API void cp_set_context_data(cp_context_t *ctx, void *user_data);
 
 /**
  * Returns the context data pointer.
@@ -1026,7 +907,7 @@ void CP_API cp_set_context_data(cp_context_t *ctx, void *user_data);
  * @param ctx the plug-in context
  * @return a pointer to user data, or NULL if not set
  */
-void * CP_API cp_get_context_data(cp_context_t *ctx);
+CP_API void * cp_get_context_data(cp_context_t *ctx);
 
 /*@}*/
 
@@ -1051,7 +932,7 @@ void * CP_API cp_get_context_data(cp_context_t *ctx);
  * @param error filled with an error code, if non-NULL
  * @return pointer to the information structure or NULL on failure
  */
-cp_plugin_info_t * CP_API cp_get_plugin_info(cp_context_t *ctx, const char *id, int *error);
+CP_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *ctx, const char *id, int *error);
 
 /**
  * Returns static information about the installed plug-ins. The returned
@@ -1065,7 +946,7 @@ cp_plugin_info_t * CP_API cp_get_plugin_info(cp_context_t *ctx, const char *id, 
  * @return pointer to a NULL-terminated list of pointers to plug-in information
  * 			or NULL on failure
  */
-cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *ctx, int *error, int *num);
+CP_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *ctx, int *error, int *num);
 
 /**
  * Returns static information about the currently installed extension points.
@@ -1079,7 +960,7 @@ cp_plugin_info_t ** CP_API cp_get_plugins_info(cp_context_t *ctx, int *error, in
  * @return pointer to a NULL-terminated list of pointers to extension point
  *			information or NULL on failure
  */
-cp_ext_point_t ** CP_API cp_get_ext_points_info(cp_context_t *ctx, int *error, int *num);
+CP_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *ctx, int *error, int *num);
 
 /**
  * Returns static information about the currently installed extension points.
@@ -1094,7 +975,7 @@ cp_ext_point_t ** CP_API cp_get_ext_points_info(cp_context_t *ctx, int *error, i
  * @return pointer to a NULL-terminated list of pointers to extension
  *			information or NULL on failure
  */
-cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *ctx, const char *extpt_id, int *error, int *num);
+CP_API cp_extension_t ** cp_get_extensions_info(cp_context_t *ctx, const char *extpt_id, int *error, int *num);
 
 /**
  * Releases previously obtained dynamically allocated information. The
@@ -1105,7 +986,7 @@ cp_extension_t ** CP_API cp_get_extensions_info(cp_context_t *ctx, const char *e
  * 
  * @param info the information to be released
  */
-void CP_API cp_release_info(void *info);
+CP_API void cp_release_info(void *info);
 
 /**
  * Returns the current state of the specified plug-in. Returns
@@ -1115,7 +996,7 @@ void CP_API cp_release_info(void *info);
  * @param id the plug-in identifier
  * @return the current state of the plug-in
  */
-cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *ctx, const char *id);
+CP_API cp_plugin_state_t cp_get_plugin_state(cp_context_t *ctx, const char *id);
 
 /**
  * Registers a plug-in listener with a plug-in context. The listener is called
@@ -1128,7 +1009,7 @@ cp_plugin_state_t CP_API cp_get_plugin_state(cp_context_t *ctx, const char *id);
  * @param user_data user data pointer supplied to the listener
  * @return CP_OK (zero) on success, CP_ERR_RESOURCE if out of resources
  */
-int CP_API cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener, void *user_data);
+CP_API int cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener, void *user_data);
 
 /**
  * Removes a plug-in listener from a plug-in context. Does nothing if the
@@ -1137,7 +1018,7 @@ int CP_API cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t l
  * @param ctx the plug-in context
  * @param listener the plug-in listener to be removed
  */
-void CP_API cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener);
+CP_API void cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener);
 
 /**
  * Traverses a configuration element tree and returns the specified element.
@@ -1152,7 +1033,7 @@ void CP_API cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func
  * @param path the path to the target element
  * @return the target element or NULL if nonexisting
  */
-cp_cfg_element_t * CP_API cp_lookup_cfg_element(cp_cfg_element_t *base, const char *path);
+CP_API cp_cfg_element_t * cp_lookup_cfg_element(cp_cfg_element_t *base, const char *path);
 
 /**
  * Traverses a configuration element tree and returns the value of the
@@ -1170,7 +1051,7 @@ cp_cfg_element_t * CP_API cp_lookup_cfg_element(cp_cfg_element_t *base, const ch
  * @param path the path to the target element
  * @return the value of the target element or attribute or NULL
  */
-char * CP_API cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
+CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
 
 /*@}*/
 
@@ -1208,7 +1089,7 @@ char * CP_API cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
  * @param error filled with an error code if non-NULL
  * @return the pointer associated with the symbol or NULL on failure
  */
-void * CP_API cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *name, int *error);
+CP_API void * cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *name, int *error);
 
 /**
  * Releases a previously obtained symbol. The pointer must not be used by the
@@ -1219,7 +1100,7 @@ void * CP_API cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *n
  * @param ctx the plug-in context
  * @param ptr the pointer associated with the symbol
  */
-void CP_API cp_release_symbol(cp_context_t *ctx, void *ptr);
+CP_API void cp_release_symbol(cp_context_t *ctx, void *ptr);
 
 /*@}*/
 

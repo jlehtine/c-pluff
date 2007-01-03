@@ -25,15 +25,6 @@
  * Defines
  * ----------------------------------------------------------------------*/
 
-// Define CP_LOCAL to hide internal symbols 
-#if defined(__WIN32__)
-#define CP_LOCAL
-#elif __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
-#define CP_LOCAL __attribute__ ((visibility ("hidden")))
-#else
-#define CP_LOCAL
-#endif
-
 // Gettext defines 
 #ifdef HAVE_GETTEXT
 #define _(String) dgettext(PACKAGE, String)
@@ -52,20 +43,16 @@
 #define CP_PRINTF(format_idx, arg_idx) \
 	__attribute__((format (printf, format_idx, arg_idx)))
 #define CP_CONST __attribute__((const))
+#define CP_NORETURN __attribute__((noreturn))
 #else
 #define CP_PRINTF(format_idx, arg_idx)
 #define CP_CONST
+#define CP_NORETURN
 #endif
-#if __GNUC__ >2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 96)
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 96)
 #define CP_PURE __attribute__((pure))
 #else
 #define CP_PURE
-#endif
-// TODO version
-#ifdef __GNUC__
-#define CP_NORETURN __attribute__((noreturn))
-#else
-#define CP_NORETURN
 #endif
 
 

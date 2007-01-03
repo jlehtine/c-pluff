@@ -8,9 +8,10 @@ dnl Version information
 dnl -------------------
 dnl Use API version/revision 0 for inofficial versions and snapshots.
 define(RELEASE_VERSION, 0)
-define(API_CURRENT, 0)
-define(API_REVISION, 0)
-define(API_AGE, 0)
+define(CORE_VERSION, 0)
+define(CORE_API_CURRENT, 0)
+define(CORE_API_REVISION, 0)
+define(CORE_API_AGE, 0)
 
 # Autoconf initialization
 # -----------------------
@@ -18,19 +19,21 @@ AC_INIT([C-Pluff], RELEASE_VERSION, [johannes.lehtinen@iki.fi], [cpluff])
 AC_COPYRIGHT([Copyright 2006 Johannes Lehtinen
 This configure script is free software; Johannes Lehtinen gives unlimited
 permission to copy, distribute and modify it.])
-AC_CONFIG_SRCDIR([libcpluff/cpluff.h.in])
+AC_CONFIG_SRCDIR([libcpluff/cpluff.h])
 AC_CONFIG_AUX_DIR([auxliary])
 AC_CONFIG_HEADERS([libcpluff/config.h])
 
-# API version information
-# -----------------------
+# Component and API version information
+# -------------------------------------
 # Use 0 for inofficial versions and snapshots
-CP_API_CURRENT=API_CURRENT
-CP_API_REVISION=API_REVISION
-CP_API_AGE=API_AGE
-AC_SUBST([CP_API_CURRENT])
-AC_SUBST([CP_API_REVISION])
-AC_SUBST([CP_API_AGE])
+CP_CORE_VERSION=CORE_VERSION
+CP_CORE_API_CURRENT=CORE_API_CURRENT
+CP_CORE_API_REVISION=CORE_API_REVISION
+CP_CORE_API_AGE=CORE_API_AGE
+AC_SUBST([CP_CORE_VERSION])
+AC_SUBST([CP_CORE_API_CURRENT])
+AC_SUBST([CP_CORE_API_REVISION])
+AC_SUBST([CP_CORE_API_AGE])
 
 # Automake initialization
 # -----------------------
@@ -229,7 +232,7 @@ AC_DEFINE_UNQUOTED([CP_FNAMESEP_STR], ["$cp_fnamesep"], [File name separator str
 
 # Output Makefiles
 # ----------------
-AC_CONFIG_FILES([Makefile libcpluff/cpluff.h libcpluff/Makefile console/Makefile po/Makefile.in])
+AC_CONFIG_FILES([Makefile libcpluff/cpluffdef.h libcpluff/Makefile plugins/Makefile plugins/data/Makefile console/Makefile po/Makefile.in])
 AC_OUTPUT
 
 
@@ -238,7 +241,8 @@ AC_OUTPUT
 AC_MSG_NOTICE([-----------------------------------------------------------])
 AC_MSG_NOTICE([C-Pluff configuration])
 AC_MSG_NOTICE([  release version:                $PACKAGE_VERSION])
-AC_MSG_NOTICE([  API version:                    $CP_API_CURRENT:$CP_API_REVISION:$CP_API_AGE])
+AC_MSG_NOTICE([  core version:                   $CORE_VERSION])
+AC_MSG_NOTICE([  core API version:               $CORE_API_CURRENT:$CORE_API_REVISION:$CORE_API_AGE])
 if test -n "$cp_threads"; then
   val="yes ($cp_threads)"
 else

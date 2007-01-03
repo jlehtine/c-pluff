@@ -236,12 +236,12 @@ struct cpi_plugin_event_t {
  * lock must not acquire plug-in context lock (it is ok to retain a previously
  * acquired plug-in context lock).
  */
-void CP_LOCAL cpi_lock_framework(void);
+CP_HIDDEN void cpi_lock_framework(void);
 
 /**
  * Releases exclusive access to the framework.
  */
-void CP_LOCAL cpi_unlock_framework(void);
+CP_HIDDEN void cpi_unlock_framework(void);
 
 /**
  * Acquires exclusive access to a plug-in context and the associated
@@ -249,14 +249,14 @@ void CP_LOCAL cpi_unlock_framework(void);
  * 
  * @param context the plug-in context
  */
-void CP_LOCAL cpi_lock_context(cp_context_t *context);
+CP_HIDDEN void cpi_lock_context(cp_context_t *context);
 
 /**
  * Releases exclusive access to a plug-in context.
  * 
  * @param context the plug-in context
  */
-void CP_LOCAL cpi_unlock_context(cp_context_t *context);
+CP_HIDDEN void cpi_unlock_context(cp_context_t *context);
 
 #else
 #define cpi_lock_context(dummy) do {} while (0)
@@ -275,7 +275,7 @@ void CP_LOCAL cpi_unlock_context(cp_context_t *context);
  * @param severity the severity of the message
  * @param msg the localized message
  */
-void CP_LOCAL cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg);
+CP_HIDDEN void cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg);
 
 /**
  * Formats and logs a message.
@@ -285,7 +285,7 @@ void CP_LOCAL cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char 
  * @param msg the localized message format
  * @param ... the message parameters
  */
-void CP_LOCAL cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char *msg, ...) CP_PRINTF(3, 4);
+CP_HIDDEN CP_PRINTF(3, 4) void cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char *msg, ...);
 
 /**
  * Returns whether the messages of the specified severity level are
@@ -294,7 +294,7 @@ void CP_LOCAL cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char
  * @param severity the severity
  * @return whether the messages of the specified severity level are logged
  */
-int CP_LOCAL cpi_is_logged(cp_log_severity_t severity);
+CP_HIDDEN int cpi_is_logged(cp_log_severity_t severity);
 
 // Convenience macros for logging
 #define cpi_error(ctx, msg) cpi_log((ctx), CP_LOG_ERROR, (msg))
@@ -311,13 +311,25 @@ int CP_LOCAL cpi_is_logged(cp_log_severity_t severity);
 #define cpi_debugf(ctx, msg, ...) do {} while (0)
 #endif
 
+#ifndef NDEBUG
+
+/**
+ * Returns the owner name for a context.
+ * 
+ * @param ctx the context
+ * @return owner name
+ */
+CP_HIDDEN const char *cpi_context_owner(cp_context_t *ctx);
+
+#endif
+
 /**
  * Reports a fatal error. This method does not return.
  * 
  * @param msg the formatted error message
  * @param ... parameters
  */
-void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
+CP_HIDDEN CP_NORETURN void cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2);
 
 /**
  * Reports a fatal NULL argument to an API function.
@@ -325,7 +337,7 @@ void CP_LOCAL cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NORETURN;
  * @param arg the argument name
  * @param func the API function name
  */
-void CP_LOCAL cpi_fatal_null_arg(const char *arg, const char *func) CP_NORETURN;
+CP_HIDDEN CP_NORETURN void cpi_fatal_null_arg(const char *arg, const char *func);
 
 /**
  * Checks that we are currently not in a specific callback function invocation.
@@ -337,7 +349,7 @@ void CP_LOCAL cpi_fatal_null_arg(const char *arg, const char *func) CP_NORETURN;
  * @param funcmask the bitmask of disallowed callback functions
  * @param func the current plug-in framework function
  */
-void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func);
+CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func);
 
 
 // Context management
@@ -350,7 +362,7 @@ void CP_LOCAL cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *
  * @param error filled with the error code
  * @return the newly allocated context or NULL on failure
  */
-cp_context_t * CP_LOCAL cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *env, int *error);
+CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *env, int *error);
 
 /**
  * Frees the resources associated with a plug-in context. Also frees the
@@ -359,12 +371,12 @@ cp_context_t * CP_LOCAL cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *en
  * 
  * @param context the plug-in context to free
  */
-void CP_LOCAL cpi_free_context(cp_context_t *context);
+CP_HIDDEN void cpi_free_context(cp_context_t *context);
 
 /**
  * Destroys all contexts and releases the context list resources.
  */
-void CP_LOCAL cpi_destroy_all_contexts(void);
+CP_HIDDEN void cpi_destroy_all_contexts(void);
 
 
 // Delivering plug-in events 
@@ -375,7 +387,7 @@ void CP_LOCAL cpi_destroy_all_contexts(void);
  * @param context the plug-in context
  * @param event the plug-in event
  */
-void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t *event);
+CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t *event);
 
 
 // Plug-in management
@@ -385,7 +397,7 @@ void CP_LOCAL cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t 
  * 
  * @param plugin the plug-in to be freed
  */
-void CP_LOCAL cpi_free_plugin(cp_plugin_info_t *plugin);
+CP_HIDDEN void cpi_free_plugin(cp_plugin_info_t *plugin);
 
 /**
  * Starts the specified plug-in and its dependencies.
@@ -394,7 +406,7 @@ void CP_LOCAL cpi_free_plugin(cp_plugin_info_t *plugin);
  * @param plugin the plug-in
  * @return CP_OK (zero) on success or error code on failure
  */
-int CP_LOCAL cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin);
+CP_HIDDEN int cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin);
 
 
 // Dynamic resource management
@@ -407,19 +419,19 @@ int CP_LOCAL cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin);
  * @param df the deallocation function
  * @return CP_OK (zero) on success or error code on failure
  */
-int CP_LOCAL cpi_register_info(void *res, cpi_dealloc_func_t df);
+CP_HIDDEN int cpi_register_info(void *res, cpi_dealloc_func_t df);
 
 /**
  * Increases the usage count for the specified dynamic information object.
  * 
  * @param res the resource
  */
-void CP_LOCAL cpi_use_info(void *res);
+CP_HIDDEN void cpi_use_info(void *res);
 
 /**
  * Destroys all dynamic information objects.
  */
-void CP_LOCAL cpi_destroy_all_infos(void);
+CP_HIDDEN void cpi_destroy_all_infos(void);
 
 
 #ifdef __cplusplus
