@@ -40,6 +40,8 @@ permission to copy, distribute and modify it.
 			<xs:attribute name="library" type="xs:string" use="required"/>
 			<xs:attribute name="start-func" type="xs:string"/>
 			<xs:attribute name="stop-func" type="xs:string"/>
+			<xs:attribute name="symbol-func" type="xs:string"/>
+			<xs:attribute name="factory-func" type="xs:string"/>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="extension-point">
