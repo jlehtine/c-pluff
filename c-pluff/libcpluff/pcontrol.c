@@ -857,23 +857,43 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			plugin->runtime_funcs->stop(plugin->plugin_data);
 			context->env->in_stop_func_invocation--;
 		}
-		
+
+		// Release resolved symbols
+		if (plugin->resolved_symbols != NULL) {
+			while (!hash_isempty(plugin->resolved_symbols)) {
+				hscan_t scan;
+				hnode_t *node;
+				const void *ptr;
+			
+				hash_scan_begin(&scan, plugin->resolved_symbols);
+				node = hash_scan_next(&scan);
+				ptr = hnode_getkey(node);
+				cp_release_symbol(context, ptr);
+			}
+			assert(hash_isempty(plugin->resolved_symbols));
+			hash_destroy(plugin->resolved_symbols);
+		}
+		if (plugin->symbol_providers != NULL) {
+			assert(hash_isempty(plugin->symbol_providers));
+			hash_destroy(plugin->symbol_providers);
+		}
+
 		// Release defined symbols
-		if (plugin->symbols != NULL) {
+		if (plugin->defined_symbols != NULL) {
 			hscan_t scan;
 			
-			while (!hash_isempty(plugin->symbols)) {
+			while (!hash_isempty(plugin->defined_symbols)) {
 				hnode_t *node;
 				char *n;
 				
-				hash_scan_begin(&scan, plugin->symbols);
+				hash_scan_begin(&scan, plugin->defined_symbols);
 				node = hash_scan_next(&scan);
 				n = hnode_get(node);
-				hash_scan_delfree(plugin->symbols, node);
+				hash_scan_delfree(plugin->defined_symbols, node);
 				free(n);
 			}
-			hash_destroy(plugin->symbols);
-			plugin->symbols = NULL;
+			hash_destroy(plugin->defined_symbols);
+			plugin->defined_symbols = NULL;
 		}
 	
 		// Destroy the plug-in object

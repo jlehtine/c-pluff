@@ -103,15 +103,6 @@ struct cp_context_t {
 	/// The associated plug-in environment
 	cp_plugin_env_t *env;
 
-	/// Information about resolved symbols
-	hash_t *symbols;
-
-	/// Information about symbol providing plugins
-	hash_t *symbol_providers;
-	
-	/// User data associated with the context
-	void *user_data;
-
 };
 
 // Plug-in environment
@@ -189,8 +180,14 @@ struct cp_plugin_t {
 	void *plugin_data;
 	
 	/// Context specific symbols defined by the plug-in
-	hash_t *symbols;
+	hash_t *defined_symbols;
 
+	/// Information about resolved symbols
+	hash_t *resolved_symbols;
+
+	/// Information about symbol providing plugins
+	hash_t *symbol_providers;
+	
 	/// Used by recursive operations: has this plug-in been processed already
 	int processed;
 	

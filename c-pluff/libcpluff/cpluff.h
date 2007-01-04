@@ -14,7 +14,6 @@
 /*@{*/
 
 #include "cpluffdef.h"
-/*@Include: cpluffdef.h*/
 
 #ifdef __cplusplus
 extern "C" {
@@ -298,12 +297,6 @@ struct cp_cfg_element_t {
 	/** Children */
 	cp_cfg_element_t *children;
 };
-
-/*@}*/
-
-
-/** @name Plug-in runtime */
-/*@{*/
 
 /**
  * A plug-in runtime structure containing pointers to plug-in
@@ -828,34 +821,6 @@ CP_API void cp_uninstall_all_plugins(cp_context_t *ctx);
 
 
 /**
- * @name Context data
- *
- * These functions can be used to access context specific plug-in or client
- * program data. They may be used by the client program or by a plug-in
- * runtime.
- */
-/*@{*/
-
-/**
- * Sets the context data pointer.
- *
- * @param ctx the plug-in context
- * @param user_data the pointer to user data, or NULL to unset
- */
-CP_API void cp_set_context_data(cp_context_t *ctx, void *user_data);
-
-/**
- * Returns the context data pointer.
- *
- * @param ctx the plug-in context
- * @return a pointer to user data, or NULL if not set
- */
-CP_API void * cp_get_context_data(cp_context_t *ctx);
-
-/*@}*/
-
-
-/**
  * @name Plug-in and extension information
  *
  * These functions can be used to query information about the installed
@@ -1031,10 +996,12 @@ CP_API int cp_define_symbol(cp_context_t *ctx, const char *name, void *ptr);
  * symbol and then falls back to resolving a global symbol exported by the
  * plug-in runtime library. The plug-in framework creates dynamically a
  * dependency from the symbol using
- * plug-in to the symbol defining plug-in. The symbol must be released using
- * \Ref{cp_release_symbol} when it is not needed anymore or at latest when
- * the symbol using plug-in is stopped. Pointers to dynamically resolved
- * symbols must not be passed on to other plug-ins.
+ * plug-in to the symbol defining plug-in. The symbol can be released using
+ * \Ref{cp_release_symbol} when it is not needed anymore. Unreleased
+ * resolved symbols are released automatically after the resolving plug-in has
+ * been stopped. Pointers to dynamically resolved symbols must not be passed on
+ * to other plug-ins and the resolving plug-in must not use a pointer after
+ * the symbol has been released.
  *
  * @param ctx the plug-in context
  * @param id the identifier of the symbol defining plug-in
@@ -1053,7 +1020,7 @@ CP_API void *cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *na
  * @param ctx the plug-in context
  * @param ptr the pointer associated with the symbol
  */
-CP_API void cp_release_symbol(cp_context_t *ctx, void *ptr);
+CP_API void cp_release_symbol(cp_context_t *ctx, const void *ptr);
 
 /*@}*/
 

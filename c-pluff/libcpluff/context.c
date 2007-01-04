@@ -144,16 +144,6 @@ CP_HIDDEN void cpi_free_context(cp_context_t *context) {
 		free_plugin_env(context->env);
 	}
 
-	// Free context data
-	if (context->symbols != NULL) {
-		assert(hash_isempty(context->symbols));
-		hash_destroy(context->symbols);
-	}
-	if (context->symbol_providers != NULL) {
-		assert(hash_isempty(context->symbol_providers));
-		hash_destroy(context->symbol_providers);
-	}
-
 	// Free context
 	free(context);	
 }
@@ -176,25 +166,11 @@ CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *e
 		// Initialize context
 		context->plugin = plugin;
 		context->env = env;
-		context->symbols = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
-		context->symbol_providers = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
-		context->user_data = NULL;
-		if (context->symbols == NULL
-			|| context->symbol_providers == NULL) {
-			status = CP_ERR_RESOURCE;
-			break;
-		}
 		
 	} while (0);
 	
 	// Free context on error
 	if (status != CP_OK && context != NULL) {
-		if (context->symbols != NULL) {
-			hash_destroy(context->symbols);
-		}
-		if (context->symbol_providers != NULL) {
-			hash_destroy(context->symbol_providers);
-		}
 		free(context);
 		context = NULL;
 	}
@@ -529,26 +505,6 @@ CP_API void cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 	}
 	cpi_unlock_context(context);
 	cpi_debugf(context, "Plug-in directory %s was removed.", dir);
-}
-
-
-// Context data
-
-CP_API void cp_set_context_data(cp_context_t *ctx, void *user_data) {
-	CHECK_NOT_NULL(ctx);
-	cpi_lock_context(ctx);
-	ctx->user_data = user_data;
-	cpi_unlock_context(ctx);
-}
-
-CP_API void * cp_get_context_data(cp_context_t *ctx) {
-	void *user_data;
-	
-	CHECK_NOT_NULL(ctx);
-	cpi_lock_context(ctx);
-	user_data = ctx->user_data;
-	cpi_unlock_context(ctx);
-	return user_data;
 }
 
 
