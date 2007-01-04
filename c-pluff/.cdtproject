@@ -49,10 +49,10 @@
 </profile>
 </item>
 <item id="org.eclipse.cdt.core.pathentry">
+<pathentry include="/usr/i586-mingw32msvc/include" kind="inc" path="" system="true"/>
 <pathentry kind="src" path=""/>
 <pathentry kind="out" path=""/>
 <pathentry kind="con" path="org.eclipse.cdt.make.core.DISCOVERED_SCANNER_INFO"/>
-<pathentry base-path="c-pluff" include="" kind="inc" path="" system="true"/>
 </item>
 </data>
 </cdtproject>
