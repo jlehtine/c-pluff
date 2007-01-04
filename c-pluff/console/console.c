@@ -763,8 +763,7 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 			notice("  imports = {},");
 		}
 		noticef("  lib_path = %s,", str_or_null(plugin->lib_path));
-		noticef("  start_func_name = %s,", str_or_null(plugin->start_func_name));
-		noticef("  stop_func_name = %s,", str_or_null(plugin->stop_func_name));
+		noticef("  runtime_funcs_symbol = %s,", str_or_null(plugin->runtime_funcs_symbol));
 		noticef("  num_ext_points = %u,", plugin->num_ext_points);
 		if (plugin->num_ext_points) {
 			notice("  ext_points = {{");

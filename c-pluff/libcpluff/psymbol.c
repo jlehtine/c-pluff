@@ -51,6 +51,61 @@ typedef struct symbol_info_t {
  * Function definitions
  * ----------------------------------------------------------------------*/
 
+CP_API int cp_define_symbol(cp_context_t *context, const char *name, void *ptr) {
+	int status = CP_OK;
+	
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(name);
+	CHECK_NOT_NULL(ptr);
+	if (context->plugin == NULL) {
+		cpi_fatalf(_("Only plug-ins can define context specific symbols."));
+	}
+	
+	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
+	do {
+		char *n;
+		
+		// Create a symbol hash if necessary
+		if (context->plugin->symbols == NULL) {
+			if ((context->plugin->symbols = hash_create(HASHCOUNT_T_MAX, (int (*)(const void *, const void *)) strcmp, NULL)) == NULL) {
+				status = CP_ERR_RESOURCE;
+				break;
+			}
+		}
+		
+		// Check for a previously defined symbol
+		if (hash_lookup(context->plugin->symbols, name) != NULL) {
+			status = CP_ERR_CONFLICT;
+			break;
+		}
+
+		// Insert the symbol into the symbol hash
+		n = cpi_strdup(name);
+		if (n == NULL || !hash_alloc_insert(context->plugin->symbols, name, ptr)) {
+			free(n);
+			status = CP_ERR_RESOURCE;
+			break;
+		} 
+
+	} while (0);
+	cpi_unlock_context(context);
+	
+	// Report error
+	if (status != CP_OK) {
+		switch (status) {
+			case CP_ERR_RESOURCE:
+				cpi_errorf(context, _("Plug-in %s could not define symbol %s due to insufficient memory."), context->plugin->plugin->identifier, name);
+				break;
+			case CP_ERR_CONFLICT:
+				cpi_errorf(context, _("Plug-in %s tried to redefine symbol %s."), context->plugin->plugin->identifier, name);
+				break;
+		}
+	}
+	
+	return status;
+}
+
 CP_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const char *name, int *error) {
 	int status = CP_OK;
 	int error_reported = 1;
@@ -63,6 +118,9 @@ CP_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 	CHECK_NOT_NULL(context);
 	CHECK_NOT_NULL(id);
 	CHECK_NOT_NULL(name);
+	if (context->plugin == NULL) {
+		cpi_fatalf(_("Only plug-ins can resolve dynamic symbols."));
+	}
 	
 	// Resolve the symbol
 	cpi_lock_context(context);
@@ -85,12 +143,12 @@ CP_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 			break;
 		}
 
-		// Use the symbol resolving function or fall back to global symbols
-		if (pp->symbol_func != NULL) {
-			context->env->in_symbol_func_invocation++;
-			symbol = pp->symbol_func(pp->context, name);
-			context->env->in_symbol_func_invocation--;
+		// Check for a context specific symbol
+		if (pp->symbols != NULL && (node = hash_lookup(pp->symbols, name)) != NULL) {
+			symbol = hnode_get(node);
 		}
+
+		// Fall back to global symbols, if necessary
 		if (symbol == NULL && pp->runtime_lib != NULL) {
 			symbol = DLSYM(pp->runtime_lib, name);
 		}
@@ -189,6 +247,9 @@ CP_API void cp_release_symbol(cp_context_t *context, void *ptr) {
 	
 	CHECK_NOT_NULL(context);
 	CHECK_NOT_NULL(ptr);
+	if (context->plugin == NULL) {
+		cpi_fatalf(_("Only plug-ins can use dynamic symbols."));
+	}
 
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);

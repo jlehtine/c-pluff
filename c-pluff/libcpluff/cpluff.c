@@ -400,9 +400,11 @@ CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char 
 			&& ctx->env->in_stop_func_invocation) {
 			cpi_fatalf(_("%s was called from within a stop function invocation."), func);
 		}
-		if ((funcmask & CPI_CF_SYMBOL)
-			&& ctx->env->in_symbol_func_invocation) {
-			cpi_fatalf(_("%s was called from within a symbol function invocation."), func);
+		if (ctx->env->in_create_func_invocation) {
+			cpi_fatalf(_("%s was called from within a create function invocation."), func);
+		}
+		if (ctx->env->in_destroy_func_invocation) {
+			cpi_fatalf(_("%s was called from within a destroy function invocation."), func);
 		}
 	}
 }

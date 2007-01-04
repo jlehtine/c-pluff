@@ -54,9 +54,6 @@ extern "C" {
 /// Callback function stop function
 #define CPI_CF_STOP 8
 
-/// Callback function symbol function
-#define CPI_CF_SYMBOL 16
-
 /// Bitmask corresponding to any callback function
 #define CPI_CF_ANY (~0)
 
@@ -156,8 +153,11 @@ struct cp_plugin_env_t {
 	// Whether currently in stop function invocation
 	int in_stop_func_invocation;
 	
-	// Whether currently in symbol function invocation
-	int in_symbol_func_invocation;
+	// Whether currently in create function invocation
+	int in_create_func_invocation;
+	
+	// Whether currently in destroy function invocation
+	int in_destroy_func_invocation;
 	
 };
 
@@ -182,20 +182,14 @@ struct cp_plugin_t {
 	/// The runtime library handle, or NULL if not resolved 
 	DLHANDLE runtime_lib;
 	
-	/// The start function, or NULL if none or not resolved 
-	cp_start_func_t start_func;
+	/// Plug-in runtime function information, or NULL if not resolved
+	cp_plugin_runtime_t *runtime_funcs;
+
+	/// Plug-in instance data or NULL if instance does not exist
+	void *plugin_data;
 	
-	/// The stop function, or NULL if none or not resolved 
-	cp_stop_func_t stop_func;
-	
-	/// The symbol resolving function, or NULL if none or not resolved
-	cp_symbol_func_t symbol_func;
-	
-	/// The plug-in factory function, or NULL if none or not resolved
-	cp_factory_func_t factory_func;
-	
-	/// The plug-in destroy function, or NULL if none or not resolved
-	cp_destroy_func_t destroy_func;
+	/// Context specific symbols defined by the plug-in
+	hash_t *symbols;
 
 	/// Used by recursive operations: has this plug-in been processed already
 	int processed;

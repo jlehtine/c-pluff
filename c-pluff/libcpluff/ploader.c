@@ -495,7 +495,7 @@ static void XMLCALL start_element_handler(
 	static const XML_Char * const req_import_atts[] = { "plugin", NULL };
 	static const XML_Char * const opt_import_atts[] = { "version", "match", "optional", NULL };
 	static const XML_Char * const req_runtime_atts[] = { "library", NULL };
-	static const XML_Char * const opt_runtime_atts[] = { "start-func", "stop-func", NULL };
+	static const XML_Char * const opt_runtime_atts[] = { "funcs", NULL };
 	static const XML_Char * const req_ext_point_atts[] = { "name", "id", NULL };
 	static const XML_Char * const opt_ext_point_atts[] = { "schema", NULL };
 	static const XML_Char * const req_extension_atts[] = { "point", NULL };
@@ -543,25 +543,10 @@ static void XMLCALL start_element_handler(
 						if (!strcmp(atts[i], "library")) {
 							plcontext->plugin->lib_path
 								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], "start-func")) {
-							plcontext->plugin->start_func_name
-								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], "stop-func")) {
-							plcontext->plugin->stop_func_name
-								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], "symbol-func")) {
-							plcontext->plugin->symbol_func_name
-								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], "factory-func")) {
-							plcontext->plugin->factory_func_name
+						} else if (!strcmp(atts[i], "funcs")) {
+							plcontext->plugin->runtime_funcs_symbol
 								= parser_strdup(plcontext, atts[i+1]);
 						}
-					}
-					if (plcontext->plugin->factory_func_name != NULL
-						&& (plcontext->plugin->start_func_name != NULL
-							|| plcontext->plugin->stop_func_name != NULL
-							|| plcontext->plugin->symbol_func_name != NULL)) {
-						descriptor_errorf(plcontext, 0, _("a factory function overrides other plug-in functions"));
 					}
 				}
 			} else if (!strcmp(name, "extension-point")) {
@@ -1033,10 +1018,7 @@ CP_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *context, const
 		plcontext->plugin->plugin_path = NULL;
 		plcontext->plugin->imports = NULL;
 		plcontext->plugin->lib_path = NULL;
-		plcontext->plugin->start_func_name = NULL;
-		plcontext->plugin->stop_func_name = NULL;
-		plcontext->plugin->symbol_func_name = NULL;
-		plcontext->plugin->factory_func_name = NULL;
+		plcontext->plugin->runtime_funcs_symbol = NULL;
 		plcontext->plugin->ext_points = NULL;
 		plcontext->plugin->extensions = NULL;
 		XML_SetUserData(parser, plcontext);

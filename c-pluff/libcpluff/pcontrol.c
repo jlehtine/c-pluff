@@ -128,11 +128,8 @@ CP_API int cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 		rp->state = CP_PLUGIN_INSTALLED;
 		rp->imported = NULL;
 		rp->runtime_lib = NULL;
-		rp->start_func = NULL;
-		rp->stop_func = NULL;
-		rp->symbol_func = NULL;
-		rp->factory_func = NULL;
-		rp->destroy_func = NULL;
+		rp->runtime_funcs = NULL;
+		rp->plugin_data = NULL;
 		rp->importing = list_create(LISTCOUNT_T_MAX);
 		if (rp->importing == NULL) {
 			status = CP_ERR_RESOURCE;
@@ -224,10 +221,7 @@ CP_API int cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
  * @param plugin the plug-in to unresolve
  */
 static void unresolve_plugin_runtime(cp_plugin_t *plugin) {
-	plugin->start_func = NULL;
-	plugin->stop_func = NULL;
-	plugin->symbol_func = NULL;
-	plugin->factory_func = NULL;
+	plugin->runtime_funcs = NULL;
 	if (plugin->runtime_lib != NULL) {
 		DLCLOSE(plugin->runtime_lib);
 		plugin->runtime_lib = NULL;
@@ -275,38 +269,19 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			break;
 		}
 		
-		// Resolve plug-in functions 
-		if (plugin->plugin->factory_func_name != NULL) {
-			plugin->factory_func = (cp_factory_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->factory_func_name);
-			if (plugin->factory_func == NULL) {
-				cpi_errorf(context, _("Plug-in %s factory function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->factory_func_name);
+		// Resolve plug-in functions
+		if (plugin->plugin->runtime_funcs_symbol != NULL) {
+			plugin->runtime_funcs = (cp_plugin_runtime_t *) DLSYM(plugin->runtime_lib, plugin->plugin->runtime_funcs_symbol);
+			if (plugin->runtime_funcs == NULL) {
+				cpi_errorf(context, _("Plug-in %s symbol %s containing runtime function information could not be resolved."), plugin->plugin->identifier, plugin->plugin->runtime_funcs_symbol);
 				status = CP_ERR_RUNTIME;
 				break;
 			}
-		} else {
-			if (plugin->plugin->start_func_name != NULL) {
-				plugin->start_func = (cp_start_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->start_func_name);
-				if (plugin->start_func == NULL) {
-					cpi_errorf(context, _("Plug-in %s start function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->start_func_name);
-					status = CP_ERR_RUNTIME;
-					break;
-				}
-			}
-			if (plugin->plugin->stop_func_name != NULL) {
-				plugin->stop_func = (cp_stop_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->stop_func_name);
-				if (plugin->stop_func == NULL) {
-					cpi_errorf(context, _("Plug-in %s stop function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->stop_func_name);
-					status = CP_ERR_RUNTIME;
-					break;
-				}
-			}
-			if (plugin->plugin->symbol_func_name != NULL) {
-				plugin->symbol_func = (cp_symbol_func_t) DLSYM(plugin->runtime_lib, plugin->plugin->symbol_func_name);
-				if (plugin->symbol_func == NULL) {
-					cpi_errorf(context, _("Plug-in %s symbol resolving function %s could not be resolved."), plugin->plugin->identifier, plugin->plugin->symbol_func_name);
-					status = CP_ERR_RUNTIME;
-					break;
-				}
+			if (plugin->runtime_funcs->create == NULL
+				|| plugin->runtime_funcs->destroy == NULL) {
+				cpi_errorf(context, _("Plug-in %s runtime has a null constructor or destructor."), plugin->plugin->identifier);
+				status = CP_ERR_RUNTIME;
+				break;
 			}
 		}
 
@@ -612,64 +587,61 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			break;
 		}
 		
-		// Create context
-		if (plugin->start_func != NULL || plugin->factory_func != NULL) {
+		// Set up plug-in instance
+		if (plugin->runtime_funcs != NULL) {
+		
+			// Create context
 			if ((plugin->context = cpi_new_context(plugin, context->env, &status)) == NULL) {
 				break;
 			}
-		}
 		
-		// Create a plug-in object if factory defined
-		if (plugin->factory_func != NULL) {
-			cp_plugin_funcs_t funcs;
-			
-			if (plugin->factory_func(plugin->context, &funcs) != CP_OK) {
+			// Create a plug-in instance
+			context->env->in_create_func_invocation++;
+			plugin->plugin_data = plugin->runtime_funcs->create(plugin->context);
+			context->env->in_create_func_invocation--;
+			if (plugin->plugin_data == NULL) {
 				status = CP_ERR_RUNTIME;
 				break;
 			}
-			plugin->start_func = funcs.start_func;
-			plugin->stop_func = funcs.stop_func;
-			plugin->symbol_func = funcs.symbol_func;
-			plugin->destroy_func = funcs.destroy_func;
-		}
 			
-		// Start plug-in
-		if (plugin->start_func != NULL) {
-			int s;
+			// Start plug-in
+			if (plugin->runtime_funcs->start != NULL) {
+				int s;
 			
-			// About to start the plug-in 
-			event.old_state = plugin->state;
-			event.new_state = plugin->state = CP_PLUGIN_STARTING;
-			cpi_deliver_event(context, &event);
+				// About to start the plug-in 
+				event.old_state = plugin->state;
+				event.new_state = plugin->state = CP_PLUGIN_STARTING;
+				cpi_deliver_event(context, &event);
 		
-			// Start the plug-in
-			context->env->in_start_func_invocation++;
-			s = plugin->start_func(plugin->context);
-			context->env->in_start_func_invocation--;
+				// Start the plug-in
+				context->env->in_start_func_invocation++;
+				s = plugin->runtime_funcs->start(plugin->plugin_data);
+				context->env->in_start_func_invocation--;
 
-			if (s != CP_OK) {
+				if (s != CP_OK) {
 			
-				// Roll back plug-in state 
-				if (plugin->stop_func != NULL) {
+					// Roll back plug-in state 
+					if (plugin->runtime_funcs->stop != NULL) {
 
-					// Update state					
-					event.old_state = plugin->state;
-					event.new_state = plugin->state = CP_PLUGIN_STOPPING;
-					cpi_deliver_event(context, &event);
+						// Update state					
+						event.old_state = plugin->state;
+						event.new_state = plugin->state = CP_PLUGIN_STOPPING;
+						cpi_deliver_event(context, &event);
 					
-					// Call stop function
-					context->env->in_stop_func_invocation++;
-					plugin->stop_func(plugin->context);
-					context->env->in_stop_func_invocation--;
-				}
+						// Call stop function
+						context->env->in_stop_func_invocation++;
+						plugin->runtime_funcs->stop(plugin->plugin_data);
+						context->env->in_stop_func_invocation--;
+					}
 				
-				// Destroy plug-in object
-				if (plugin->destroy_func != NULL) {
-					plugin->destroy_func(plugin->context);
-				}
+					// Destroy plug-in object
+					context->env->in_destroy_func_invocation++;
+					plugin->runtime_funcs->destroy(plugin->plugin_data);
+					context->env->in_destroy_func_invocation--;
 			
-				status = CP_ERR_RUNTIME;
-				break;
+					status = CP_ERR_RUNTIME;
+					break;
+				}
 			}
 		}
 		
@@ -695,12 +667,7 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			event.new_state = plugin->state = CP_PLUGIN_RESOLVED;
 			cpi_deliver_event(context, &event);
 		}
-		if (plugin->factory_func != NULL) {
-			plugin->start_func = NULL;
-			plugin->stop_func = NULL;
-			plugin->symbol_func = NULL;
-			plugin->destroy_func = NULL;
-		}
+		plugin->plugin_data = NULL;
 	}
 
 	// Report error on failure
@@ -712,7 +679,7 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			break;
 		case CP_ERR_RUNTIME:
 			cpi_errorf(context,
-				_("Plug-in %s failed to start due to runtime error."),
+				_("Plug-in %s failed to start due to plug-in runtime error."),
 				plugin->plugin->identifier);
 			break;
 		default:
@@ -873,30 +840,47 @@ CP_API int cp_start_plugin(cp_context_t *context, const char *id) {
 static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	cpi_plugin_event_t event;
 	
-	// Stop the plug-in
-	event.plugin_id = plugin->plugin->identifier;
-	if (plugin->stop_func != NULL) {
+	// Destroy plug-in instance
+	if (plugin->runtime_funcs != NULL) {
+	
+		// Stop the plug-in
+		event.plugin_id = plugin->plugin->identifier;
+		if (plugin->runtime_funcs->stop != NULL) {
 
-		// About to stop the plug-in 
-		event.old_state = plugin->state;
-		event.new_state = plugin->state = CP_PLUGIN_STOPPING;
-		cpi_deliver_event(context, &event);
+			// About to stop the plug-in 
+			event.old_state = plugin->state;
+			event.new_state = plugin->state = CP_PLUGIN_STOPPING;
+			cpi_deliver_event(context, &event);
 	
-		// Invoke stop function	
-		context->env->in_stop_func_invocation++;
-		plugin->stop_func(plugin->context);
-		context->env->in_stop_func_invocation--;
-	}
+			// Invoke stop function	
+			context->env->in_stop_func_invocation++;
+			plugin->runtime_funcs->stop(plugin->plugin_data);
+			context->env->in_stop_func_invocation--;
+		}
+		
+		// Release defined symbols
+		if (plugin->symbols != NULL) {
+			hscan_t scan;
+			
+			while (!hash_isempty(plugin->symbols)) {
+				hnode_t *node;
+				char *n;
+				
+				hash_scan_begin(&scan, plugin->symbols);
+				node = hash_scan_next(&scan);
+				n = hnode_get(node);
+				hash_scan_delfree(plugin->symbols, node);
+				free(n);
+			}
+			hash_destroy(plugin->symbols);
+			plugin->symbols = NULL;
+		}
 	
-	// Destroy the plug-in object
-	if (plugin->destroy_func != NULL) {
-		plugin->destroy_func(plugin->context);
-	}
-	if (plugin->factory_func != NULL) {
-		plugin->start_func = NULL;
-		plugin->stop_func = NULL;
-		plugin->symbol_func = NULL;
-		plugin->destroy_func = NULL;
+		// Destroy the plug-in object
+		context->env->in_destroy_func_invocation++;
+		plugin->runtime_funcs->destroy(plugin->plugin_data);
+		context->env->in_destroy_func_invocation--;
+		plugin->plugin_data = NULL;
 	}
 	
 	// Free plug-in context
@@ -1087,8 +1071,7 @@ CP_HIDDEN void cpi_free_plugin(cp_plugin_info_t *plugin) {
 	}
 	free(plugin->imports);
 	free(plugin->lib_path);
-	free(plugin->start_func_name);
-	free(plugin->stop_func_name);
+	free(plugin->runtime_funcs_symbol);
 	for (i = 0; i < plugin->num_ext_points; i++) {
 		free_ext_point_content(plugin->ext_points + i);
 	}

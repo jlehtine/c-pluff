@@ -54,7 +54,7 @@ typedef struct cp_ext_point_t cp_ext_point_t;
 typedef struct cp_cfg_element_t cp_cfg_element_t;
 typedef struct cp_extension_t cp_extension_t;
 typedef struct cp_plugin_info_t cp_plugin_info_t;
-typedef struct cp_plugin_funcs_t cp_plugin_funcs_t;
+typedef struct cp_plugin_runtime_t cp_plugin_runtime_t;
 
 
 /** @name Library information */
@@ -132,18 +132,9 @@ struct cp_plugin_info_t {
      */
     char *lib_path;
     
-    /** The name of the start function, or NULL if none */
-    char *start_func_name;
+    /** The symbol pointing to the plug-in runtime function information or NULL if none */
+    char *runtime_funcs_symbol;
     
-    /** The name of the stop function, or NULL if none */
-    char *stop_func_name;
-    
-    /** The name of the symbol resolving function, or NULL if none */
-    char *symbol_func_name;
-    
-    /** The name of the plug-in factory function, or NULL if none */
-    char *factory_func_name;
-
 	/** Number of extension points provided by this plug-in */
 	unsigned int num_ext_points;
 	
@@ -311,6 +302,76 @@ struct cp_cfg_element_t {
 /*@}*/
 
 
+/** @name Plug-in runtime */
+/*@{*/
+
+/**
+ * A plug-in runtime structure containing pointers to plug-in
+ * control functions. A plug-in runtime defines a static instance of this
+ * structure to pass information about the available control functions
+ * to the plug-in framework. The plug-in framework then uses the
+ * functions to create and control plug-in instances.
+ */
+struct cp_plugin_runtime_t {
+
+	/**
+	 * An initialization function called to create a new plug-in
+	 * runtime instance. The initialization function initializes and
+	 * returns an opaque plug-in instance data pointer which is then
+	 * passed on to other control functions. This data pointer should
+	 * be used to access plug-in instance specific data. For example,
+	 * the context reference must be stored as part of plug-in instance
+	 * data if the plug-in runtime needs it. On failure, the function
+	 * must return NULL. Plug-in framework functions must not be called
+	 * from within a create function invocation.
+	 * 
+	 * @param ctx the plug-in context of the new plug-in instance
+	 * @return an opaque pointer to plug-in instance data or NULL on failure
+	 */  
+	void *(*create)(cp_context_t *ctx);
+
+	/**
+	 * A start function called to start a plug-in instance.
+	 * The start function must return zero (CP_OK) on success and non-zero
+	 * on failure. If the start fails then the stop function (if any) is
+	 * called to clean up plug-in state. Library initialization, plug-in
+	 * context management and plug-in management functions must not be
+	 * called from within a start function invocation. The start function
+	 * pointer can be NULL if the plug-in runtime does not have a start
+	 * function.
+	 * 
+	 * @param data an opaque pointer to plug-in instance data
+	 * @return non-zero on success, or zero on failure
+	 */
+	int (*start)(void *data);
+	
+	/**
+	 * A stop function called to stop a plugin instance. Library
+	 * initialization, plug-in context management, plug-in management
+	 * functions and cp_resolve_symbol must not be called from within
+	 * a stop function invocation. The stop function pointer can
+	 * be NULL if the plug-in runtime does not have a stop function.
+	 *
+	 * @param data an opaque pointer to plug-in instance data
+	 */
+	void (*stop)(void *data);
+
+	/**
+ 	 * A destroy function called to destroy a plug-in instance.
+ 	 * This function should release any plug-in instance data.
+ 	 * The plug-in is stopped before this function is called.
+ 	 *  Plug-in framework functions must not be called
+	 * from within a destroy function invocation.
+	 *
+	 * @param data an opaque pointer to plug-in instance data
+	 */
+	void (*destroy)(void *data);
+
+};
+
+/*@}*/
+
+
 /** @name Plug-in state */
 /*@{*/
 
@@ -393,124 +454,6 @@ typedef enum cp_plugin_state_t {
  * @see cp_add_plugin_listener
  */
 typedef void (*cp_plugin_listener_func_t)(const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *user_data);
-
-/*@}*/
-
-
-/** @name Plug-in functions */
-/*@{*/
-
-/**
- * A start function called to start a plug-in for a specific context. The
- * start function must return
- * zero (CP_OK) on success and non-zero on failure. If the start fails then the
- * stop function (if any) is called to clean up plug-in state. Library
- * initialization, plug-in context management and plug-in management
- * functions must not be called from within a start function invocation.
- * Plug-in may use context user data pointer to store any context specific
- * state information. This makes it possible to have several instances of the
- * same plug-in in the same application.
- * 
- * @param ctx the associated plug-in context
- * @return non-zero on success, or zero on failure
- */
-typedef int (*cp_start_func_t)(cp_context_t *ctx);
-
-/**
- * A stop function called to stop a plugin for a specific context. Library
- * initialization, plug-in context management, plug-in management functions and
- * cp_resolve_symbol must not be called from within a stop function invocation.
- * After the call to this function the plug-in context becomes invalid. The
- * plug-in should release any internal state information associated with the
- * context.
- *
- * @param ctx the associated plug-in context
- */
-typedef void (*cp_stop_func_t)(cp_context_t *ctx);
-
-/**
- * A symbol function called to resolve a named virtual symbol. The symbol value
- * may be context specific (for example, to use context specific state). This
- * function is only invoked on an active plug-in or, if there is a
- * dynamic dependency loop, on a plug-in which is currently starting and has
- * invoked cp_resolve_symbol. Library initialization, plug-in context
- * management and plug-in management functions must not be called from within
- * a symbol function invocation. If the function returns NULL then the
- * framework will fall back to resolving a global symbol exported by the
- * plug-in runtime library.
- *
- * @param ctx the associated plug-in context
- * @param name the symbol name
- * @return the symbol value or NULL to fall back to resolving a global symbol
- */
-typedef void * (*cp_symbol_func_t)(cp_context_t *ctx, const char *name);
-
-/*@}*/
-
-
-/**
- * @name Plug-in factory
- *
- * A plug-in factory is used by C++ plug-ins and other object
- * oriented plug-ins. The plug-in factory creates a plug-in object and
- * redirects the usual plug-in function invocations to the plug-in object.
- * The plug-in object pointer is stored into the plug-in context as
- * user data. The C++ API implements a factory for C++ plug-ins. C++ plug-in
- * implementors do not therefore need to use these facilities directly.
- */
-/*@{*/
-
-/**
- * A plug-in object destroy function called to destroy a plug-in object.
- * This function is called to instruct the factory implementation to
- * destroy the actual plug-in object. The plug-in is stopped before this
- * function is called.
- */
-typedef void (*cp_destroy_func_t)(cp_context_t *ctx);
-
-/**
- * A container for plug-in function redirection pointers. Filled in by a
- * plug-in factory which acts as a bridge to invoke methods on the actual
- * plug-in object.
- */
-struct cp_plugin_funcs_t {
-
-	/**
-	 * Start function redirection implementation which invokes the start
-	 * method of the actual plug-in object.
-	 */
-	cp_start_func_t start_func;
-	
-	/**
-	 * Stop function redirection implementation which invokes the stop
-	 * method of the actual plug-in object.
-	 */
-	cp_stop_func_t stop_func;
-	
-	/**
-	 * Symbol function redirection implementation which invokes the symbol
-	 * method of the actual plug-in object.
-	 */
-	cp_symbol_func_t symbol_func;
-	
-	/**
-	 * Destroy function which destroys the actual plug-in object.
-	 */
-	cp_destroy_func_t destroy_func;
-};
-
-/**
- * A factory function called to create a plug-in object and to retrieve
- * pointers to the factory redirection functions. Plug-in factory should
- * create a plug-in object and setup the plug-in context user data and
- * plug-in function redirection pointers so that it can properly redirect
- * plug-in function invocations to the corresponding plug-in object methods.
- *
- * @param ctx the associated plug-in context
- * @param funcs the container for plug-in function redirection pointers
- * @return CP_OK (zero) on success or non-zero on failure
- */
-typedef int (*cp_factory_func_t)(cp_context_t *ctx, cp_plugin_funcs_t *funcs);
 
 /*@}*/
 
@@ -1060,24 +1003,34 @@ CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
  * @name Dynamic symbols
  *
  * These functions can be used to dynamically access symbols exported by the
- * plug-ins. They may be used by the client program or by a plug-in runtime.
+ * plug-ins. They are intended to be used by a plug-in runtime.
  * The framework automatically maintains a dynamic dependency from the symbol
  * using plug-in to the symbol defining plug-in. If the symbol defining plug-in
  * is about to be stopped then the symbol using plug-in is stopped as well.
- * However, the framework does not control the client program so if a client
- * program dynamically resolves symbols defined by plug-ins then it is
- * the responsibility of the client program to ensure it is not using a symbol
- * after the defining plug-in has been uninstalled.
  */
 /*@{*/
 
 /**
+ * Defines a context specific symbol. If a plug-in has symbols which have
+ * a plug-in instance specific value then the plug-in should define those
+ * symbols when it is started. The defined symbols are cleared
+ * automatically when the plug-in instance is stopped. Symbols can not be
+ * redefined.
+ * 
+ * @param ctx the plug-in context
+ * @param name the name of the symbol
+ * @param ptr pointer value for the symbol
+ * @return CP_OK (zero) on success or an error code on failure
+ */
+CP_API int cp_define_symbol(cp_context_t *ctx, const char *name, void *ptr);
+
+/**
  * Resolves a named symbol provided by the specified plug-in which is started
  * automatically if it is not already active. The symbol may
- * be context specific. The framework first uses the symbol resolving function
- * of the specified plug-in (if any) and then falls back to resolving a
- * global symbol exported by the plug-in runtime library.
- * The plug-in framework creates dynamically a dependency from the symbol using
+ * be context specific. The framework first looks for a context specific
+ * symbol and then falls back to resolving a global symbol exported by the
+ * plug-in runtime library. The plug-in framework creates dynamically a
+ * dependency from the symbol using
  * plug-in to the symbol defining plug-in. The symbol must be released using
  * \Ref{cp_release_symbol} when it is not needed anymore or at latest when
  * the symbol using plug-in is stopped. Pointers to dynamically resolved
@@ -1089,7 +1042,7 @@ CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
  * @param error filled with an error code if non-NULL
  * @return the pointer associated with the symbol or NULL on failure
  */
-CP_API void * cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *name, int *error);
+CP_API void *cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *name, int *error);
 
 /**
  * Releases a previously obtained symbol. The pointer must not be used by the
