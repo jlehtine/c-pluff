@@ -19,13 +19,3 @@ libcpluff_la_LDFLAGS = -version-info $(CP_CORE_API_VERSION) -no-undefined
 
 include_HEADERS = cpluff.h cpluffdef.h
 noinst_HEADERS = internal.h util.h defines.h
-
-doc: $(top_srcdir)/doc/reference/html/index.html
-
-$(top_srcdir)/doc/reference/html/index.html: cpluff.h
-	test -d $(top_srcdir)/doc || mkdir $(top_srcdir)/doc
-	test -d $(top_srcdir)/doc/reference || mkdir $(top_srcdir)/doc/reference
-	rm -rf $(top_srcdir)/doc/reference/html
-	doc++ --dir $(top_srcdir)/doc/reference/html $<
-
-.PHONY: doc

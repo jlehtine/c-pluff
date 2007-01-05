@@ -10,10 +10,19 @@
 #ifndef CPLUFF_H_
 #define CPLUFF_H_
 
-/** @name C-Pluff C API */
+/**
+ * @name C-Pluff C API
+ * 
+ * The elements declared here constitute the C-Pluff public C API. To use the
+ * API include the C API header file cpluff.h and link the client program
+ * with the C-Pluff core library which has a base name cpluff. The actual
+ * name of the library file is platform dependent, for example libcpluff.so
+ * or cpluff.dll.
+ */
 /*@{*/
 
 #include "cpluffdef.h"
+/*@Include: cpluffdef.h.in */
 
 #ifdef __cplusplus
 extern "C" {
@@ -24,26 +33,8 @@ extern "C" {
  * Data types
  * ----------------------------------------------------------------------*/
 
-/** @name Data types */
+/** @name Types */
 /*@{*/
-
-
-/** @name Opaque types */
-/*@{*/
-
-/**
- * A plug-in context represents the co-operation environment of a set of
- * plug-ins from the perspective of a particular participating plug-in or
- * the perspective of the client program. It is used as an opaque handle to
- * the shared resources but the framework also uses the context to identify
- * the plug-in or the client program invoking framework functions. Therefore
- * a plug-in should not generally expose its context instance to other
- * plug-ins or the client program and neither should the client program
- * expose its context instance to plug-ins.
- */
-typedef struct cp_context_t cp_context_t;
-
-/*@}*/
 
 
 /* Forward type definitions */
@@ -89,6 +80,24 @@ struct cp_core_info_t {
 	char *multi_threading_type;
 	
 };
+
+/*@}*/
+
+
+/** @name Plug-in context */
+/*@{*/
+
+/**
+ * A plug-in context represents the co-operation environment of a set of
+ * plug-ins from the perspective of a particular participating plug-in or
+ * the perspective of the client program. It is used as an opaque handle to
+ * the shared resources but the framework also uses the context to identify
+ * the plug-in or the client program invoking framework functions. Therefore
+ * a plug-in should not generally expose its context instance to other
+ * plug-ins or the client program and neither should the client program
+ * expose its context instance to plug-ins.
+ */
+typedef struct cp_context_t cp_context_t;
 
 /*@}*/
 
@@ -517,7 +526,7 @@ typedef void (*cp_fatal_error_func_t)(const char *msg);
 /**
  * @name Functions
  *
- * The C-Pluff framework core functions are defined here. The functions and
+ * The C-Pluff C API functions are defined here. The functions and
  * any data exposed by them are thread-safe if the library has been compiled
  * with multi-threading support. The initialization functions \Ref{cp_init},
  * \Ref{cp_destroy} and \Ref{cp_set_fatal_error_handler} are exceptions,
@@ -535,10 +544,11 @@ typedef void (*cp_fatal_error_func_t)(const char *msg);
 /*@{*/
 
 /**
- * Returns static information about the library implementation.
+ * Returns static information about the core framework implementation.
+ * The returned information must not be modified.
  * This function can be called at any time.
  *
- * @return static information about the library implementation
+ * @return static information about the core framework implementation
  */
 CP_API cp_core_info_t *cp_get_core_info(void);
 
@@ -556,7 +566,7 @@ CP_API cp_core_info_t *cp_get_core_info(void);
 /**
  * Initializes the plug-in framework. This function must be called
  * by the client program before calling any other plug-in framework
- * functions except \Ref{cp_get_implementation_info} and
+ * functions except \Ref{cp_get_core_info} and
  * \Ref{cp_set_fatal_error_handler}. This function may be
  * called several times but it is not thread-safe. Library resources
  * should be released by calling \Ref{cp_destroy} when the framework is
@@ -575,7 +585,7 @@ CP_API int cp_init(void);
  * The plug-in framework is only destroyed after this function has
  * been called as many times as \Ref{cp_init}. This function is not
  * thread-safe. Plug-in framework functions other than \Ref{cp_init},
- * \Ref{cp_get_implementation_info} and \Ref{cp_set_fatal_error_handler}
+ * \Ref{cp_get_core_info} and \Ref{cp_set_fatal_error_handler}
  * must not be called after the plug-in framework has been destroyed.
  * All contexts are destroyed and all data references returned by the
  * framework become invalid.
@@ -710,6 +720,7 @@ CP_API void cp_remove_plugin_dir(cp_context_t *ctx, const char *dir);
  * is invalid then NULL is returned. The caller must release the returned
  * information by calling \Ref{cp_release_plugin_info} when it does not
  * need the information anymore, typically after installing the plug-in.
+ * The returned plug-in information must not be modified.
  * 
  * @param ctx the plug-in context for error reporting, or NULL for none
  * @param path the installation path of the plug-in
@@ -831,7 +842,7 @@ CP_API void cp_uninstall_all_plugins(cp_context_t *ctx);
 
 /**
  * Returns static information about the specified plug-in. The returned
- * data structures must not be modified and the caller must
+ * information must not be modified and the caller must
  * release the information by calling \Ref{cp_release_info} when the
  * information is not needed anymore.
  * 
@@ -844,7 +855,7 @@ CP_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *ctx, const char *id, 
 
 /**
  * Returns static information about the installed plug-ins. The returned
- * data structures must not be modified and the caller must
+ * information must not be modified and the caller must
  * release the information by calling \Ref{cp_release_info} when the
  * information is not needed anymore.
  * 
@@ -858,7 +869,7 @@ CP_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *ctx, int *error, in
 
 /**
  * Returns static information about the currently installed extension points.
- * The returned data structures must not be modified and the caller must
+ * The returned information must not be modified and the caller must
  * release the information by calling \Ref{cp_release_info} when the
  * information is not needed anymore.
  *
@@ -872,7 +883,7 @@ CP_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *ctx, int *error, i
 
 /**
  * Returns static information about the currently installed extension points.
- * The returned data structures must not be modified and the caller must
+ * The returned information must not be modified and the caller must
  * release the information by calling \Ref{cp_release_info} when the
  * information is not needed anymore.
  *

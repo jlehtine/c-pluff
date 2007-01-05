@@ -8,6 +8,15 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = libcpluff plugins console po
 
+DOCPP = doc++
+DOCPP_FLAGS =
+DOCPP_HTML_FLAGS = -w -W
+DOCPP_TEX_FLAGS = -t -X
+DOCPP_REFROOT = $(srcdir)/libcpluff/cpluff.h
+DOCPP_REFFILES = $(DOCPP_REFROOT) $(srcdir)/libcpluff/cpluffdef.h.in
+
+PDFTEX = pdflatex
+
 check-copyright: COPYRIGHT_HOLDER = Johannes Lehtinen
 check-copyright:
 	( echo; \
@@ -21,4 +30,26 @@ check-copyright:
 			! -exec sh -c "grep -q -E \"Copyright (\`date -r '{}' '+%Y'\`|`date '+%Y'`) $(COPYRIGHT_HOLDER)\" '{}'" \; \
 			-print )
 
-.PHONY: check-copyright
+dist-hook: doc-reference
+	mkdir -p $(distdir)/doc
+	cp -a doc/reference $(distdir)/doc
+
+doc-reference: doc-ref-html
+doc-ref-html: doc/reference/html/index.html
+doc-ref-pdf: doc/reference/cpluff-ref.pdf
+
+doc/reference/html/index.html: $(DOCPP_REFFILES)
+	rm -rf doc/reference/html
+	mkdir -p doc/reference/html
+	$(DOCPP) $(DOCPP_FLAGS) $(DOCPP_HTML_FLAGS) -d doc/reference/html $(DOCPP_REFROOT)
+
+doc/reference/cpluff-ref.pdf: cpluff-ref.tex
+	$(PDFTEX) cpluff-ref.tex
+	$(PDFTEX) cpluff-ref.tex
+	mkdir -p doc/reference
+	mv cpluff-ref.pdf doc/reference
+
+cpluff-ref.tex: $(DOCPP_REFFILES)
+	$(DOCPP) $(DOCPP_FLAGS) $(DOCPP_TEX_FLAGS) -o $@ $(DOCPP_REFROOT)
+
+.PHONY: check-copyright doc-reference doc-ref-html doc-ref-pdf

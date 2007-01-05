@@ -10,6 +10,9 @@
 #ifndef CPLUFFDEF_H_
 #define CPLUFFDEF_H_
 
+/** @name Macros */
+/*@{*/
+
 
 /* ------------------------------------------------------------------------
  * Symbol visibility
@@ -56,7 +59,7 @@
 
 /**
  * Declares a hidden symbol. This macro should be placed at the start of
- * function or variable declaration. It is not intended to be
+ * function or variable declaration. This macro is not intended to be
  * used with functions and variables declared as "static" which are
  * already internal to the object file.
  */
@@ -114,11 +117,11 @@
  */
 /*@{*/
 
-/** Operation was performed successfully (has zero value) */
+/**
+ * Operation was performed successfully. This error code always equals to
+ * zero.
+ */
 #define CP_OK 0
-
-/** An unspecified error occurred */
-#define CP_ERR_UNSPECIFIED 1
 
 /** Not enough memory or other operating system resources available */
 #define CP_ERR_RESOURCE 2
@@ -132,13 +135,24 @@
 /** Malformed plug-in descriptor was encountered when loading a plug-in */
 #define CP_ERR_MALFORMED 5
 
-/** Plug-in conflicts with an existing plug-in when installing a plug-in */
+/**
+ * Operation conflicts with an earlier operation. This code is used to
+ * indicate that a plug-in to be installed conflicts with an installed
+ * plugin or that a context specific dynamic symbol has been defined already.
+ */
 #define CP_ERR_CONFLICT 6
 
-/** Plug-in dependencies could not be satisfied */
+/**
+ * Plug-in dependencies could not be satisfied. This code indicates that
+ * a plug-in could not be resolved because its dependencies are not present
+ * or there is a version conflict.
+ */
 #define CP_ERR_DEPENDENCY 7
 
-/** An error in a plug-in runtime or plug-in framework runtime */
+/**
+ * An error in a plug-in runtime. This code indicates that an operation failed
+ * because a plug-in runtime signaled an error condition.
+ */
 #define CP_ERR_RUNTIME 8
 
 /*@}*/
@@ -176,6 +190,7 @@
  */
 #define CP_LP_RESTART_ACTIVE 0x08
 
+/*@}*/
 /*@}*/
 /*@}*/
 
