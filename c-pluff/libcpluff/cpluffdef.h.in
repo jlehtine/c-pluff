@@ -3,15 +3,14 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/*
- * The macros common to C/C++ API
+/** @file
+ * Common defines shared by C-Pluff core C and C++ APIs.
+ * This file is automatically included by the top level C and C++
+ * API header files. There should be no need to include it explicitly.
  */
 
 #ifndef CPLUFFDEF_H_
 #define CPLUFFDEF_H_
-
-/** @name Macros */
-/*@{*/
 
 
 /* ------------------------------------------------------------------------
@@ -19,18 +18,37 @@
  * ----------------------------------------------------------------------*/
 
 /**
- * @name Symbol visibility
+ * @defgroup symbolVisibility Symbol visibility
+ * @ingroup defines
  *
- * Symbol visibility is controlled using generic macros which have
- * a platform dependent value. The macros may also have an empty value
- * if the platform does not support corresponding functionality.
- * These macros are used by the library implementation but it is
+ * Macros for controlling inter-module symbol visibility. Symbol visibility
+ * between different modules (plug-ins and the client program) can be
+ * controlled by these macros which have platform specific values.
+ * The macros are used by the library implementation but it is
  * recommended that plug-in implementations would use them as well
  * for better portability.
  */
 /*@{*/
 
-/* Define CP_EXPORTED and CP_HIDDEN for exported and internal symbols */
+/**
+ * @def CP_EXPORTED
+ * Declares an exported symbol. This macro should be placed at the start
+ * of a global function or variable declaration to ensure that the symbol is
+ * exported to other modules (plug-ins or the client program).
+ */
+
+/**
+ * @def CP_HIDDEN
+ *
+ * Declares a hidden symbol. This macro should be placed at the start of
+ * a global function or variable declaration to hide the symbol from other
+ * modules (plug-ins or the client program). This macro is not intended to be
+ * used with functions and variables declared as "static" which are
+ * already internal to the object file. Some platforms do not
+ * support hiding of symbols. Modules should therefore use unique prefixes for
+ * global symbols internal to the module even when they are declared as hidden.
+ */
+
 #if defined(__WIN32__)
 #if defined(CP_BUILD) && defined(DLL_EXPORT)
 #define CP_EXPORTED __declspec(dllexport)
@@ -48,28 +66,9 @@
 #define CP_HIDDEN
 #endif
 
- /* Documentation only */
-#if 0
-
 /**
- * Declares an exported symbol. This macro should be placed at the start
- * of function or variable declaration.
- */
-#define CP_EXPORTED
-
-/**
- * Declares a hidden symbol. This macro should be placed at the start of
- * function or variable declaration. This macro is not intended to be
- * used with functions and variables declared as "static" which are
- * already internal to the object file.
- */
-#define CP_HIDDEN
-
-#endif
-
-/**
- * Explicitly marks public API symbols. This is
- * functionally equivalent to \Ref{CP_EXPORTED}.
+ * Explicitly marks a symbol declaration as being a part of the public API.
+ * This is functionally equivalent to #CP_EXPORTED.
  */
 #define CP_API CP_EXPORTED
 
@@ -77,121 +76,55 @@
 
 
 /* ------------------------------------------------------------------------
- * Constants
+ * Version information
  * ----------------------------------------------------------------------*/
 
-/** @name Constants */
-/*@{*/
-
 /**
- * @name Version information
- * Header file version information can be used for compile time checks.
+ * @defgroup versionInfo Version information
+ * @ingroup defines
+ *
+ * C-Pluff core version information. Notice that this version information
+ * is static version information included in header files and can therefore
+ * only be used for compile time checks. Corresponding runtime information can
+ * be queried using ::cp_get_core_info.
  */
 /*@{*/
 
-/** The C-Pluff release version string */
+/**
+ * The C-Pluff release version string. This is the version of the C-Pluff
+ * release providing the core facilities. Release version identifies a specific
+ * version of the C-Pluff distribution and it is intended to be used by people.
+ * Software should use the API version information for compatibility checks.
+ */
 #define CP_RELEASE_VERSION "@PACKAGE_VERSION@"
 
-/** The C-Pluff framework core version string */
-#define CP_CORE_VERSION "@CP_CORE_VERSION@"
-
-/** The C-Pluff framework core API version (integer) */
+/**
+ * The current version of the core C/C++ API. This is an integer number telling
+ * the current version of the core API. It is incremented whenever there have
+ * been changes to API interfaces.
+ */
 #define CP_CORE_API_VERSION @CP_CORE_API_CURRENT@
 
-/** The C-Pluff framework core API revision (integer) */
+/**
+ * The revision of the core C/C++ API. This is an integer number telling
+ * the revision number of the current implementation. It is resetted to zero
+ * for each new API version and incremented when only the implementation
+ * changes but API interfaces remain the same.
+ */
 #define CP_CORE_API_REVISION @CP_CORE_API_REVISION@
 
-/** The C-Pluff framework core API backwards compatibility age (integer) */
+/**
+ * The backwards compatibility age of the core C/C++ API. This integer
+ * number tells the backward compatibility age of the current
+ * API. Subtracting the age from the current API version gives the earliest
+ * backwards compatible API version. Software written for a backward
+ * compatible API version should work with the current version but not
+ * vice versa. The age is incremented together with the current API version
+ * when new interfaces are added and it is resetted to zero if any interfaces
+ * are removed or changed.
+ */
 #define CP_CORE_API_AGE @CP_CORE_API_AGE@
 
-/*@}*/
-
-
-/**
- * @name Error codes
- *
- * Most of the interface functions return error codes. The returned
- * error code either indicates successful completion of the operation
- * or some specific kind of error. Some functions do not return an error
- * code because they never fail.
- */
-/*@{*/
-
-/**
- * Operation was performed successfully. This error code always equals to
- * zero.
- */
-#define CP_OK 0
-
-/** Not enough memory or other operating system resources available */
-#define CP_ERR_RESOURCE 2
-
-/** The specified object is unknown to the framework */
-#define CP_ERR_UNKNOWN 3
-
-/** An I/O error occurred */
-#define CP_ERR_IO 4
-
-/** Malformed plug-in descriptor was encountered when loading a plug-in */
-#define CP_ERR_MALFORMED 5
-
-/**
- * Operation conflicts with an earlier operation. This code is used to
- * indicate that a plug-in to be installed conflicts with an installed
- * plugin or that a context specific dynamic symbol has been defined already.
- */
-#define CP_ERR_CONFLICT 6
-
-/**
- * Plug-in dependencies could not be satisfied. This code indicates that
- * a plug-in could not be resolved because its dependencies are not present
- * or there is a version conflict.
- */
-#define CP_ERR_DEPENDENCY 7
-
-/**
- * An error in a plug-in runtime. This code indicates that an operation failed
- * because a plug-in runtime signaled an error condition.
- */
-#define CP_ERR_RUNTIME 8
-
-/*@}*/
-
-
-/**
- * @name Flags for cp_load_plugins
- * These constants can be orred together for the flags
- * parameter of \Ref{cp_load_plugins}.
- */
-/*@{*/
-
-/** 
- * This flag enables upgrades of installed plug-ins by unloading
- * the old version and installing the new version.
- */
-#define CP_LP_UPGRADE 0x01
-
-/**
- * This flag causes all plug-ins to be stopped before any
- * plug-ins are to be upgraded.
- */
-#define CP_LP_STOP_ALL_ON_UPGRADE 0x02
-
-/**
- * This flag causes all plug-ins to be stopped before any
- * plugins are to be installed (also if new version is to be installed
- * as part of an upgrade).
- */
-#define CP_LP_STOP_ALL_ON_INSTALL 0x04
-
-/**
- * Setting this flag causes the currently active plug-ins to be restarted
- * after all changes to the plug-ins have been made (if they were stopped).
- */
-#define CP_LP_RESTART_ACTIVE 0x08
-
-/*@}*/
-/*@}*/
 /*@}*/
 
 

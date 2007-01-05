@@ -57,9 +57,6 @@ extern "C" {
 /// Bitmask corresponding to any callback function
 #define CPI_CF_ANY (~0)
 
-/// Core framework identifier
-#define CPI_CORE_IDENTIFIER "org.cpluff.core"
-
 
 /* ------------------------------------------------------------------------
  * Macros

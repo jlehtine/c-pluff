@@ -931,21 +931,19 @@ int main(int argc, char *argv[]) {
 	// Display startup information 
 	noticef(
 		/* TRANSLATORS: This is the version string displayed on startup. */
-		_("C-Pluff console, version %s (compiled for core %s)"),
-		PACKAGE_VERSION, CP_CORE_VERSION);
+		_("C-Pluff console, version %s"), PACKAGE_VERSION);
 	ci = cp_get_core_info();
 	if (ci->multi_threading_type != NULL) {
 		
 		noticef(
 			/* TRANSLATORS: This is the version string displayed on startup. */
-		   	_("C-Pluff framework, version %s (core %s) for %s with %s threads"),
-			ci->release_version, ci->core_version,
-			ci->host_type, ci->multi_threading_type);
+		   	_("C-Pluff framework, version %s for %s with %s threads"),
+			ci->release_version, ci->host_type, ci->multi_threading_type);
 	} else {
 		noticef(
 			/* TRANSLATORS: This is the version string displayed on startup. */
-			_("C-Pluff framework, version %s (core %s) for %s without threads"),
-			ci->release_version, ci->core_version, ci->host_type);
+			_("C-Pluff framework, version %s for %s without threads"),
+			ci->release_version, ci->host_type);
 	}
 	notice(_("Type \"help\" for help on available commands."));
 

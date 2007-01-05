@@ -55,9 +55,8 @@ struct logger_t {
  * ----------------------------------------------------------------------*/
 
 /// Implementation information 
-static cp_core_info_t implementation_info = {
+static const cp_core_info_t implementation_info = {
 	CP_RELEASE_VERSION,
-	CP_CORE_VERSION,
 	CP_CORE_API_VERSION,
 	CP_CORE_API_REVISION,
 	CP_CORE_API_AGE,
@@ -97,7 +96,7 @@ static cp_fatal_error_func_t fatal_error_handler = NULL;
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-CP_API cp_core_info_t * cp_get_core_info(void) {
+CP_API const cp_core_info_t * cp_get_core_info(void) {
 	return &implementation_info;
 }
 

@@ -94,15 +94,6 @@ CP_API int cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	do {
 		
-		// Check that the identifier is not reserved
-		if (!strcmp(plugin->identifier, CPI_CORE_IDENTIFIER)) {
-			cpi_errorf(context,
-				_("Plug-in %s could not be installed because it uses a reserved identifier."),
-				plugin->identifier);
-			status = CP_ERR_CONFLICT;
-			break;
-		}
-
 		// Check that there is no conflicting plug-in already loaded 
 		if (hash_lookup(context->env->plugins, plugin->identifier) != NULL) {
 			cpi_errorf(context,
@@ -312,18 +303,11 @@ static int resolve_plugin_import(cp_context_t *context, cp_plugin_t *plugin, cp_
 	hnode_t *node;
 	int vermismatch = 0;
 
-	// Check for a reserved identifier
-	if (!strcmp(import->plugin_id, CPI_CORE_IDENTIFIER)) {
-		iv = CP_CORE_VERSION;
-	}
-
-	// Otherwise lookup the plug-in 
-	else {
-		node = hash_lookup(context->env->plugins, import->plugin_id);
-		if (node != NULL) {
-			ip = hnode_get(node);
-			iv = ip->plugin->version;
-		}
+	// Lookup the plug-in 
+	node = hash_lookup(context->env->plugins, import->plugin_id);
+	if (node != NULL) {
+		ip = hnode_get(node);
+		iv = ip->plugin->version;
 	}
 			
 	// Check plug-in version 

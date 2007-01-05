@@ -7,15 +7,9 @@
 ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = libcpluff plugins console po
+DOC_DIRS = libcpluff
 
-DOCPP = doc++
-DOCPP_FLAGS =
-DOCPP_HTML_FLAGS = -w -W
-DOCPP_TEX_FLAGS = -t -X
-DOCPP_REFROOT = $(srcdir)/libcpluff/cpluff.h
-DOCPP_REFFILES = $(DOCPP_REFROOT) $(srcdir)/libcpluff/cpluffdef.h.in
-
-PDFTEX = pdflatex
+RECURSIVE_DOC_TARGETS = refdoc impldoc
 
 check-copyright: COPYRIGHT_HOLDER = Johannes Lehtinen
 check-copyright:
@@ -26,30 +20,14 @@ check-copyright:
 		find $(top_srcdir) -type f \
 			\( -name '*.c' -or -name '*.h' -or -name '*.am' -or \
 				-name 'configure.ac' -or -name '*.h.in' -or -name '*.xsd' \
-				-or -name '*.pot' \) \
+				-or -name '*.pot' -or -name doxygen.cfg.in \) \
 			! -exec sh -c "grep -q -E \"Copyright (\`date -r '{}' '+%Y'\`|`date '+%Y'`) $(COPYRIGHT_HOLDER)\" '{}'" \; \
 			-print )
 
-dist-hook: doc-reference
-	mkdir -p $(distdir)/doc
-	cp -a doc/reference $(distdir)/doc
+$(RECURSIVE_DOC_TARGETS):
+	@target=$@; \
+	for d in '$(DOC_DIRS)'; do \
+		(cd $$d && $(MAKE) $(AM_MAKEFLAGS) $$target) || eval exit 1; \
+	done
 
-doc-reference: doc-ref-html
-doc-ref-html: doc/reference/html/index.html
-doc-ref-pdf: doc/reference/cpluff-ref.pdf
-
-doc/reference/html/index.html: $(DOCPP_REFFILES)
-	rm -rf doc/reference/html
-	mkdir -p doc/reference/html
-	$(DOCPP) $(DOCPP_FLAGS) $(DOCPP_HTML_FLAGS) -d doc/reference/html $(DOCPP_REFROOT)
-
-doc/reference/cpluff-ref.pdf: cpluff-ref.tex
-	$(PDFTEX) cpluff-ref.tex
-	$(PDFTEX) cpluff-ref.tex
-	mkdir -p doc/reference
-	mv cpluff-ref.pdf doc/reference
-
-cpluff-ref.tex: $(DOCPP_REFFILES)
-	$(DOCPP) $(DOCPP_FLAGS) $(DOCPP_TEX_FLAGS) -o $@ $(DOCPP_REFROOT)
-
-.PHONY: check-copyright doc-reference doc-ref-html doc-ref-pdf
+.PHONY: check-copyright $(RECURSIVE_DOC_TARGETS)
