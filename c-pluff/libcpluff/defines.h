@@ -3,8 +3,8 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/*
- * Core internal definitions
+/** @file
+ * Core internal defines
  */
 
 #ifndef DEFINES_H_

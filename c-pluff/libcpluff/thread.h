@@ -3,7 +3,9 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-// Generic multi-threading support 
+/** @file
+ * Declarations for generic mutex functions and types
+ */ 
 
 #ifndef THREAD_H_
 #define THREAD_H_

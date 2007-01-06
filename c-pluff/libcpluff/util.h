@@ -3,7 +3,9 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-// General purpose utility functions 
+/** @file
+ * Declarations for internal utility functions
+ */
 
 #ifndef UTIL_H_
 #define UTIL_H_

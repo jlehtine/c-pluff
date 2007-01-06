@@ -3,7 +3,9 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-// Internal utility functions 
+/** @file
+ * Internal utility functions
+ */ 
 
 #include <stdio.h>
 #include <stdlib.h>

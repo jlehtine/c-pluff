@@ -3,8 +3,8 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/*
- * Plug-in management functionality
+/** @file
+ * Core plug-in management functions
  */
 
 #ifdef HAVE_CONFIG_H

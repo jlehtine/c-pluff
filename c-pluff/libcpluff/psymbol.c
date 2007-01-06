@@ -3,7 +3,7 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/*
+/** @file
  * Dynamic plug-in symbols
  */
 

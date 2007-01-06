@@ -3,6 +3,10 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
+/** @file
+ * Posix implementation for generic mutex functions
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -14,7 +18,6 @@
 #include "internal.h"
 #include "thread.h"
 
-// Generic multi-threading support, Posix implementation 
 
 /* ------------------------------------------------------------------------
  * Data types

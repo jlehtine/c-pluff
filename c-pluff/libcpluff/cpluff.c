@@ -3,7 +3,9 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-// Core C-Pluff functions 
+/** @file
+ * Core framework functions
+ */ 
 
 #include <stdio.h>
 #include <stdlib.h>

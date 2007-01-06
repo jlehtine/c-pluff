@@ -3,8 +3,8 @@
  * Copyright 2006 Johannes Lehtinen
  *-----------------------------------------------------------------------*/
 
-/*
- * C-Pluff internal declarations
+/** @file
+ * Internal data structures and declarations
  */
 
 #ifndef INTERNAL_H_
