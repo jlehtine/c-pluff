@@ -145,48 +145,6 @@ extern "C" {
 
 /**
  * @ingroup enums
- * An enumeration of possible version matching criteria. Version matching criteria
- * is specified in @ref cp_plugin_import_t.
- */
-enum cp_version_match_t {
-
-	/**
-	 * No version criteria for the dependency. This corresponds to not
-	 * specifying a version requirement in a plug-in descriptor.
-	 */
-	CP_MATCH_NONE,
-	
-	/**
-	 * A perfect version match is required. This corresponds to specifying a
-	 * "perfect" match in a plug-in descriptor.
-	 */
-	CP_MATCH_PERFECT,
-	
-	/**
-	 * An equivalent version is required. An equivalent version has the same
-	 * major and minor version and the same or more recent revision. This
-	 * corresponds to specifying an "equivalent" match in a plug-in descriptor.
-	 */
-	CP_MATCH_EQUIVALENT,
-	
-	/**
-	 * A compatible version is required. A compatible version has the same
-	 * major version number and the same or more recent minor version.
-	 * This corresponds to specifying a "compatible" match in a plug-in
-	 * descriptor.
-	 */
-	CP_MATCH_COMPATIBLE,
-	
-	/**
-	 * The same or more recent version is required. This corresponds to
-	 * specifying a "greaterOrEqual" match in a plug-in descriptor.
-	 */
-	CP_MATCH_GREATEROREQUAL
-	
-};
-
-/**
- * @ingroup enums
  * An enumeration of possible plug-in states. Plug-in states are controlled
  * by @ref funcsPlugin "plug-in management functions". Plug-in states can be
  * observed by @ref cp_add_plugin_listener "registering" a
@@ -319,26 +277,23 @@ typedef struct cp_context_t cp_context_t;
 /** A type for cp_core_info_t structure. */
 typedef struct cp_core_info_t cp_core_info_t;
 
+/** A type for cp_plugin_info_t structure. */
+typedef struct cp_plugin_info_t cp_plugin_info_t;
+
 /** A type for cp_plugin_import_t structure. */
 typedef struct cp_plugin_import_t cp_plugin_import_t;
 
 /** A type for cp_ext_point_t structure. */
 typedef struct cp_ext_point_t cp_ext_point_t;
 
-/** A type for cp_cfg_element_t structure. */
-typedef struct cp_cfg_element_t cp_cfg_element_t;
-
 /** A type for cp_extension_t structure. */
 typedef struct cp_extension_t cp_extension_t;
 
-/** A type for cp_plugin_info_t structure. */
-typedef struct cp_plugin_info_t cp_plugin_info_t;
+/** A type for cp_cfg_element_t structure. */
+typedef struct cp_cfg_element_t cp_cfg_element_t;
 
 /** A type for cp_plugin_runtime_t structure. */
 typedef struct cp_plugin_runtime_t cp_plugin_runtime_t;
-
-/** A type for cp_version_match_t enumeration. */
-typedef enum cp_version_match_t cp_version_match_t;
 
 /** A type for cp_plugin_state_t enumeration. */
 typedef enum cp_plugin_state_t cp_plugin_state_t;
@@ -441,40 +396,69 @@ struct cp_core_info_t {
  * Plug-in information structure captures information about a plug-in. This
  * information can be loaded from a plug-in descriptor using
  * ::cp_load_plugin_descriptor. Information about installed plug-ins can
- * be obtained using ::cp_get_plugin_info and ::cp_get_plugins_info.
+ * be obtained using ::cp_get_plugin_info and ::cp_get_plugins_info. This
+ * structure corresponds to the @a plugin element in a plug-in descriptor.
  */
 struct cp_plugin_info_t {
 	
 	/**
-	 * A possibly localized plug-in name intended for display purposes. This
-	 * corresponds to the @a name attribute of the @a plugin element in a plug-in
+	 * The obligatory unique identifier of the plugin. A recommended way
+	 * to generate identifiers is to use domain name service (DNS) prefixes
+	 * (for example, org.cpluff.ExamplePlugin) to avoid naming conflicts. This
+	 * corresponds to the @a id attribute of the @a plugin element in a plug-in
 	 * descriptor.
-	 */
-	char *name;
-	
-	/**
-	 * A unique identifier for the plugin. A recommended way to avoid naming
-	 * conflicts is to use domain name service (DNS) prefixes (for example,
-	 * org.cpluff.CPPlugin). This corresponds to the @a id attribute of the
-	 * @a plugin element in a plug-in descriptor.
 	 */
 	char *identifier;
 	
 	/**
-	 * A plug-in release version string. This is a release version of the
-	 * plugin. It can have one to four parts separated by dots. The first
-	 * three parts must be integers and the fourth part may contain digits,
-	 * letters and dots. This corresponds to the @a version attribute of the
-	 * @a plugin element in a plug-in descriptor.
+	 * An optional plug-in name. NULL if not available. The plug-in name is
+	 * intended only for display purposes and the value can be localized.
+	 * This corresponds to the @a name attribute of the @a plugin element in
+	 * a plug-in descriptor.
+	 */
+	char *name;
+	
+	/**
+	 * An optional release version string. NULL if not available. The
+	 * release version is intended only for display purposes (compatibility
+	 * checks use API version information in @ref cp_plugin_api_t). This
+	 * corresponds to the @a version attribute of the @a plugin element in
+	 * a plug-in descriptor.
 	 */
 	char *version;
 	
 	/**
-	 * A possibly localized provider name intended for display purposes.
-	 * This corresponds to the @a provider-name attribute of the @a plugin
-	 * element in a plug-in descriptor.
+	 * An optional provider name. NULL if not available. This is the name of
+	 * the author or the organization providing the plug-in. The
+	 * provider name is intended only for display purposes and the value can
+	 * be localized. This corresponds to the @a provider-name attribute of the
+	 * @a plugin element in a plug-in descriptor.
 	 */
 	char *provider_name;
+	
+	/**
+	 * Optional API version information. -1 if not available. If the plug-in
+	 * provides any API interfaces (such as extension points or global symbols)
+	 * then it should also declare versioning for the API. This corresponds to
+	 * the @a version attribute of the @a api element in a plug-in descriptor.
+	 */
+	int api_version;
+	
+	/**
+	 * Optional API revision information. -1 if API is not versioned.
+	 * This corresponds to the @a revision attribute of the @a api element in
+	 * a plug-in descriptor.
+	 */
+	int api_revision;
+	
+	/**
+	 * Optional API age information. -1 if API is not versioned.
+	 * Subtracting the API age from the current API version gives the earliest
+	 * API version supported (backwards compatibility) by the current API.
+	 * This corresponds to the @a age attribute of the @a api element in a
+	 * plug-in descriptor.
+	 */
+	int api_age;
 	
 	/**
 	 * Path of the plugin directory, or NULL if not known. This is the
@@ -545,21 +529,20 @@ struct cp_plugin_import_t {
 	char *plugin_id;
 	
 	/**
-	 * The plug-in version to be matched, or NULL if none. This corresponds to the
-	 * @a version attribute of the @a import element in a plug-in descriptor.
+	 * An optional API version requirement. -1 if no version requirement.
+	 * This corresponds to the @a api-version attribute of the @a import
+	 * element in a plug-in descriptor.
 	 */
-	char *version;
+	int api_version;
 	
 	/**
-	 * The version matching rule. This corresponds to the @a match attribute
-	 * of the @a import element in a plug-in descriptor.
-	 */
-	cp_version_match_t match;
-	
-	/**
-	 * Whether this import is optional or not (1 for optional, 0 for mandatory).
-	 * This corresponds to the @a optional attribute of the @a import element
-	 * in a plug-in descriptor.
+	 * Is this import optional. 1 for optional and 0 for mandatory import.
+	 * An optional import causes the imported plug-in to be started if it is
+	 * available but does not stop the importing plug-in from starting if the
+	 * imported plug-in is not available. If the imported plug-in is available
+	 * but the API version conflicts with the API version requirement then the
+	 * importing plug-in fails to start. This corresponds to the @a optional
+	 * attribute of the @a import element in a plug-in descriptor.
 	 */
 	int optional;
 };
@@ -573,22 +556,15 @@ struct cp_plugin_import_t {
 struct cp_ext_point_t {
 
 	/**
-	 * A pointer to information about the plug-in hosting this extension point.
-	 * This reverse pointer is provided to make it easy for a plug-in to get
-	 * information about the plug-in which has defined an extension point.
+	 * A pointer to plug-in information containing this extension point.
+	 * This reverse pointer is provided to make it easy to get information
+	 * about the plug-in which is hosting a particular extension point.
 	 */
 	cp_plugin_info_t *plugin;
 	
 	/**
-	 * A possibly localized extension point name intended for display purposes
-	 * or NULL if not available. This corresponds to the @a name attribute of
-	 * the @a extension-point element in a plug-in descriptor.
-	 */
-	char *name;
-	
-	/**
 	 * The local identifier uniquely identifying the extension point within the
-	 * host plug-in. This corresponds to the @name id attribute of the
+	 * host plug-in. This corresponds to the @name id attribute of an
 	 * @a extension-point element in a plug-in descriptor.
 	 */
 	char *local_id;
@@ -601,9 +577,18 @@ struct cp_ext_point_t {
 	char *global_id;
 
 	/**
-	 * A path to the extension schema definition (relative to the plug-in
-	 * directory) or NULL if none. This corresponds to the @a schema attribute
-	 * of the @a extension-point element in a plug-in descriptor.
+	 * An optional extension point name. NULL if not available. The extension
+	 * point name is intended for display purposes only and the value can be
+	 * localized. This corresponds to the @a name attribute of
+	 * an @a extension-point element in a plug-in descriptor.
+	 */
+	char *name;
+	
+	/**
+	 * An optional path to the extension schema definition.
+	 * NULL if not available. The path is relative to the plug-in directory.
+	 * This corresponds to the @a schema attribute
+	 * of an @a extension-point element in a plug-in descriptor.
 	 */
 	char *schema_path;
 };
@@ -616,39 +601,40 @@ struct cp_ext_point_t {
 struct cp_extension_t {
 
 	/** 
-	 * A pointer to information about the plug-in hosting this extension.
-	 * This reverse pointer is provided to make it easy for a plug-in to get
-	 * information about the plug-in which has defined an extension.
+	 * A pointer to plug-in information containing this extension.
+	 * This reverse pointer is provided to make it easy to get information
+	 * about the plug-in which is hosting a particular extension.
 	 */
 	cp_plugin_info_t *plugin;
 	
-	/** 
-	 * A possibly localized extension name intended for display purposes or
-	 * NULL if not available. This corresponds to the @a name attribute
-	 * of the @a extension element in a plug-in descriptor.
-	 **/
-	char *name;
+	/**
+	 * The unique identifier of the extension point this extension is
+	 * attached to. This corresponds to the @a point attribute of an
+	 * @a extension element in a plug-in descriptor.
+	 */
+	char *ext_point_id;
 	
 	/**
-	 * A local identifier uniquely identifying the extension within the
-	 * host plug-in or NULL if not available. This corresponds to the
-	 * @a id attribute of the @a extension element in a plug-in descriptor.
+	 * An optional local identifier uniquely identifying the extension within
+	 * the host plug-in. NULL if not available. This corresponds to the
+	 * @a id attribute of an @a extension element in a plug-in descriptor.
 	 */
 	char *local_id;
 
     /**
-     * A unique identifier of the extension or NULL if not available.
+     * An optional unique identifier of the extension. NULL if not available.
      * This is automatically constructed by concatenating the identifier
      * of the host plug-in and the local identifier of the extension.
      */
     char *global_id;
 	 
-	/**
-	 * The unique identifier of the extension point this extension is
-	 * attached to. This corresponds to the @a point attribute of the
-	 * @a extension element in a plug-in descriptor.
-	 */
-	char *ext_point_id;
+	/** 
+	 * An optional extension name. NULL if not available. The extension name
+	 * is intended for display purposes only and the value can be localized.
+	 * This corresponds to the @a name attribute
+	 * of an @a extension element in a plug-in descriptor.
+	 **/
+	char *name;
 	
 	/**
 	 * Extension configuration starting with the extension element.
@@ -671,7 +657,7 @@ struct cp_extension_t {
 struct cp_cfg_element_t {
 	
 	/**
-	 * Name of the configuration element. This corresponds to the name of
+	 * The name of the configuration element. This corresponds to the name of
 	 * the element in a plug-in descriptor.
 	 */
 	char *name;
@@ -680,18 +666,19 @@ struct cp_cfg_element_t {
 	unsigned int num_atts;
 	
 	/**
-	 * Attribute name, value pairs (alternating, values possibly localized).
+	 * An array of pointers to alternating attribute names and values.
+	 * Attribute values can be localized.
 	 */
 	char **atts;
 	
 	/**
-	  * The value of this configuration element,
-	  * possibly localized, or NULL if none. This corresponds to the
+	  * An optional value of this configuration element. NULL if not available.
+	  * The value can be localized. This corresponds to the
 	  * text contents of the element in a plug-in descriptor.
 	  */
 	char *value;
 	
-	/** A pointer to the parent element, or NULL if this is a root element. */
+	/** A pointer to the parent element or NULL if this is a root element. */
  	cp_cfg_element_t *parent;
  	
  	/** The index of this element among its siblings (0-based). */

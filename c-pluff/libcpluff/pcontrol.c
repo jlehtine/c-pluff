@@ -299,46 +299,20 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
  */
 static int resolve_plugin_import(cp_context_t *context, cp_plugin_t *plugin, cp_plugin_import_t *import, cp_plugin_t **ipptr) {
 	cp_plugin_t *ip = NULL;
-	const char *iv = NULL;
 	hnode_t *node;
-	int vermismatch = 0;
 
 	// Lookup the plug-in 
 	node = hash_lookup(context->env->plugins, import->plugin_id);
 	if (node != NULL) {
 		ip = hnode_get(node);
-		iv = ip->plugin->version;
 	}
 			
-	// Check plug-in version 
-	if (iv != NULL && import->version != NULL) {
-		const char *rv = import->version;
-				
-		switch (import->match) {
-			case CP_MATCH_NONE:
-				break;
-			case CP_MATCH_PERFECT:
-				vermismatch = (cpi_version_cmp(iv, rv, 4) != 0);
-				break;
-			case CP_MATCH_EQUIVALENT:
-				vermismatch = (cpi_version_cmp(iv, rv, 2) != 0
-					|| cpi_version_cmp(iv, rv, 4) < 0);
-				break;
-			case CP_MATCH_COMPATIBLE:
-				vermismatch = (cpi_version_cmp(iv, rv, 1) != 0
-					|| cpi_version_cmp(iv, rv, 4) < 0);
-				break;
-			case CP_MATCH_GREATEROREQUAL:
-				vermismatch = (cpi_version_cmp(iv, rv, 4) < 0);
-				break;
-			default:
-				cpi_fatalf(_("Encountered unimplemented version match type."));
-				break;
-		}
-	}
-
-	// Check for version mismatch 
-	if (vermismatch) {
+	// Check plug-in version
+	if (ip != NULL
+		&& import->api_version != -1
+		&& (ip->plugin->api_version == -1
+			|| ip->plugin->api_version < import->api_version
+			|| ip->plugin->api_version - ip->plugin->api_age > import->api_version)) {
 		cpi_errorf(context,
 			_("Plug-in %s could not be resolved because of version incompatibility with plug-in %s."),
 			plugin->plugin->identifier,
@@ -348,7 +322,7 @@ static int resolve_plugin_import(cp_context_t *context, cp_plugin_t *plugin, cp_
 	}
 	
 	// Check if missing mandatory plug-in
-	if (iv == NULL && !import->optional) {
+	if (ip == NULL && !import->optional) {
 		cpi_errorf(context,
 			_("Plug-in %s could not be resolved because it depends on plug-in %s which is not installed."),
 			plugin->plugin->identifier,
@@ -1028,7 +1002,6 @@ static void unresolve_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 static void free_plugin_import_content(cp_plugin_import_t *import) {
 	assert(import != NULL);
 	free(import->plugin_id);
-	free(import->version);
 }
 
 static void free_ext_point_content(cp_ext_point_t *ext_point) {

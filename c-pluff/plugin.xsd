@@ -9,15 +9,23 @@ permission to copy, distribute and modify it.
 	<xs:element name="plugin">
 		<xs:complexType>
 			<xs:sequence>
+				<xs:element minOccurs="0" ref="api"/>
             	<xs:element minOccurs="0" ref="requires"/>
             	<xs:element minOccurs="0" ref="runtime"/>
             	<xs:element minOccurs="0" maxOccurs="unbounded" ref="extension-point"/>
             	<xs:element minOccurs="0" maxOccurs="unbounded" ref="extension"/>
             </xs:sequence>
-			<xs:attribute name="name" type="xs:string" use="required"/>
 			<xs:attribute name="id" type="xs:string" use="required"/>
-			<xs:attribute name="version" type="version" use="required"/>
+			<xs:attribute name="name" type="xs:string"/>
+			<xs:attribute name="version" type="xs:string"/>
 			<xs:attribute name="provider-name" type="xs:string"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="api">
+		<xs:complexType>
+			<xs:attribute name="version" type="xs:integer" use="required"/>
+			<xs:attribute name="revision" type="xs:integer" default="0"/>
+			<xs:attribute name="age" type="xs:integer" default="0"/>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="requires">
@@ -30,9 +38,8 @@ permission to copy, distribute and modify it.
 	<xs:element name="import">
 		<xs:complexType>
 			<xs:attribute name="plugin" type="xs:string" use="required"/>
-			<xs:attribute name="version" type="version"/>
-			<xs:attribute name="match" type="matchChoice" default="compatible"/>
-			<xs:attribute name="optional" type="xs:boolean"/>
+			<xs:attribute name="api-version" type="xs:integer"/>
+			<xs:attribute name="optional" type="xs:boolean" default="false"/>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="runtime">
@@ -43,8 +50,8 @@ permission to copy, distribute and modify it.
 	</xs:element>
 	<xs:element name="extension-point">
 		<xs:complexType>
-			<xs:attribute name="name" type="xs:string" use="required"/>
 			<xs:attribute name="id" type="simpleIdentifier" use="required"/>
+			<xs:attribute name="name" type="xs:string"/>
 			<xs:attribute name="schema" type="xs:string"/>
 		</xs:complexType>
 	</xs:element>
@@ -60,20 +67,7 @@ permission to copy, distribute and modify it.
 	</xs:element>
 	<xs:simpleType name="simpleIdentifier">
 		<xs:restriction base="xs:string">
-			<xs:pattern value="[^.]*"/>
-		</xs:restriction>
-	</xs:simpleType>
-	<xs:simpleType name="version">
-		<xs:restriction base="xs:string">
-			<xs:pattern value="(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)(\.(0|[1-9][0-9]*)(\.\S+)?)?)?"/>
-		</xs:restriction>
-	</xs:simpleType>
-	<xs:simpleType name="matchChoice">
-		<xs:restriction base="xs:string">
-			<xs:enumeration value="perfect"/>
-			<xs:enumeration value="equivalent"/>
-			<xs:enumeration value="compatible"/>
-			<xs:enumeration value="greaterOrEqual"/>
+			<xs:pattern value="[^.]+"/>
 		</xs:restriction>
 	</xs:simpleType>
 </xs:schema>

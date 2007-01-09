@@ -490,14 +490,16 @@ static void XMLCALL character_data_handler(
  */
 static void XMLCALL start_element_handler(
 	void *userData, const XML_Char *name, const XML_Char **atts) {
-	static const XML_Char * const req_plugin_atts[] = { "name", "id", "version", NULL };
-	static const XML_Char * const opt_plugin_atts[] = { "provider-name", NULL };
+	static const XML_Char * const req_plugin_atts[] = { "id", NULL };
+	static const XML_Char * const opt_plugin_atts[] = { "name", "version", "provider-name", NULL };
+	static const XML_Char * const req_api_atts[] = { "version", NULL };
+	static const XML_Char * const opt_api_atts[] = { "revision", "age", NULL };
 	static const XML_Char * const req_import_atts[] = { "plugin", NULL };
-	static const XML_Char * const opt_import_atts[] = { "version", "match", "optional", NULL };
+	static const XML_Char * const opt_import_atts[] = { "api-version", "optional", NULL };
 	static const XML_Char * const req_runtime_atts[] = { "library", NULL };
 	static const XML_Char * const opt_runtime_atts[] = { "funcs", NULL };
-	static const XML_Char * const req_ext_point_atts[] = { "name", "id", NULL };
-	static const XML_Char * const opt_ext_point_atts[] = { "schema", NULL };
+	static const XML_Char * const req_ext_point_atts[] = { "id", NULL };
+	static const XML_Char * const opt_ext_point_atts[] = { "name", "schema", NULL };
 	static const XML_Char * const req_extension_atts[] = { "point", NULL };
 	static const XML_Char * const opt_extension_atts[] = { "id", "name", NULL };
 	ploader_context_t *plcontext = userData;
@@ -534,7 +536,28 @@ static void XMLCALL start_element_handler(
 			break;
 
 		case PARSER_PLUGIN:
-			if (!strcmp(name, "requires")) {
+			if (!strcmp(name, "api")) {
+				if (check_attributes(plcontext, name, atts,
+						req_api_atts, opt_api_atts)) {
+					for (i = 0; atts[i] != NULL; i += 2) {
+						if (!strcmp(atts[i], "version")) {
+							plcontext->plugin->api_version = atoi(atts[i+1]);
+						} else if (!strcmp(atts[i], "revision")) {
+							plcontext->plugin->api_revision = atoi(atts[i+1]);
+						} else if (!strcmp(atts[i], "age")) {
+							plcontext->plugin->api_age = atoi(atts[i+1]);
+						}
+					}
+					if (plcontext->plugin->api_version != -1) {
+						if (plcontext->plugin->api_revision == -1) {
+							plcontext->plugin->api_revision = 0;
+						}
+						if (plcontext->plugin->api_age == -1) {
+							plcontext->plugin->api_age = 0;
+						}
+					}
+				}
+			} else if (!strcmp(name, "requires")) {
 				plcontext->state = PARSER_REQUIRES;
 			} else if (!strcmp(name, "runtime")) {
 				if (check_attributes(plcontext, name, atts,
@@ -696,29 +719,13 @@ static void XMLCALL start_element_handler(
 						+ plcontext->plugin->num_imports;
 					memset(import, 0, sizeof(cp_plugin_import_t));
 					import->plugin_id = NULL;
-					import->version = NULL;
+					import->api_version = -1;
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], "plugin")) {
 							import->plugin_id
 								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], "version")) {
-							if (!cpi_version_isvalid(atts[i+1])) {
-								descriptor_errorf(plcontext, 0, _("invalid version string: %s"), atts[i+1]);
-							}
-							import->version
-								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], "match")) {
-							if (!strcmp(atts[i+1], "perfect")) {
-								import->match = CP_MATCH_PERFECT;
-							} else if (!strcmp(atts[i+1], "equivalent")) {
-								import->match = CP_MATCH_EQUIVALENT;
-							} else if (!strcmp(atts[i+1], "compatible")) {
-								import->match = CP_MATCH_COMPATIBLE;
-							} else if (!strcmp(atts[i+1], "greaterOrEqual")) {
-								import->match = CP_MATCH_GREATEROREQUAL;
-							} else {
-								descriptor_errorf(plcontext, 0, _("unknown version matching mode: %s"), atts[i+1]);
-							}
+						} else if (!strcmp(atts[i], "api-version")) {
+							import->api_version = atoi(atts[i+1]);
 						} else if (!strcmp(atts[i], "optional")) {
 							if (!strcmp(atts[i+1], "true")
 								|| !strcmp(atts[i+1], "1")) {
@@ -728,10 +735,6 @@ static void XMLCALL start_element_handler(
 								descriptor_errorf(plcontext, 0, _("unknown boolean value: %s"), atts[i+1]);
 							}
 						}
-					}
-					if (import->match != CP_MATCH_NONE
-						&& (import->version == NULL || import->version[0] == '\0')) {
-						descriptor_errorf(plcontext, 0, _("unable to match unspecified or empty version"));
 					}
 					plcontext->plugin->num_imports++;
 				}
@@ -1014,6 +1017,9 @@ CP_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *context, const
 		plcontext->plugin->name = NULL;
 		plcontext->plugin->identifier = NULL;
 		plcontext->plugin->version = NULL;
+		plcontext->plugin->api_version = -1;
+		plcontext->plugin->api_revision = -1;
+		plcontext->plugin->api_age = -1;
 		plcontext->plugin->provider_name = NULL;
 		plcontext->plugin->plugin_path = NULL;
 		plcontext->plugin->imports = NULL;

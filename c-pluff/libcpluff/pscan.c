@@ -110,8 +110,10 @@ CP_API int cp_scan_plugins(cp_context_t *context, int flags) {
 					
 						// Insert plug-in to the list of available plug-ins 
 						if ((hnode = hash_lookup(avail_plugins, plugin->identifier)) != NULL) {
-							cp_plugin_info_t *plugin2 = hnode_get(hnode);						
-							if (cpi_version_cmp(plugin2->version, plugin->version, 4) < 0) {
+							cp_plugin_info_t *plugin2 = hnode_get(hnode);
+							if (plugin->api_version > plugin2->api_version
+								|| (plugin->api_version == plugin2->api_version
+									&& plugin->api_revision > plugin2->api_revision)) {
 								hash_delete_free(avail_plugins, hnode);
 								cpi_free_plugin(plugin2);
 								hnode = NULL;

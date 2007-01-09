@@ -100,16 +100,6 @@ const flag_info_t load_flags[] = {
 	{ NULL, -1 }
 };
 
-/// The available matching types
-static const flag_info_t match_values[] = {
-	{ "CP_MATCH_NONE", CP_MATCH_NONE },
-	{ "CP_MATCH_PERFECT", CP_MATCH_PERFECT },
-	{ "CP_MATCH_EQUIVALENT", CP_MATCH_EQUIVALENT },
-	{ "CP_MATCH_COMPATIBLE", CP_MATCH_COMPATIBLE },
-	{ "CP_MATCH_GREATEROREQUAL", CP_MATCH_GREATEROREQUAL },
-	{ NULL, -1 }
-};
-
 
 /* ------------------------------------------------------------------------
  * Function definitions
@@ -565,24 +555,16 @@ static char *str_or_null(const char *str) {
 }
 
 static void show_plugin_info_import(cp_plugin_import_t *import) {
-	int i;
-	
 	noticef("    plugin_id = \"%s\",", import->plugin_id);
-	noticef("    version = %s,", str_or_null(import->version));
-	for (i = 0; match_values[i].name != NULL && match_values[i].value != import->match; i++);
-	if (match_values[i].name != NULL) {
-		noticef("    match = %s,", match_values[i].name);
-	} else {
-		noticef("    match = %d,", import->match);
-	}
+	noticef("    api_version = %d,", import->api_version);
 	noticef("    optional = %d,", import->optional);
 }
 
 static void show_plugin_info_ext_point(cp_ext_point_t *ep) {
 	assert(ep->plugin != NULL);
-	noticef("    name = %s,", str_or_null(ep->name));
 	noticef("    local_id = \"%s\",", ep->local_id);
 	noticef("    global_id = \"%s\",", ep->global_id);
+	noticef("    name = %s,", str_or_null(ep->name));
 	noticef("    schema_path = %s,", str_or_null(ep->schema_path));
 }
 
@@ -745,10 +727,13 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 		errorf(_("cp_get_plugin_info failed with error code %d."), status);
 	} else {
 		notice("{");
-		noticef("  name = \"%s\",", plugin->name);
 		noticef("  identifier = \"%s\",", plugin->identifier);
-		noticef("  version = \"%s\",", plugin->version);
-		noticef("  provider_name = \"%s\",", plugin->provider_name);
+		noticef("  name = %s,", str_or_null(plugin->name));
+		noticef("  version = %s,", str_or_null(plugin->version));
+		noticef("  provider_name = %s,", str_or_null(plugin->provider_name));
+		noticef("  api_version = %d,", plugin->api_version);
+		noticef("  api_revision = %d,", plugin->api_revision);
+		noticef("  api_age = %d,", plugin->api_age);
 		noticef("  plugin_path = %s,", str_or_null(plugin->plugin_path));
 		noticef("  num_imports = %u,", plugin->num_imports);
 		if (plugin->num_imports) {
