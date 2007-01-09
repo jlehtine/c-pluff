@@ -13,7 +13,7 @@
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
-#ifdef HAVE_GETTEXT
+#ifdef ENABLE_NLS
 #include <libintl.h>
 #endif
 #ifdef HAVE_DMALLOC_H
@@ -26,7 +26,7 @@
  * ----------------------------------------------------------------------*/
 
 // Gettext defines 
-#ifdef HAVE_GETTEXT
+#ifdef ENABLE_NLS
 #define _(String) dgettext(PACKAGE, String)
 #define gettext_noop(String) String
 #define N_(String) gettext_noop(String)

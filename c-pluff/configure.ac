@@ -233,7 +233,7 @@ AC_DEFINE_UNQUOTED([CP_FNAMESEP_STR], ["$cp_fnamesep"], [File name separator str
 
 # Output Makefiles
 # ----------------
-AC_CONFIG_FILES([Makefile libcpluff/cpluffdef.h libcpluff/Makefile libcpluff/Doxyfile-ref libcpluff/Doxyfile-impl plugins/Makefile plugins/data/Makefile console/Makefile po/Makefile.in])
+AC_CONFIG_FILES([Makefile libcpluff/cpluffdef.h libcpluff/Makefile libcpluff/Doxyfile-ref libcpluff/Doxyfile-impl console/Makefile po/Makefile.in])
 AC_OUTPUT
 
 
@@ -251,11 +251,7 @@ fi
 AC_MSG_NOTICE([  multi-threading support:        $val])
 AC_MSG_NOTICE([  dlopening mechanism:            $dlmechanism])
 val=no
-case "$DEFS" in
-  *-DHAVE_GETTEXT=1*)
-    val="yes (gettext)"
-    ;;
-esac
+test "$USE_NLS" = no || val="yes (gettext)"
 AC_MSG_NOTICE([  localization support:           $val])
 AC_MSG_NOTICE([  use GNU readline library:       $have_readline])
 if test "$enable_debug" = yes; then

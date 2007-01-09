@@ -6,7 +6,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libcpluff plugins console po
+SUBDIRS = libcpluff console po
 DOC_DIRS = libcpluff
 
 RECURSIVE_DOC_TARGETS = refdoc impldoc
