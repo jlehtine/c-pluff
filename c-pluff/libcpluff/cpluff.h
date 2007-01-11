@@ -1231,10 +1231,8 @@ CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
  * @ingroup funcs
  *
  * These functions can be used to dynamically access symbols exported by the
- * plug-ins. They are intended to be used by a plug-in runtime.
- * The framework automatically maintains a dynamic dependency from the symbol
- * using plug-in to the symbol defining plug-in. If the symbol defining plug-in
- * is about to be stopped then the symbol using plug-in is stopped as well.
+ * plug-ins. They are intended to be used by a plug-in runtime or by the main
+ * program. 
  */
 /*@{*/
 
@@ -1253,18 +1251,28 @@ CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
 CP_API int cp_define_symbol(cp_context_t *ctx, const char *name, void *ptr);
 
 /**
- * Resolves a named symbol provided by the specified plug-in which is started
- * automatically if it is not already active. The symbol may
- * be context specific. The framework first looks for a context specific
+ * Resolves a symbol provided by the specified plug-in. The plug-in is started
+ * automatically if it is not already active. The symbol may be context
+ * specific or global. The framework first looks for a context specific
  * symbol and then falls back to resolving a global symbol exported by the
- * plug-in runtime library. The plug-in framework creates dynamically a
- * dependency from the symbol using
- * plug-in to the symbol defining plug-in. The symbol can be released using
- * ::cp_release_symbol when it is not needed anymore. Unreleased
- * resolved symbols are released automatically after the resolving plug-in has
- * been stopped. Pointers to dynamically resolved symbols must not be passed on
- * to other plug-ins and the resolving plug-in must not use a pointer after
- * the symbol has been released.
+ * plug-in runtime library. The symbol can be released using
+ * ::cp_release_symbol when it is not needed anymore. Pointers obtained from
+ * this function must not be passed on to other plug-ins or the main
+ * program.
+ * 
+ * When a plug-in runtime calls this function the plug-in framework creates
+ * a dynamic dependency from the symbol using plug-in to the symbol
+ * defining plug-in. The symbol using plug-in is stopped automatically if the
+ * symbol defining plug-in is about to be stopped. If the symbol using plug-in
+ * does not explicitly release the symbol then it is automatically released
+ * after a call to the stop function. It is not safe to refer to a dynamically
+ * resolved symbol in the stop function except to release it using
+ * ::cp_release_symbol.
+ * 
+ * When the main program calls this function it is the responsibility of the
+ * main program to always release the symbol before the symbol defining plug-in
+ * is stopped. It is a fatal error if the symbol is not released before the
+ * symbol defining plug-in is stopped.
  *
  * @param ctx the plug-in context
  * @param id the identifier of the symbol defining plug-in
@@ -1275,8 +1283,8 @@ CP_API int cp_define_symbol(cp_context_t *ctx, const char *name, void *ptr);
 CP_API void *cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *name, int *error);
 
 /**
- * Releases a previously obtained symbol. The pointer must not be used by the
- * releasing plug-in after the symbol has been released. The symbol is released
+ * Releases a previously obtained symbol. The pointer must not be used after
+ * the symbol has been released. The symbol is released
  * only after as many calls to this function as there have been for
  * ::cp_resolve_symbol for the same plug-in and symbol.
  *

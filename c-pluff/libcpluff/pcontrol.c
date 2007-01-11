@@ -798,6 +798,11 @@ CP_API int cp_start_plugin(cp_context_t *context, const char *id) {
 static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	cpi_plugin_event_t event;
 	
+	// Check if still in use by the main program
+	if (plugin->syms_usage_count) {
+		cpi_fatalf(_("Plug-in %s is being stopped while still providing symbols to the main program."), plugin->plugin->identifier);
+	}
+
 	// Destroy plug-in instance
 	if (plugin->runtime_funcs != NULL) {
 	
@@ -817,23 +822,23 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		}
 
 		// Release resolved symbols
-		if (plugin->resolved_symbols != NULL) {
-			while (!hash_isempty(plugin->resolved_symbols)) {
+		if (plugin->context->resolved_symbols != NULL) {
+			while (!hash_isempty(plugin->context->resolved_symbols)) {
 				hscan_t scan;
 				hnode_t *node;
 				const void *ptr;
 			
-				hash_scan_begin(&scan, plugin->resolved_symbols);
+				hash_scan_begin(&scan, plugin->context->resolved_symbols);
 				node = hash_scan_next(&scan);
 				ptr = hnode_getkey(node);
 				cp_release_symbol(context, ptr);
 			}
-			assert(hash_isempty(plugin->resolved_symbols));
-			hash_destroy(plugin->resolved_symbols);
+			assert(hash_isempty(plugin->context->resolved_symbols));
+			hash_destroy(plugin->context->resolved_symbols);
 		}
-		if (plugin->symbol_providers != NULL) {
-			assert(hash_isempty(plugin->symbol_providers));
-			hash_destroy(plugin->symbol_providers);
+		if (plugin->context->symbol_providers != NULL) {
+			assert(hash_isempty(plugin->context->symbol_providers));
+			hash_destroy(plugin->context->symbol_providers);
 		}
 
 		// Release defined symbols

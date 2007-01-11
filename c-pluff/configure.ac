@@ -197,11 +197,6 @@ if test "$with_readline" != no; then
 fi
 AM_CONDITIONAL([HAVE_READLINE], test "$have_readline" = yes)
 
-# Check for nl_langinfo availability
-# ----------------------------------
-dnl AC_CHECK_HEADER([langinfo.h],
-dnl  AC_CHECK_FUNC(
-
 # Debugging support
 # -----------------
 AC_ARG_ENABLE([debug],

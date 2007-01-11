@@ -94,12 +94,18 @@ typedef struct cp_plugin_env_t cp_plugin_env_t;
 // Plug-in context
 struct cp_context_t {
 	
-	/// The associated plug-in instance or NULL for the client program
+	/// The associated plug-in instance or NULL for the main program
 	cp_plugin_t *plugin;
 	
 	/// The associated plug-in environment
 	cp_plugin_env_t *env;
 
+	/// Information about resolved symbols or NULL if not initialized
+	hash_t *resolved_symbols;
+
+	/// Information about symbol providing plugins or NULL if not initialized
+	hash_t *symbol_providers;
+	
 };
 
 // Plug-in environment
@@ -178,13 +184,10 @@ struct cp_plugin_t {
 	
 	/// Context specific symbols defined by the plug-in
 	hash_t *defined_symbols;
-
-	/// Information about resolved symbols
-	hash_t *resolved_symbols;
-
-	/// Information about symbol providing plugins
-	hash_t *symbol_providers;
 	
+	/// The usage count for the symbols of this plug-in
+	int syms_usage_count;
+
 	/// Used by recursive operations: has this plug-in been processed already
 	int processed;
 	

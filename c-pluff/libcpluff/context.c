@@ -166,6 +166,8 @@ CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *e
 		// Initialize context
 		context->plugin = plugin;
 		context->env = env;
+		context->resolved_symbols = NULL;
+		context->symbol_providers = NULL;
 		
 	} while (0);
 	
