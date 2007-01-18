@@ -100,7 +100,7 @@ CP_HIDDEN void cpi_use_info(void *res) {
 		info_resource_t *ir = hnode_get(node);
 		ir->usage_count++;
 	} else {
-		cpi_fatalf(_("Could not increase usage count on unknown information object."), res);
+		cpi_fatalf(_("Could not increase usage count on unknown information object."));
 	}
 	cpi_unlock_framework();
 }
