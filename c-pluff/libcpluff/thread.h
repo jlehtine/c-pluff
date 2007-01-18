@@ -65,6 +65,24 @@ CP_HIDDEN void cpi_lock_mutex(cpi_mutex_t *mutex);
  */
 CP_HIDDEN void cpi_unlock_mutex(cpi_mutex_t *mutex);
 
+/**
+ * Waits on the specified mutex until it is signaled. The calling thread
+ * must hold the mutex. The mutex is released on call to this function and
+ * it is reacquired before the function returns.
+ * 
+ * @param mutex the mutex to wait on
+ */
+CP_HIDDEN void cpi_wait_mutex(cpi_mutex_t *mutex);
+
+/**
+ * Signals the specified mutex waking all the threads currently waiting on
+ * the mutex. The calling thread must hold the mutex. The mutex is not
+ * released.
+ * 
+ * @param mutex the mutex to be signaled
+ */
+CP_HIDDEN void cpi_signal_mutex(cpi_mutex_t *mutex);
+
 #if !defined(NDEBUG)
 
 /**

@@ -33,7 +33,13 @@ struct cpi_mutex_t {
 	HANDLE os_mutex;
 	
 	/// The condition variable for signaling availability 
-	HANDLE os_cond_count;
+	HANDLE os_cond_lock;
+	
+	/// The condition variable for signaling a wake request
+	HANDLE os_cond_wake;
+
+	/// Number of threads currently waiting on this mutex
+	int num_wait_threads;
 
 	/// The locking thread if currently locked 
 	DWORD os_thread;
@@ -54,10 +60,18 @@ CP_HIDDEN cpi_mutex_t * cpi_create_mutex(void) {
 	memset(mutex, 0, sizeof(cpi_mutex_t));
 	if ((mutex->os_mutex = CreateMutex(NULL, FALSE, NULL)) == NULL) {
 		return NULL;
-	} else if ((mutex->os_cond_count = CreateEvent(NULL, FALSE, FALSE, NULL)) == NULL) {
+	} else if ((mutex->os_cond_lock = CreateEvent(NULL, FALSE, FALSE, NULL)) == NULL) {
 		int ec;
 		
 		ec = CloseHandle(mutex->os_mutex);
+		assert(ec);
+		return NULL;
+	} else if ((mutex->os_cond_wake = CreateEvent(NULL, TRUE, FALSE, NULL)) == NULL) {
+		int ec;
+		
+		ec = CloseHandle(mutex->os_mutex);
+		assert(ec);
+		ec = CloseHandle(mutex->os_cond_lock);
 		assert(ec);
 		return NULL;
 	}
@@ -71,7 +85,9 @@ CP_HIDDEN void cpi_destroy_mutex(cpi_mutex_t *mutex) {
 	assert(mutex->lock_count == 0);
 	ec = CloseHandle(mutex->os_mutex);
 	assert(ec);
-	ec = CloseHandle(mutex->os_cond_count);
+	ec = CloseHandle(mutex->os_cond_lock);
+	assert(ec);
+	ec = CloseHandle(mutex->os_cond_wake);
 	assert(ec);
 	free(mutex);
 }
@@ -129,19 +145,31 @@ static void set_event(HANDLE event) {
 	}
 }
 
-CP_HIDDEN void cpi_lock_mutex(cpi_mutex_t *mutex) {
+static void reset_event(HANDLE event) {
+	if (!ResetEvent(event)) {
+		char buffer[256];
+		DWORD ec = GetLastError();
+		cpi_fatalf(_("Could not reset an event due to error %ld: %s"),
+			(long) ec, get_win_errormsg(ec, buffer, sizeof(buffer)));
+	}
+}
+
+static void lock_mutex_holding(cpi_mutex_t *mutex) {
 	DWORD self = GetCurrentThreadId();
 	
-	assert(mutex != NULL);
-	lock_mutex(mutex->os_mutex);
 	while (mutex->lock_count != 0
 			&& self != mutex->os_thread) {
 		unlock_mutex(mutex->os_mutex);
-		wait_for_event(mutex->os_cond_count);
+		wait_for_event(mutex->os_cond_lock);
 		lock_mutex(mutex->os_mutex);
 	}
 	mutex->os_thread = self;
 	mutex->lock_count++;
+}
+
+CP_HIDDEN void cpi_lock_mutex(cpi_mutex_t *mutex) {
+	assert(mutex != NULL);
+	lock_mutex(mutex->os_mutex);
 	unlock_mutex(mutex->os_mutex);
 }
 
@@ -153,12 +181,60 @@ CP_HIDDEN void cpi_unlock_mutex(cpi_mutex_t *mutex) {
 	if (mutex->lock_count > 0
 		&& self == mutex->os_thread) {
 		if (--mutex->lock_count == 0) {
-			set_event(mutex->os_cond_count);
+			set_event(mutex->os_cond_lock);
 		}
 	} else {
 		cpi_fatalf(_("Unauthorized attempt at unlocking a mutex."));
 	}
 	unlock_mutex(mutex->os_mutex);
+}
+
+CP_HIDDEN void cpi_wait_mutex(cpi_mutex_t *mutex) {
+	DWORD self = GetCurrentThreadId();
+	
+	assert(mutex != NULL);
+	lock_mutex(mutex->os_mutex);
+	if (mutex->lock_count > 0
+		&& self == mutex->os_thread) {
+		int lc = mutex->lock_count;
+		
+		// Release mutex
+		mutex->lock_count = 0;
+		mutex->num_wait_threads++;
+		set_event(mutex->os_cond_lock);
+		unlock_mutex(mutex->os_mutex);
+		
+		// Wait for signal
+		wait_for_event(mutex->os_cond_wake);
+		
+		// Reset wake signal if last one waking up
+		lock_mutex(mutex->os_mutex);
+		if (--mutex->num_wait_threads == 0) {
+			reset_event(mutex->os_cond_wake);
+		}
+		
+		// Re-acquire mutex and restore lock count for this thread
+		lock_mutex_holding(mutex);
+		mutex->lock_count = lc;		
+		
+	} else {
+		cpi_fatalf(_("Unauthorized attempt at waiting on a mutex."));
+	}
+	unlock_mutex(mutex->os_mutex);
+}
+
+CP_HIDDEN void cpi_signal_mutex(cpi_mutex_t *mutex) {
+	DWORD self = GetCurrentThreadId();
+	
+	assert(mutex != NULL);
+	lock_mutex(mutex->os_mutex);
+	if (mutex->lock_count > 0
+		&& self == mutex->os_thread) {
+		set_event(mutex->os_cond_wake);
+	} else {
+		cpi_fatalf(_("Unauthorized attempt at signaling a mutex."));
+	}
+	unlock_mutex(mutex->os_mutex);	
 }
 
 #if !defined(NDEBUG)
