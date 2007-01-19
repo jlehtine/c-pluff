@@ -146,10 +146,7 @@ CP_API int cp_init(void) {
 	// Initialize if necessary
 	do {
 		if (!initialized) {
-			if (bindtextdomain(PACKAGE, CP_DATADIR CP_FNAMESEP_STR "locale") == NULL) {
-				status = CP_ERR_RESOURCE;
-				break;
-			}
+			bindtextdomain(PACKAGE, CP_DATADIR CP_FNAMESEP_STR "locale");
 #ifdef CP_THREADS
 			if ((framework_mutex = cpi_create_mutex()) == NULL) {
 				status = CP_ERR_RESOURCE;

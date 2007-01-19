@@ -24,7 +24,7 @@ This configure script is free software; Johannes Lehtinen gives unlimited
 permission to copy, distribute and modify it.])
 AC_CONFIG_SRCDIR([libcpluff/cpluff.h])
 AC_CONFIG_AUX_DIR([auxliary])
-AC_CONFIG_HEADERS([libcpluff/config.h])
+AC_CONFIG_HEADERS([config.h])
 
 # API version information
 # -----------------------
@@ -52,14 +52,30 @@ fi
 AC_PROG_CC_C_O
 AC_C_CONST
 AC_PROG_RANLIB
+AC_LIBTOOL_DLOPEN
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 
-CPPFLAGS="$CPPFLAGS -I."
+# For config.h
+CPPFLAGS="$CPPFLAGS -I\$(top_builddir)"
+
+# For cpluff.h and cpluffdef.h
+CPPFLAGS="$CPPFLAGS -I\$(top_builddir)/libcpluff -I\$(top_srcdir)/libcpluff"
+
+# Substitute variables for libcpluff and non-libcpluff components
+AC_SUBST([LIBS_LIBCPLUFF])
+AC_SUBST([LIBS_OTHER])
 
 # Define shared library extension
 # -------------------------------
 AC_DEFINE_UNQUOTED([CP_SHREXT], ["$shrext_cmds"], [Shared library extension])
+
+# Subst example installation paths
+# --------------------------------
+exampleprefix="\$(shell cd \$(top_builddir)/examples && pwd)"
+calcrundir="\$(exampleprefix)/calculator/run"
+AC_SUBST([exampleprefix])
+AC_SUBST([calcrundir])
 
 # Thread support checks
 # ---------------------
@@ -134,20 +150,16 @@ AM_CONDITIONAL([WINDOWS_THREADS], test "$cp_threads" = Windows)
 
 # Check if dmalloc usage requested
 # --------------------------------
-LIBS_DMALLOC=
 AC_ARG_WITH([dmalloc],
   AS_HELP_STRING([--with-dmalloc],
     [compile and link with dmalloc to debug memory usage]))
 if test "$with_dmalloc" = yes; then
   AC_CHECK_HEADERS([dmalloc.h],,
     AC_MSG_WARN([Dmalloc header files not found (not including)]))
-  AC_CHECK_LIB([dmalloc${cp_threads+th}], [malloc],
-    [LIBS_DMALLOC="-ldmalloc${cp_threads+th}"],
+  AC_CHECK_LIB([dmalloc${cp_threads+th}], [malloc],,
     AC_MSG_ERROR([Dmalloc library is required for requested dmalloc support]))
   AC_DEFINE([DMALLOC_FUNC_CHECK], [], [Define to use additional dmalloc checks])
-  LIBS="$LIBS_DMALLOC $LIBS"
 fi
-AC_SUBST([LIBS_DMALLOC])
 
 # Check for the dlopen mechanism (Posix dlopen or GNU Libtool libltdl)
 # --------------------------------------------------------------------
@@ -161,26 +173,32 @@ if test "$with_dlopen" = yes && test "$with_libltdl" = yes; then
   AC_MSG_ERROR([Can not use both Posix dlopen and GNU Libtool libltdl])
 fi
 dlmechanism=none
-if test "$with_dlopen" != no; then
-  dlmechanism=dlopen
+if test "$with_dlopen" != no && test "$with_libltdl" != yes; then
   AC_CHECK_HEADER([dlfcn.h],
-    AC_CHECK_LIB([dl], [dlopen],, dlmechanism=none),
-    dlmechanism=none)
+    AC_CHECK_LIB([dl], [dlopen],
+      [LIBS_LIBCPLUFF="-ldl $LIBS_LIBCPLUFF"; dlmechanism=dlopen]))
 fi
-if test "$dlmechanism" = none && test "$with_libltdl" != no; then
-  dlmechanism=libltdl
+if test "$dlmechanism" = none && test "$with_libltdl" != no && test "$with_dlopen" != yes; then  
   AC_CHECK_HEADER([ltdl.h],
-    AC_CHECK_LIB([ltdl], [lt_dlopen],, dlmechanism=none),
-    dlmechanism=none)
+    AC_CHECK_LIB([ltdl], [lt_dlopen],
+      [LIBS_LIBCPLUFF="-lltdl $LIBS_LIBCPLUFF"; dlmechanism=libltdl]))
 fi
-if test "$dlmechanism" = none; then
-  AC_MSG_ERROR([Either the Posix dlopen facility or GNU Libtool libltdl is required])
-fi
+case "$dlmechanism" in
+  dlopen)
+    AC_DEFINE([DLOPEN_POSIX], [], [Define to use Posix dlopen])
+      ;;
+  libltdl)
+    AC_DEFINE([DLOPEN_LIBTOOL], [], [Define to use GNU Libtool libltdl])
+    ;;
+  *)
+    AC_MSG_ERROR([Either the Posix dlopen facility or GNU Libtool libltdl is required])
+    ;;
+esac
 
 # Check for Expat XML parsing library
 # -----------------------------------
 AC_CHECK_HEADER([expat.h],, AC_MSG_ERROR([Expat header file is required]))
-AC_CHECK_LIB([expat], [XML_ParseBuffer],, AC_MSG_ERROR([Expat library is required]))
+AC_CHECK_LIB([expat], [XML_ParseBuffer], [LIBS_LIBCPLUFF="-lexpat $LIBS_LIBCPLUFF"], AC_MSG_ERROR([Expat library is required]))
 
 # Check for the GNU Readline Library
 # ----------------------------------
@@ -190,12 +208,16 @@ AC_ARG_WITH([readline],
 have_readline=no
 if test "$with_readline" != no; then
   AC_CHECK_HEADER([readline/readline.h],
-    AC_CHECK_LIB([readline], [add_history], have_readline=yes))
+    AC_CHECK_LIB([readline], [add_history], [LIBS_OTHER="-lreadline $LIBS_OTHER"; have_readline=yes]))
   if test "$with_readline" = yes && test "$have_readline" != yes; then
     AC_MSG_ERROR([GNU readline requested but headers or library not found])
   fi
 fi
 AM_CONDITIONAL([HAVE_READLINE], test "$have_readline" = yes)
+
+# Link non-library parts with the C-Pluff library
+# -----------------------------------------------
+LIBS_OTHER="\$(top_builddir)/libcpluff/libcpluff.la $LIBS_OTHER"
 
 # Debugging support
 # -----------------
@@ -228,7 +250,7 @@ AC_DEFINE_UNQUOTED([CP_FNAMESEP_STR], ["$cp_fnamesep"], [File name separator str
 
 # Output Makefiles
 # ----------------
-AC_CONFIG_FILES([Makefile libcpluff/cpluffdef.h libcpluff/Makefile libcpluff/Doxyfile-ref libcpluff/Doxyfile-impl console/Makefile po/Makefile.in])
+AC_CONFIG_FILES([Makefile libcpluff/Makefile libcpluff/cpluffdef.h libcpluff/Doxyfile-ref libcpluff/Doxyfile-impl console/Makefile po/Makefile.in])
 AC_OUTPUT
 
 
@@ -268,4 +290,6 @@ AC_MSG_NOTICE([    CPPFLAGS='$CPPFLAGS'])
 AC_MSG_NOTICE([    CFLAGS='$CFLAGS'])
 AC_MSG_NOTICE([    LDFLAGS='$LDFLAGS'])
 AC_MSG_NOTICE([    LIBS='$LIBS'])
+AC_MSG_NOTICE([    LIBS_LIBCPLUFF='$LIBS_LIBCPLUFF'])
+AC_MSG_NOTICE([    LIBS_OTHER='$LIBS_OTHER'])
 AC_MSG_NOTICE([-----------------------------------------------------------])

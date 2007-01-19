@@ -6,7 +6,7 @@
 // Global declarations 
 
 #ifdef HAVE_CONFIG_H
-#include "../libcpluff/config.h"
+#include <config.h>
 #endif
 #ifdef HAVE_GETTEXT
 #include <libintl.h>

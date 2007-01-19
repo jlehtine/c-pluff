@@ -5,10 +5,7 @@
 
 // Core console logic 
 
-#ifdef HAVE_CONFIG_H
-#include "../libcpluff/config.h"
-#endif
-
+#include "console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -18,8 +15,7 @@
 #include <locale.h>
 #endif
 #include <assert.h>
-#include "../libcpluff/cpluff.h"
-#include "console.h"
+#include <cpluff.h>
 
 
 /* ------------------------------------------------------------------------

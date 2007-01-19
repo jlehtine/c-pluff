@@ -15,16 +15,15 @@
  * Inclusions
  * ----------------------------------------------------------------------*/
 
-#ifdef HAVE_LIBDL
+#include "defines.h"
+#if defined(DLOPEN_POSIX)
 #include <dlfcn.h>
-#endif
-#ifdef HAVE_LIBLTDL
+#elif defined(DLOPEN_LIBTOOL)
 #include <ltdl.h>
 #endif
 #include "../kazlib/list.h"
 #include "../kazlib/hash.h"
 #include "cpluff.h"
-#include "defines.h"
 #ifdef CP_THREADS
 #include "thread.h"
 #endif
@@ -62,12 +61,12 @@ extern "C" {
  * Macros
  * ----------------------------------------------------------------------*/
 
-#if defined(HAVE_LIBDL)
+#if defined(DLOPEN_POSIX)
 #define DLHANDLE void *
 #define DLOPEN(name) dlopen((name), RTLD_LAZY | RTLD_GLOBAL)
 #define DLSYM(handle, symbol) dlsym((handle), (symbol))
 #define DLCLOSE(handle) dlclose(handle)
-#elif defined(HAVE_LIBLTDL)
+#elif defined(DLOPEN_LIBTOOL)
 #define DLHANDLE lt_dlhandle
 #define DLOPEN(name) lt_dlopen(name)
 #define DLSYM(handle, symbol) lt_dlsym((handle), (symbol))
@@ -137,7 +136,7 @@ struct cp_plugin_env_t {
 	
 	/// Maps extension point names to installed extensions
 	hash_t *extensions;
-
+	
 	/// Whether currently in event listener invocation
 	int in_event_listener_invocation;
 	
@@ -423,6 +422,17 @@ CP_HIDDEN void cpi_use_info(void *res);
  * Destroys all dynamic information objects.
  */
 CP_HIDDEN void cpi_destroy_all_infos(void);
+
+
+// Serialized execution
+
+/**
+ * Waits for all the run functions registered by the specified plug-in to
+ * return and unregisters them.
+ * 
+ * @param plugin the plug-in to be stopped
+ */
+CP_HIDDEN void cpi_stop_plugin_run(cp_plugin_t *plugin);
 
 
 #ifdef __cplusplus

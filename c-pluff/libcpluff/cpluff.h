@@ -28,7 +28,7 @@
  * Preprocessor defines.
  */
  
-#include "cpluffdef.h"
+#include <cpluffdef.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -421,7 +421,7 @@ struct cp_plugin_info_t {
 	/**
 	 * An optional release version string. NULL if not available. The
 	 * release version is intended only for display purposes (compatibility
-	 * checks use API version information in @ref cp_plugin_api_t). This
+	 * checks use API version information instead). This
 	 * corresponds to the @a version attribute of the @a plugin element in
 	 * a plug-in descriptor.
 	 */
@@ -481,7 +481,8 @@ struct cp_plugin_info_t {
     /**
      * The plug-in runtime library path, relative to the plug-in directory,
      * or NULL if none. This corresponds to the @a library attribute of the
-     * @a runtime element in a plug-in descriptor. 
+     * @a runtime element in a plug-in descriptor. A platform specific shared
+     * library extension is appended to this path.
      */
     char *lib_path;
     
@@ -733,6 +734,10 @@ struct cp_plugin_runtime_t {
 	 * pointer can be NULL if the plug-in runtime does not have a start
 	 * function.
 	 * 
+	 * The start function implementation should set up plug-in and return
+	 * promptly. If there is further work to be done then a plug-in can
+	 * start a thread or register a run function using ::cp_run_function.
+	 * 
 	 * @param data an opaque pointer to plug-in instance data
 	 * @return non-zero on success, or zero on failure
 	 */
@@ -747,6 +752,8 @@ struct cp_plugin_runtime_t {
 	 * functions and ::cp_resolve_symbol must not be called from within
 	 * a stop function invocation. The stop function pointer can
 	 * be NULL if the plug-in runtime does not have a stop function.
+	 * It is guaranteed that no run functions registered by the plug-in are
+	 * called simultaneously or after the call to the stop function.
 	 *
 	 * @param data an opaque pointer to plug-in instance data
 	 */
@@ -778,9 +785,8 @@ struct cp_plugin_runtime_t {
  *
  * Global public API functions. The C-Pluff C API functions and
  * any data exposed by them are generally thread-safe if the library has been
- * compiled with multi-threading support. The initialization functions
- * ::cp_init, ::cp_destroy and ::cp_set_fatal_error_handler are
- * exceptions, they are not thread-safe.
+ * compiled with multi-threading support. The @ref funcsInit "initialization functions"
+ * are exceptions, they are not thread-safe.
  */
 
 /**
@@ -811,7 +817,8 @@ CP_API const cp_core_info_t *cp_get_core_info(void);
  * @ingroup funcs
  *
  * These functions are used for library and framework initialization.
- * They are intended to be used by the main program.
+ * They are intended to be used by the main program. These functions are
+ * not thread safe.
  */
 /*@{*/
 

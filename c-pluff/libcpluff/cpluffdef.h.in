@@ -4,7 +4,7 @@
  *-----------------------------------------------------------------------*/
 
 /** @file
- * Common defines shared by C-Pluff core C and C++ APIs.
+ * Common defines shared by C-Pluff C and C++ core APIs.
  * This file is automatically included by the top level C and C++
  * API header files. There should be no need to include it explicitly.
  */
@@ -21,56 +21,90 @@
  * @defgroup symbolVisibility Symbol visibility
  * @ingroup defines
  *
- * Macros for controlling inter-module symbol visibility. Symbol visibility
- * between different modules (plug-ins and the client program) can be
- * controlled by these macros which have platform specific values.
- * The macros are used by the library implementation but it is
- * recommended that plug-in implementations would use them as well
- * for better portability.
+ * Macros for controlling inter-module symbol visibility and linkage. These
+ * macros have platform specific values. #CP_EXPORT, #CP_IMPORT and #CP_HIDE
+ * can be reused by plug-in implementations for better portability while
+ * #CP_API is framework implementation specific. The complexity is mostly due
+ * to Windows DLL exports and imports.
  */
 /*@{*/
 
 /**
- * @def CP_EXPORTED
- * Declares an exported symbol. This macro should be placed at the start
- * of a global function or variable declaration to ensure that the symbol is
- * exported to other modules (plug-ins or the client program).
+ * @def CP_EXPORT
+ *
+ * Declares a symbol to be exported for inter-module usage. When compiling the
+ * module which defines the symbol this macro should be placed
+ * at the start of the symbol declaration to ensure that the symbol is exported
+ * to other modules. However, when compiling other modules the declaration of
+ * the symbol should start with #CP_IMPORT. #CP_API provides an example of how
+ * to do this.
+ */
+
+/**
+ * @def CP_IMPORT
+ *
+ * Declares a symbol to be imported from another module. When compiling a
+ * module which uses the symbol this macro should be placed at the start of
+ * the symbol declaration to ensure that the symbol is imported from the
+ * defining module. However, when compiling the defining module the declaration
+ * of the symbol should start with #CP_EXPORT. #CP_API provides an example of
+ * how to do this.
  */
 
 /**
  * @def CP_HIDDEN
  *
- * Declares a hidden symbol. This macro should be placed at the start of
- * a global function or variable declaration to hide the symbol from other
- * modules (plug-ins or the client program). This macro is not intended to be
- * used with functions and variables declared as "static" which are
- * already internal to the object file. Some platforms do not
- * support hiding of symbols. Modules should therefore use unique prefixes for
- * global symbols internal to the module even when they are declared as hidden.
+ * Declares a symbol hidden from other modules. This macro should be
+ * placed at the start of the symbol declaration to hide the symbol from other
+ * modules (if supported by the platform). This macro is not intended to be
+ * used with symbols declared as "static" which are already internal to the
+ * object file. Some platforms do not support hiding of symbols and therefore
+ * unique prefixes should be used for global symbols internal to the module
+ * even when they are declared using this macro.
  */
 
-#if defined(__WIN32__)
-#if defined(CP_BUILD) && defined(DLL_EXPORT)
-#define CP_EXPORTED __declspec(dllexport)
-#elif !defined(CP_BUILD) && !defined(CP_STATIC)
-#define CP_EXPORTED __declspec(dllimport)
+#if defined(_WIN32)
+#  define CP_EXPORT __declspec(dllexport)
+#  define CP_IMPORT extern __declspec(dllimport)
+#  define CP_HIDDEN
+#elif defined(__GNUC__) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3))
+#  define CP_EXPORT
+#  define CP_IMPORT extern
+#  define CP_HIDDEN __attribute__ ((visibility ("hidden")))
 #else
-#define CP_EXPORTED
-#endif
-#define CP_HIDDEN
-#elif defined(CP_BUILD) && (__GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3))
-#define CP_EXPORTED __attribute__ ((visibility ("default")))
-#define CP_HIDDEN __attribute__ ((visibility ("hidden")))
-#else /* Not restricting link time visibility of non-API symbols */
-#define CP_EXPORTED
-#define CP_HIDDEN
+#  define CP_EXPORT
+#  define CP_IMPORT extern
+#  define CP_HIDDEN
 #endif
 
 /**
- * Explicitly marks a symbol declaration as being a part of the public API.
- * This is functionally equivalent to #CP_EXPORTED.
+ * @def CP_API
+ *
+ * Marks a symbol declaration to be part of the C-Pluff framework API.
+ * This macro can not be reused by plug-in implementations. A plug-in
+ * implementation should instead define a macro for declaring its own
+ * API symbols.
+ *
+ * Here is an example of how to define a corresponding macro for use by a
+ * plug-in implementation. The example assumes that
+ * the preprocessor symbol MY_BUILD is defined when building the module which
+ * uses MY_API macro to declare API symbols (symbols for inter-module usage).
+ *
+ * @code
+ * #include <cpluff.h>
+ * #if defined(MY_BUILD)
+ * #  define MY_API CP_EXPORT
+ * #else
+ * #  define MY_API CP_IMPORT
+ * #endif
+ * @endcode
  */
-#define CP_API CP_EXPORTED
+
+#if defined(CP_BUILD)
+#  define CP_API CP_EXPORT
+#else
+#  define CP_API CP_IMPORT
+#endif
 
 /*@}*/
 
