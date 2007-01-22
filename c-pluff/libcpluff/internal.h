@@ -112,7 +112,8 @@ struct cp_plugin_env_t {
 
 #if defined(CP_THREADS)
 
-	/// Mutex for accessing plug-in environment
+	/// Mutex for accessing this plug-in environment.
+	/// This mutex is signaled when a run function returns.
 	cpi_mutex_t *mutex;
 	
 #elif !defined(NDEBUG)
@@ -137,6 +138,12 @@ struct cp_plugin_env_t {
 	/// Maps extension point names to installed extensions
 	hash_t *extensions;
 	
+	/// FIFO queue of run functions, currently running functions at front
+	list_t *run_funcs;
+	
+	/// First waiting run function, or NULL if none
+	lnode_t *run_wait;
+
 	/// Whether currently in event listener invocation
 	int in_event_listener_invocation;
 	
@@ -248,9 +255,25 @@ CP_HIDDEN void cpi_lock_context(cp_context_t *context);
  */
 CP_HIDDEN void cpi_unlock_context(cp_context_t *context);
 
+/**
+ * Waits until the specified plug-in context is signalled.
+ * 
+ * @param context the plug-in context
+ */
+CP_HIDDEN void cpi_wait_context(cp_context_t *context);
+
+/**
+ * Signals the specified plug-in context.
+ * 
+ * @param context the plug-in context
+ */
+CP_HIDDEN void cpi_signal_context(cp_context_t *context);
+
 #else
 #define cpi_lock_context(dummy) do {} while (0)
 #define cpi_unlock_context(dummy) do {} while (0)
+#define cpi_wait_context(dummy) do {} while (0)
+#define cpi_signal_context(dummy) do {} while (0)
 #define cpi_lock_framework() do {} while(0)
 #define cpi_unlock_framework() do {} while(0)
 #endif
@@ -428,7 +451,7 @@ CP_HIDDEN void cpi_destroy_all_infos(void);
 
 /**
  * Waits for all the run functions registered by the specified plug-in to
- * return and unregisters them.
+ * return and then unregisters them.
  * 
  * @param plugin the plug-in to be stopped
  */

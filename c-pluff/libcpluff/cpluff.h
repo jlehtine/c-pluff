@@ -749,8 +749,8 @@ struct cp_plugin_runtime_t {
 	 * @ref funcsInit "Library initialization",
 	 * @ref funcsContext "plug-in context management",
 	 * @ref funcsPlugin "plug-in management"
-	 * functions and ::cp_resolve_symbol must not be called from within
-	 * a stop function invocation. The stop function pointer can
+	 * functions, ::cp_run_function and ::cp_resolve_symbol must not be called
+	 * from within a stop function invocation. The stop function pointer can
 	 * be NULL if the plug-in runtime does not have a stop function.
 	 * It is guaranteed that no run functions registered by the plug-in are
 	 * called simultaneously or after the call to the stop function.
@@ -1229,6 +1229,72 @@ CP_API cp_cfg_element_t * cp_lookup_cfg_element(cp_cfg_element_t *base, const ch
  * @return the value of the target element or attribute or NULL
  */
 CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
+
+/*@}*/
+
+
+/**
+ * @defgroup funcsSerialExec Serial execution
+ * @ingroup funcs
+ *
+ * These functions support a serial execution model. Started plug-ins can
+ * use ::cp_run_function to register a run function which is called when the
+ * main program calls ::cp_run_plugins or ::cp_run_plugins_step. A run
+ * function should do a finite chunk of work and then return telling whether
+ * there is more work to be done. A run function is automatically unregistered
+ * when the plug-in is stopped. Run functions make it possible for plug-ins
+ * to take control of execution or they can be used as a coarse
+ * way of task switching if there is no multi-threading support.
+ *
+ * The C-Pluff distribution includes a generic main program, cpluff-loader,
+ * which only acts as a plug-in loader. It loads and starts up the
+ * specified plug-ins and then just calls run functions of the plug-ins. This
+ * makes it is possible to put all the application specific logic in
+ * plug-ins. Application does not necessarily need a main program of its own.
+ * 
+ * It is also safe, from framework perspective, to call these functions from
+ * multiple threads. Run functions may then be executed in parallel threads.
+ */
+/*@{*/
+
+/**
+ * Registers a new run function. The plug-in instance data pointer is given to
+ * the run function as a parameter. The run function must return zero if it has
+ * finished its work or non-zero if it should be called again later. The run
+ * function is unregistered when it returns zero. Plug-in framework functions
+ * stopping the registering plug-in must not be called from within a run
+ * function. This function does nothing if the specified run
+ * function is already registered for the calling plug-in instance.
+ * 
+ * @param ctx the plug-in context of the registering plug-in
+ * @param runfunc the run function to be registered
+ * @return CP_OK (zero) on success or an error code on failure
+ */
+CP_API int cp_run_function(cp_context_t *ctx, int (*runfunc)(void *));
+
+/**
+ * Runs the started plug-ins as long as there is something to run.
+ * This function calls repeatedly run functions registered by started plug-ins
+ * until there are no more active run functions. This function is normally
+ * called by a thin main proram, a loader, which loads plug-ins, starts some
+ * plug-ins and then passes control over to the started plug-ins.
+ * 
+ * @param ctx the plug-in context containing the plug-ins
+ */
+CP_API void cp_run_plugins(cp_context_t *ctx);
+
+/**
+ * Runs one registered run function. This function calls one
+ * active run function registered by a started plug-in. When the run function
+ * returns this function also returns and passes control back to the main
+ * program. The return value can be used to determine whether there are any
+ * active run functions left. This function does nothing if there are no active
+ * registered run functions.
+ * 
+ * @param ctx the plug-in context containing the plug-ins
+ * @return whether there are active run functions waiting to be run
+ */
+CP_API int cp_run_plugins_step(cp_context_t *ctx);
 
 /*@}*/
 

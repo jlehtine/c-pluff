@@ -20,6 +20,7 @@
 #endif
 #include "internal.h"
 
+
 /* ------------------------------------------------------------------------
  * Data types
  * ----------------------------------------------------------------------*/
@@ -210,6 +211,8 @@ CP_API cp_context_t * cp_create_context(int *error) {
 			(int (*)(const void *, const void *)) strcmp, NULL);
 		env->extensions = hash_create(HASHCOUNT_T_MAX,
 			(int (*)(const void *, const void *)) strcmp, NULL);
+		env->run_funcs = list_create(LISTCOUNT_T_MAX);
+		env->run_wait = NULL;
 		if (env->plugin_listeners == NULL
 #ifdef CP_THREADS
 			|| env->mutex == NULL
@@ -527,6 +530,23 @@ CP_HIDDEN void cpi_unlock_context(cp_context_t *context) {
 #elif !defined(NDEBUG)
 	assert(context->env->locked > 0);
 	context->env->locked--;
+#endif
+}
+
+CP_HIDDEN void cpi_wait_context(cp_context_t *context) {
+#if defined(CP_THREADS)
+	cpi_wait_mutex(context->env->mutex);
+#elif !defined(NDEBUG)
+	assert(context->env->locked > 0);
+	assert(0);
+#endif
+}
+
+CP_HIDDEN void cpi_signal_context(cp_context_t *context) {
+#if defined(CP_THREADS)
+	cpi_signal_mutex(context->env->mutex);
+#elif !defined(NDEBUG)
+	assert(context->env->locked > 0);
 #endif
 }
 

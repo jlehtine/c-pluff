@@ -803,6 +803,9 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		cpi_fatalf(_("Plug-in %s is being stopped while still providing symbols to the main program."), plugin->plugin->identifier);
 	}
 
+	// Wait until possible run functions have stopped
+	cpi_stop_plugin_run(plugin);
+
 	// Destroy plug-in instance
 	if (plugin->runtime_funcs != NULL) {
 	
