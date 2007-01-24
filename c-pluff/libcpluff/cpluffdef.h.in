@@ -4,7 +4,7 @@
  *-----------------------------------------------------------------------*/
 
 /** @file
- * Common defines shared by C-Pluff C and C++ core APIs.
+ * Common defines shared by C-Pluff C and C++ APIs.
  * This file is automatically included by the top level C and C++
  * API header files. There should be no need to include it explicitly.
  */
@@ -19,13 +19,30 @@
 
 /**
  * @defgroup symbolVisibility Symbol visibility
- * @ingroup defines
+ * @ingroup cDefines cxxDefines
  *
  * Macros for controlling inter-module symbol visibility and linkage. These
- * macros have platform specific values. #CP_EXPORT, #CP_IMPORT and #CP_HIDE
- * can be reused by plug-in implementations for better portability while
- * #CP_API is framework implementation specific. The complexity is mostly due
- * to Windows DLL exports and imports.
+ * macros have platform specific values. #CP_EXPORT, #CP_IMPORT and #CP_HIDDEN
+ * can be reused by plug-in implementations for better portability. The
+ * complexity is mostly due to Windows DLL exports and imports.
+ *
+ * @anchor symbolVisibilityExample
+ * Each module should usually define its own macro to declare API symbols with
+ * #CP_EXPORT and #CP_IMPORT as necessary. For example, a mobule could define
+ * a macro @c MY_API in the API header file as follows.
+ *
+ * @code
+ * #ifndef MY_API
+ * #  define MY_API CP_IMPORT
+ * #endif
+ * @endcode
+ *
+ * By default the API symbols would then be marked for import which is correct
+ * when client modules are including the API header file. When compiling the
+ * module itself the option @c -DMY_API=CP_EXPORT would be passed to the compiler to
+ * override the API header file and to mark the API symbols for export.
+ * The overriding definition could also be included in module source files or
+ * in an internal header file before including the API header file.
  */
 /*@{*/
 
@@ -36,8 +53,8 @@
  * module which defines the symbol this macro should be placed
  * at the start of the symbol declaration to ensure that the symbol is exported
  * to other modules. However, when compiling other modules the declaration of
- * the symbol should start with #CP_IMPORT. #CP_API provides an example of how
- * to do this.
+ * the symbol should start with #CP_IMPORT.
+ * See @ref symbolVisibilityExample "the example" of how to do this.
  */
 
 /**
@@ -47,8 +64,8 @@
  * module which uses the symbol this macro should be placed at the start of
  * the symbol declaration to ensure that the symbol is imported from the
  * defining module. However, when compiling the defining module the declaration
- * of the symbol should start with #CP_EXPORT. #CP_API provides an example of
- * how to do this.
+ * of the symbol should start with #CP_EXPORT.
+ * See @ref symbolVisibilityExample "the example" of how to do this.
  */
 
 /**
@@ -77,35 +94,6 @@
 #  define CP_HIDDEN
 #endif
 
-/**
- * @def CP_API
- *
- * Marks a symbol declaration to be part of the C-Pluff framework API.
- * This macro can not be reused by plug-in implementations. A plug-in
- * implementation should instead define a macro for declaring its own
- * API symbols.
- *
- * Here is an example of how to define a corresponding macro for use by a
- * plug-in implementation. The example assumes that
- * the preprocessor symbol MY_BUILD is defined when building the module which
- * uses MY_API macro to declare API symbols (symbols for inter-module usage).
- *
- * @code
- * #include <cpluff.h>
- * #if defined(MY_BUILD)
- * #  define MY_API CP_EXPORT
- * #else
- * #  define MY_API CP_IMPORT
- * #endif
- * @endcode
- */
-
-#if defined(CP_BUILD)
-#  define CP_API CP_EXPORT
-#else
-#  define CP_API CP_IMPORT
-#endif
-
 /*@}*/
 
 
@@ -115,9 +103,9 @@
 
 /**
  * @defgroup versionInfo Version information
- * @ingroup defines
+ * @ingroup cDefines cxxDefines
  *
- * C-Pluff core version information. Notice that this version information
+ * C-Pluff version information. Notice that this version information
  * is static version information included in header files and can therefore
  * only be used for compile time checks. Corresponding runtime information can
  * be queried using ::cp_get_core_info.
@@ -125,30 +113,28 @@
 /*@{*/
 
 /**
- * The C-Pluff release version string. This is the version of the C-Pluff
- * release providing the core facilities. Release version identifies a specific
+ * The C-Pluff release version string. Release version identifies a specific
  * version of the C-Pluff distribution and it is intended to be used by people.
  * Software should use the API version information for compatibility checks.
  */
 #define CP_RELEASE_VERSION "@PACKAGE_VERSION@"
 
 /**
- * The current version of the core C/C++ API. This is an integer number telling
- * the current version of the core API. It is incremented whenever there have
- * been changes to API interfaces.
+ * The current version of the C-Pluff C/C++ API. This is an integer number.
+ * It is incremented whenever there have been changes to API interfaces.
  */
-#define CP_CORE_API_VERSION @CP_CORE_API_CURRENT@
+#define CP_API_VERSION @CP_API_VERSION@
 
 /**
- * The revision of the core C/C++ API. This is an integer number telling
- * the revision number of the current implementation. It is resetted to zero
- * for each new API version and incremented when only the implementation
+ * The revision of the C-Pluff C/C++ API. This is an integer number telling
+ * the revision number of the current API implementation. It is resetted to
+ * zero for each new API version and incremented when only the implementation
  * changes but API interfaces remain the same.
  */
-#define CP_CORE_API_REVISION @CP_CORE_API_REVISION@
+#define CP_API_REVISION @CP_API_REVISION@
 
 /**
- * The backwards compatibility age of the core C/C++ API. This integer
+ * The backwards compatibility age of the C-Pluff C/C++ API. This integer
  * number tells the backward compatibility age of the current
  * API. Subtracting the age from the current API version gives the earliest
  * backwards compatible API version. Software written for a backward
@@ -157,7 +143,7 @@
  * when new interfaces are added and it is resetted to zero if any interfaces
  * are removed or changed.
  */
-#define CP_CORE_API_AGE @CP_CORE_API_AGE@
+#define CP_API_AGE @CP_API_AGE@
 
 /*@}*/
 

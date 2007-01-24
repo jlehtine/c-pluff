@@ -26,7 +26,7 @@
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-CP_API int cp_scan_plugins(cp_context_t *context, int flags) {
+CP_C_API int cp_scan_plugins(cp_context_t *context, int flags) {
 	hash_t *avail_plugins = NULL;
 	list_t *started_plugins = NULL;
 	cp_plugin_info_t **plugins = NULL;
@@ -199,7 +199,7 @@ CP_API int cp_scan_plugins(cp_context_t *context, int flags) {
 				if ((flags & (CP_LP_STOP_ALL_ON_UPGRADE | CP_LP_STOP_ALL_ON_INSTALL))
 					&& !plugins_stopped) {
 					plugins_stopped = 1;
-					cp_stop_all_plugins(context);
+					cp_stop_plugins(context);
 				}
 				s = cp_uninstall_plugin(context, plugin->identifier);
 				if (s != CP_OK) {
@@ -214,7 +214,7 @@ CP_API int cp_scan_plugins(cp_context_t *context, int flags) {
 			if (state == CP_PLUGIN_UNINSTALLED) {
 				if ((flags & CP_LP_STOP_ALL_ON_INSTALL) && !plugins_stopped) {
 					plugins_stopped = 1;
-					cp_stop_all_plugins(context);
+					cp_stop_plugins(context);
 				}
 				if ((s = cp_install_plugin(context, plugin)) != CP_OK) {
 					status = s;

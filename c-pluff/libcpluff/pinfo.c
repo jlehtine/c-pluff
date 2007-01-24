@@ -105,7 +105,7 @@ CP_HIDDEN void cpi_use_info(void *res) {
 	cpi_unlock_framework();
 }
 
-CP_API void cp_release_info(void *info) {
+CP_C_API void cp_release_info(void *info) {
 	hnode_t *node;
 	
 	CHECK_NOT_NULL(info);
@@ -150,7 +150,7 @@ CP_HIDDEN void cpi_destroy_all_infos(void) {
 
 // Information acquiring functions
 
-CP_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *context, const char *id, int *error) {
+CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *context, const char *id, int *error) {
 	hnode_t *node;
 	cp_plugin_info_t *plugin = NULL;
 	int status = CP_OK;
@@ -188,7 +188,7 @@ static void dealloc_plugins_info(cp_plugin_info_t **plugins) {
 	free(plugins);
 }
 
-CP_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *context, int *error, int *num) {
+CP_C_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *context, int *error, int *num) {
 	cp_plugin_info_t **plugins = NULL;
 	int i, n;
 	int status = CP_OK;
@@ -246,7 +246,7 @@ CP_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *context, int *error
 	return plugins;
 }
 
-CP_API cp_plugin_state_t cp_get_plugin_state(cp_context_t *context, const char *id) {
+CP_C_API cp_plugin_state_t cp_get_plugin_state(cp_context_t *context, const char *id) {
 	cp_plugin_state_t state = CP_PLUGIN_UNINSTALLED;
 	hnode_t *hnode;
 	
@@ -274,7 +274,7 @@ static void dealloc_ext_points_info(cp_ext_point_t **ext_points) {
 	free(ext_points);
 }
 
-CP_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *context, int *error, int *num) {
+CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *context, int *error, int *num) {
 	cp_ext_point_t **ext_points = NULL;
 	int i, n;
 	int status = CP_OK;
@@ -342,7 +342,7 @@ static void dealloc_extensions_info(cp_extension_t **extensions) {
 	free(extensions);
 }
 
-CP_API cp_extension_t ** cp_get_extensions_info(cp_context_t *context, const char *extpt_id, int *error, int *num) {
+CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *context, const char *extpt_id, int *error, int *num) {
 	cp_extension_t **extensions = NULL;
 	int i, n;
 	int status = CP_OK;
@@ -460,11 +460,11 @@ static cp_cfg_element_t * lookup_cfg_element(cp_cfg_element_t *base, const char 
 	return base;
 }
 
-CP_API cp_cfg_element_t * cp_lookup_cfg_element(cp_cfg_element_t *base, const char *path) {
+CP_C_API cp_cfg_element_t * cp_lookup_cfg_element(cp_cfg_element_t *base, const char *path) {
 	return lookup_cfg_element(base, path, -1);
 }
 
-CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path) {
+CP_C_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path) {
 	cp_cfg_element_t *e;
 	const char *attr;
 	

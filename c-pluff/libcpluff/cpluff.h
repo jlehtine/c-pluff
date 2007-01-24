@@ -4,27 +4,19 @@
  *-----------------------------------------------------------------------*/
 
 /** @file 
- * C-Pluff core C API header file.
- * The elements declared here constitute the C-Pluff core C API. To use the
+ * C-Pluff C API header file.
+ * The elements declared here constitute the C-Pluff C API. To use the
  * API include this file and link the main program and plug-in runtime
- * libraries with the C-Pluff core library which has a base name cpluff. The
- * actual name of the library file is platform dependent, for example
- * libcpluff.so or cpluff.dll. In addition to local declarations, this file
- * also includes cpluffdef.h header file for defines common to C and C++ API.
+ * libraries with the C-Pluff C library. In addition to local declarations,
+ * this file also includes cpluffdef.h header file for defines common to C
+ * and C++ API.
  */
 
 #ifndef CPLUFF_H_
 #define CPLUFF_H_
 
 /**
- * @defgroup coreC C-Pluff Core C API
- * 
- * The elements declared here constitute the C-Pluff core C API.
- */
-
-/**
- * @defgroup defines Defines
- * @ingroup coreC
+ * @defgroup cDefines Defines
  * Preprocessor defines.
  */
  
@@ -36,12 +28,25 @@ extern "C" {
 
 
 /* ------------------------------------------------------------------------
- * Constants
+ * Defines
  * ----------------------------------------------------------------------*/
 
 /**
- * @defgroup errorCodes Error codes
- * @ingroup defines
+ * @def CP_C_API
+ * @ingroup cDefines
+ *
+ * Marks a symbol declaration to be part of the C-Pluff C API.
+ * This macro declares the symbol to be imported from the C-Pluff library.
+ */
+
+#ifndef CP_C_API
+#define CP_C_API CP_IMPORT
+#endif
+
+
+/**
+ * @defgroup cErrorCodes Error codes
+ * @ingroup cDefines
  *
  * Error codes returned by API functions.
  * Most of the interface functions return error codes. The returned
@@ -82,8 +87,8 @@ extern "C" {
 
 
 /**
- * @defgroup scanFlags Flags for plug-in scanning
- * @ingroup defines
+ * @defgroup cScanFlags Flags for plug-in scanning
+ * @ingroup cDefines
  *
  * These constants can be orred together for the flags
  * parameter of ::cp_scan_plugins.
@@ -123,20 +128,17 @@ extern "C" {
  * ----------------------------------------------------------------------*/
 
 /**
- * @defgroup enums Enumerations
- * @ingroup coreC
+ * @defgroup cEnums Enumerations
  * Constant value enumerations.
  */
 
 /**
- * @defgroup typedefs Typedefs
- * @ingroup coreC
+ * @defgroup cTypedefs Typedefs
  * Typedefs of various kind.
  */
 
 /**
- * @defgroup structs Data structures
- * @ingroup coreC
+ * @defgroup cStructs Data structures
  * Data structure definitions.
  */
  
@@ -144,9 +146,9 @@ extern "C" {
 /* Enumerations */
 
 /**
- * @ingroup enums
+ * @ingroup cEnums
  * An enumeration of possible plug-in states. Plug-in states are controlled
- * by @ref funcsPlugin "plug-in management functions". Plug-in states can be
+ * by @ref cFuncsPlugin "plug-in management functions". Plug-in states can be
  * observed by @ref cp_add_plugin_listener "registering" a
  * @ref cp_plugin_listener_func_t "plug-in listener function"
  * or by calling ::cp_get_plugin_state.
@@ -214,7 +216,7 @@ enum cp_plugin_state_t {
 };
 
 /**
- * @ingroup enums
+ * @ingroup cEnums
  * An enumeration of possible message severities for framework logging. These
  * constants are used when passing a log message to a
  * @ref cp_logger_func_t "logger function" and when
@@ -245,8 +247,8 @@ enum cp_log_severity_t {
 /* Typedefs */
 
 /**
- * @defgroup typedefsOpaque Opaque types
- * @ingroup typedefs
+ * @defgroup cTypedefsOpaque Opaque types
+ * @ingroup cTypedefs
  * Opaque data type definitions.
  */
 /*@{*/
@@ -268,14 +270,14 @@ typedef struct cp_context_t cp_context_t;
 /*@}*/
 
  /**
-  * @defgroup typedefsShorthand Shorthand type names
-  * @ingroup typedefs
+  * @defgroup cTypedefsShorthand Shorthand type names
+  * @ingroup cTypedefs
   * Shorthand type names for structs and enumerations.
   */
 /*@{*/
 
-/** A type for cp_core_info_t structure. */
-typedef struct cp_core_info_t cp_core_info_t;
+/** A type for cp_framework_info_t structure. */
+typedef struct cp_framework_info_t cp_framework_info_t;
 
 /** A type for cp_plugin_info_t structure. */
 typedef struct cp_plugin_info_t cp_plugin_info_t;
@@ -304,8 +306,8 @@ typedef enum cp_log_severity_t cp_log_severity_t;
 /*@}*/
 
 /**
- * @defgroup typedefsFuncs Callback function types
- * @ingroup typedefs
+ * @defgroup cTypedefsFuncs Callback function types
+ * @ingroup cTypedefs
  * Typedefs for client supplied callback functions.
  */
 /*@{*/
@@ -313,11 +315,11 @@ typedef enum cp_log_severity_t cp_log_severity_t;
 /**
  * A listener function called synchronously after a plugin state change.
  * The function should return promptly.
- * @ref funcsInit "Library initialization",
- * @ref funcsContext "plug-in context management",
- * @ref funcsPlugin "plug-in management",
+ * @ref cFuncsInit "Library initialization",
+ * @ref cFuncsContext "plug-in context management",
+ * @ref cFuncsPlugin "plug-in management",
  * listener registration (::cp_add_plugin_listener and ::cp_remove_plugin_listener)
- * and @ref funcsSymbols "dynamic symbol" functions must not be called from
+ * and @ref cFuncsSymbols "dynamic symbol" functions must not be called from
  * within a plug-in listener invocation. Listener functions are registered
  * using ::cp_add_plugin_listener.
  * 
@@ -330,7 +332,7 @@ typedef void (*cp_plugin_listener_func_t)(const char *plugin_id, cp_plugin_state
 
 /**
  * A logger function called to log selected plug-in framework messages. The
- * messages may be localized. Plug-in framework core functions must not
+ * messages may be localized. Plug-in framework API functions must not
  * be called from within a logger function invocation. In a multi-threaded
  * environment logger function invocations are serialized by the framework.
  * Logger functions are registered using ::cp_add_logger.
@@ -345,7 +347,7 @@ typedef void (*cp_logger_func_t)(cp_log_severity_t severity, const char *msg, co
 /**
  * A fatal error handler for handling unrecoverable errors. If the error
  * handler returns then the framework aborts the program. Plug-in framework
- * core functions must not be called from within a fatal error handler
+ * API functions must not be called from within a fatal error handler
  * invocation. The fatal error handler function is set using
  * ::cp_set_fatal_error_handler.
  *
@@ -358,8 +360,8 @@ typedef void (*cp_fatal_error_func_t)(const char *msg);
  * A run function registered by a plug-in to perform work.
  * The run function  should perform a finite chunk of work and it should
  * return a non-zero value if there is more work to be done. Run functions
- * are registered using ::cp_run_function and the usage is discussed in
- * more detail in the @ref funcsPluginExec "serial execution" section.
+ * are registered using ::cp_ctx_run_function and the usage is discussed in
+ * more detail in the @ref cFuncsPluginExec "serial execution" section.
  * 
  * @param plugin_data the plug-in instance data pointer
  * @return non-zero if there is more work to be done or zero if finished
@@ -372,29 +374,29 @@ typedef int (*cp_run_func_t)(void *plugin_data);
 /* Data structures */
 
 /**
- * @ingroup structs
- * Core information structure contains information about
- * the C-Pluff core implementation. This information can be
- * obtained at runtime by calling ::cp_get_core_info. For compile time
+ * @ingroup cStructs
+ * Framework information structure contains information about
+ * the C-Pluff framework implementation. This information can be
+ * obtained at runtime by calling ::cp_get_framework_info. For compile time
  * version information, see @ref versionInfo "version information defines".
  */
-struct cp_core_info_t {
+struct cp_framework_info_t {
 
 	/** @copydoc CP_RELEASE_VERSION */
 	const char *release_version;
 	
-	/** @copydoc CP_CORE_API_VERSION */
-	int core_api_version;
+	/** @copydoc CP_API_VERSION */
+	int api_version;
 	
-	/** @copydoc CP_CORE_API_REVISION */
-	int core_api_revision;
+	/** @copydoc CP_API_REVISION */
+	int api_revision;
 	
-	/** @copydoc CP_CORE_API_AGE */
-	int core_api_age;
+	/** @copydoc CP_API_AGE */
+	int api_age;
   
 	/**
 	 * The canonical host type. This is the canonical host
-	 * type for which the framework core was built for.
+	 * type for which the framework was built for.
 	 */
 	const char *host_type;
 	
@@ -404,7 +406,7 @@ struct cp_core_info_t {
 };
 
 /**
- * @ingroup structs
+ * @ingroup cStructs
  * Plug-in information structure captures information about a plug-in. This
  * information can be loaded from a plug-in descriptor using
  * ::cp_load_plugin_descriptor. Information about installed plug-ins can
@@ -529,7 +531,7 @@ struct cp_plugin_info_t {
 };
 
 /**
- * @ingroup structs
+ * @ingroup cStructs
  * Information about plug-in import. Plug-in import structures are
  * contained in @ref cp_plugin_info_t::imports.
  */
@@ -561,7 +563,7 @@ struct cp_plugin_import_t {
 };
 
 /**
- * @ingroup structs
+ * @ingroup cStructs
  * Extension point structure captures information about an extension
  * point. Extension point structures are contained in
  * @ref cp_plugin_info_t::ext_points.
@@ -607,7 +609,7 @@ struct cp_ext_point_t {
 };
 
 /**
- * @ingroup structs
+ * @ingroup cStructs
  * Extension structure captures information about an extension. Extension
  * structures are contained in @ref cp_plugin_info_t::extensions.
  */
@@ -659,7 +661,7 @@ struct cp_extension_t {
 };
 
 /**
- * @ingroup structs
+ * @ingroup cStructs
  * A configuration element contains configuration information for an
  * extension. Utility functions ::cp_lookup_cfg_element and
  * ::cp_lookup_cfg_value can be used for traversing the tree of
@@ -708,7 +710,7 @@ struct cp_cfg_element_t {
 };
 
 /**
- * @ingroup structs
+ * @ingroup cStructs
  * A plug-in runtime structure containing pointers to plug-in
  * control functions. A plug-in runtime defines a static instance of this
  * structure to pass information about the available control functions
@@ -727,7 +729,7 @@ struct cp_plugin_runtime_t {
 	 * be used to access plug-in instance specific data. For example,
 	 * the context reference must be stored as part of plug-in instance
 	 * data if the plug-in runtime needs it. On failure, the function
-	 * must return NULL. Core framework functions must not be called
+	 * must return NULL. C-pluff API functions must not be called
 	 * from within a create function invocation.
 	 * 
 	 * @param ctx the plug-in context of the new plug-in instance
@@ -739,16 +741,16 @@ struct cp_plugin_runtime_t {
 	 * A start function called to start a plug-in instance.
 	 * The start function must return zero (CP_OK) on success and non-zero
 	 * on failure. If the start fails then the stop function (if any) is
-	 * called to clean up plug-in state. @ref funcsInit "Library initialization",
-	 * @ref funcsContext "plug-in context management" and
-	 * @ref funcsPlugin "plug-in management" functions must not be
+	 * called to clean up plug-in state. @ref cFuncsInit "Library initialization",
+	 * @ref cFuncsContext "plug-in context management" and
+	 * @ref cFuncsPlugin "plug-in management" functions must not be
 	 * called from within a start function invocation. The start function
 	 * pointer can be NULL if the plug-in runtime does not have a start
 	 * function.
 	 * 
 	 * The start function implementation should set up plug-in and return
 	 * promptly. If there is further work to be done then a plug-in can
-	 * start a thread or register a run function using ::cp_run_function.
+	 * start a thread or register a run function using ::cp_ctx_run_function.
 	 * 
 	 * @param data an opaque pointer to plug-in instance data
 	 * @return non-zero on success, or zero on failure
@@ -758,10 +760,10 @@ struct cp_plugin_runtime_t {
 	/**
 	 * A stop function called to stop a plugin instance.
 	 * This function must cease all plug-in runtime activities.
-	 * @ref funcsInit "Library initialization",
-	 * @ref funcsContext "plug-in context management",
-	 * @ref funcsPlugin "plug-in management"
-	 * functions, ::cp_run_function and ::cp_resolve_symbol must not be called
+	 * @ref cFuncsInit "Library initialization",
+	 * @ref cFuncsContext "plug-in context management",
+	 * @ref cFuncsPlugin "plug-in management"
+	 * functions, ::cp_ctx_run_function and ::cp_resolve_symbol must not be called
 	 * from within a stop function invocation. The stop function pointer can
 	 * be NULL if the plug-in runtime does not have a stop function.
 	 * It is guaranteed that no run functions registered by the plug-in are
@@ -775,7 +777,7 @@ struct cp_plugin_runtime_t {
  	 * A destroy function called to destroy a plug-in instance.
  	 * This function should release any plug-in instance data.
  	 * The plug-in is stopped before this function is called.
- 	 * Core framework functions must not be called
+ 	 * C-Pluff API functions must not be called
 	 * from within a destroy function invocation.
 	 *
 	 * @param data an opaque pointer to plug-in instance data
@@ -792,41 +794,40 @@ struct cp_plugin_runtime_t {
  * ----------------------------------------------------------------------*/
 
 /**
- * @defgroup funcs Functions
- * @ingroup coreC
+ * @defgroup cFuncs Functions
  *
- * Global public API functions. The C-Pluff C API functions and
+ * C API functions. The C-Pluff C API functions and
  * any data exposed by them are generally thread-safe if the library has been
- * compiled with multi-threading support. The @ref funcsInit "initialization functions"
+ * compiled with multi-threading support. The @ref cFuncsInit "initialization functions"
  * are exceptions, they are not thread-safe.
  */
 
 /**
- * @defgroup funcsCoreInfo Core information
+ * @defgroup funcsFrameworkInfo Framework information
  * @ingroup funcs
  *
  * This function can be used to query runtime information about the
- * library implementation. It may be used by the main program or
+ * C-Pluff framework implementation. It may be used by the main program or
  * by a plug-in runtime.
  */
 /*@{*/
 
 /**
- * Returns static information about the core framework implementation.
+ * Returns static information about the C-Pluff framework implementation.
  * The returned information must not be modified.
  * This function can be called at any time. For compile time checks,
  * see @ref versionInfo "version information defines".
  *
- * @return static information about the core framework implementation
+ * @return static information about the C-Pluff framework implementation
  */
-CP_API const cp_core_info_t *cp_get_core_info(void);
+CP_C_API const cp_framework_info_t *cp_get_framework_info(void);
 
 /*@}*/
 
 
 /**
- * @defgroup funcsInit Library initialization
- * @ingroup funcs
+ * @defgroup cFuncsInit Library initialization
+ * @ingroup cFuncs
  *
  * These functions are used for library and framework initialization.
  * They are intended to be used by the main program. These functions are
@@ -837,7 +838,7 @@ CP_API const cp_core_info_t *cp_get_core_info(void);
 /**
  * Initializes the plug-in framework. This function must be called
  * by the main program before calling any other plug-in framework
- * functions except ::cp_get_core_info and
+ * functions except ::cp_get_framework_info and
  * ::cp_set_fatal_error_handler. This function may be
  * called several times but it is not thread-safe. Library resources
  * should be released by calling ::cp_destroy when the framework is
@@ -849,19 +850,19 @@ CP_API const cp_core_info_t *cp_get_core_info(void);
  *
  * @return #CP_OK (zero) on success or error code on failure
  */
-CP_API int cp_init(void);
+CP_C_API int cp_init(void);
 
 /**
  * Destroys the plug-in framework and releases the resources used by it.
  * The plug-in framework is only destroyed after this function has
  * been called as many times as ::cp_init. This function is not
  * thread-safe. Plug-in framework functions other than ::cp_init,
- * ::cp_get_core_info and ::cp_set_fatal_error_handler
+ * ::cp_get_framework_info and ::cp_set_fatal_error_handler
  * must not be called after the plug-in framework has been destroyed.
  * All contexts are destroyed and all data references returned by the
  * framework become invalid.
  */
-CP_API void cp_destroy(void);
+CP_C_API void cp_destroy(void);
 
 /**
  * Sets the fatal error handler called on non-recoverable errors. The default
@@ -873,14 +874,14 @@ CP_API void cp_destroy(void);
  * 
  * @param error_handler the fatal error handler
  */
-CP_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler);
+CP_C_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler);
 
 /*@}*/
 
 
 /**
- * @defgroup funcsLogging Logging
- * @ingroup funcs
+ * @defgroup cFuncsLogging Logging
+ * @ingroup cFuncs
  *
  * These functions can be used to log plug-in framework messages.
  * They can be used by the main program or by a plug-in runtime.
@@ -901,21 +902,21 @@ CP_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler);
  *			are passed to logger if non-NULL
  * @return #CP_OK (zero) on success or #CP_ERR_RESOURCE if insufficient memory
  */
-CP_API int cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule);
+CP_C_API int cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule);
 
 /**
  * Removes a logger registration.
  *
  * @param logger the logger function to be unregistered
  */
-CP_API void cp_remove_logger(cp_logger_func_t logger);
+CP_C_API void cp_remove_logger(cp_logger_func_t logger);
 
 /*@}*/
 
 
 /**
- * @defgroup funcsContext Plug-in context management
- * @ingroup funcs
+ * @defgroup cFuncsContext Plug-in context management
+ * @ingroup cFuncs
  *
  * These functions are used to manage plug-in contexts from the main
  * program perspective. They are not intended to be used by a plug-in runtime.
@@ -939,7 +940,7 @@ CP_API void cp_remove_logger(cp_logger_func_t logger);
  * @param error pointer to the location where error code or #CP_OK is stored, or NULL
  * @return the newly created plugin context, or NULL on failure
  */
-CP_API cp_context_t * cp_create_context(int *error);
+CP_C_API cp_context_t * cp_create_context(int *error);
 
 /**
  * Destroys the specified plug-in context and releases the associated resources.
@@ -948,10 +949,10 @@ CP_API cp_context_t * cp_create_context(int *error);
  * 
  * @param ctx the context to be destroyed
  */
-CP_API void cp_destroy_context(cp_context_t *ctx);
+CP_C_API void cp_destroy_context(cp_context_t *ctx);
 
 /**
- * Registers a directory of plug-ins with a plug-in context. The
+ * Registers a plug-in collection with a plug-in context. The
  * plug-in context will scan the directory when ::cp_load_plugins is called.
  * Returns #CP_OK if the directory has already been registered.
  * 
@@ -959,7 +960,7 @@ CP_API void cp_destroy_context(cp_context_t *ctx);
  * @param dir the directory
  * @return #CP_OK (zero) on success, or #CP_ERR_RESOURCE if insufficient system resources
  */
-CP_API int cp_add_plugin_dir(cp_context_t *ctx, const char *dir);
+CP_C_API int cp_add_plugin_dir(cp_context_t *ctx, const char *dir);
 
 /**
  * Unregisters a previously registered directory of plug-ins from a plug-in context.
@@ -970,14 +971,14 @@ CP_API int cp_add_plugin_dir(cp_context_t *ctx, const char *dir);
  * @param ctx the plug-in context
  * @param dir the previously registered directory
  */
-CP_API void cp_remove_plugin_dir(cp_context_t *ctx, const char *dir);
+CP_C_API void cp_remove_plugin_dir(cp_context_t *ctx, const char *dir);
 
 /*@}*/
 
 
 /**
- * @defgroup funcsPlugin Plug-in management
- * @ingroup funcs
+ * @defgroup cFuncsPlugin Plug-in management
+ * @ingroup cFuncs
  *
  * These functions can be used to manage plug-ins. They are intended to be
  * used by the main program.
@@ -1000,7 +1001,7 @@ CP_API void cp_remove_plugin_dir(cp_context_t *ctx, const char *dir);
  * @param error pointer to the location for the returned error code, or NULL
  * @return pointer to the information structure or NULL if error occurs
  */
-CP_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const char *path, int *error);
+CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const char *path, int *error);
 
 /**
  * Installs the plug-in described by the specified plug-in information
@@ -1017,7 +1018,7 @@ CP_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const cha
  * @param pi plug-in information structure
  * @return #CP_OK (zero) on success or error code on failure
  */
-CP_API int cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi);
+CP_C_API int cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi);
 
 /**
  * Scans for plug-ins in the registered plug-in directories, installing
@@ -1026,7 +1027,7 @@ CP_API int cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi);
  * 
  * When several versions of the same plug-in is available the most recent
  * version will be installed. The upgrade behavior depends on the specified
- * @ref scanFlags "flags". If #CP_LP_UPGRADE is set then upgrades to installed plug-ins are
+ * @ref cScanFlags "flags". If #CP_LP_UPGRADE is set then upgrades to installed plug-ins are
  * allowed. The old version is unloaded and the new version installed instead.
  * If #CP_LP_STOP_ALL_ON_UPGRADE is set then all active plug-ins are stopped
  * if any plug-ins are to be upgraded. If #CP_LP_STOP_ALL_ON_INSTALL is set then
@@ -1042,7 +1043,7 @@ CP_API int cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi);
  * @param flags the bitmask of flags
  * @return #CP_OK (zero) on success, an error code on failure
  */
-CP_API int cp_scan_plugins(cp_context_t *ctx, int flags);
+CP_C_API int cp_scan_plugins(cp_context_t *ctx, int flags);
 
 /**
  * Starts a plug-in. Also starts any imported plug-ins. If the plug-in is
@@ -1056,7 +1057,7 @@ CP_API int cp_scan_plugins(cp_context_t *ctx, int flags);
  * @param id identifier of the plug-in to be started
  * @return #CP_OK (zero) on success, an error code on failure
  */
-CP_API int cp_start_plugin(cp_context_t *ctx, const char *id);
+CP_C_API int cp_start_plugin(cp_context_t *ctx, const char *id);
 
 /**
  * Stops a plug-in. First stops any dependent plug-ins that are currently
@@ -1070,14 +1071,14 @@ CP_API int cp_start_plugin(cp_context_t *ctx, const char *id);
  * @param id identifier of the plug-in to be stopped
  * @return #CP_OK (zero) on success or #CP_ERR_UNKNOWN if unknown plug-in
  */
-CP_API int cp_stop_plugin(cp_context_t *ctx, const char *id);
+CP_C_API int cp_stop_plugin(cp_context_t *ctx, const char *id);
 
 /**
  * Stops all active plug-ins.
  * 
  * @param ctx the plug-in context
  */
-CP_API void cp_stop_all_plugins(cp_context_t *ctx);
+CP_C_API void cp_stop_plugins(cp_context_t *ctx);
 
 /**
  * Uninstalls the specified plug-in. The plug-in is first stopped if it is active.
@@ -1087,7 +1088,7 @@ CP_API void cp_stop_all_plugins(cp_context_t *ctx);
  * @param id identifier of the plug-in to be unloaded
  * @return #CP_OK (zero) on success or #CP_ERR_UNKNOWN if unknown plug-in
  */
-CP_API int cp_uninstall_plugin(cp_context_t *ctx, const char *id);
+CP_C_API int cp_uninstall_plugin(cp_context_t *ctx, const char *id);
 
 /**
  * Uninstalls all plug-ins. All plug-ins are first stopped and then
@@ -1095,14 +1096,14 @@ CP_API int cp_uninstall_plugin(cp_context_t *ctx, const char *id);
  * 
  * @param ctx the plug-in context
  */
-CP_API void cp_uninstall_all_plugins(cp_context_t *ctx);
+CP_C_API void cp_uninstall_plugins(cp_context_t *ctx);
 
 /*@}*/
 
 
 /**
- * @defgroup funcsPluginInfo Plug-in and extension information
- * @ingroup funcs
+ * @defgroup cFuncsPluginInfo Plug-in and extension information
+ * @ingroup cFuncs
  *
  * These functions can be used to query information about the installed
  * plug-ins, extension points and extensions or to listen for plug-in state
@@ -1121,7 +1122,7 @@ CP_API void cp_uninstall_all_plugins(cp_context_t *ctx);
  * @param error filled with an error code, if non-NULL
  * @return pointer to the information structure or NULL on failure
  */
-CP_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *ctx, const char *id, int *error);
+CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *ctx, const char *id, int *error);
 
 /**
  * Returns static information about the installed plug-ins. The returned
@@ -1135,7 +1136,7 @@ CP_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *ctx, const char *id, 
  * @return pointer to a NULL-terminated list of pointers to plug-in information
  * 			or NULL on failure
  */
-CP_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *ctx, int *error, int *num);
+CP_C_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *ctx, int *error, int *num);
 
 /**
  * Returns static information about the currently installed extension points.
@@ -1149,7 +1150,7 @@ CP_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *ctx, int *error, in
  * @return pointer to a NULL-terminated list of pointers to extension point
  *			information or NULL on failure
  */
-CP_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *ctx, int *error, int *num);
+CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *ctx, int *error, int *num);
 
 /**
  * Returns static information about the currently installed extension points.
@@ -1164,7 +1165,7 @@ CP_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *ctx, int *error, i
  * @return pointer to a NULL-terminated list of pointers to extension
  *			information or NULL on failure
  */
-CP_API cp_extension_t ** cp_get_extensions_info(cp_context_t *ctx, const char *extpt_id, int *error, int *num);
+CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *ctx, const char *extpt_id, int *error, int *num);
 
 /**
  * Releases previously obtained dynamically allocated information. The
@@ -1175,7 +1176,7 @@ CP_API cp_extension_t ** cp_get_extensions_info(cp_context_t *ctx, const char *e
  * 
  * @param info the information to be released
  */
-CP_API void cp_release_info(void *info);
+CP_C_API void cp_release_info(void *info);
 
 /**
  * Returns the current state of the specified plug-in. Returns
@@ -1185,7 +1186,7 @@ CP_API void cp_release_info(void *info);
  * @param id the plug-in identifier
  * @return the current state of the plug-in
  */
-CP_API cp_plugin_state_t cp_get_plugin_state(cp_context_t *ctx, const char *id);
+CP_C_API cp_plugin_state_t cp_get_plugin_state(cp_context_t *ctx, const char *id);
 
 /**
  * Registers a plug-in listener with a plug-in context. The listener is called
@@ -1198,7 +1199,7 @@ CP_API cp_plugin_state_t cp_get_plugin_state(cp_context_t *ctx, const char *id);
  * @param user_data user data pointer supplied to the listener
  * @return #CP_OK (zero) on success, #CP_ERR_RESOURCE if out of resources
  */
-CP_API int cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener, void *user_data);
+CP_C_API int cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener, void *user_data);
 
 /**
  * Removes a plug-in listener from a plug-in context. Does nothing if the
@@ -1207,7 +1208,7 @@ CP_API int cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t l
  * @param ctx the plug-in context
  * @param listener the plug-in listener to be removed
  */
-CP_API void cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener);
+CP_C_API void cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener);
 
 /**
  * Traverses a configuration element tree and returns the specified element.
@@ -1222,7 +1223,7 @@ CP_API void cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func
  * @param path the path to the target element
  * @return the target element or NULL if nonexisting
  */
-CP_API cp_cfg_element_t * cp_lookup_cfg_element(cp_cfg_element_t *base, const char *path);
+CP_C_API cp_cfg_element_t * cp_lookup_cfg_element(cp_cfg_element_t *base, const char *path);
 
 /**
  * Traverses a configuration element tree and returns the value of the
@@ -1240,18 +1241,18 @@ CP_API cp_cfg_element_t * cp_lookup_cfg_element(cp_cfg_element_t *base, const ch
  * @param path the path to the target element
  * @return the value of the target element or attribute or NULL
  */
-CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
+CP_C_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
 
 /*@}*/
 
 
 /**
- * @defgroup funcsPluginExec Plug-in execution
- * @ingroup funcs
+ * @defgroup cFuncsPluginExec Plug-in execution
+ * @ingroup cFuncs
  *
  * These functions support a plug-in controlled execution model. Started plug-ins can
- * use ::cp_run_function to register @ref cp_run_func_t "a run function" which is called when the
- * main program calls ::cp_run_plugins or ::cp_run_plugins_step. A run
+ * use ::cp_ctx_run_function to register @ref cp_run_func_t "a run function" which is called when the
+ * main program calls ::cp_ctx_run_plugins or ::cp_ctx_run_plugins_step. A run
  * function should do a finite chunk of work and then return telling whether
  * there is more work to be done. A run function is automatically unregistered
  * when the plug-in is stopped. Run functions make it possible for plug-ins
@@ -1282,7 +1283,7 @@ CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
  * @param runfunc the run function to be registered
  * @return CP_OK (zero) on success or an error code on failure
  */
-CP_API int cp_run_function(cp_context_t *ctx, cp_run_func_t runfunc);
+CP_C_API int cp_ctx_run_function(cp_context_t *ctx, cp_run_func_t runfunc);
 
 /**
  * Runs the started plug-ins as long as there is something to run.
@@ -1293,7 +1294,7 @@ CP_API int cp_run_function(cp_context_t *ctx, cp_run_func_t runfunc);
  * 
  * @param ctx the plug-in context containing the plug-ins
  */
-CP_API void cp_run_plugins(cp_context_t *ctx);
+CP_C_API void cp_ctx_run_plugins(cp_context_t *ctx);
 
 /**
  * Runs one registered run function. This function calls one
@@ -1306,7 +1307,7 @@ CP_API void cp_run_plugins(cp_context_t *ctx);
  * @param ctx the plug-in context containing the plug-ins
  * @return whether there are active run functions waiting to be run
  */
-CP_API int cp_run_plugins_step(cp_context_t *ctx);
+CP_C_API int cp_ctx_run_plugins_step(cp_context_t *ctx);
 
 /**
  * Sets startup arguments for the specified plug-in context. Like for usual
@@ -1318,24 +1319,24 @@ CP_API int cp_run_plugins_step(cp_context_t *ctx);
  * @param argc the number of arguments
  * @param argv an array of arguments as string pointers
  */
-CP_API void cp_ctx_set_args(cp_context_t *ctx, int argc, const char **argv);
+CP_C_API void cp_ctx_set_args(cp_context_t *ctx, int argc, const char **argv);
 
 /**
- * Returns the number of startup arguments associated with the specified
+ * Returns the startup arguments associated with the specified
  * plug-in context. This function is intended to be used by a plug-in runtime.
  * 
  * @param ctx the plug-in context
  * @param argv argument array pointer is stored to this location
  * @return the number of startup arguments or 0 if not set
  */
-CP_API int cp_ctx_get_args(cp_context_t *ctx, const char ***argv);
+CP_C_API int cp_ctx_get_args(cp_context_t *ctx, const char ***argv);
 
 /*@}*/
 
 
 /**
- * @defgroup funcsSymbols Dynamic symbols
- * @ingroup funcs
+ * @defgroup cFuncsSymbols Dynamic symbols
+ * @ingroup cFuncs
  *
  * These functions can be used to dynamically access symbols exported by the
  * plug-ins. They are intended to be used by a plug-in runtime or by the main
@@ -1355,7 +1356,7 @@ CP_API int cp_ctx_get_args(cp_context_t *ctx, const char ***argv);
  * @param ptr pointer value for the symbol
  * @return #CP_OK (zero) on success or an error code on failure
  */
-CP_API int cp_define_symbol(cp_context_t *ctx, const char *name, void *ptr);
+CP_C_API int cp_define_symbol(cp_context_t *ctx, const char *name, void *ptr);
 
 /**
  * Resolves a symbol provided by the specified plug-in. The plug-in is started
@@ -1387,7 +1388,7 @@ CP_API int cp_define_symbol(cp_context_t *ctx, const char *name, void *ptr);
  * @param error filled with an error code if non-NULL
  * @return the pointer associated with the symbol or NULL on failure
  */
-CP_API void *cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *name, int *error);
+CP_C_API void *cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *name, int *error);
 
 /**
  * Releases a previously obtained symbol. The pointer must not be used after
@@ -1398,7 +1399,7 @@ CP_API void *cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *na
  * @param ctx the plug-in context
  * @param ptr the pointer associated with the symbol
  */
-CP_API void cp_release_symbol(cp_context_t *ctx, const void *ptr);
+CP_C_API void cp_release_symbol(cp_context_t *ctx, const void *ptr);
 
 /*@}*/
 

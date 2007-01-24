@@ -57,11 +57,11 @@ struct logger_t {
  * ----------------------------------------------------------------------*/
 
 /// Implementation information 
-static const cp_core_info_t implementation_info = {
+static const cp_framework_info_t implementation_info = {
 	CP_RELEASE_VERSION,
-	CP_CORE_API_VERSION,
-	CP_CORE_API_REVISION,
-	CP_CORE_API_AGE,
+	CP_API_VERSION,
+	CP_API_REVISION,
+	CP_API_AGE,
 	CP_HOST,
 	CP_THREADS
 };
@@ -98,7 +98,7 @@ static cp_fatal_error_func_t fatal_error_handler = NULL;
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-CP_API const cp_core_info_t * cp_get_core_info(void) {
+CP_C_API const cp_framework_info_t * cp_get_framework_info(void) {
 	return &implementation_info;
 }
 
@@ -140,7 +140,7 @@ static void reset(void) {
 #endif
 }
 
-CP_API int cp_init(void) {
+CP_C_API int cp_init(void) {
 	int status = CP_OK;
 	
 	// Initialize if necessary
@@ -169,7 +169,7 @@ CP_API int cp_init(void) {
 	return status;
 }
 
-CP_API void cp_destroy(void) {
+CP_C_API void cp_destroy(void) {
 	assert(initialized > 0);
 	cpi_check_invocation(NULL, CPI_CF_ANY, __func__);
 	initialized--;
@@ -210,7 +210,7 @@ static int comp_logger(const void *p1, const void *p2) {
 	return l1->logger != l2->logger;
 }
 
-CP_API int cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule) {
+CP_C_API int cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule) {
 	logger_t l;
 	logger_t *lh;
 	lnode_t *node;
@@ -258,7 +258,7 @@ CP_API int cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severi
 	return CP_OK;
 }
 
-CP_API void cp_remove_logger(cp_logger_func_t logger) {
+CP_C_API void cp_remove_logger(cp_logger_func_t logger) {
 	logger_t l;
 	lnode_t *node;
 	
@@ -339,7 +339,7 @@ CP_HIDDEN int cpi_is_logged(cp_log_severity_t severity) {
 	return severity >= log_min_severity;
 }
 
-CP_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler) {
+CP_C_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler) {
 	fatal_error_handler = error_handler;
 }
 

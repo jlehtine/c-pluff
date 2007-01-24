@@ -181,7 +181,7 @@ CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *e
 	return context;
 }
 
-CP_API cp_context_t * cp_create_context(int *error) {
+CP_C_API cp_context_t * cp_create_context(int *error) {
 	cp_plugin_env_t *env = NULL;
 	cp_context_t *context = NULL;
 	int status = CP_OK;
@@ -281,7 +281,7 @@ CP_API cp_context_t * cp_create_context(int *error) {
 	return context;
 }
 
-CP_API void cp_destroy_context(cp_context_t *context) {
+CP_C_API void cp_destroy_context(cp_context_t *context) {
 	CHECK_NOT_NULL(context);
 	if (context->plugin != NULL) {
 		cpi_fatalf(_("Only the client program can destroy a plug-in context."));
@@ -311,7 +311,7 @@ CP_API void cp_destroy_context(cp_context_t *context) {
 	cpi_unlock_framework();
 
 	// Unload all plug-ins 
-	cp_uninstall_all_plugins(context);
+	cp_uninstall_plugins(context);
 	
 	// Log event
 	cpi_debugf(NULL, "Plug-in context %p was destroyed.", (void *) context);
@@ -336,7 +336,7 @@ CP_HIDDEN void cpi_destroy_all_contexts(void) {
 
 // Plug-in listeners 
 
-CP_API int cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener, void *user_data) {
+CP_C_API int cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener, void *user_data) {
 	int status = CP_ERR_RESOURCE;
 	el_holder_t *holder;
 	lnode_t *node;
@@ -365,7 +365,7 @@ CP_API int cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_func
 	return status;
 }
 
-CP_API void cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener) {
+CP_C_API void cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener) {
 	el_holder_t holder;
 	lnode_t *node;
 	
@@ -431,7 +431,7 @@ CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t
 
 // Plug-in directories 
 
-CP_API int cp_add_plugin_dir(cp_context_t *context, const char *dir) {
+CP_C_API int cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	char *d = NULL;
 	lnode_t *node = NULL;
 	int status = CP_OK;
@@ -493,7 +493,7 @@ CP_API int cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	return status;
 }
 
-CP_API void cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
+CP_C_API void cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 	char *d;
 	lnode_t *node;
 	
@@ -516,7 +516,7 @@ CP_API void cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 
 // Startup arguments
 
-CP_API void cp_ctx_set_args(cp_context_t *ctx, int argc, const char **argv) {
+CP_C_API void cp_ctx_set_args(cp_context_t *ctx, int argc, const char **argv) {
 	CHECK_NOT_NULL(ctx);
 	CHECK_NOT_NULL(argv);
 	cpi_lock_context(ctx);
@@ -525,7 +525,7 @@ CP_API void cp_ctx_set_args(cp_context_t *ctx, int argc, const char **argv) {
 	cpi_unlock_context(ctx);
 }
 
-CP_API int cp_ctx_get_args(cp_context_t *ctx, const char ***argv) {
+CP_C_API int cp_ctx_get_args(cp_context_t *ctx, const char ***argv) {
 	int argc;
 	
 	CHECK_NOT_NULL(ctx);

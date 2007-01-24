@@ -867,7 +867,7 @@ static void cmd_stop_all_plugins(int argc, char *argv[]) {
 	} else if (active_context == -1) {
 		no_active_context();
 	} else {
-		cp_stop_all_plugins(contexts[active_context]);
+		cp_stop_plugins(contexts[active_context]);
 		noticef(_("Stopped all plug-ins in context %d."), active_context);
 	}
 }
@@ -889,13 +889,13 @@ static void cmd_uninstall_all_plugins(int argc, char *argv[]) {
 	} else if (active_context == -1) {
 		no_active_context();
 	} else {
-		cp_uninstall_all_plugins(contexts[active_context]);
+		cp_uninstall_plugins(contexts[active_context]);
 		noticef(_("Uninstalled all plug-ins in context %d."), active_context);
 	}
 }
 
 int main(int argc, char *argv[]) {
-	const cp_core_info_t *ci;
+	const cp_framework_info_t *ci;
 	char *prompt_no_context, *prompt_context;
 	int i;
 
@@ -913,7 +913,7 @@ int main(int argc, char *argv[]) {
 	noticef(
 		/* TRANSLATORS: This is the version string displayed on startup. */
 		_("C-Pluff console, version %s"), PACKAGE_VERSION);
-	ci = cp_get_core_info();
+	ci = cp_get_framework_info();
 	if (ci->multi_threading_type != NULL) {
 		
 		noticef(

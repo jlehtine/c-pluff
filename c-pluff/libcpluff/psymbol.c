@@ -51,7 +51,7 @@ typedef struct symbol_info_t {
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-CP_API int cp_define_symbol(cp_context_t *context, const char *name, void *ptr) {
+CP_C_API int cp_define_symbol(cp_context_t *context, const char *name, void *ptr) {
 	int status = CP_OK;
 	
 	CHECK_NOT_NULL(context);
@@ -106,7 +106,7 @@ CP_API int cp_define_symbol(cp_context_t *context, const char *name, void *ptr) 
 	return status;
 }
 
-CP_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const char *name, int *error) {
+CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const char *name, int *error) {
 	int status = CP_OK;
 	int error_reported = 1;
 	hnode_t *node;
@@ -253,7 +253,7 @@ CP_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const cha
 	return symbol;
 }
 
-CP_API void cp_release_symbol(cp_context_t *context, const void *ptr) {
+CP_C_API void cp_release_symbol(cp_context_t *context, const void *ptr) {
 	hnode_t *node;
 	symbol_info_t *symbol_info;
 	symbol_provider_info_t *provider_info;

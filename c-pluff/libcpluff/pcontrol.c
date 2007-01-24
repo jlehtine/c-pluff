@@ -81,7 +81,7 @@ static void unregister_extensions(cp_context_t *context, cp_plugin_info_t *plugi
 	}
 }
 
-CP_API int cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
+CP_C_API int cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 	cp_plugin_t *rp = NULL;
 	int status = CP_OK;
 	cpi_plugin_event_t event;
@@ -766,7 +766,7 @@ CP_HIDDEN int cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	return status;
 }
 
-CP_API int cp_start_plugin(cp_context_t *context, const char *id) {
+CP_C_API int cp_start_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	int status = CP_OK;
 
@@ -923,7 +923,7 @@ static void stop_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	assert_processed_zero(context);
 }
 
-CP_API int cp_stop_plugin(cp_context_t *context, const char *id) {
+CP_C_API int cp_stop_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	cp_plugin_t *plugin;
 	int status = CP_OK;
@@ -947,7 +947,7 @@ CP_API int cp_stop_plugin(cp_context_t *context, const char *id) {
 	return status;
 }
 
-CP_API void cp_stop_all_plugins(cp_context_t *context) {
+CP_C_API void cp_stop_plugins(cp_context_t *context) {
 	lnode_t *node;
 	
 	CHECK_NOT_NULL(context);
@@ -1130,7 +1130,7 @@ static void uninstall_plugin(cp_context_t *context, hnode_t *node) {
 	free_registered_plugin(plugin);
 }
 
-CP_API int cp_uninstall_plugin(cp_context_t *context, const char *id) {
+CP_C_API int cp_uninstall_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	int status = CP_OK;
 
@@ -1152,7 +1152,7 @@ CP_API int cp_uninstall_plugin(cp_context_t *context, const char *id) {
 	return status;
 }
 
-CP_API void cp_uninstall_all_plugins(cp_context_t *context) {
+CP_C_API void cp_uninstall_plugins(cp_context_t *context) {
 	hscan_t scan;
 	hnode_t *node;
 	
@@ -1160,7 +1160,7 @@ CP_API void cp_uninstall_all_plugins(cp_context_t *context) {
 	
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
-	cp_stop_all_plugins(context);
+	cp_stop_plugins(context);
 	while (1) {
 		hash_scan_begin(&scan, context->env->plugins);
 		if ((node = hash_scan_next(&scan)) != NULL) {

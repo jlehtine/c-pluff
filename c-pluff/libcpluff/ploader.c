@@ -948,7 +948,7 @@ static void XMLCALL end_element_handler(
 	}
 }
 
-CP_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *context, const char *path, int *error) {
+CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *context, const char *path, int *error) {
 	char *file = NULL;
 	int status = CP_OK;
 	FILE *fh = NULL;
