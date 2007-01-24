@@ -40,7 +40,7 @@ $(top_srcdir)/doc/reference/c-api/index.html: $(DOXYGEN_SOURCE) Doxyfile-ref
 
 impldoc: $(top_srcdir)/doc/implementation/c-api/index.html
 
-$(top_srcdir)/doc/implementation/c-api/index.html: $(srcdir)/*.h $(srcdir)/*.c cpluffdef.h config.h Doxyfile-impl
+$(top_srcdir)/doc/implementation/c-api/index.html: $(srcdir)/*.h $(srcdir)/*.c cpluffdef.h ../config.h Doxyfile-impl
 	mkdir -p doxygen-impl
 	cp -p $^ doxygen-impl
 	cd doxygen-impl && doxygen Doxyfile-impl
