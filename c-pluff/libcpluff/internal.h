@@ -119,6 +119,12 @@ struct cp_plugin_env_t {
 #elif !defined(NDEBUG)
 	int locked;
 #endif
+
+	/// Number of startup arguments
+	int argc;
+	
+	/// An array of startup arguments
+	const char **argv;
 	
 	/// Installed plug-in listeners 
 	list_t *plugin_listeners;

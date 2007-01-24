@@ -16,7 +16,7 @@
 typedef struct run_func_t {
 	
 	/// The run function
-	cp_run_function_t runfunc;
+	cp_run_func_t runfunc;
 	
 	/// The registering plug-in instance
 	cp_plugin_t *plugin;
@@ -26,7 +26,7 @@ typedef struct run_func_t {
 	
 } run_func_t;
 
-CP_API int cp_run_function(cp_context_t *ctx, cp_run_function_t runfunc) {
+CP_API int cp_run_function(cp_context_t *ctx, cp_run_func_t runfunc) {
 	lnode_t *node = NULL;
 	run_func_t *rf = NULL;
 	int status = CP_OK;

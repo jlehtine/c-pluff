@@ -359,12 +359,12 @@ typedef void (*cp_fatal_error_func_t)(const char *msg);
  * The run function  should perform a finite chunk of work and it should
  * return a non-zero value if there is more work to be done. Run functions
  * are registered using ::cp_run_function and the usage is discussed in
- * more detail in the @ref funcsSerialExec "serial execution" section.
+ * more detail in the @ref funcsPluginExec "serial execution" section.
  * 
  * @param plugin_data the plug-in instance data pointer
  * @return non-zero if there is more work to be done or zero if finished
  */
-typedef int (*cp_run_function_t)(void *plugin_data);
+typedef int (*cp_run_func_t)(void *plugin_data);
 
 /*@}*/
 
@@ -1246,16 +1246,16 @@ CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
 
 
 /**
- * @defgroup funcsSerialExec Serial execution
+ * @defgroup funcsPluginExec Plug-in execution
  * @ingroup funcs
  *
- * These functions support a serial execution model. Started plug-ins can
- * use ::cp_run_function to register a run function which is called when the
+ * These functions support a plug-in controlled execution model. Started plug-ins can
+ * use ::cp_run_function to register @ref cp_run_func_t "a run function" which is called when the
  * main program calls ::cp_run_plugins or ::cp_run_plugins_step. A run
  * function should do a finite chunk of work and then return telling whether
  * there is more work to be done. A run function is automatically unregistered
  * when the plug-in is stopped. Run functions make it possible for plug-ins
- * to take control of execution or they can be used as a coarse
+ * to control the flow of execution or they can be used as a coarse
  * way of task switching if there is no multi-threading support.
  *
  * The C-Pluff distribution includes a generic main program, cpluff-loader,
@@ -1282,7 +1282,7 @@ CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
  * @param runfunc the run function to be registered
  * @return CP_OK (zero) on success or an error code on failure
  */
-CP_API int cp_run_function(cp_context_t *ctx, cp_run_function_t runfunc);
+CP_API int cp_run_function(cp_context_t *ctx, cp_run_func_t runfunc);
 
 /**
  * Runs the started plug-ins as long as there is something to run.
@@ -1307,6 +1307,28 @@ CP_API void cp_run_plugins(cp_context_t *ctx);
  * @return whether there are active run functions waiting to be run
  */
 CP_API int cp_run_plugins_step(cp_context_t *ctx);
+
+/**
+ * Sets startup arguments for the specified plug-in context. Like for usual
+ * C main functions, the first argument is expected to be the name of the
+ * program being executed. This function is intended to be used by the
+ * main program.
+ * 
+ * @param ctx the plug-in context
+ * @param argc the number of arguments
+ * @param argv an array of arguments as string pointers
+ */
+CP_API void cp_ctx_set_args(cp_context_t *ctx, int argc, const char **argv);
+
+/**
+ * Returns the number of startup arguments associated with the specified
+ * plug-in context. This function is intended to be used by a plug-in runtime.
+ * 
+ * @param ctx the plug-in context
+ * @param argv argument array pointer is stored to this location
+ * @return the number of startup arguments or 0 if not set
+ */
+CP_API int cp_ctx_get_args(cp_context_t *ctx, const char ***argv);
 
 /*@}*/
 

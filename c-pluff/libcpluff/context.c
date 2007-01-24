@@ -202,6 +202,8 @@ CP_API cp_context_t * cp_create_context(int *error) {
 #ifdef CP_THREADS
 		env->mutex = cpi_create_mutex();
 #endif
+		env->argc = 0;
+		env->argv = NULL;
 		env->plugin_listeners = list_create(LISTCOUNT_T_MAX);
 		env->plugin_dirs = list_create(LISTCOUNT_T_MAX);
 		env->plugins = hash_create(HASHCOUNT_T_MAX,
@@ -509,6 +511,30 @@ CP_API void cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 	}
 	cpi_unlock_context(context);
 	cpi_debugf(context, "Plug-in directory %s was removed.", dir);
+}
+
+
+// Startup arguments
+
+CP_API void cp_ctx_set_args(cp_context_t *ctx, int argc, const char **argv) {
+	CHECK_NOT_NULL(ctx);
+	CHECK_NOT_NULL(argv);
+	cpi_lock_context(ctx);
+	ctx->env->argc = argc;
+	ctx->env->argv = argv;
+	cpi_unlock_context(ctx);
+}
+
+CP_API int cp_ctx_get_args(cp_context_t *ctx, const char ***argv) {
+	int argc;
+	
+	CHECK_NOT_NULL(ctx);
+	CHECK_NOT_NULL(argv);
+	cpi_lock_context(ctx);
+	argc = ctx->env->argc;
+	*argv = ctx->env->argv;
+	cpi_unlock_context(ctx);
+	return argc;
 }
 
 
