@@ -26,7 +26,7 @@ typedef struct run_func_t {
 	
 } run_func_t;
 
-CP_C_API int cp_ctx_run_function(cp_context_t *ctx, cp_run_func_t runfunc) {
+CP_C_API int cp_run_function(cp_context_t *ctx, cp_run_func_t runfunc) {
 	lnode_t *node = NULL;
 	run_func_t *rf = NULL;
 	int status = CP_OK;
@@ -102,11 +102,11 @@ CP_C_API int cp_ctx_run_function(cp_context_t *ctx, cp_run_func_t runfunc) {
 	return status;
 }
 
-CP_C_API void cp_ctx_run_plugins(cp_context_t *ctx) {
-	while (cp_ctx_run_plugins_step(ctx));
+CP_C_API void cp_run_plugins(cp_context_t *ctx) {
+	while (cp_run_plugins_step(ctx));
 }
 
-CP_C_API int cp_ctx_run_plugins_step(cp_context_t *ctx) {
+CP_C_API int cp_run_plugins_step(cp_context_t *ctx) {
 	int runnables;
 	
 	CHECK_NOT_NULL(ctx);

@@ -516,7 +516,7 @@ CP_C_API void cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 
 // Startup arguments
 
-CP_C_API void cp_ctx_set_args(cp_context_t *ctx, int argc, const char **argv) {
+CP_C_API void cp_set_context_args(cp_context_t *ctx, int argc, char **argv) {
 	CHECK_NOT_NULL(ctx);
 	CHECK_NOT_NULL(argv);
 	cpi_lock_context(ctx);
@@ -525,7 +525,7 @@ CP_C_API void cp_ctx_set_args(cp_context_t *ctx, int argc, const char **argv) {
 	cpi_unlock_context(ctx);
 }
 
-CP_C_API int cp_ctx_get_args(cp_context_t *ctx, const char ***argv) {
+CP_C_API int cp_get_context_args(cp_context_t *ctx, char ***argv) {
 	int argc;
 	
 	CHECK_NOT_NULL(ctx);

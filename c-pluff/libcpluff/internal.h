@@ -124,7 +124,7 @@ struct cp_plugin_env_t {
 	int argc;
 	
 	/// An array of startup arguments
-	const char **argv;
+	char **argv;
 	
 	/// Installed plug-in listeners 
 	list_t *plugin_listeners;

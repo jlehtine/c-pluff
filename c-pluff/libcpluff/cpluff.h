@@ -360,7 +360,7 @@ typedef void (*cp_fatal_error_func_t)(const char *msg);
  * A run function registered by a plug-in to perform work.
  * The run function  should perform a finite chunk of work and it should
  * return a non-zero value if there is more work to be done. Run functions
- * are registered using ::cp_ctx_run_function and the usage is discussed in
+ * are registered using ::cp_run_function and the usage is discussed in
  * more detail in the @ref cFuncsPluginExec "serial execution" section.
  * 
  * @param plugin_data the plug-in instance data pointer
@@ -750,7 +750,7 @@ struct cp_plugin_runtime_t {
 	 * 
 	 * The start function implementation should set up plug-in and return
 	 * promptly. If there is further work to be done then a plug-in can
-	 * start a thread or register a run function using ::cp_ctx_run_function.
+	 * start a thread or register a run function using ::cp_run_function.
 	 * 
 	 * @param data an opaque pointer to plug-in instance data
 	 * @return non-zero on success, or zero on failure
@@ -763,7 +763,7 @@ struct cp_plugin_runtime_t {
 	 * @ref cFuncsInit "Library initialization",
 	 * @ref cFuncsContext "plug-in context management",
 	 * @ref cFuncsPlugin "plug-in management"
-	 * functions, ::cp_ctx_run_function and ::cp_resolve_symbol must not be called
+	 * functions, ::cp_run_function and ::cp_resolve_symbol must not be called
 	 * from within a stop function invocation. The stop function pointer can
 	 * be NULL if the plug-in runtime does not have a stop function.
 	 * It is guaranteed that no run functions registered by the plug-in are
@@ -836,6 +836,18 @@ CP_C_API const cp_framework_info_t *cp_get_framework_info(void);
 /*@{*/
 
 /**
+ * Sets the fatal error handler called on non-recoverable errors. The default
+ * error handler prints the error message out to standard error and aborts
+ * the program. If the user specified error handler returns then the framework
+ * will abort the program. Setting NULL error handler will restore the default
+ * handler. This function is not thread-safe and it should be called
+ * before initializing the framework to catch all fatal errors.
+ * 
+ * @param error_handler the fatal error handler
+ */
+CP_C_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler);
+
+/**
  * Initializes the plug-in framework. This function must be called
  * by the main program before calling any other plug-in framework
  * functions except ::cp_get_framework_info and
@@ -863,18 +875,6 @@ CP_C_API int cp_init(void);
  * framework become invalid.
  */
 CP_C_API void cp_destroy(void);
-
-/**
- * Sets the fatal error handler called on non-recoverable errors. The default
- * error handler prints the error message out to standard error and aborts
- * the program. If the user specified error handler returns then the framework
- * will abort the program. Setting NULL error handler will restore the default
- * handler. This function is not thread-safe and it should be called
- * before initializing the framework to catch all fatal errors.
- * 
- * @param error_handler the fatal error handler
- */
-CP_C_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler);
 
 /*@}*/
 
@@ -915,7 +915,7 @@ CP_C_API void cp_remove_logger(cp_logger_func_t logger);
 
 
 /**
- * @defgroup cFuncsContext Plug-in context management
+ * @defgroup cFuncsContext Plug-in context initialization
  * @ingroup cFuncs
  *
  * These functions are used to manage plug-in contexts from the main
@@ -1251,8 +1251,8 @@ CP_C_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
  * @ingroup cFuncs
  *
  * These functions support a plug-in controlled execution model. Started plug-ins can
- * use ::cp_ctx_run_function to register @ref cp_run_func_t "a run function" which is called when the
- * main program calls ::cp_ctx_run_plugins or ::cp_ctx_run_plugins_step. A run
+ * use ::cp_run_function to register @ref cp_run_func_t "a run function" which is called when the
+ * main program calls ::cp_run_plugins or ::cp_run_plugins_step. A run
  * function should do a finite chunk of work and then return telling whether
  * there is more work to be done. A run function is automatically unregistered
  * when the plug-in is stopped. Run functions make it possible for plug-ins
@@ -1261,7 +1261,8 @@ CP_C_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
  *
  * The C-Pluff distribution includes a generic main program, cpluff-loader,
  * which only acts as a plug-in loader. It loads and starts up the
- * specified plug-ins and then just calls run functions of the plug-ins. This
+ * specified plug-ins, passing any additional startup arguments to them and
+ * then just calls run functions of the plug-ins. This
  * makes it is possible to put all the application specific logic in
  * plug-ins. Application does not necessarily need a main program of its own.
  * 
@@ -1283,7 +1284,7 @@ CP_C_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
  * @param runfunc the run function to be registered
  * @return CP_OK (zero) on success or an error code on failure
  */
-CP_C_API int cp_ctx_run_function(cp_context_t *ctx, cp_run_func_t runfunc);
+CP_C_API int cp_run_function(cp_context_t *ctx, cp_run_func_t runfunc);
 
 /**
  * Runs the started plug-ins as long as there is something to run.
@@ -1294,7 +1295,7 @@ CP_C_API int cp_ctx_run_function(cp_context_t *ctx, cp_run_func_t runfunc);
  * 
  * @param ctx the plug-in context containing the plug-ins
  */
-CP_C_API void cp_ctx_run_plugins(cp_context_t *ctx);
+CP_C_API void cp_run_plugins(cp_context_t *ctx);
 
 /**
  * Runs one registered run function. This function calls one
@@ -1307,29 +1308,32 @@ CP_C_API void cp_ctx_run_plugins(cp_context_t *ctx);
  * @param ctx the plug-in context containing the plug-ins
  * @return whether there are active run functions waiting to be run
  */
-CP_C_API int cp_ctx_run_plugins_step(cp_context_t *ctx);
+CP_C_API int cp_run_plugins_step(cp_context_t *ctx);
 
 /**
  * Sets startup arguments for the specified plug-in context. Like for usual
  * C main functions, the first argument is expected to be the name of the
- * program being executed. This function is intended to be used by the
- * main program.
+ * program being executed. If the main program is about to pass startup
+ * arguments to plug-ins it should call this function
+ * before starting any plug-ins in the context. Plug-ins can access
+ * the startup arguments using ::cp_get_context_args.
  * 
  * @param ctx the plug-in context
  * @param argc the number of arguments
  * @param argv an array of arguments as string pointers
  */
-CP_C_API void cp_ctx_set_args(cp_context_t *ctx, int argc, const char **argv);
+CP_C_API void cp_set_context_args(cp_context_t *ctx, int argc, char **argv);
 
 /**
  * Returns the startup arguments associated with the specified
  * plug-in context. This function is intended to be used by a plug-in runtime.
+ * Startup arguments are set by the main program using ::cp_set_context_args.
  * 
  * @param ctx the plug-in context
  * @param argv argument array pointer is stored to this location
  * @return the number of startup arguments or 0 if not set
  */
-CP_C_API int cp_ctx_get_args(cp_context_t *ctx, const char ***argv);
+CP_C_API int cp_get_context_args(cp_context_t *ctx, char ***argv);
 
 /*@}*/
 
