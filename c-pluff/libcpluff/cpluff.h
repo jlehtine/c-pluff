@@ -354,6 +354,18 @@ typedef void (*cp_logger_func_t)(cp_log_severity_t severity, const char *msg, co
  */
 typedef void (*cp_fatal_error_func_t)(const char *msg);
 
+/**
+ * A run function registered by a plug-in to perform work.
+ * The run function  should perform a finite chunk of work and it should
+ * return a non-zero value if there is more work to be done. Run functions
+ * are registered using ::cp_run_function and the usage is discussed in
+ * more detail in the @ref funcsSerialExec "serial execution" section.
+ * 
+ * @param plugin_data the plug-in instance data pointer
+ * @return non-zero if there is more work to be done or zero if finished
+ */
+typedef int (*cp_run_function_t)(void *plugin_data);
+
 /*@}*/
 
 
@@ -1270,7 +1282,7 @@ CP_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
  * @param runfunc the run function to be registered
  * @return CP_OK (zero) on success or an error code on failure
  */
-CP_API int cp_run_function(cp_context_t *ctx, int (*runfunc)(void *));
+CP_API int cp_run_function(cp_context_t *ctx, cp_run_function_t runfunc);
 
 /**
  * Runs the started plug-ins as long as there is something to run.
