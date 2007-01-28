@@ -895,7 +895,6 @@ static void cmd_uninstall_all_plugins(int argc, char *argv[]) {
 }
 
 int main(int argc, char *argv[]) {
-	const cp_framework_info_t *ci;
 	char *prompt_no_context, *prompt_context;
 	int i;
 
@@ -913,19 +912,10 @@ int main(int argc, char *argv[]) {
 	noticef(
 		/* TRANSLATORS: This is the version string displayed on startup. */
 		_("C-Pluff console, version %s"), PACKAGE_VERSION);
-	ci = cp_get_framework_info();
-	if (ci->multi_threading_type != NULL) {
-		
-		noticef(
-			/* TRANSLATORS: This is the version string displayed on startup. */
-		   	_("C-Pluff framework, version %s for %s with %s threads"),
-			ci->release_version, ci->host_type, ci->multi_threading_type);
-	} else {
-		noticef(
-			/* TRANSLATORS: This is the version string displayed on startup. */
-			_("C-Pluff framework, version %s for %s without threads"),
-			ci->release_version, ci->host_type);
-	}
+	noticef(
+		/* TRANSLATORS: This is the version string displayed on startup. */
+		_("C-Pluff framework, version %s for %s"),
+		cp_get_release_version(), cp_get_host_type());
 	notice(_("Type \"help\" for help on available commands."));
 
 	// Initialize context array 

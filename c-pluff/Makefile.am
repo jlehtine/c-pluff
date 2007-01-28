@@ -6,8 +6,8 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libcpluff console po
-DOC_DIRS = libcpluff
+SUBDIRS = libcpluff libcpluffxx loader console examples po
+DOC_DIRS = libcpluff libcpluffxx
 
 RECURSIVE_DOC_TARGETS = refdoc impldoc
 
@@ -26,7 +26,7 @@ check-copyright:
 
 $(RECURSIVE_DOC_TARGETS):
 	@target=$@; \
-	for d in '$(DOC_DIRS)'; do \
+	for d in $(DOC_DIRS); do \
 		(cd $$d && $(MAKE) $(AM_MAKEFLAGS) $$target) || eval exit 1; \
 	done
 

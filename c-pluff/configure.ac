@@ -10,11 +10,12 @@ dnl -------------------
 dnl Version of the release (intended for people)
 define(RELEASE_VERSION, 0)
 
-dnl API version (intended for software)
-dnl (use API version/revision 0 for inofficial versions and snapshots)
-define(CORE_API_CURRENT, 0)
-define(CORE_API_REVISION, 0)
-define(CORE_API_AGE, 0)
+dnl API/ABI version (intended for software)
+dnl (use API version 0 for inofficial versions and snapshots)
+define(API_VERSION, 0)
+define(API_AGE, 0)
+define(ABI_AGE, 0)
+define(LIB_REVISION, 0)
 
 # Autoconf initialization
 # -----------------------
@@ -29,12 +30,13 @@ AC_CONFIG_HEADERS([config.h])
 # API version information
 # -----------------------
 # Use version/revision 0 for inofficial versions and snapshots
-CP_CORE_API_CURRENT=CORE_API_CURRENT
-CP_CORE_API_REVISION=CORE_API_REVISION
-CP_CORE_API_AGE=CORE_API_AGE
-AC_SUBST([CP_CORE_API_CURRENT])
-AC_SUBST([CP_CORE_API_REVISION])
-AC_SUBST([CP_CORE_API_AGE])
+CP_API_VERSION=API_VERSION
+CP_API_AGE=API_AGE
+CP_LIB_REVISION=LIB_REVISION
+AC_SUBST([CP_API_VERSION])
+AC_SUBST([CP_API_AGE])
+AC_DEFINE([CP_ABI_AGE], ABI_AGE, [The ABI backwards compatibility age])
+AC_SUBST([CP_LIB_REVISION])
 
 # Automake initialization
 # -----------------------
@@ -50,6 +52,7 @@ if test -z "$CC"; then
   AC_MSG_ERROR([C compiler was not found (required)])
 fi
 AC_PROG_CC_C_O
+AC_PROG_CXX
 AC_C_CONST
 AC_PROG_RANLIB
 AC_LIBTOOL_DLOPEN
@@ -230,7 +233,7 @@ AC_ARG_ENABLE([gcc-warnings],
   AS_HELP_STRING([--enable-gcc-warnings],
     [enable default set of GCC compiler warnings]))
 if test "$enable_gcc_warnings" = yes; then
-  CFLAGS="$CFLAGS -Wall -pedantic -std=c99"
+  CFLAGS="$CFLAGS -Wall -pedantic -std=gnu99"
 fi
 
 # File name separator character
@@ -250,7 +253,17 @@ AC_DEFINE_UNQUOTED([CP_FNAMESEP_STR], ["$cp_fnamesep"], [File name separator str
 
 # Output Makefiles
 # ----------------
-AC_CONFIG_FILES([Makefile libcpluff/Makefile libcpluff/cpluffdef.h libcpluff/Doxyfile-ref libcpluff/Doxyfile-impl console/Makefile po/Makefile.in])
+AC_CONFIG_FILES([Makefile
+libcpluff/Makefile
+libcpluff/cpluffdef.h
+libcpluff/Doxyfile-ref
+libcpluff/Doxyfile-impl
+libcpluffxx/Makefile
+libcpluffxx/Doxyfile-ref
+libcpluffxx/Doxyfile-impl
+loader/Makefile
+console/Makefile
+po/Makefile.in])
 AC_OUTPUT
 
 

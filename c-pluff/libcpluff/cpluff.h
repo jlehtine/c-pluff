@@ -276,9 +276,6 @@ typedef struct cp_context_t cp_context_t;
   */
 /*@{*/
 
-/** A type for cp_framework_info_t structure. */
-typedef struct cp_framework_info_t cp_framework_info_t;
-
 /** A type for cp_plugin_info_t structure. */
 typedef struct cp_plugin_info_t cp_plugin_info_t;
 
@@ -352,7 +349,6 @@ typedef void (*cp_logger_func_t)(cp_log_severity_t severity, const char *msg, co
  * ::cp_set_fatal_error_handler.
  *
  * @param msg the possibly localized error message
- * @sa cp_set_fatal_error_handler
  */
 typedef void (*cp_fatal_error_func_t)(const char *msg);
 
@@ -372,38 +368,6 @@ typedef int (*cp_run_func_t)(void *plugin_data);
 
 
 /* Data structures */
-
-/**
- * @ingroup cStructs
- * Framework information structure contains information about
- * the C-Pluff framework implementation. This information can be
- * obtained at runtime by calling ::cp_get_framework_info. For compile time
- * version information, see @ref versionInfo "version information defines".
- */
-struct cp_framework_info_t {
-
-	/** @copydoc CP_RELEASE_VERSION */
-	const char *release_version;
-	
-	/** @copydoc CP_API_VERSION */
-	int api_version;
-	
-	/** @copydoc CP_API_REVISION */
-	int api_revision;
-	
-	/** @copydoc CP_API_AGE */
-	int api_age;
-  
-	/**
-	 * The canonical host type. This is the canonical host
-	 * type for which the framework was built for.
-	 */
-	const char *host_type;
-	
-	/** The type of multi-threading support, or NULL for none. */
-	const char *multi_threading_type;
-	
-};
 
 /**
  * @ingroup cStructs
@@ -711,11 +675,10 @@ struct cp_cfg_element_t {
 
 /**
  * @ingroup cStructs
- * A plug-in runtime structure containing pointers to plug-in
- * control functions. A plug-in runtime defines a static instance of this
- * structure to pass information about the available control functions
- * to the plug-in framework. The plug-in framework then uses the
- * functions to create and control plug-in instances. The symbol pointing
+ * Container for plug-in runtime information. A plug-in runtime defines a
+ * static instance of this structure to pass information to the plug-in
+ * framework. The plug-in framework then uses the information
+ * to create and control plug-in instances. The symbol pointing
  * to the runtime information instance is named by the @a funcs
  * attribute of the @a runtime element in a plug-in descriptor.
  */
@@ -803,24 +766,31 @@ struct cp_plugin_runtime_t {
  */
 
 /**
- * @defgroup funcsFrameworkInfo Framework information
- * @ingroup funcs
+ * @defgroup cFuncsFrameworkInfo Framework information
+ * @ingroup cFuncs
  *
- * This function can be used to query runtime information about the
- * C-Pluff framework implementation. It may be used by the main program or
+ * These functions can be used to query runtime information about the
+ * linked in C-Pluff implementation. They may be used by the main program or
  * by a plug-in runtime.
  */
 /*@{*/
 
 /**
- * Returns static information about the C-Pluff framework implementation.
- * The returned information must not be modified.
- * This function can be called at any time. For compile time checks,
- * see @ref versionInfo "version information defines".
- *
- * @return static information about the C-Pluff framework implementation
+ * Returns the release version string of the linked in C-Pluff
+ * implementation. This information is intended for display purposes.
+ * 
+ * @return the C-Pluff release version string
  */
-CP_C_API const cp_framework_info_t *cp_get_framework_info(void);
+CP_C_API const char *cp_get_release_version(void);
+
+/**
+ * Returns the canonical host type associated with the linked in C-Pluff implementation.
+ * A multi-platform installation manager could use this information to
+ * determine what plug-in versions to install.
+ * 
+ * @return the canonical host type
+ */
+CP_C_API const char *cp_get_host_type(void);
 
 /*@}*/
 
@@ -850,7 +820,7 @@ CP_C_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler);
 /**
  * Initializes the plug-in framework. This function must be called
  * by the main program before calling any other plug-in framework
- * functions except ::cp_get_framework_info and
+ * functions except @ref cFuncsFrameworkInfo "framework information" functions and
  * ::cp_set_fatal_error_handler. This function may be
  * called several times but it is not thread-safe. Library resources
  * should be released by calling ::cp_destroy when the framework is

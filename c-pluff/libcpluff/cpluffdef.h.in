@@ -106,42 +106,60 @@
  * @ingroup cDefines cxxDefines
  *
  * C-Pluff version information. Notice that this version information
- * is static version information included in header files and can therefore
- * only be used for compile time checks. Corresponding runtime information can
- * be queried using ::cp_get_core_info.
+ * is static version information included in header files. Application
+ * programming interface (API) is the compile time interface and thus the API
+ * version macros can be used for compile time compatibility checks.
+ * Application binary interface (ABI) is the runtime interface and thus
+ * determines runtime binary compatibility. Runtime ABI compatibility is
+ * enforced using shared library versioning (on platforms that support this)
+ * and plug-in runtime information.
+ *
+ * Here is an example of how the API version information could be used to
+ * create software that can be compiled against mutually incompatible
+ * versions of the C-Pluff API.
+ *
+ * @code
+ * #if CP_API_VERSION >= 42
+ *   // code using interfaces introduced in the API version 42
+ * #elif CP_API_VERSION >= 38
+ *   // alternative compatibility support code for API versions 38-41
+ * #endif
+ *
+ * #if CP_API_VERSION >= 42 && CP_API_VERSION - CP_API_AGE <= 42
+ *   // code written for the C-Pluff API version 42
+ * #endif
+ * @endcode
  */
 /*@{*/
 
 /**
  * The C-Pluff release version string. Release version identifies a specific
- * version of the C-Pluff distribution and it is intended to be used by people.
- * Software should use the API version information for compatibility checks.
+ * version of the C-Pluff distribution. Software compatibility checks should
+ * use API and ABI version information.
  */
 #define CP_RELEASE_VERSION "@PACKAGE_VERSION@"
 
 /**
- * The current version of the C-Pluff C/C++ API. This is an integer number.
- * It is incremented whenever there have been changes to API interfaces.
+ * The version of the C-Pluff C/C++ application programming interface (API).
+ * This is an integer number. It is incremented whenever there have been
+ * changes to the application interface.
  */
 #define CP_API_VERSION @CP_API_VERSION@
 
 /**
- * The revision of the C-Pluff C/C++ API. This is an integer number telling
- * the revision number of the current API implementation. It is resetted to
- * zero for each new API version and incremented when only the implementation
- * changes but API interfaces remain the same.
- */
-#define CP_API_REVISION @CP_API_REVISION@
-
-/**
- * The backwards compatibility age of the C-Pluff C/C++ API. This integer
- * number tells the backward compatibility age of the current
- * API. Subtracting the age from the current API version gives the earliest
- * backwards compatible API version. Software written for a backward
- * compatible API version should work with the current version but not
- * vice versa. The age is incremented together with the current API version
- * when new interfaces are added and it is resetted to zero if any interfaces
- * are removed or changed.
+ * The backwards compatibility age of the C-Pluff C/C++ API.
+ * Subtracting this integer number from the API version gives the
+ * earliest API version this API is backwards compatible with.
+ * That is, software written for any API version from
+ * @a CP_API_VERSION - @a CP_API_AGE to @a CP_API_VERSION (inclusive)
+ * compiles successfully against this API.
+ *
+ * Notice that this describes source (API) compatibility only. Software
+ * compiled against @a CP_API_VERSION - @a CP_API_AGE is not necessarily
+ * binary compatible with version @a CP_API_VERSION of the library. Application
+ * binary interface (ABI) compatibility can be checked at runtime using
+ * ::cp_check_abi_compatibility and, depending on the platform, it can also
+ * be enforced at link time using library versioning.
  */
 #define CP_API_AGE @CP_API_AGE@
 

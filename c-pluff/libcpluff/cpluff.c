@@ -56,16 +56,6 @@ struct logger_t {
  * Variables
  * ----------------------------------------------------------------------*/
 
-/// Implementation information 
-static const cp_framework_info_t implementation_info = {
-	CP_RELEASE_VERSION,
-	CP_API_VERSION,
-	CP_API_REVISION,
-	CP_API_AGE,
-	CP_HOST,
-	CP_THREADS
-};
-
 /// Number of initializations 
 static int initialized = 0;
 
@@ -98,8 +88,12 @@ static cp_fatal_error_func_t fatal_error_handler = NULL;
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-CP_C_API const cp_framework_info_t * cp_get_framework_info(void) {
-	return &implementation_info;
+CP_C_API const char *cp_get_release_version(void) {
+	return CP_RELEASE_VERSION;
+}
+
+CP_C_API const char *cp_get_host_type(void) {
+	return CP_HOST;
 }
 
 CP_HIDDEN void cpi_lock_framework(void) {
