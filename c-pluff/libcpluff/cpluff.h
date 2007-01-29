@@ -399,11 +399,11 @@ struct cp_plugin_info_t {
 	/**
 	 * An optional release version string. NULL if not available. The
 	 * release version is intended only for display purposes (compatibility
-	 * checks use API version information instead). This
-	 * corresponds to the @a version attribute of the @a plugin element in
+	 * checks use interface version information instead). This
+	 * corresponds to the @a release-version attribute of the @a plugin element in
 	 * a plug-in descriptor.
 	 */
-	char *version;
+	char *release_version;
 	
 	/**
 	 * An optional provider name. NULL if not available. This is the name of
@@ -415,28 +415,39 @@ struct cp_plugin_info_t {
 	char *provider_name;
 	
 	/**
-	 * Optional API version information. -1 if not available. If the plug-in
-	 * provides any API interfaces (such as extension points or global symbols)
-	 * then it should also declare versioning for the API. This corresponds to
-	 * the @a version attribute of the @a api element in a plug-in descriptor.
+	 * Optional interface version. -1 if not available. This is the
+	 * version of the interface provided by the plug-in to its clients.
+	 * If the plug-in provides any interfaces (such as
+	 * extension points or global symbols) then it should also declare
+	 * versioning for the interface. Backwards compatibility information is
+	 * available at @ref if_abi_compatibility. This corresponds to the @a version
+	 * attribute of the @a interface element in a plug-in descriptor.
 	 */
-	int api_version;
+	int if_version;
 	
 	/**
-	 * Optional API revision information. -1 if API is not versioned.
-	 * This corresponds to the @a revision attribute of the @a api element in
-	 * a plug-in descriptor.
+	 * Optional interface binary compatibility information. -1 if plug-in does not
+	 * have a versioned interface. This is the earliest version of the plug-in
+	 * interface that is backwards compatible with the current interface when
+	 * it comes to the application binary interface (ABI). That is, a client
+	 * compiled against any plug-in interface from @a if_abi_compatibility to
+	 * @ref if_version (inclusive) can use this version of the plug-in.
+	 * This corresponds to the @a abi-compatibility attribute of the
+	 * @a interface element in a plug-in descriptor.
 	 */
-	int api_revision;
+	int if_abi_compatibility;
 	
 	/**
-	 * Optional API age information. -1 if API is not versioned.
-	 * Subtracting the API age from the current API version gives the earliest
-	 * API version supported (backwards compatibility) by the current API.
-	 * This corresponds to the @a age attribute of the @a api element in a
-	 * plug-in descriptor.
+	 * Optional interface source compatibility information. -1 if not available.
+	 * This is the earliest version of the plug-in interface that is backwards
+	 * compatible with the current interface when it comes to the
+	 * application programming interface (API). That is, a client developed
+	 * for any plug-in interface from @a if_api_compatibility to
+	 * @ref if_version (inclusive) can be compiled against the current version of
+	 * the plug-in interface. This corresponds to the @a api-compatibility
+	 * attribute of the @a interface element in a plug-in descriptor.
 	 */
-	int api_age;
+	int if_api_compatibility;
 	
 	/**
 	 * Path of the plugin directory, or NULL if not known. This is the
@@ -446,6 +457,14 @@ struct cp_plugin_info_t {
 	 * the plug-in.
 	 */
 	char *plugin_path;
+	
+	/**
+	 * Optional C-Pluff interface version requirement. -1 if not available.
+	 * This is the version of the C-Pluff C/C++ interface the plug-in was
+	 * compiled against. The value is used to determine the compatibility of
+	 * the plug-in runtime and the C-Pluff implementation.
+	 */
+	int req_cpluff_if_version;
 	
 	/** Number of import entries in the @ref imports array. */
 	unsigned int num_imports;
@@ -457,12 +476,13 @@ struct cp_plugin_info_t {
 	cp_plugin_import_t *imports;
 
     /**
-     * The plug-in runtime library path, relative to the plug-in directory,
-     * or NULL if none. This corresponds to the @a library attribute of the
-     * @a runtime element in a plug-in descriptor. A platform specific shared
-     * library extension is appended to this path.
+     * The base name of the plug-in runtime library, or NULL if none.
+     * A platform specific prefix (for example, "lib") and an extension
+     * (for example, ".dll" or ".so") may be added to the base name.
+     * This corresponds to the @a library attribute of the
+     * @a runtime element in a plug-in descriptor.
      */
-    char *lib_path;
+    char *runtime_lib_name;
     
     /**
      * The symbol pointing to the plug-in runtime function information or
@@ -508,11 +528,13 @@ struct cp_plugin_import_t {
 	char *plugin_id;
 	
 	/**
-	 * An optional API version requirement. -1 if no version requirement.
-	 * This corresponds to the @a api-version attribute of the @a import
+	 * An optional interface version requirement. -1 if no version requirement.
+	 * This is the version of the interface of the imported plug-in the
+	 * importing plug-in was compiled against.
+	 * This corresponds to the @a if-version attribute of the @a import
 	 * element in a plug-in descriptor.
 	 */
-	int api_version;
+	int if_version;
 	
 	/**
 	 * Is this import optional. 1 for optional and 0 for mandatory import.

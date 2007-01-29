@@ -7,15 +7,14 @@ dnl unlimited permission to copy, distribute and modify it.
 dnl Version information
 dnl -------------------
 
-dnl Version of the release (intended for people)
+dnl Release version
 define(RELEASE_VERSION, 0)
 
-dnl API/ABI version (intended for software)
-dnl (use API version 0 for inofficial versions and snapshots)
-define(API_VERSION, 0)
-define(API_AGE, 0)
-define(ABI_AGE, 0)
-define(LIB_REVISION, 0)
+dnl Interface version (compatibility)
+dnl (use interface version 0 for inofficial versions and snapshots)
+define(IF_VERSION, 0)
+define(IF_API_COMPATIBILITY, 0)
+define(IF_ABI_COMPATIBILITY, 0)
 
 # Autoconf initialization
 # -----------------------
@@ -30,13 +29,11 @@ AC_CONFIG_HEADERS([config.h])
 # API version information
 # -----------------------
 # Use version/revision 0 for inofficial versions and snapshots
-CP_API_VERSION=API_VERSION
-CP_API_AGE=API_AGE
-CP_LIB_REVISION=LIB_REVISION
-AC_SUBST([CP_API_VERSION])
-AC_SUBST([CP_API_AGE])
-AC_DEFINE([CP_ABI_AGE], ABI_AGE, [The ABI backwards compatibility age])
-AC_SUBST([CP_LIB_REVISION])
+CP_IF_VERSION=IF_VERSION
+CP_IF_API_COMPATIBILITY=IF_API_COMPATIBILITY
+AC_SUBST([CP_IF_VERSION])
+AC_SUBST([CP_IF_API_COMPATIBILITY])
+AC_DEFINE([CP_IF_ABI_COMPATIBILITY], IF_ABI_COMPATIBILITY, [The version of the earliest interface this interface is backwards compatible with when it comes to ABI])
 
 # Automake initialization
 # -----------------------

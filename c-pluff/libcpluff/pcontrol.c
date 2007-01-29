@@ -231,31 +231,32 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	int status = CP_OK;
 	
 	assert(plugin->runtime_lib == NULL);
-	if (plugin->plugin->lib_path == NULL) {
+	if (plugin->plugin->runtime_lib_name == NULL) {
 		return CP_OK;
 	}
 	
 	do {
-		int ppath_len, lpath_len;
+		int ppath_len, lname_len;
 	
-		// Construct a path to plug-in runtime library 
+		// Construct a path to plug-in runtime library
+		/// @todo Add platform specific prefix (for example, "lib") 
 		ppath_len = strlen(plugin->plugin->plugin_path);
-		lpath_len = strlen(plugin->plugin->lib_path);
+		lname_len = strlen(plugin->plugin->runtime_lib_name);
 		if ((rlpath = malloc(sizeof(char) *
-			(ppath_len + lpath_len + strlen(CP_SHREXT) + 2))) == NULL) {
+			(ppath_len + lname_len + strlen(CP_SHREXT) + 2))) == NULL) {
 			cpi_errorf(context, _("Plug-in %s runtime could not be loaded due to insufficient memory."), plugin->plugin->identifier);
 			status = CP_ERR_RESOURCE;
 			break;
 		}
 		strcpy(rlpath, plugin->plugin->plugin_path);
 		rlpath[ppath_len] = CP_FNAMESEP_CHAR;
-		strcpy(rlpath + ppath_len + 1, plugin->plugin->lib_path);
-		strcpy(rlpath + ppath_len + 1 + lpath_len, CP_SHREXT);
+		strcpy(rlpath + ppath_len + 1, plugin->plugin->runtime_lib_name);
+		strcpy(rlpath + ppath_len + 1 + lname_len, CP_SHREXT);
 		
 		// Open the plug-in runtime library 
 		plugin->runtime_lib = DLOPEN(rlpath);
 		if (plugin->runtime_lib == NULL) {
-			cpi_errorf(context, _("Plug-in %s runtime library %s could not be opened."), plugin->plugin->identifier, plugin->plugin->lib_path);
+			cpi_errorf(context, _("Plug-in %s runtime library %s could not be opened."), plugin->plugin->identifier, plugin->plugin->runtime_lib_name);
 			status = CP_ERR_RUNTIME;
 			break;
 		}
@@ -309,10 +310,10 @@ static int resolve_plugin_import(cp_context_t *context, cp_plugin_t *plugin, cp_
 			
 	// Check plug-in version
 	if (ip != NULL
-		&& import->api_version != -1
-		&& (ip->plugin->api_version == -1
-			|| ip->plugin->api_version < import->api_version
-			|| ip->plugin->api_version - ip->plugin->api_age > import->api_version)) {
+		&& import->if_version != -1
+		&& (ip->plugin->if_version == -1
+			|| ip->plugin->if_version < import->if_version
+			|| ip->plugin->if_abi_compatibility > import->if_version)) {
 		cpi_errorf(context,
 			_("Plug-in %s could not be resolved because of version incompatibility with plug-in %s."),
 			plugin->plugin->identifier,
@@ -1048,14 +1049,14 @@ CP_HIDDEN void cpi_free_plugin(cp_plugin_info_t *plugin) {
 	assert(plugin != NULL);
 	free(plugin->name);
 	free(plugin->identifier);
-	free(plugin->version);
+	free(plugin->release_version);
 	free(plugin->provider_name);
 	free(plugin->plugin_path);
 	for (i = 0; i < plugin->num_imports; i++) {
 		free_plugin_import_content(plugin->imports + i);
 	}
 	free(plugin->imports);
-	free(plugin->lib_path);
+	free(plugin->runtime_lib_name);
 	free(plugin->runtime_funcs_symbol);
 	for (i = 0; i < plugin->num_ext_points; i++) {
 		free_ext_point_content(plugin->ext_points + i);

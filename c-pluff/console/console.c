@@ -504,14 +504,14 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 			if (plugins[i]->name != NULL) {
 				noticef("  %s %s %s \"%s\"",
 					plugins[i]->identifier,
-					plugins[i]->version,
+					plugins[i]->release_version != NULL ? plugins[i]->release_version : "<unversioned>",
 					state_to_string(cp_get_plugin_state(contexts[active_context], plugins[i]->identifier)),
 					plugins[i]->name
 				);
 			} else {
 				noticef("  %s %s %s",
 					plugins[i]->identifier,
-					plugins[i]->version,
+					plugins[i]->release_version != NULL ? plugins[i]->release_version : "<unversioned>",
 					state_to_string(cp_get_plugin_state(contexts[active_context], plugins[i]->identifier))
 				);
 			}
@@ -552,7 +552,7 @@ static char *str_or_null(const char *str) {
 
 static void show_plugin_info_import(cp_plugin_import_t *import) {
 	noticef("    plugin_id = \"%s\",", import->plugin_id);
-	noticef("    api_version = %d,", import->api_version);
+	noticef("    if_version = %d,", import->if_version);
 	noticef("    optional = %d,", import->optional);
 }
 
@@ -725,12 +725,13 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 		notice("{");
 		noticef("  identifier = \"%s\",", plugin->identifier);
 		noticef("  name = %s,", str_or_null(plugin->name));
-		noticef("  version = %s,", str_or_null(plugin->version));
+		noticef("  version = %s,", str_or_null(plugin->release_version));
 		noticef("  provider_name = %s,", str_or_null(plugin->provider_name));
-		noticef("  api_version = %d,", plugin->api_version);
-		noticef("  api_revision = %d,", plugin->api_revision);
-		noticef("  api_age = %d,", plugin->api_age);
+		noticef("  if_version = %d,", plugin->if_version);
+		noticef("  if_abi_compatibility = %d,", plugin->if_abi_compatibility);
+		noticef("  if_api_compatibility = %d,", plugin->if_api_compatibility);
 		noticef("  plugin_path = %s,", str_or_null(plugin->plugin_path));
+		noticef("  req_cpluff_if_version = %d,", plugin->req_cpluff_if_version);
 		noticef("  num_imports = %u,", plugin->num_imports);
 		if (plugin->num_imports) {
 			notice("  imports = {{");
@@ -743,7 +744,7 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 		} else {
 			notice("  imports = {},");
 		}
-		noticef("  lib_path = %s,", str_or_null(plugin->lib_path));
+		noticef("  runtime_lib_name = %s,", str_or_null(plugin->runtime_lib_name));
 		noticef("  runtime_funcs_symbol = %s,", str_or_null(plugin->runtime_funcs_symbol));
 		noticef("  num_ext_points = %u,", plugin->num_ext_points);
 		if (plugin->num_ext_points) {

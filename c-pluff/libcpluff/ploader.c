@@ -491,11 +491,13 @@ static void XMLCALL character_data_handler(
 static void XMLCALL start_element_handler(
 	void *userData, const XML_Char *name, const XML_Char **atts) {
 	static const XML_Char * const req_plugin_atts[] = { "id", NULL };
-	static const XML_Char * const opt_plugin_atts[] = { "name", "version", "provider-name", NULL };
-	static const XML_Char * const req_api_atts[] = { "version", NULL };
-	static const XML_Char * const opt_api_atts[] = { "revision", "age", NULL };
+	static const XML_Char * const opt_plugin_atts[] = { "name", "release-version", "provider-name", NULL };
+	static const XML_Char * const req_interface_atts[] = { "version", "abi-compatibility", NULL };
+	static const XML_Char * const opt_interface_atts[] = { "api-compatibility", NULL };
+	static const XML_Char * const req_cpluff_atts[] = { "if-version", NULL };
+	static const XML_Char * const opt_cpluff_atts[] = { NULL };
 	static const XML_Char * const req_import_atts[] = { "plugin", NULL };
-	static const XML_Char * const opt_import_atts[] = { "api-version", "optional", NULL };
+	static const XML_Char * const opt_import_atts[] = { "if-version", "optional", NULL };
 	static const XML_Char * const req_runtime_atts[] = { "library", NULL };
 	static const XML_Char * const opt_runtime_atts[] = { "funcs", NULL };
 	static const XML_Char * const req_ext_point_atts[] = { "id", NULL };
@@ -522,8 +524,8 @@ static void XMLCALL start_element_handler(
 					} else if (!strcmp(atts[i], "id")) {
 						plcontext->plugin->identifier
 							= parser_strdup(plcontext, atts[i+1]);
-					} else if (!strcmp(atts[i], "version")) {
-						plcontext->plugin->version
+					} else if (!strcmp(atts[i], "release-version")) {
+						plcontext->plugin->release_version
 							= parser_strdup(plcontext, atts[i+1]);
 					} else if (!strcmp(atts[i], "provider-name")) {
 						plcontext->plugin->provider_name
@@ -536,24 +538,16 @@ static void XMLCALL start_element_handler(
 			break;
 
 		case PARSER_PLUGIN:
-			if (!strcmp(name, "api")) {
+			if (!strcmp(name, "interface")) {
 				if (check_attributes(plcontext, name, atts,
-						req_api_atts, opt_api_atts)) {
+						req_interface_atts, opt_interface_atts)) {
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], "version")) {
-							plcontext->plugin->api_version = atoi(atts[i+1]);
-						} else if (!strcmp(atts[i], "revision")) {
-							plcontext->plugin->api_revision = atoi(atts[i+1]);
-						} else if (!strcmp(atts[i], "age")) {
-							plcontext->plugin->api_age = atoi(atts[i+1]);
-						}
-					}
-					if (plcontext->plugin->api_version != -1) {
-						if (plcontext->plugin->api_revision == -1) {
-							plcontext->plugin->api_revision = 0;
-						}
-						if (plcontext->plugin->api_age == -1) {
-							plcontext->plugin->api_age = 0;
+							plcontext->plugin->if_version = atoi(atts[i+1]);
+						} else if (!strcmp(atts[i], "abi-compatibility")) {
+							plcontext->plugin->if_abi_compatibility = atoi(atts[i+1]);
+						} else if (!strcmp(atts[i], "api-compatibility")) {
+							plcontext->plugin->if_api_compatibility = atoi(atts[i+1]);
 						}
 					}
 				}
@@ -564,7 +558,7 @@ static void XMLCALL start_element_handler(
 						req_runtime_atts, opt_runtime_atts)) {
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], "library")) {
-							plcontext->plugin->lib_path
+							plcontext->plugin->runtime_lib_name
 								= parser_strdup(plcontext, atts[i+1]);
 						} else if (!strcmp(atts[i], "funcs")) {
 							plcontext->plugin->runtime_funcs_symbol
@@ -689,8 +683,16 @@ static void XMLCALL start_element_handler(
 			break;
 
 		case PARSER_REQUIRES:
-			if (!strcmp(name, "import")) {
-
+			if (!strcmp(name, "cpluff")) {
+				if (check_attributes(plcontext, name, atts,
+						req_cpluff_atts, opt_cpluff_atts)) {
+					for (i = 0; atts[i] != NULL; i += 2) {
+						if (!strcmp(atts[i], "if-version")) {
+							plcontext->plugin->req_cpluff_if_version = atoi(atts[i+1]);
+						}
+					}
+				}
+			} else if (!strcmp(name, "import")) {
 				if (check_attributes(plcontext, name, atts,
 						req_import_atts, opt_import_atts)) {
 					cp_plugin_import_t *import = NULL;
@@ -719,13 +721,13 @@ static void XMLCALL start_element_handler(
 						+ plcontext->plugin->num_imports;
 					memset(import, 0, sizeof(cp_plugin_import_t));
 					import->plugin_id = NULL;
-					import->api_version = -1;
+					import->if_version = -1;
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], "plugin")) {
 							import->plugin_id
 								= parser_strdup(plcontext, atts[i+1]);
-						} else if (!strcmp(atts[i], "api-version")) {
-							import->api_version = atoi(atts[i+1]);
+						} else if (!strcmp(atts[i], "if-version")) {
+							import->if_version = atoi(atts[i+1]);
 						} else if (!strcmp(atts[i], "optional")) {
 							if (!strcmp(atts[i+1], "true")
 								|| !strcmp(atts[i+1], "1")) {
@@ -1016,14 +1018,15 @@ CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *context, con
 		memset(plcontext->plugin, 0, sizeof(cp_plugin_info_t));
 		plcontext->plugin->name = NULL;
 		plcontext->plugin->identifier = NULL;
-		plcontext->plugin->version = NULL;
-		plcontext->plugin->api_version = -1;
-		plcontext->plugin->api_revision = -1;
-		plcontext->plugin->api_age = -1;
+		plcontext->plugin->release_version = NULL;
 		plcontext->plugin->provider_name = NULL;
+		plcontext->plugin->if_version = -1;
+		plcontext->plugin->if_abi_compatibility = -1;
+		plcontext->plugin->if_api_compatibility = -1;
 		plcontext->plugin->plugin_path = NULL;
+		plcontext->plugin->req_cpluff_if_version = -1;
 		plcontext->plugin->imports = NULL;
-		plcontext->plugin->lib_path = NULL;
+		plcontext->plugin->runtime_lib_name = NULL;
 		plcontext->plugin->runtime_funcs_symbol = NULL;
 		plcontext->plugin->ext_points = NULL;
 		plcontext->plugin->extensions = NULL;

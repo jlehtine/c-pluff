@@ -9,7 +9,7 @@ permission to copy, distribute and modify it.
 	<xs:element name="plugin">
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element minOccurs="0" ref="api"/>
+				<xs:element minOccurs="0" ref="interface"/>
             	<xs:element minOccurs="0" ref="requires"/>
             	<xs:element minOccurs="0" ref="runtime"/>
             	<xs:element minOccurs="0" maxOccurs="unbounded" ref="extension-point"/>
@@ -17,28 +17,34 @@ permission to copy, distribute and modify it.
             </xs:sequence>
 			<xs:attribute name="id" type="xs:string" use="required"/>
 			<xs:attribute name="name" type="xs:string"/>
-			<xs:attribute name="version" type="xs:string"/>
+			<xs:attribute name="release-version" type="xs:string"/>
 			<xs:attribute name="provider-name" type="xs:string"/>
 		</xs:complexType>
 	</xs:element>
-	<xs:element name="api">
+	<xs:element name="interface">
 		<xs:complexType>
 			<xs:attribute name="version" type="xs:integer" use="required"/>
-			<xs:attribute name="revision" type="xs:integer" default="0"/>
-			<xs:attribute name="age" type="xs:integer" default="0"/>
+			<xs:attribute name="abi-compatibility" type="xs:integer" use="required"/>
+			<xs:attribute name="api-compatibility" type="xs:integer"/>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="requires">
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element maxOccurs="unbounded" ref="import"/>
+				<xs:element minOccurs="0" ref="c-pluff"/>
+				<xs:element minOccurs="0" maxOccurs="unbounded" ref="import"/>
 			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="c-pluff">
+		<xs:complexType>
+			<xs:attribute name="if-version" type="xs:integer" use="required"/>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="import">
 		<xs:complexType>
 			<xs:attribute name="plugin" type="xs:string" use="required"/>
-			<xs:attribute name="api-version" type="xs:integer"/>
+			<xs:attribute name="if-version" type="xs:integer"/>
 			<xs:attribute name="optional" type="xs:boolean" default="false"/>
 		</xs:complexType>
 	</xs:element>
