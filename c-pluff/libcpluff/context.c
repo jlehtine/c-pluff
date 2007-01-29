@@ -148,9 +148,9 @@ CP_HIDDEN void cpi_free_context(cp_context_t *context) {
 	free(context);	
 }
 
-CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *env, int *error) {
+CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *env, cp_status_t *error) {
 	cp_context_t *context = NULL;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 	
 	assert(env != NULL);
 	assert(error != NULL);
@@ -181,10 +181,10 @@ CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *e
 	return context;
 }
 
-CP_C_API cp_context_t * cp_create_context(int *error) {
+CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 	cp_plugin_env_t *env = NULL;
 	cp_context_t *context = NULL;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 
 	cpi_check_invocation(NULL, CPI_CF_ANY, __func__);
 
@@ -336,8 +336,8 @@ CP_HIDDEN void cpi_destroy_all_contexts(void) {
 
 // Plug-in listeners 
 
-CP_C_API int cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener, void *user_data) {
-	int status = CP_ERR_RESOURCE;
+CP_C_API cp_status_t cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener, void *user_data) {
+	cp_status_t status = CP_ERR_RESOURCE;
 	el_holder_t *holder;
 	lnode_t *node;
 
@@ -431,10 +431,10 @@ CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t
 
 // Plug-in directories 
 
-CP_C_API int cp_add_plugin_dir(cp_context_t *context, const char *dir) {
+CP_C_API cp_status_t cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 	char *d = NULL;
 	lnode_t *node = NULL;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 	
 	CHECK_NOT_NULL(context);
 	CHECK_NOT_NULL(dir);

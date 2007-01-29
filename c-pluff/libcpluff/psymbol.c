@@ -51,8 +51,8 @@ typedef struct symbol_info_t {
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-CP_C_API int cp_define_symbol(cp_context_t *context, const char *name, void *ptr) {
-	int status = CP_OK;
+CP_C_API cp_status_t cp_define_symbol(cp_context_t *context, const char *name, void *ptr) {
+	cp_status_t status = CP_OK;
 	
 	CHECK_NOT_NULL(context);
 	CHECK_NOT_NULL(name);
@@ -100,14 +100,16 @@ CP_C_API int cp_define_symbol(cp_context_t *context, const char *name, void *ptr
 			case CP_ERR_CONFLICT:
 				cpi_errorf(context, _("Plug-in %s tried to redefine symbol %s."), context->plugin->plugin->identifier, name);
 				break;
+			default:
+				break;
 		}
 	}
 	
 	return status;
 }
 
-CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const char *name, int *error) {
-	int status = CP_OK;
+CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const char *name, cp_status_t *error) {
+	cp_status_t status = CP_OK;
 	int error_reported = 1;
 	hnode_t *node;
 	void *symbol = NULL;

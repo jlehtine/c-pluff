@@ -378,10 +378,10 @@ CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char 
  * 
  * @param plugin the associated plug-in or NULL for the client program
  * @param env the associated plug-in environment
- * @param error filled with the error code
+ * @param status a pointer to the location where the status code is to be stored
  * @return the newly allocated context or NULL on failure
  */
-CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *env, int *error);
+CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *env, cp_status_t *status);
 
 /**
  * Frees the resources associated with a plug-in context. Also frees the
@@ -423,9 +423,9 @@ CP_HIDDEN void cpi_free_plugin(cp_plugin_info_t *plugin);
  * 
  * @param context the plug-in context
  * @param plugin the plug-in
- * @return CP_OK (zero) on success or error code on failure
+ * @return @ref CP_OK (zero) on success or an error code on failure
  */
-CP_HIDDEN int cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin);
+CP_HIDDEN cp_status_t cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin);
 
 
 // Dynamic resource management
@@ -436,9 +436,9 @@ CP_HIDDEN int cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin);
  * 
  * @param res the resource
  * @param df the deallocation function
- * @return CP_OK (zero) on success or error code on failure
+ * @return @ref CP_OK (zero) on success or an error code on failure
  */
-CP_HIDDEN int cpi_register_info(void *res, cpi_dealloc_func_t df);
+CP_HIDDEN cp_status_t cpi_register_info(void *res, cpi_dealloc_func_t df);
 
 /**
  * Increases the usage count for the specified dynamic information object.

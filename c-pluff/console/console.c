@@ -291,7 +291,7 @@ static void plugin_listener(const char *plugin_id, cp_plugin_state_t old_state, 
 
 static void cmd_create_context(int argc, char *argv[]) {
 	int i;
-	int status;
+	cp_status_t status;
 
 	if (argc != 1) {
 		error(_("Usage: create-context"));
@@ -406,7 +406,7 @@ static void cmd_destroy_context(int argc, char *argv[]) {
 }
 
 static void cmd_add_plugin_dir(int argc, char *argv[]) {
-	int status;
+	cp_status_t status;
 	
 	if (argc != 2) {
 		error(_("Usage: add-plugin-dir <path>"));
@@ -432,7 +432,7 @@ static void cmd_remove_plugin_dir(int argc, char *argv[]) {
 
 static void cmd_load_plugin(int argc, char *argv[]) {
 	cp_plugin_info_t *plugin;
-	int status;
+	cp_status_t status;
 		
 	if (argc != 2) {
 		error(_("Usage: load-plugin <path>"));
@@ -451,7 +451,7 @@ static void cmd_load_plugin(int argc, char *argv[]) {
 
 static void cmd_scan_plugins(int argc, char *argv[]) {
 	int flags = 0;
-	int status;
+	cp_status_t status;
 	int i;
 	
 	if (active_context == -1) {
@@ -489,7 +489,7 @@ static void cmd_scan_plugins(int argc, char *argv[]) {
 
 static void cmd_list_plugins(int argc, char *argv[]) {
 	cp_plugin_info_t **plugins;
-	int status;
+	cp_status_t status;
 	int i;
 
 	if (argc != 1) {
@@ -712,7 +712,7 @@ static void show_plugin_info_extension(cp_extension_t *e) {
 
 static void cmd_show_plugin_info(int argc, char *argv[]) {
 	cp_plugin_info_t *plugin;
-	int status;
+	cp_status_t status;
 	int i;
 	
 	if (argc != 2) {
@@ -777,7 +777,7 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 
 static void cmd_list_ext_points(int argc, char *argv[]) {
 	cp_ext_point_t **ext_points;
-	int status;
+	cp_status_t status;
 	int i;
 
 	if (argc != 1) {
@@ -808,7 +808,7 @@ static void cmd_list_ext_points(int argc, char *argv[]) {
 
 static void cmd_list_extensions(int argc, char *argv[]) {
 	cp_extension_t **extensions;
-	int status;
+	cp_status_t status;
 	int i;
 
 	if (argc != 1) {
@@ -838,7 +838,7 @@ static void cmd_list_extensions(int argc, char *argv[]) {
 }
 
 static void cmd_start_plugin(int argc, char *argv[]) {
-	int status;
+	cp_status_t status;
 	
 	if (argc != 2) {
 		error(_("Usage: start-plugin <plugin>"));

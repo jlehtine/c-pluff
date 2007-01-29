@@ -26,14 +26,14 @@
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-CP_C_API int cp_scan_plugins(cp_context_t *context, int flags) {
+CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 	hash_t *avail_plugins = NULL;
 	list_t *started_plugins = NULL;
 	cp_plugin_info_t **plugins = NULL;
 	char *pdir_path = NULL;
 	int pdir_path_size = 0;
 	int plugins_stopped = 0;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 	
 	CHECK_NOT_NULL(context);
 	
@@ -72,7 +72,7 @@ CP_C_API int cp_scan_plugins(cp_context_t *context, int flags) {
 					if (de->d_name[0] != '\0' && de->d_name[0] != '.') {
 						int pdir_path_len = dir_path_len + 1 + strlen(de->d_name);
 						cp_plugin_info_t *plugin;
-						int s;
+						cp_status_t s;
 						hnode_t *hnode;
 
 						// Allocate memory for plug-in descriptor path 
@@ -148,7 +148,8 @@ CP_C_API int cp_scan_plugins(cp_context_t *context, int flags) {
 		// Copy the list of started plug-ins, if necessary 
 		if ((flags & CP_LP_RESTART_ACTIVE)
 			&& (flags & (CP_LP_UPGRADE | CP_LP_STOP_ALL_ON_INSTALL))) {
-			int s, i;
+			int i;
+			cp_status_t s;
 
 			if ((plugins = cp_get_plugins_info(context, &s, NULL)) == NULL) {
 				status = s;

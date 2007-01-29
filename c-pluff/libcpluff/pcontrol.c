@@ -81,9 +81,9 @@ static void unregister_extensions(cp_context_t *context, cp_plugin_info_t *plugi
 	}
 }
 
-CP_C_API int cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
+CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
 	cp_plugin_t *rp = NULL;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 	cpi_plugin_event_t event;
 	int i;
 
@@ -228,7 +228,7 @@ static void unresolve_plugin_runtime(cp_plugin_t *plugin) {
  */
 static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	char *rlpath = NULL;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 	
 	assert(plugin->runtime_lib == NULL);
 	if (plugin->plugin->runtime_lib_name == NULL) {
@@ -346,7 +346,7 @@ static int resolve_plugin_import(cp_context_t *context, cp_plugin_t *plugin, cp_
  * @return CP_OK (zero) or CP_OK_PRELIMINARY or an error code
  */
 static int resolve_plugin_prel_rec(cp_context_t *context, cp_plugin_t *plugin) {
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 	int error_reported = 0;
 	lnode_t *node = NULL;
 	int i;
@@ -510,7 +510,7 @@ static void resolve_plugin_failed_rec(cp_plugin_t *plugin) {
  * @return CP_OK (zero) on success or an error code on failure
  */
 static int resolve_plugin(cp_context_t *context, cp_plugin_t *plugin) {
-	int status;
+	cp_status_t status;
 	
 	if ((status = resolve_plugin_prel_rec(context, plugin)) == CP_OK || status == CP_OK_PRELIMINARY) {
 		status = CP_OK;
@@ -532,7 +532,7 @@ static int resolve_plugin(cp_context_t *context, cp_plugin_t *plugin) {
  * @return CP_OK (zero) on success or an error code on failure
  */
 static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 	cpi_plugin_event_t event;
 	lnode_t *node = NULL;
 
@@ -704,7 +704,7 @@ static void warn_dependency_loop(cp_context_t *context, cp_plugin_t *plugin, lis
  * @return CP_OK (zero) on success or an error code on failure
  */
 static int start_plugin_rec(cp_context_t *context, cp_plugin_t *plugin, list_t *importing) {
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 	lnode_t *node;
 	
 	// Check if already started or starting
@@ -748,8 +748,8 @@ static int start_plugin_rec(cp_context_t *context, cp_plugin_t *plugin, list_t *
 	return status;
 }
 
-CP_HIDDEN int cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin) {
-	int status;
+CP_HIDDEN cp_status_t cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin) {
+	cp_status_t status;
 	
 	if ((status = resolve_plugin(context, plugin)) == CP_OK) {
 		list_t *importing = list_create(LISTCOUNT_T_MAX);
@@ -767,9 +767,9 @@ CP_HIDDEN int cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	return status;
 }
 
-CP_C_API int cp_start_plugin(cp_context_t *context, const char *id) {
+CP_C_API cp_status_t cp_start_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 
 	CHECK_NOT_NULL(context);
 	CHECK_NOT_NULL(id);
@@ -924,10 +924,10 @@ static void stop_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 	assert_processed_zero(context);
 }
 
-CP_C_API int cp_stop_plugin(cp_context_t *context, const char *id) {
+CP_C_API cp_status_t cp_stop_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
 	cp_plugin_t *plugin;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 
 	CHECK_NOT_NULL(context);
 	CHECK_NOT_NULL(id);
@@ -1131,9 +1131,9 @@ static void uninstall_plugin(cp_context_t *context, hnode_t *node) {
 	free_registered_plugin(plugin);
 }
 
-CP_C_API int cp_uninstall_plugin(cp_context_t *context, const char *id) {
+CP_C_API cp_status_t cp_uninstall_plugin(cp_context_t *context, const char *id) {
 	hnode_t *node;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 
 	CHECK_NOT_NULL(context);
 	CHECK_NOT_NULL(id);

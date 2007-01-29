@@ -51,8 +51,8 @@ static hash_t *infos = NULL;
 
 // General information object management
 
-CP_HIDDEN int cpi_register_info(void *res, cpi_dealloc_func_t df) {
-	int status = CP_OK;
+CP_HIDDEN cp_status_t cpi_register_info(void *res, cpi_dealloc_func_t df) {
+	cp_status_t status = CP_OK;
 	info_resource_t *ir = NULL;
 	
 	do {
@@ -150,10 +150,10 @@ CP_HIDDEN void cpi_destroy_all_infos(void) {
 
 // Information acquiring functions
 
-CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *context, const char *id, int *error) {
+CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *context, const char *id, cp_status_t *error) {
 	hnode_t *node;
 	cp_plugin_info_t *plugin = NULL;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 
 	CHECK_NOT_NULL(context);
 	CHECK_NOT_NULL(id);
@@ -188,10 +188,10 @@ static void dealloc_plugins_info(cp_plugin_info_t **plugins) {
 	free(plugins);
 }
 
-CP_C_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *context, int *error, int *num) {
+CP_C_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *context, cp_status_t *error, int *num) {
 	cp_plugin_info_t **plugins = NULL;
 	int i, n;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 	
 	CHECK_NOT_NULL(context);
 	
@@ -274,10 +274,10 @@ static void dealloc_ext_points_info(cp_ext_point_t **ext_points) {
 	free(ext_points);
 }
 
-CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *context, int *error, int *num) {
+CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *context, cp_status_t *error, int *num) {
 	cp_ext_point_t **ext_points = NULL;
 	int i, n;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 	
 	CHECK_NOT_NULL(context);
 	
@@ -342,10 +342,10 @@ static void dealloc_extensions_info(cp_extension_t **extensions) {
 	free(extensions);
 }
 
-CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *context, const char *extpt_id, int *error, int *num) {
+CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *context, const char *extpt_id, cp_status_t *error, int *num) {
 	cp_extension_t **extensions = NULL;
 	int i, n;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 	
 	CHECK_NOT_NULL(context);
 	

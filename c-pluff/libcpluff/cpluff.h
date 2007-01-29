@@ -45,48 +45,6 @@ extern "C" {
 
 
 /**
- * @defgroup cErrorCodes Error codes
- * @ingroup cDefines
- *
- * Error codes returned by API functions.
- * Most of the interface functions return error codes. The returned
- * error code either indicates successful completion of the operation
- * or some specific kind of error. Some functions do not return an error
- * code because they never fail.
- */
-/*@{*/
-
-/**
- * Operation was performed successfully (equals to zero).
- * @showinitializer
- */
-#define CP_OK 0
-
-/** Not enough memory or other operating system resources available */
-#define CP_ERR_RESOURCE 2
-
-/** The specified object is unknown to the framework */
-#define CP_ERR_UNKNOWN 3
-
-/** An I/O error occurred */
-#define CP_ERR_IO 4
-
-/** Malformed plug-in descriptor was encountered when loading a plug-in */
-#define CP_ERR_MALFORMED 5
-
-/** Plug-in or symbol conflicts with another plug-in or symbol. */
-#define CP_ERR_CONFLICT 6
-
-/** Plug-in dependencies could not be satisfied. */
-#define CP_ERR_DEPENDENCY 7
-
-/** Plug-in runtime signaled an error. */
-#define CP_ERR_RUNTIME 8
-
-/*@}*/
-
-
-/**
  * @defgroup cScanFlags Flags for plug-in scanning
  * @ingroup cDefines
  *
@@ -144,6 +102,46 @@ extern "C" {
  
 
 /* Enumerations */
+
+/**
+ * @ingroup cEnums
+ *
+ * An enumeration of status codes returned by API functions.
+ * Most of the interface functions return a status code. The returned
+ * status code either indicates successful completion of the operation
+ * or some specific kind of error. Some functions do not return a status
+ * code because they never fail.
+ */
+enum cp_status_t {
+
+	/**
+	 * Operation was performed successfully (equals to zero).
+	 * @showinitializer
+	 */
+	CP_OK = 0,
+
+	/** Not enough memory or other operating system resources available */
+	CP_ERR_RESOURCE,
+
+	/** The specified object is unknown to the framework */
+	CP_ERR_UNKNOWN,
+
+	/** An I/O error occurred */
+	CP_ERR_IO,
+
+	/** Malformed plug-in descriptor was encountered when loading a plug-in */
+	CP_ERR_MALFORMED,
+
+	/** Plug-in or symbol conflicts with another plug-in or symbol. */
+	CP_ERR_CONFLICT,
+
+	/** Plug-in dependencies could not be satisfied. */
+	CP_ERR_DEPENDENCY,
+
+	/** Plug-in runtime signaled an error. */
+	CP_ERR_RUNTIME
+	
+};
 
 /**
  * @ingroup cEnums
@@ -293,6 +291,9 @@ typedef struct cp_cfg_element_t cp_cfg_element_t;
 
 /** A type for cp_plugin_runtime_t structure. */
 typedef struct cp_plugin_runtime_t cp_plugin_runtime_t;
+
+/** A type for cp_status_t enumeration. */
+typedef enum cp_status_t cp_status_t;
 
 /** A type for cp_plugin_state_t enumeration. */
 typedef enum cp_plugin_state_t cp_plugin_state_t;
@@ -852,9 +853,9 @@ CP_C_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler);
  * set the current locale using @code setlocale(LC_ALL, "") @endcode
  * before calling this function.
  *
- * @return #CP_OK (zero) on success or error code on failure
+ * @return @ref CP_OK (zero) on success or error code on failure
  */
-CP_C_API int cp_init(void);
+CP_C_API cp_status_t cp_init(void);
 
 /**
  * Destroys the plug-in framework and releases the resources used by it.
@@ -892,9 +893,9 @@ CP_C_API void cp_destroy(void);
  * @param min_severity the minimum severity of messages passed to logger
  * @param ctx_rule only the messages associated with the specified context
  *			are passed to logger if non-NULL
- * @return #CP_OK (zero) on success or #CP_ERR_RESOURCE if insufficient memory
+ * @return @ref CP_OK (zero) on success or @ref CP_ERR_RESOURCE if insufficient memory
  */
-CP_C_API int cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule);
+CP_C_API cp_status_t cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule);
 
 /**
  * Removes a logger registration.
@@ -929,10 +930,10 @@ CP_C_API void cp_remove_logger(cp_logger_func_t logger);
  * resources associated with the context are released by calling
  * ::cp_destroy_context when the context is not needed anymore.
  * 
- * @param error pointer to the location where error code or #CP_OK is stored, or NULL
+ * @param status pointer to the location where status code is to be stored, or NULL
  * @return the newly created plugin context, or NULL on failure
  */
-CP_C_API cp_context_t * cp_create_context(int *error);
+CP_C_API cp_context_t * cp_create_context(cp_status_t *status);
 
 /**
  * Destroys the specified plug-in context and releases the associated resources.
@@ -946,13 +947,13 @@ CP_C_API void cp_destroy_context(cp_context_t *ctx);
 /**
  * Registers a plug-in collection with a plug-in context. The
  * plug-in context will scan the directory when ::cp_load_plugins is called.
- * Returns #CP_OK if the directory has already been registered.
+ * Returns @ref CP_OK if the directory has already been registered.
  * 
  * @param ctx the plug-in context
  * @param dir the directory
- * @return #CP_OK (zero) on success, or #CP_ERR_RESOURCE if insufficient system resources
+ * @return @ref CP_OK (zero) on success or @ref CP_ERR_RESOURCE if insufficient system resources
  */
-CP_C_API int cp_add_plugin_dir(cp_context_t *ctx, const char *dir);
+CP_C_API cp_status_t cp_add_plugin_dir(cp_context_t *ctx, const char *dir);
 
 /**
  * Unregisters a previously registered directory of plug-ins from a plug-in context.
@@ -990,10 +991,10 @@ CP_C_API void cp_remove_plugin_dir(cp_context_t *ctx, const char *dir);
  * 
  * @param ctx the plug-in context for error reporting, or NULL for none
  * @param path the installation path of the plug-in
- * @param error pointer to the location for the returned error code, or NULL
+ * @param status a pointer to the location where status code is to be stored, or NULL
  * @return pointer to the information structure or NULL if error occurs
  */
-CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const char *path, int *error);
+CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const char *path, cp_status_t *status);
 
 /**
  * Installs the plug-in described by the specified plug-in information
@@ -1008,9 +1009,9 @@ CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const c
  *
  * @param ctx the plug-in context
  * @param pi plug-in information structure
- * @return #CP_OK (zero) on success or error code on failure
+ * @return @ref CP_OK (zero) on success or an error code on failure
  */
-CP_C_API int cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi);
+CP_C_API cp_status_t cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi);
 
 /**
  * Scans for plug-ins in the registered plug-in directories, installing
@@ -1033,9 +1034,9 @@ CP_C_API int cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi);
  * 
  * @param ctx the plug-in context
  * @param flags the bitmask of flags
- * @return #CP_OK (zero) on success, an error code on failure
+ * @return @ref CP_OK (zero) on success or an error code on failure
  */
-CP_C_API int cp_scan_plugins(cp_context_t *ctx, int flags);
+CP_C_API cp_status_t cp_scan_plugins(cp_context_t *ctx, int flags);
 
 /**
  * Starts a plug-in. Also starts any imported plug-ins. If the plug-in is
@@ -1047,9 +1048,9 @@ CP_C_API int cp_scan_plugins(cp_context_t *ctx, int flags);
  * 
  * @param ctx the plug-in context
  * @param id identifier of the plug-in to be started
- * @return #CP_OK (zero) on success, an error code on failure
+ * @return @ref CP_OK (zero) on success or an error code on failure
  */
-CP_C_API int cp_start_plugin(cp_context_t *ctx, const char *id);
+CP_C_API cp_status_t cp_start_plugin(cp_context_t *ctx, const char *id);
 
 /**
  * Stops a plug-in. First stops any dependent plug-ins that are currently
@@ -1061,9 +1062,9 @@ CP_C_API int cp_start_plugin(cp_context_t *ctx, const char *id);
  * 
  * @param ctx the plug-in context
  * @param id identifier of the plug-in to be stopped
- * @return #CP_OK (zero) on success or #CP_ERR_UNKNOWN if unknown plug-in
+ * @return @ref CP_OK (zero) on success or @ref CP_ERR_UNKNOWN if unknown plug-in
  */
-CP_C_API int cp_stop_plugin(cp_context_t *ctx, const char *id);
+CP_C_API cp_status_t cp_stop_plugin(cp_context_t *ctx, const char *id);
 
 /**
  * Stops all active plug-ins.
@@ -1078,9 +1079,9 @@ CP_C_API void cp_stop_plugins(cp_context_t *ctx);
  * 
  * @param ctx the plug-in context
  * @param id identifier of the plug-in to be unloaded
- * @return #CP_OK (zero) on success or #CP_ERR_UNKNOWN if unknown plug-in
+ * @return @ref CP_OK (zero) on success or @ref CP_ERR_UNKNOWN if unknown plug-in
  */
-CP_C_API int cp_uninstall_plugin(cp_context_t *ctx, const char *id);
+CP_C_API cp_status_t cp_uninstall_plugin(cp_context_t *ctx, const char *id);
 
 /**
  * Uninstalls all plug-ins. All plug-ins are first stopped and then
@@ -1111,10 +1112,10 @@ CP_C_API void cp_uninstall_plugins(cp_context_t *ctx);
  * 
  * @param ctx the plug-in context
  * @param id identifier of the plug-in to be examined
- * @param error filled with an error code, if non-NULL
+ * @param status a pointer to the location where status code is to be stored, or NULL
  * @return pointer to the information structure or NULL on failure
  */
-CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *ctx, const char *id, int *error);
+CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *ctx, const char *id, cp_status_t *status);
 
 /**
  * Returns static information about the installed plug-ins. The returned
@@ -1123,12 +1124,12 @@ CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *ctx, const char *id
  * information is not needed anymore.
  * 
  * @param ctx the plug-in context
- * @param error filled with an error code, if non-NULL
- * @param num filled with the number of returned plug-ins, if non-NULL
+ * @param status a pointer to the location where status code is to be stored, or NULL
+ * @param num a pointer to the location where the number of returned plug-ins is stored, or NULL
  * @return pointer to a NULL-terminated list of pointers to plug-in information
  * 			or NULL on failure
  */
-CP_C_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *ctx, int *error, int *num);
+CP_C_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *ctx, cp_status_t *status, int *num);
 
 /**
  * Returns static information about the currently installed extension points.
@@ -1137,12 +1138,12 @@ CP_C_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *ctx, int *error, 
  * information is not needed anymore.
  *
  * @param ctx the plug-in context
- * @param error filled with an error code, if non-NULL
+ * @param status a pointer to the location where status code is to be stored, or NULL
  * @param num filled with the number of returned extension points, if non-NULL
  * @return pointer to a NULL-terminated list of pointers to extension point
  *			information or NULL on failure
  */
-CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *ctx, int *error, int *num);
+CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *ctx, cp_status_t *status, int *num);
 
 /**
  * Returns static information about the currently installed extension points.
@@ -1152,12 +1153,12 @@ CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *ctx, int *error,
  *
  * @param ctx the plug-in context
  * @param extpt_id the extension point identifier or NULL for all extensions
- * @param error filled with an error code, if non-NULL
- * @param num filled with the number of returned extension points, if non-NULL
+ * @param status a pointer to the location where status code is to be stored, or NULL
+ * @param num a pointer to the location where the number of returned extension points is to be stored, or NULL
  * @return pointer to a NULL-terminated list of pointers to extension
  *			information or NULL on failure
  */
-CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *ctx, const char *extpt_id, int *error, int *num);
+CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *ctx, const char *extpt_id, cp_status_t *status, int *num);
 
 /**
  * Releases previously obtained dynamically allocated information. The
@@ -1189,9 +1190,9 @@ CP_C_API cp_plugin_state_t cp_get_plugin_state(cp_context_t *ctx, const char *id
  * @param ctx the plug-in context
  * @param listener the plug-in listener to be added
  * @param user_data user data pointer supplied to the listener
- * @return #CP_OK (zero) on success, #CP_ERR_RESOURCE if out of resources
+ * @return @ref CP_OK (zero) on success or @ref CP_ERR_RESOURCE if out of resources
  */
-CP_C_API int cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener, void *user_data);
+CP_C_API cp_status_t cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener, void *user_data);
 
 /**
  * Removes a plug-in listener from a plug-in context. Does nothing if the
@@ -1274,9 +1275,9 @@ CP_C_API char * cp_lookup_cfg_value(cp_cfg_element_t *base, const char *path);
  * 
  * @param ctx the plug-in context of the registering plug-in
  * @param runfunc the run function to be registered
- * @return CP_OK (zero) on success or an error code on failure
+ * @return @ref CP_OK (zero) on success or an error code on failure
  */
-CP_C_API int cp_run_function(cp_context_t *ctx, cp_run_func_t runfunc);
+CP_C_API cp_status_t cp_run_function(cp_context_t *ctx, cp_run_func_t runfunc);
 
 /**
  * Runs the started plug-ins as long as there is something to run.
@@ -1312,7 +1313,7 @@ CP_C_API int cp_run_plugins_step(cp_context_t *ctx);
  * 
  * @param ctx the plug-in context
  * @param argc the number of arguments
- * @param argv an array of arguments as string pointers
+ * @param argv a NULL-terminated array of arguments
  */
 CP_C_API void cp_set_context_args(cp_context_t *ctx, int argc, char **argv);
 
@@ -1322,7 +1323,7 @@ CP_C_API void cp_set_context_args(cp_context_t *ctx, int argc, char **argv);
  * Startup arguments are set by the main program using ::cp_set_context_args.
  * 
  * @param ctx the plug-in context
- * @param argv argument array pointer is stored to this location
+ * @param argv a pointer to the location where pointer to the argument array is to be stored
  * @return the number of startup arguments or 0 if not set
  */
 CP_C_API int cp_get_context_args(cp_context_t *ctx, char ***argv);
@@ -1350,9 +1351,9 @@ CP_C_API int cp_get_context_args(cp_context_t *ctx, char ***argv);
  * @param ctx the plug-in context
  * @param name the name of the symbol
  * @param ptr pointer value for the symbol
- * @return #CP_OK (zero) on success or an error code on failure
+ * @return @ref CP_OK (zero) on success or a status code on failure
  */
-CP_C_API int cp_define_symbol(cp_context_t *ctx, const char *name, void *ptr);
+CP_C_API cp_status_t cp_define_symbol(cp_context_t *ctx, const char *name, void *ptr);
 
 /**
  * Resolves a symbol provided by the specified plug-in. The plug-in is started
@@ -1381,10 +1382,10 @@ CP_C_API int cp_define_symbol(cp_context_t *ctx, const char *name, void *ptr);
  * @param ctx the plug-in context
  * @param id the identifier of the symbol defining plug-in
  * @param name the name of the symbol
- * @param error filled with an error code if non-NULL
+ * @param status a pointer to the location where the status code is to be stored, or NULL
  * @return the pointer associated with the symbol or NULL on failure
  */
-CP_C_API void *cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *name, int *error);
+CP_C_API void *cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *name, cp_status_t *status);
 
 /**
  * Releases a previously obtained symbol. The pointer must not be used after

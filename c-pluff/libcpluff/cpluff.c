@@ -134,8 +134,8 @@ static void reset(void) {
 #endif
 }
 
-CP_C_API int cp_init(void) {
-	int status = CP_OK;
+CP_C_API cp_status_t cp_init(void) {
+	cp_status_t status = CP_OK;
 	
 	// Initialize if necessary
 	do {
@@ -204,7 +204,7 @@ static int comp_logger(const void *p1, const void *p2) {
 	return l1->logger != l2->logger;
 }
 
-CP_C_API int cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule) {
+CP_C_API cp_status_t cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule) {
 	logger_t l;
 	logger_t *lh;
 	lnode_t *node;

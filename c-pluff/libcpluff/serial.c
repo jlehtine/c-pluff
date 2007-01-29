@@ -26,10 +26,10 @@ typedef struct run_func_t {
 	
 } run_func_t;
 
-CP_C_API int cp_run_function(cp_context_t *ctx, cp_run_func_t runfunc) {
+CP_C_API cp_status_t cp_run_function(cp_context_t *ctx, cp_run_func_t runfunc) {
 	lnode_t *node = NULL;
 	run_func_t *rf = NULL;
-	int status = CP_OK;
+	cp_status_t status = CP_OK;
 	
 	CHECK_NOT_NULL(ctx);
 	CHECK_NOT_NULL(runfunc);
