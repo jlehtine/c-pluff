@@ -939,7 +939,7 @@ CP_C_API void cp_destroy_context(cp_context_t *ctx);
 
 /**
  * Registers a plug-in collection with a plug-in context. The
- * plug-in context will scan the directory when ::cp_load_plugins is called.
+ * plug-in context will scan the directory when ::cp_scan_plugins is called.
  * Returns @ref CP_OK if the directory has already been registered.
  * 
  * @param ctx the plug-in context
