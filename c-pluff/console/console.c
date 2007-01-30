@@ -19,22 +19,11 @@
 
 
 /* ------------------------------------------------------------------------
- * Definitions
- * ----------------------------------------------------------------------*/
-
-/// The maximum number of contexts supported 
-#define MAX_NUM_CONTEXTS 8
-
-
-/* ------------------------------------------------------------------------
  * Function declarations
  * ----------------------------------------------------------------------*/
 
 // Function declarations for command implementations 
 static void cmd_help(int argc, char *argv[]);
-static void cmd_create_context(int argc, char *argv[]);
-static void cmd_select_context(int argc, char *argv[]);
-static void cmd_destroy_context(int argc, char *argv[]);
 static void cmd_add_plugin_dir(int argc, char *argv[]);
 static void cmd_remove_plugin_dir(int argc, char *argv[]);
 static void cmd_load_plugin(int argc, char *argv[]);
@@ -54,21 +43,12 @@ static void cmd_exit(int argc, char *argv[]);
  * Variables
  * ----------------------------------------------------------------------*/
 
-/// Known plug-in contexts 
-cp_context_t *contexts[MAX_NUM_CONTEXTS];
-
-/// The index of the currently active context or -1 if none 
-static int active_context = -1;
-
-/// The index of the next created context, or -1 if no more room 
-static int next_context = 0;
+/// The plug-in context
+cp_context_t *context;
 
 /// The available commands 
 const command_info_t commands[] = {
 	{ "help", N_("displays command help"), cmd_help },
-	{ "create-context", N_("creates a new plug-in context"), cmd_create_context },
-	{ "select-context", N_("selects a plug-in context as the active context"), cmd_select_context },
-	{ "destroy-context", N_("destroys the selected plug-in context"), cmd_destroy_context },
 	{ "add-plugin-dir", N_("registers a plug-in directory"), cmd_add_plugin_dir },
 	{ "remove-plugin-dir", N_("unregisters a plug-in directory"), cmd_remove_plugin_dir },
 	{ "load-plugin", N_("loads and installs a plug-in from the specified path"), cmd_load_plugin },
@@ -189,17 +169,6 @@ static int cmdline_parse(char *cmdline, char **argv[]) {
 	}
 }
 
-static int destroy_context(int ci) {
-	if (contexts[ci] != NULL) {
-		cp_destroy_context(contexts[ci]);
-		contexts[ci] = NULL;
-		noticef(_("Destroyed plug-in context %d."), ci);
-		return 0;
-	} else {
-		return -1;
-	}
-}
-
 static void cmd_exit(int argc, char *argv[]) {
 	
 	// Destroy C-Pluff framework 
@@ -216,10 +185,6 @@ static void cmd_help(int argc, char *argv[]) {
 	for (i = 0; commands[i].name != NULL; i++) {
 		noticef("  %s - %s", commands[i].name, _(commands[i].description));
 	}
-}
-
-static void no_active_context(void) {	
-	error(_("There is no active plug-in context."));
 }
 
 static void logger(cp_log_severity_t severity, const char *msg, const char *apid, void *dummy) {
@@ -277,132 +242,11 @@ static char *state_to_string(cp_plugin_state_t state) {
 	}
 }
 
-static void plugin_listener(const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *user_data) {
-	int i;
-	cp_context_t **cap = user_data;
-	
-	i = cap - contexts;
-	noticef(_("PLUGIN EVENT: context %d: %s: %s -> %s"),
-		i,
+static void plugin_listener(const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *dummy) {
+	noticef(_("PLUGIN EVENT: %s: %s -> %s"),
 		plugin_id,
 		state_to_string(old_state),
 		state_to_string(new_state));
-}
-
-static void cmd_create_context(int argc, char *argv[]) {
-	int i;
-	cp_status_t status;
-
-	if (argc != 1) {
-		error(_("Usage: create-context"));
-	} else if (next_context == -1) {
-		error(_("Maximum number of plug-in contexts in use."));
-	} else if ((contexts[next_context] = cp_create_context(&status)) == NULL) {
-		errorf(_("cp_create_context failed with error code %d."), status);
-	} else if ((status = cp_add_plugin_listener(contexts[next_context], plugin_listener, contexts + next_context)) != CP_OK) {
-		errorf(_("cp_add_event_listener failed with error code %d."), status);
-		cp_destroy_context(contexts[next_context]);
-		contexts[next_context] = NULL;
-	} else {
-		active_context = next_context;
-		noticef(_("Created plug-in context %d."), active_context);
-		
-		// Find the index for the next context 
-		i = next_context;
-		do {
-			if (++next_context >= MAX_NUM_CONTEXTS) {
-				next_context = 0;
-			}
-			if (contexts[next_context] == NULL) {
-				break;
-			}
-		} while (next_context != i);
-		if (next_context == i) {
-			next_context = -1;
-		}
-	}
-}
-
-static void print_avail_contexts(void) {
-	int i, first = 1;
-	
-	for (i = 0; i < MAX_NUM_CONTEXTS; i++) {
-		if (contexts[i] != NULL) {
-			if (first) {
-				notice(_("Available plug-in contexts are:"));
-				first = 0;
-			}
-			noticef("  %d", i);
-		}
-	}
-	if (first) {
-		notice(_("There are no plug-in contexts available."));
-	}
-}
-
-static int choose_context(const char *ctx) {
-	int i = atoi(ctx);
-	
-	if (i < 0 || i >= MAX_NUM_CONTEXTS || contexts[i] == NULL) {
-		error(_("No such plug-in context."));
-		return -1;
-	} else {
-		return i;
-	}
-}
-
-static void cmd_select_context(int argc, char *argv[]) {
-	int i;
-	
-	if (argc != 2) {
-		error(_("Usage: select-context <context>"));
-		print_avail_contexts();
-	} else if ((i = choose_context(argv[1])) != -1) {
-		active_context = i;
-		noticef(_("Selected plug-in context %d."), active_context);
-	}
-}
-
-static void cmd_destroy_context(int argc, char *argv[]) {
-	int ci;
-	
-	if (argc == 1) {
-		if (active_context == -1) {
-			no_active_context();
-			return;
-		}
-		ci = active_context;
-	} else if (argc == 2) {
-		if ((ci = choose_context(argv[1])) == -1) {
-			return;
-		}
-	} else {
-		error(_("Usage: destroy-context [<context>]"));
-		return;
-	}
-	
-	// Destroy the context 
-	destroy_context(ci);
-	
-	// Choose the next index if necessary 
-	if (next_context == -1) {
-		next_context = ci;
-	}
-	
-	// Choose the new active context if necessary 
-	if (ci == active_context) {
-		do {
-			if (--active_context < 0) {
-				active_context = MAX_NUM_CONTEXTS - 1;
-			}
-			if (contexts[active_context] != NULL) {
-				break;
-			}
-		} while (active_context != ci);
-		if (active_context == ci) {
-			active_context = -1;
-		}
-	}
 }
 
 static void cmd_add_plugin_dir(int argc, char *argv[]) {
@@ -410,23 +254,19 @@ static void cmd_add_plugin_dir(int argc, char *argv[]) {
 	
 	if (argc != 2) {
 		error(_("Usage: add-plugin-dir <path>"));
-	} else if (active_context == -1) {
-		no_active_context();
-	} else if ((status = cp_add_plugin_dir(contexts[active_context], argv[1])) != CP_OK) {
+	} else if ((status = cp_add_plugin_dir(context, argv[1])) != CP_OK) {
 		errorf(_("cp_add_plugin_dir failed with error code %d."), status);
 	} else {
-		noticef(_("Registered plug-in directory %s for context %d."), argv[1], active_context);
+		noticef(_("Registered plug-in directory %s."), argv[1]);
 	}
 }
 
 static void cmd_remove_plugin_dir(int argc, char *argv[]) {
 	if (argc != 2) {
 		error(_("Usage: remove-plugin-dir <path>"));
-	} else if (active_context == -1) {
-		no_active_context();
 	} else {
-		cp_remove_plugin_dir(contexts[active_context], argv[1]);
-		noticef(_("Unregistered plug-in directory %s from context %d."), argv[1], active_context);
+		cp_remove_plugin_dir(context, argv[1]);
+		noticef(_("Unregistered plug-in directory %s."), argv[1]);
 	}
 }
 
@@ -436,15 +276,13 @@ static void cmd_load_plugin(int argc, char *argv[]) {
 		
 	if (argc != 2) {
 		error(_("Usage: load-plugin <path>"));
-	} else if (active_context == -1) {
-		no_active_context();
-	} else if ((plugin = cp_load_plugin_descriptor(contexts[active_context], argv[1], &status)) == NULL) {
+	} else if ((plugin = cp_load_plugin_descriptor(context, argv[1], &status)) == NULL) {
 		errorf(_("cp_load_plugin_descriptor failed with error code %d."), status);
-	} else if ((status = cp_install_plugin(contexts[active_context], plugin)) != CP_OK) {
+	} else if ((status = cp_install_plugin(context, plugin)) != CP_OK) {
 		errorf(_("cp_install_plugin failed with error code %d."), status);
 		cp_release_info(plugin);
 	} else {
-		noticef(_("Installed plug-in %s into plug-in context %d."), plugin->identifier, active_context);
+		noticef(_("Installed plug-in %s."), plugin->identifier);
 		cp_release_info(plugin);
 	}
 }
@@ -453,11 +291,6 @@ static void cmd_scan_plugins(int argc, char *argv[]) {
 	int flags = 0;
 	cp_status_t status;
 	int i;
-	
-	if (active_context == -1) {
-		no_active_context();
-		return;
-	}
 	
 	// Set flags 
 	for (i = 1; i < argc; i++) {
@@ -480,7 +313,7 @@ static void cmd_scan_plugins(int argc, char *argv[]) {
 		}
 	}
 	
-	if ((status = cp_scan_plugins(contexts[active_context], flags)) != CP_OK) {
+	if ((status = cp_scan_plugins(context, flags)) != CP_OK) {
 		errorf(_("cp_load_plugins failed with error code %d."), status);
 		return;
 	}
@@ -494,25 +327,23 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 
 	if (argc != 1) {
 		error(_("Usage: list-plugins"));
-	} else if (active_context == -1) {
-		no_active_context();
-	} else if ((plugins = cp_get_plugins_info(contexts[active_context], &status, NULL)) == NULL) {
+	} else if ((plugins = cp_get_plugins_info(context, &status, NULL)) == NULL) {
 		errorf(_("cp_get_plugins_info failed with error code %d."), status);
 	} else {
-		noticef(_("Plug-ins installed into context %d:"), active_context);
+		notice(_("Installed plug-ins:"));
 		for (i = 0; plugins[i] != NULL; i++) {
 			if (plugins[i]->name != NULL) {
 				noticef("  %s %s %s \"%s\"",
 					plugins[i]->identifier,
 					plugins[i]->version != NULL ? plugins[i]->version : "<unversioned>",
-					state_to_string(cp_get_plugin_state(contexts[active_context], plugins[i]->identifier)),
+					state_to_string(cp_get_plugin_state(context, plugins[i]->identifier)),
 					plugins[i]->name
 				);
 			} else {
 				noticef("  %s %s %s",
 					plugins[i]->identifier,
 					plugins[i]->version != NULL ? plugins[i]->version : "<unversioned>",
-					state_to_string(cp_get_plugin_state(contexts[active_context], plugins[i]->identifier))
+					state_to_string(cp_get_plugin_state(context, plugins[i]->identifier))
 				);
 			}
 		}
@@ -717,9 +548,7 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 	
 	if (argc != 2) {
 		error(_("Usage: show-plugin-info <plugin>"));
-	} else if (active_context == -1) {
-		no_active_context();
-	} else if ((plugin = cp_get_plugin_info(contexts[active_context], argv[1], &status)) == NULL) {
+	} else if ((plugin = cp_get_plugin_info(context, argv[1], &status)) == NULL) {
 		errorf(_("cp_get_plugin_info failed with error code %d."), status);
 	} else {
 		notice("{");
@@ -781,12 +610,10 @@ static void cmd_list_ext_points(int argc, char *argv[]) {
 
 	if (argc != 1) {
 		error(_("Usage: list-ext-points"));
-	} else if (active_context == -1) {
-		no_active_context();
-	} else if ((ext_points = cp_get_ext_points_info(contexts[active_context], &status, NULL)) == NULL) {
+	} else if ((ext_points = cp_get_ext_points_info(context, &status, NULL)) == NULL) {
 		errorf(_("cp_get_ext_points_info failed with error code %d."), status);
 	} else {
-		noticef(_("Extension points installed into context %d:"), active_context);
+		notice(_("Installed extension points:"));
 		for (i = 0; ext_points[i] != NULL; i++) {
 			if (ext_points[i]->name != NULL) {
 				noticef("  %s \"%s\" (%s)",
@@ -812,12 +639,10 @@ static void cmd_list_extensions(int argc, char *argv[]) {
 
 	if (argc != 1) {
 		error(_("Usage: list-extensions"));
-	} else if (active_context == -1) {
-		no_active_context();
-	} else if ((extensions = cp_get_extensions_info(contexts[active_context], NULL, &status, NULL)) == NULL) {
+	} else if ((extensions = cp_get_extensions_info(context, NULL, &status, NULL)) == NULL) {
 		errorf(_("cp_get_extensions_info failed with error code %d."), status);
 	} else {
-		noticef(_("Extensions installed into context %d:"), active_context);
+		notice(_("Installed extensions:"));
 		for (i = 0; extensions[i] != NULL; i++) {
 			if (extensions[i]->name != NULL) {
 				noticef("  %s \"%s\" (%s)",
@@ -841,9 +666,7 @@ static void cmd_start_plugin(int argc, char *argv[]) {
 	
 	if (argc != 2) {
 		error(_("Usage: start-plugin <plugin>"));
-	} else if (active_context == -1) {
-		no_active_context();
-	} else if ((status = cp_start_plugin(contexts[active_context], argv[1])) != CP_OK) {
+	} else if ((status = cp_start_plugin(context, argv[1])) != CP_OK) {
 		errorf(_("cp_start_plugin failed with error code %d."), status);
 	} else {
 		noticef(_("Started plug-in %s."), argv[1]);
@@ -851,12 +674,13 @@ static void cmd_start_plugin(int argc, char *argv[]) {
 }
 
 static void cmd_stop_plugin(int argc, char *argv[]) {
+	cp_status_t status;
+	
 	if (argc != 2) {
 		error(_("Usage: stop-plugin <plugin>"));
-	} else if (active_context == -1) {
-		no_active_context();
+	} else if ((status = cp_stop_plugin(context, argv[1])) != CP_OK) {
+		errorf(_("cp_stop_plugin failed with error code %d."), status);
 	} else {
-		cp_stop_plugin(contexts[active_context], argv[1]);
 		noticef(_("Stopped plug-in %s."), argv[1]);
 	}
 }
@@ -864,21 +688,20 @@ static void cmd_stop_plugin(int argc, char *argv[]) {
 static void cmd_stop_all_plugins(int argc, char *argv[]) {
 	if (argc != 1) {
 		error(_("Usage: stop-all-plugins"));
-	} else if (active_context == -1) {
-		no_active_context();
 	} else {
-		cp_stop_plugins(contexts[active_context]);
-		noticef(_("Stopped all plug-ins in context %d."), active_context);
+		cp_stop_plugins(context);
+		notice(_("Stopped all plug-ins."));
 	}
 }
 
 static void cmd_uninstall_plugin(int argc, char *argv[]) {
+	cp_status_t status;
+	
 	if (argc != 2) {
 		error(_("Usage: uninstall-plugin <plugin>"));
-	} else if (active_context == -1) {
-		no_active_context();
+	} else if ((status = cp_uninstall_plugin(context, argv[1])) != CP_OK) {
+		errorf(_("cp_uninstall_plugin failed with error code %d."), status);
 	} else {
-		cp_uninstall_plugin(contexts[active_context], argv[1]);
 		noticef(_("Uninstalled plug-in %s."), argv[1]);
 	}
 }
@@ -886,17 +709,16 @@ static void cmd_uninstall_plugin(int argc, char *argv[]) {
 static void cmd_uninstall_all_plugins(int argc, char *argv[]) {
 	if (argc != 1) {
 		error(_("Usage: uninstall-all-plugins"));
-	} else if (active_context == -1) {
-		no_active_context();
 	} else {
-		cp_uninstall_plugins(contexts[active_context]);
-		noticef(_("Uninstalled all plug-ins in context %d."), active_context);
+		cp_uninstall_plugins(context);
+		notice(_("Uninstalled all plug-ins."));
 	}
 }
 
 int main(int argc, char *argv[]) {
-	char *prompt_no_context, *prompt_context;
+	char *prompt;
 	int i;
+	cp_status_t status;
 
 	// Gettext initialization 
 #ifdef HAVE_GETTEXT
@@ -905,9 +727,6 @@ int main(int argc, char *argv[]) {
 	textdomain(PACKAGE);
 #endif
 
-	// Initialize C-Pluff library 
-	cp_init();
-	
 	// Display startup information 
 	noticef(
 		/* TRANSLATORS: This is the version string displayed on startup. */
@@ -918,18 +737,31 @@ int main(int argc, char *argv[]) {
 		cp_get_version(), cp_get_host_type());
 	notice(_("Type \"help\" for help on available commands."));
 
-	// Initialize context array 
-	for (i = 0; i < MAX_NUM_CONTEXTS; i++) {
-		contexts[i] = NULL;
+	// Initialize C-Pluff library 
+	if ((status = cp_init()) != CP_OK) {
+		errorf(_("cp_init failed with error code %d."), status);
+		exit(1);
+	}
+	
+	// Create a plug-in context
+	context = cp_create_context(&status);
+	if (context == NULL) {
+		errorf(_("cp_create_context failed with error code %d."), status);
+		exit(1);
 	}
 
 	// Initialize logging
-	cp_add_logger(logger, NULL, CP_LOG_DEBUG, NULL);
+	cp_register_logger(context, logger, NULL, CP_LOG_DEBUG);
+
+	// Initialize plug-in listener
+	cp_register_plistener(context, plugin_listener, NULL);
 
 	// Command line loop 
 	cmdline_init();
-	prompt_no_context = _("[no context] > ");
-	prompt_context = _("[context %d] > ");
+	
+	/* TRANSLATORS: This is the input prompt for cpluff-console. */
+	prompt = _("> ");
+	
 	while (1) {
 		char prompt[32];
 		char *cmdline;
@@ -937,13 +769,7 @@ int main(int argc, char *argv[]) {
 		char **argv;
 		
 		// Get command line 
-		if (active_context != -1) {
-			snprintf(prompt, sizeof(prompt), prompt_context, active_context);
-			prompt[sizeof(prompt)/sizeof(char) - 1] = '\0';
-			cmdline = cmdline_input(prompt);
-		} else {
-			cmdline = cmdline_input(prompt_no_context);
-		}
+		cmdline = cmdline_input(prompt);
 		if (cmdline == NULL) {
 			putchar('\n');
 			cmdline = "exit";
