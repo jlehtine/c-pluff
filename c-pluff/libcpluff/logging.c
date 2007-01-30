@@ -1,0 +1,227 @@
+/*-------------------------------------------------------------------------
+ * C-Pluff, a plug-in framework for C
+ * Copyright 2006 Johannes Lehtinen
+ *-----------------------------------------------------------------------*/
+
+/** @file
+ * Logging functions
+ */ 
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdarg.h>
+#include <assert.h>
+#include "cpluff.h"
+#include "defines.h"
+#include "util.h"
+#include "internal.h"
+
+
+/* ------------------------------------------------------------------------
+ * Data types
+ * ----------------------------------------------------------------------*/
+
+/// Contains information about installed loggers
+typedef struct logger_t {
+	
+	/// Pointer to logger
+	cp_logger_func_t logger;
+	
+	/// Pointer to registering plug-in or NULL for the main program
+	cp_plugin_t *plugin;
+	
+	/// User data pointer
+	void *user_data;
+	
+	/// Minimum severity
+	cp_log_severity_t min_severity;
+	
+	/// Selected environment or NULL
+	cp_plugin_env_t *env_selection;
+} logger_t;
+
+
+/* ------------------------------------------------------------------------
+ * Function definitions
+ * ----------------------------------------------------------------------*/
+
+/**
+ * Updates the context logging limits. The caller must have locked the
+ * context.
+ */
+static void update_logging_limits(cp_context_t *context) {
+	lnode_t *node;
+	int nms = CP_LOG_NONE;
+	
+	node = list_first(context->env->loggers);
+	while (node != NULL) {
+		logger_t *lh = lnode_get(node);
+		if (lh->min_severity < nms) {
+			nms = lh->min_severity;
+		}
+		node = list_next(context->env->loggers, node);
+	}
+	context->env->log_min_severity = nms;
+}
+
+static int comp_logger(const void *p1, const void *p2) {
+	const logger_t *l1 = p1;
+	const logger_t *l2 = p2;
+	return l1->logger != l2->logger;
+}
+
+CP_C_API cp_status_t cp_register_logger(cp_context_t *context, cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity) {
+	logger_t l;
+	logger_t *lh = NULL;
+	lnode_t *node = NULL;
+	cp_status_t status = CP_OK;
+
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(logger);
+	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
+	do {
+	
+		// Check if logger already exists and allocate new holder if necessary
+		l.logger = logger;
+		if ((node = list_find(context->env->loggers, &l, comp_logger)) == NULL) {
+			lh = malloc(sizeof(logger_t));
+			node = lnode_create(lh);
+			if (lh == NULL || node == NULL) {
+				status = CP_ERR_RESOURCE;
+				break;
+			}
+			lh->logger = logger;
+			lh->plugin = context->plugin;
+			list_append(context->env->loggers, node);
+		} else {
+			lh = lnode_get(node);
+		}
+		
+		// Initialize or update the logger holder
+		lh->user_data = user_data;
+		lh->min_severity = min_severity;
+		
+		// Update global limits
+		update_logging_limits(context);
+		
+	} while (0);
+	cpi_unlock_context(context);
+
+	// Release resources on error
+	if (status != CP_OK) {
+		if (node != NULL) {
+			lnode_destroy(node);
+		}
+		if (lh != NULL) {
+			free(lh);
+		}
+	}
+
+	// Report error
+	if (status == CP_ERR_RESOURCE) {
+		cpi_error(context, _("Logger could not be registered due to insufficient memory."));		
+	} else {
+		cpi_debugf(context, "A logger was registered by %s.", cpi_context_owner(context));
+	}
+
+	return status;
+}
+
+CP_C_API void cp_unregister_logger(cp_context_t *context, cp_logger_func_t logger) {
+	logger_t l;
+	lnode_t *node;
+	
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(logger);
+	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
+	
+	l.logger = logger;
+	if ((node = list_find(context->env->loggers, &l, comp_logger)) != NULL) {
+		logger_t *lh = lnode_get(node);
+		list_delete(context->env->loggers, node);
+		lnode_destroy(node);
+		free(lh);
+		update_logging_limits(context);
+	}
+	cpi_unlock_context(context);
+	cpi_debugf(context, "A logger was unregistered by %s.", cpi_context_owner(context));
+}
+
+static void do_log(cp_context_t *context, cp_log_severity_t severity, const char *msg) {
+	lnode_t *node;
+	const char *apid = NULL;
+	
+	if (context->env->in_logger_invocation) {
+		cpi_fatalf(_("Encountered a recursive logging request within a logger invocation."));
+	}
+	if (context->plugin != NULL) {
+		apid = context->plugin->plugin->identifier;
+	}
+	context->env->in_logger_invocation++;
+	node = list_first(context->env->loggers);
+	while (node != NULL) {
+		logger_t *lh = lnode_get(node);
+		if (severity >= lh->min_severity) {
+			lh->logger(severity, msg, apid, lh->user_data);
+		}
+		node = list_next(context->env->loggers, node);
+	}
+	context->env->in_logger_invocation--;
+}
+
+CP_HIDDEN void cpi_log(cp_context_t *context, cp_log_severity_t severity, const char *msg) {
+	assert(context != NULL);
+	cpi_lock_context(context);
+	if (severity >= context->env->log_min_severity) {
+		do_log(context, severity, msg);
+	}
+	cpi_unlock_context(context);
+}
+
+CP_HIDDEN void cpi_logf(cp_context_t *context, cp_log_severity_t severity, const char *msg, ...) {
+	assert(context != NULL);
+	cpi_lock_context(context);
+	if (severity >= context->env->log_min_severity) {
+		char buffer[256];
+		va_list va;
+		
+		va_start(va, msg);
+		vsnprintf(buffer, sizeof(buffer), msg, va);
+		va_end(va);
+		buffer[sizeof(buffer)/sizeof(char) - 1] = '\0';
+		do_log(context, severity, buffer);
+	}
+	cpi_unlock_context(context);
+}
+
+CP_HIDDEN int cpi_is_logged(cp_context_t *context, cp_log_severity_t severity) {
+	int is_logged;
+	
+	assert(context != NULL);
+	cpi_lock_context(context);
+	is_logged = severity >= context->env->log_min_severity;
+	cpi_unlock_context(context);
+	return is_logged;
+}
+
+static void process_unregister_logger(list_t *list, lnode_t *node, void *plugin) {
+	logger_t *lh = lnode_get(node);
+	if (plugin == NULL || lh->plugin == plugin) {
+		list_delete(list, node);
+		lnode_destroy(node);
+		free(lh);
+	}
+}
+
+CP_HIDDEN void cpi_unregister_loggers(list_t *loggers, cp_plugin_t *plugin) {
+	list_process(loggers, plugin, process_unregister_logger);
+	list_destroy(loggers);
+}
+
+CP_C_API void cp_log(cp_context_t *context, cp_log_severity_t severity, const char *msg) {
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(msg);
+	cpi_log(context, severity, msg);
+}

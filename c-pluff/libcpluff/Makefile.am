@@ -14,7 +14,7 @@ DOXYGEN = doxygen
 DOXYGEN_SOURCE = cpluffdef.h $(srcdir)/cpluff.h
 
 lib_LTLIBRARIES = libcpluff.la
-libcpluff_la_SOURCES = psymbol.c pscan.c ploader.c pinfo.c pcontrol.c serial.c context.c cpluff.c util.c ../kazlib/list.c ../kazlib/hash.c internal.h util.h defines.h
+libcpluff_la_SOURCES = psymbol.c pscan.c ploader.c pinfo.c pcontrol.c serial.c logging.c context.c cpluff.c util.c ../kazlib/list.c ../kazlib/hash.c internal.h util.h defines.h
 if POSIX_THREADS
 libcpluff_la_SOURCES += thread_posix.c
 endif

@@ -83,11 +83,6 @@ CP_HIDDEN cp_status_t cpi_register_info(void *res, cpi_dealloc_func_t df) {
 		}
 	}
 	
-	// Otherwise report success
-	else {
-		cpi_debugf(NULL, "Dynamic resource %p was registered.", res);
-	}
-	
 	return status;
 }
 
@@ -109,7 +104,6 @@ CP_C_API void cp_release_info(void *info) {
 	hnode_t *node;
 	
 	CHECK_NOT_NULL(info);
-	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_framework();
 	if (infos != NULL
 		&& (node = hash_lookup(infos, info)) != NULL) {
@@ -119,10 +113,9 @@ CP_C_API void cp_release_info(void *info) {
 			hash_delete_free(infos, node);
 			ir->dealloc_func(info);
 			free(ir);
-			cpi_debugf(NULL, "Information object %p was released.", info);
 		}
 	} else {
-		cpi_errorf(NULL, _("Could not release an unknown information object %p."), info);
+		cpi_fatalf(_("Trying to release unregistered information object %p."), info);
 	}
 	cpi_unlock_framework();
 }
@@ -159,8 +152,8 @@ CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *context, const char
 	CHECK_NOT_NULL(id);
 
 	// Look up the plug-in and return information 
-	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
 	node = hash_lookup(context->env->plugins, id);
 	if (node != NULL) {
 		cp_plugin_t *rp = hnode_get(node);
@@ -195,8 +188,8 @@ CP_C_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *context, cp_statu
 	
 	CHECK_NOT_NULL(context);
 	
-	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
 	do {
 		hscan_t scan;
 		hnode_t *node;
@@ -254,8 +247,8 @@ CP_C_API cp_plugin_state_t cp_get_plugin_state(cp_context_t *context, const char
 	CHECK_NOT_NULL(id);
 	
 	// Look up the plug-in state 
-	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
 	if ((hnode = hash_lookup(context->env->plugins, id)) != NULL) {
 		cp_plugin_t *rp = hnode_get(hnode);
 		state = rp->state;
@@ -281,8 +274,8 @@ CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *context, cp_stat
 	
 	CHECK_NOT_NULL(context);
 	
-	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
 	do {
 		hscan_t scan;
 		hnode_t *node;
@@ -349,8 +342,8 @@ CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *context, const c
 	
 	CHECK_NOT_NULL(context);
 	
-	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
 	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
 	do {
 		hscan_t scan;
 		hnode_t *hnode;

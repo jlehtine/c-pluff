@@ -56,6 +56,9 @@ extern "C" {
 /// Bitmask corresponding to any callback function
 #define CPI_CF_ANY (~0)
 
+/// Logging limit for no logging
+#define CP_LOG_NONE 1000
+
 
 /* ------------------------------------------------------------------------
  * Macros
@@ -129,6 +132,12 @@ struct cp_plugin_env_t {
 	/// Installed plug-in listeners 
 	list_t *plugin_listeners;
 	
+	/// Registered loggers
+	list_t *loggers;
+
+	/// Minimum logger selection severity
+	int log_min_severity;
+
 	/// List of registered plug-in directories 
 	list_t *plugin_dirs;
 
@@ -149,6 +158,9 @@ struct cp_plugin_env_t {
 	
 	/// First waiting run function, or NULL if none
 	lnode_t *run_wait;
+
+	/// Is logger currently being invoked
+	int in_logger_invocation;
 
 	/// Whether currently in event listener invocation
 	int in_event_listener_invocation;
@@ -290,30 +302,40 @@ CP_HIDDEN void cpi_signal_context(cp_context_t *context) CP_NONNULL(1);
 /**
  * Logs a message.
  * 
- * @param ctx the related plug-in context or NULL if none
+ * @param ctx the related plug-in context
  * @param severity the severity of the message
  * @param msg the localized message
  */
-CP_HIDDEN void cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) CP_NONNULL(3);
+CP_HIDDEN void cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) CP_NONNULL(1, 3);
 
 /**
  * Formats and logs a message.
  * 
- * @param ctx the related plug-in context or NULL if none
+ * @param ctx the related plug-in context
  * @param severity the severity of the message
  * @param msg the localized message format
  * @param ... the message parameters
  */
-CP_HIDDEN CP_PRINTF(3, 4) void cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char *msg, ...) CP_NONNULL(3);
+CP_HIDDEN CP_PRINTF(3, 4) void cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char *msg, ...) CP_NONNULL(1, 3);
 
 /**
  * Returns whether the messages of the specified severity level are
- * being logged.
+ * being logged for the specified context.
  * 
+ * @param ctx the plug-in context
  * @param severity the severity
  * @return whether the messages of the specified severity level are logged
  */
-CP_HIDDEN int cpi_is_logged(cp_log_severity_t severity);
+CP_HIDDEN int cpi_is_logged(cp_context_t *ctx, cp_log_severity_t severity) CP_NONNULL(1);
+
+/**
+ * Unregisters loggers in the specified logger list. Either unregisters all
+ * loggers or only loggers installed by the specified plug-in.
+ * 
+ * @param loggers the logger list
+ * @param plugin the plug-in whose loggers to unregister or NULL for all
+ */
+CP_HIDDEN void cpi_unregister_loggers(list_t *loggers, cp_plugin_t *plugin) CP_NONNULL(1);
 
 // Convenience macros for logging
 #define cpi_error(ctx, msg) cpi_log((ctx), CP_LOG_ERROR, (msg))
@@ -360,15 +382,14 @@ CP_HIDDEN CP_NORETURN void cpi_fatal_null_arg(const char *arg, const char *func)
 
 /**
  * Checks that we are currently not in a specific callback function invocation.
- * Otherwise, reports a fatal error. If no context is specified then only
- * logger function invocations are checked. If context is specified then the
- * caller must have locked the context before calling this function.
+ * Otherwise, reports a fatal error. The caller must have locked the context
+ * before calling this function.
  * 
- * @param ctx the associated plug-in context or NULL if none
+ * @param ctx the associated plug-in context
  * @param funcmask the bitmask of disallowed callback functions
  * @param func the current plug-in framework function
  */
-CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func) CP_NONNULL(3);
+CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func) CP_NONNULL(1, 3);
 
 
 // Context management

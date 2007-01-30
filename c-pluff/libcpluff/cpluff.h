@@ -147,7 +147,7 @@ enum cp_status_t {
  * @ingroup cEnums
  * An enumeration of possible plug-in states. Plug-in states are controlled
  * by @ref cFuncsPlugin "plug-in management functions". Plug-in states can be
- * observed by @ref cp_add_plugin_listener "registering" a
+ * observed by @ref cp_register_plistener "registering" a
  * @ref cp_plugin_listener_func_t "plug-in listener function"
  * or by calling ::cp_get_plugin_state.
  *
@@ -218,7 +218,7 @@ enum cp_plugin_state_t {
  * An enumeration of possible message severities for framework logging. These
  * constants are used when passing a log message to a
  * @ref cp_logger_func_t "logger function" and when
- * @ref cp_add_logger "registering" a logger function.
+ * @ref cp_register_logger "registering" a logger function.
  */
 enum cp_log_severity_t {
 
@@ -316,10 +316,10 @@ typedef enum cp_log_severity_t cp_log_severity_t;
  * @ref cFuncsInit "Library initialization",
  * @ref cFuncsContext "plug-in context management",
  * @ref cFuncsPlugin "plug-in management",
- * listener registration (::cp_add_plugin_listener and ::cp_remove_plugin_listener)
+ * listener registration (::cp_register_plistener and ::cp_unregister_plistener)
  * and @ref cFuncsSymbols "dynamic symbol" functions must not be called from
  * within a plug-in listener invocation. Listener functions are registered
- * using ::cp_add_plugin_listener.
+ * using ::cp_register_plistener.
  * 
  * @param plugin_id the plug-in identifier
  * @param old_state the old plug-in state
@@ -333,7 +333,7 @@ typedef void (*cp_plugin_listener_func_t)(const char *plugin_id, cp_plugin_state
  * messages may be localized. Plug-in framework API functions must not
  * be called from within a logger function invocation. In a multi-threaded
  * environment logger function invocations are serialized by the framework.
- * Logger functions are registered using ::cp_add_logger.
+ * Logger functions are registered using ::cp_register_logger.
  *
  * @param severity the severity of the message
  * @param msg the message to be logged, possibly localized
@@ -777,7 +777,8 @@ struct cp_plugin_runtime_t {
  *
  * C API functions. The C-Pluff C API functions and
  * any data exposed by them are generally thread-safe if the library has been
- * compiled with multi-threading support. The @ref cFuncsInit "initialization functions"
+ * compiled with multi-threading support. The
+ * @ref cFuncsInit "framework initialization functions"
  * are exceptions, they are not thread-safe.
  */
 
@@ -812,10 +813,10 @@ CP_C_API const char *cp_get_host_type(void);
 
 
 /**
- * @defgroup cFuncsInit Library initialization
+ * @defgroup cFuncsInit Framework initialization
  * @ingroup cFuncs
  *
- * These functions are used for library and framework initialization.
+ * These functions are used for framework initialization.
  * They are intended to be used by the main program. These functions are
  * not thread safe.
  */
@@ -861,41 +862,6 @@ CP_C_API cp_status_t cp_init(void);
  * framework become invalid.
  */
 CP_C_API void cp_destroy(void);
-
-/*@}*/
-
-
-/**
- * @defgroup cFuncsLogging Logging
- * @ingroup cFuncs
- *
- * These functions can be used to log plug-in framework messages.
- * They can be used by the main program or by a plug-in runtime.
- */
-/*@{*/
-
-/**
- * Registers a new logger or updates the settings of a registered logger.
- * If the specified logger is not yet known, a new logger registration
- * is made, otherwise the settings for the existing logger are updated.
- * If a plug-in registers a logger it must remove the logger registration
- * when the plug-in is stopped.
- *
- * @param logger the logger function to be called
- * @param user_data the user data pointer passed to the logger
- * @param min_severity the minimum severity of messages passed to logger
- * @param ctx_rule only the messages associated with the specified context
- *			are passed to logger if non-NULL
- * @return @ref CP_OK (zero) on success or @ref CP_ERR_RESOURCE if insufficient memory
- */
-CP_C_API cp_status_t cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule);
-
-/**
- * Removes a logger registration.
- *
- * @param logger the logger function to be unregistered
- */
-CP_C_API void cp_remove_logger(cp_logger_func_t logger);
 
 /*@}*/
 
@@ -958,6 +924,53 @@ CP_C_API cp_status_t cp_add_plugin_dir(cp_context_t *ctx, const char *dir);
  * @param dir the previously registered directory
  */
 CP_C_API void cp_remove_plugin_dir(cp_context_t *ctx, const char *dir);
+
+/*@}*/
+
+
+/**
+ * @defgroup cFuncsLogging Logging
+ * @ingroup cFuncs
+ *
+ * These functions can be used to receive and emit log messages related
+ * to a particular plug-in context. They can be used by the main program
+ * or by a plug-in runtime.
+ */
+/*@{*/
+
+/**
+ * Registers a new logger with a plug-in context or updates the settings of a
+ * registered logger. The logger will receive selected log messages.
+ * If the specified logger is not yet known, a new logger registration
+ * is made, otherwise the settings for the existing logger are updated.
+ * The logger can be unregistered using ::cp_unregister_logger and it is
+ * automatically unregistered when the registering plug-in is stopped or
+ * when the context is destroyed. 
+ *
+ * @param ctx the plug-in context to log
+ * @param logger the logger function to be called
+ * @param user_data the user data pointer passed to the logger
+ * @param min_severity the minimum severity of messages passed to logger
+ * @return @ref CP_OK (zero) on success or @ref CP_ERR_RESOURCE if insufficient memory
+ */
+CP_C_API cp_status_t cp_register_logger(cp_context_t *ctx, cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity);
+
+/**
+ * Removes a logger registration.
+ *
+ * @param ctx the plug-in context
+ * @param logger the logger function to be unregistered
+ */
+CP_C_API void cp_unregister_logger(cp_context_t *ctx, cp_logger_func_t logger);
+
+/**
+ * Emits a new log message.
+ * 
+ * @param ctx the plug-in context
+ * @param severity the severity of the event
+ * @param msg the log message (possibly localized)
+ */
+CP_C_API void cp_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg);
 
 /*@}*/
 
@@ -1185,7 +1198,7 @@ CP_C_API cp_plugin_state_t cp_get_plugin_state(cp_context_t *ctx, const char *id
  * @param user_data user data pointer supplied to the listener
  * @return @ref CP_OK (zero) on success or @ref CP_ERR_RESOURCE if out of resources
  */
-CP_C_API cp_status_t cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener, void *user_data);
+CP_C_API cp_status_t cp_register_plistener(cp_context_t *ctx, cp_plugin_listener_func_t listener, void *user_data);
 
 /**
  * Removes a plug-in listener from a plug-in context. Does nothing if the
@@ -1194,7 +1207,7 @@ CP_C_API cp_status_t cp_add_plugin_listener(cp_context_t *ctx, cp_plugin_listene
  * @param ctx the plug-in context
  * @param listener the plug-in listener to be removed
  */
-CP_C_API void cp_remove_plugin_listener(cp_context_t *ctx, cp_plugin_listener_func_t listener);
+CP_C_API void cp_unregister_plistener(cp_context_t *ctx, cp_plugin_listener_func_t listener);
 
 /**
  * Traverses a configuration element tree and returns the specified element.

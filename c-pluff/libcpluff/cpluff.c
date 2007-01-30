@@ -22,37 +22,6 @@
 
 
 /* ------------------------------------------------------------------------
- * Constants
- * ----------------------------------------------------------------------*/
-
-/// Logging limit for no logging
-#define CP_LOG_NONE 1000
-
-
-/* ------------------------------------------------------------------------
- * Data types
- * ----------------------------------------------------------------------*/
-
-typedef struct logger_t logger_t;
-
-/// Contains information about installed loggers
-struct logger_t {
-	
-	/// Pointer to logger
-	cp_logger_func_t logger;
-	
-	/// User data pointer
-	void *user_data;
-	
-	/// Minimum severity
-	cp_log_severity_t min_severity;
-	
-	/// Selected environment or NULL
-	cp_plugin_env_t *env_selection;
-};
-
-
-/* ------------------------------------------------------------------------
  * Variables
  * ----------------------------------------------------------------------*/
 
@@ -70,15 +39,6 @@ static cpi_mutex_t *framework_mutex = NULL;
 static int framework_locked = 0;
 
 #endif
-
-/// Loggers
-static list_t *loggers = NULL;
-
-/// Global minimum severity for logging
-static int log_min_severity = CP_LOG_NONE;
-
-/// Is logger currently being invoked
-static int in_logger_invocation = 0;
 
 /// Fatal error handler, or NULL for default 
 static cp_fatal_error_func_t fatal_error_handler = NULL;
@@ -114,18 +74,6 @@ CP_HIDDEN void cpi_unlock_framework(void) {
 }
 
 static void reset(void) {
-	if (loggers != NULL) {
-		lnode_t *node;
-		
-		while ((node = list_first(loggers)) != NULL) {
-			logger_t *l = lnode_get(node);
-			list_delete(loggers, node);
-			lnode_destroy(node);
-			free(l);
-		}
-		list_destroy(loggers);
-		loggers = NULL;
-	}
 #ifdef CP_THREADS
 	if (framework_mutex != NULL) {
 		cpi_destroy_mutex(framework_mutex);
@@ -147,10 +95,6 @@ CP_C_API cp_status_t cp_init(void) {
 				break;
 			}
 #endif
-			if ((loggers = list_create(LISTCOUNT_T_MAX)) == NULL) {
-				status = CP_ERR_RESOURCE;
-				break;
-			}
 		}
 		initialized++;
 	} while (0);
@@ -165,7 +109,6 @@ CP_C_API cp_status_t cp_init(void) {
 
 CP_C_API void cp_destroy(void) {
 	assert(initialized > 0);
-	cpi_check_invocation(NULL, CPI_CF_ANY, __func__);
 	initialized--;
 	if (!initialized) {
 #ifdef CP_THREADS
@@ -173,164 +116,10 @@ CP_C_API void cp_destroy(void) {
 #else
 		assert(!framework_locked);
 #endif
-		cpi_info(NULL, _("The plug-in framework is being shut down."));
 		cpi_destroy_all_contexts();
 		cpi_destroy_all_infos();
 		reset();
 	}
-}
-
-/**
- * Updates the global logging limits.
- */
-static void update_logging_limits(void) {
-	lnode_t *node;
-	int nms = CP_LOG_NONE;
-	
-	node = list_first(loggers);
-	while (node != NULL) {
-		logger_t *lh = lnode_get(node);
-		if (lh->min_severity < nms) {
-			nms = lh->min_severity;
-		}
-		node = list_next(loggers, node);
-	}
-	log_min_severity = nms;
-}
-
-static int comp_logger(const void *p1, const void *p2) {
-	const logger_t *l1 = p1;
-	const logger_t *l2 = p2;
-	return l1->logger != l2->logger;
-}
-
-CP_C_API cp_status_t cp_add_logger(cp_logger_func_t logger, void *user_data, cp_log_severity_t min_severity, cp_context_t *ctx_rule) {
-	logger_t l;
-	logger_t *lh;
-	lnode_t *node;
-
-	CHECK_NOT_NULL(logger);
-	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
-	
-	// Check if logger already exists and allocate new holder if necessary
-	l.logger = logger;
-	cpi_lock_framework();
-	if ((node = list_find(loggers, &l, comp_logger)) == NULL) {
-		lh = malloc(sizeof(logger_t));
-		node = lnode_create(lh);
-		if (lh == NULL || node == NULL) {
-			cpi_unlock_framework();
-			if (lh != NULL) {
-				free(lh);
-			}
-			if (node != NULL) {
-				lnode_destroy(node);
-			}
-			cpi_error(NULL, _("Logger could not be registered due to insufficient memory."));
-			return CP_ERR_RESOURCE;
-		}
-		lh->logger = logger;
-		lh->user_data = user_data;
-		list_append(loggers, node);
-	} else {
-		lh = lnode_get(node);
-	}
-		
-	// Initialize or update the logger holder
-	lh->min_severity = min_severity;
-	if (ctx_rule != NULL) {
-		lh->env_selection = ctx_rule->env;
-	} else {
-		lh->env_selection = NULL;
-	}
-		
-	// Update global limits
-	update_logging_limits();
-	cpi_unlock_framework();
-
-	cpi_debugf(NULL, "A logger was added or updated with minimum severity %d.", min_severity);
-	return CP_OK;
-}
-
-CP_C_API void cp_remove_logger(cp_logger_func_t logger) {
-	logger_t l;
-	lnode_t *node;
-	
-	CHECK_NOT_NULL(logger);
-	cpi_check_invocation(NULL, CPI_CF_LOGGER, __func__);
-	
-	l.logger = logger;
-	cpi_lock_framework();
-	if ((node = list_find(loggers, &l, comp_logger)) != NULL) {
-		logger_t *lh = lnode_get(node);
-		list_delete(loggers, node);
-		lnode_destroy(node);
-		free(lh);
-		update_logging_limits();
-	}
-	cpi_unlock_framework();
-	cpi_debug(NULL, "A logger was removed.");
-}
-
-static void do_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) {
-	lnode_t *node;
-	const char *apid = NULL;
-	
-	cpi_lock_framework();
-	assert(!in_logger_invocation);
-	if (ctx != NULL && ctx->plugin != NULL) {
-		apid = ctx->plugin->plugin->identifier;
-	}
-	in_logger_invocation++;
-	node = list_first(loggers);
-	while (node != NULL) {
-		logger_t *lh = lnode_get(node);
-		if (severity >= lh->min_severity
-			&& (lh->env_selection == NULL
-				|| (ctx != NULL && ctx->env == lh->env_selection))) {
-			lh->logger(severity, msg, apid, lh->user_data);
-		}
-		node = list_next(loggers, node);
-	}
-	in_logger_invocation--;
-	cpi_unlock_framework();
-}
-
-CP_HIDDEN void cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) {
-	if (severity >= log_min_severity) {
-		do_log(ctx, severity, msg);
-	}
-}
-
-CP_HIDDEN void cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char *msg, ...) {
-	if (severity >= log_min_severity) {
-		char buffer[256];
-		va_list va;
-		
-		va_start(va, msg);
-		vsnprintf(buffer, sizeof(buffer), msg, va);
-		va_end(va);
-		buffer[sizeof(buffer)/sizeof(char) - 1] = '\0';
-		do_log(ctx, severity, buffer);
-	}
-}
-
-#ifndef NDEBUG
-CP_HIDDEN const char *cpi_context_owner(cp_context_t *ctx) {
-	static char buffer[64];
-	
-	if (ctx->plugin != NULL) {
-		snprintf(buffer, sizeof(buffer), "plugin %s", ctx->plugin->plugin->identifier);
-	} else {
-		strncpy(buffer, "the client program", sizeof(buffer));
-	}
-	buffer[sizeof(buffer)/sizeof(char) - 1] = '\0';
-	return buffer;
-}
-#endif
-
-CP_HIDDEN int cpi_is_logged(cp_log_severity_t severity) {
-	return severity >= log_min_severity;
 }
 
 CP_C_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler) {
@@ -361,42 +150,4 @@ CP_HIDDEN void cpi_fatalf(const char *msg, ...) {
 
 CP_HIDDEN void cpi_fatal_null_arg(const char *arg, const char *func) {
 	cpi_fatalf(_("Argument %s has illegal NULL value in call to function %s."), arg, func);
-}
-
-CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func) {
-	assert(func != NULL);
-	assert(funcmask != 0);
-	assert(ctx == NULL || (funcmask & CPI_CF_LOGGER));
-	if (funcmask & CPI_CF_LOGGER) {
-		cpi_lock_framework();
-		if (in_logger_invocation) {
-			cpi_fatalf(_("%s was called from within a logger invocation."), func);
-		}
-		cpi_unlock_framework();
-	}
-	if (ctx != NULL) {
-#ifdef CP_THREADS
-		assert(cpi_is_mutex_locked(ctx->env->mutex));
-#else
-		assert(ctx->env->locked);
-#endif
-		if ((funcmask & CPI_CF_LISTENER)
-			&& ctx->env->in_event_listener_invocation) {
-			cpi_fatalf(_("%s was called from within an event listener invocation."), func);
-		}
-		if ((funcmask & CPI_CF_START)
-			&& ctx->env->in_start_func_invocation) {
-			cpi_fatalf(_("%s was called from within a start function invocation."), func);
-		}
-		if ((funcmask & CPI_CF_STOP)
-			&& ctx->env->in_stop_func_invocation) {
-			cpi_fatalf(_("%s was called from within a stop function invocation."), func);
-		}
-		if (ctx->env->in_create_func_invocation) {
-			cpi_fatalf(_("%s was called from within a create function invocation."), func);
-		}
-		if (ctx->env->in_destroy_func_invocation) {
-			cpi_fatalf(_("%s was called from within a destroy function invocation."), func);
-		}
-	}
 }

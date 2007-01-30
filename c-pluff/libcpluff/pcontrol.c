@@ -858,11 +858,9 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 				cp_release_symbol(context, ptr);
 			}
 			assert(hash_isempty(plugin->context->resolved_symbols));
-			hash_destroy(plugin->context->resolved_symbols);
 		}
 		if (plugin->context->symbol_providers != NULL) {
 			assert(hash_isempty(plugin->context->symbol_providers));
-			hash_destroy(plugin->context->symbol_providers);
 		}
 
 		// Release defined symbols
@@ -882,6 +880,9 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			hash_destroy(plugin->defined_symbols);
 			plugin->defined_symbols = NULL;
 		}
+		
+		// Unregister all logger functions
+		cpi_unregister_loggers(plugin->context->env->loggers, plugin);
 	
 		// Destroy the plug-in object
 		context->env->in_destroy_func_invocation++;

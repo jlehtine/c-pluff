@@ -115,6 +115,10 @@ static void free_plugin_env(cp_plugin_env_t *env) {
 		list_destroy(env->plugin_listeners);
 		env->plugin_listeners = NULL;
 	}
+	if (env->loggers != NULL) {
+		cpi_unregister_loggers(env->loggers, NULL);
+		env->loggers = NULL;
+	}
 	if (env->ext_points != NULL) {
 		assert(hash_isempty(env->ext_points));
 		hash_destroy(env->ext_points);
@@ -143,6 +147,14 @@ CP_HIDDEN void cpi_free_context(cp_context_t *context) {
 	if (context->plugin == NULL && context->env != NULL) {
 		free_plugin_env(context->env);
 	}
+	
+	// Destroy symbol lists
+	assert(context->resolved_symbols == NULL
+			|| hash_isempty(context->resolved_symbols));
+	hash_destroy(context->resolved_symbols);
+	assert(context->symbol_providers == NULL
+			|| hash_isempty(context->symbol_providers));
+	hash_destroy(context->symbol_providers);
 
 	// Free context
 	free(context);	
@@ -186,8 +198,6 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 	cp_context_t *context = NULL;
 	cp_status_t status = CP_OK;
 
-	cpi_check_invocation(NULL, CPI_CF_ANY, __func__);
-
 	// Initialize internal state
 	do {
 	
@@ -205,6 +215,8 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 		env->argc = 0;
 		env->argv = NULL;
 		env->plugin_listeners = list_create(LISTCOUNT_T_MAX);
+		env->loggers = list_create(LISTCOUNT_T_MAX);
+		env->log_min_severity = CP_LOG_NONE;
 		env->plugin_dirs = list_create(LISTCOUNT_T_MAX);
 		env->plugins = hash_create(HASHCOUNT_T_MAX,
 			(int (*)(const void *, const void *)) strcmp, NULL);
@@ -216,6 +228,7 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 		env->run_funcs = list_create(LISTCOUNT_T_MAX);
 		env->run_wait = NULL;
 		if (env->plugin_listeners == NULL
+			|| env->loggers == NULL
 #ifdef CP_THREADS
 			|| env->mutex == NULL
 #endif
@@ -253,13 +266,6 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 		cpi_unlock_framework();
 		
 	} while (0);
-	
-	// Report failure or success
-	if (status != CP_OK) {
-		cpi_error(NULL, _("Plug-in context could not be created due to insufficient system resources."));
-	} else {
-		cpi_debugf(NULL, "Plug-in context %p was created.", (void *) context);
-	}
 	
 	// Release resources on failure 
 	if (status != CP_OK) {
@@ -313,8 +319,8 @@ CP_C_API void cp_destroy_context(cp_context_t *context) {
 	// Unload all plug-ins 
 	cp_uninstall_plugins(context);
 	
-	// Log event
-	cpi_debugf(NULL, "Plug-in context %p was destroyed.", (void *) context);
+	// Free context
+	cpi_free_context(context);
 }
 
 CP_HIDDEN void cpi_destroy_all_contexts(void) {
@@ -336,7 +342,7 @@ CP_HIDDEN void cpi_destroy_all_contexts(void) {
 
 // Plug-in listeners 
 
-CP_C_API cp_status_t cp_add_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener, void *user_data) {
+CP_C_API cp_status_t cp_register_plistener(cp_context_t *context, cp_plugin_listener_func_t listener, void *user_data) {
 	cp_status_t status = CP_ERR_RESOURCE;
 	el_holder_t *holder;
 	lnode_t *node;
@@ -365,7 +371,7 @@ CP_C_API cp_status_t cp_add_plugin_listener(cp_context_t *context, cp_plugin_lis
 	return status;
 }
 
-CP_C_API void cp_remove_plugin_listener(cp_context_t *context, cp_plugin_listener_func_t listener) {
+CP_C_API void cp_unregister_plistener(cp_context_t *context, cp_plugin_listener_func_t listener) {
 	el_holder_t holder;
 	lnode_t *node;
 	
@@ -389,7 +395,7 @@ CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t
 	list_process(context->env->plugin_listeners, (void *) event, process_event);
 	context->env->in_event_listener_invocation--;
 	cpi_unlock_context(context);
-	if (cpi_is_logged(CP_LOG_INFO)) {
+	if (cpi_is_logged(context, CP_LOG_INFO)) {
 		char *str;
 		switch (event->new_state) {
 			case CP_PLUGIN_UNINSTALLED:
@@ -538,6 +544,42 @@ CP_C_API int cp_get_context_args(cp_context_t *ctx, char ***argv) {
 }
 
 
+// Checking API call invocation
+
+CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func) {
+	assert(ctx != NULL);
+	assert(funcmask != 0);
+	assert(func != NULL);
+#ifdef CP_THREADS
+	assert(cpi_is_mutex_locked(ctx->env->mutex));
+#else
+	assert(ctx->env->locked);
+#endif
+	if ((funcmask & CPI_CF_LOGGER)
+		&&ctx->env->in_logger_invocation) {
+		cpi_fatalf(_("%s was called from within a logger invocation."), func);
+	}
+	if ((funcmask & CPI_CF_LISTENER)
+		&& ctx->env->in_event_listener_invocation) {
+		cpi_fatalf(_("%s was called from within an event listener invocation."), func);
+	}
+	if ((funcmask & CPI_CF_START)
+		&& ctx->env->in_start_func_invocation) {
+		cpi_fatalf(_("%s was called from within a start function invocation."), func);
+	}
+	if ((funcmask & CPI_CF_STOP)
+		&& ctx->env->in_stop_func_invocation) {
+		cpi_fatalf(_("%s was called from within a stop function invocation."), func);
+	}
+	if (ctx->env->in_create_func_invocation) {
+		cpi_fatalf(_("%s was called from within a create function invocation."), func);
+	}
+	if (ctx->env->in_destroy_func_invocation) {
+		cpi_fatalf(_("%s was called from within a destroy function invocation."), func);
+	}
+}
+
+
 // Locking 
 
 #if defined(CP_THREADS) || !defined(NDEBUG)
@@ -575,5 +617,22 @@ CP_HIDDEN void cpi_signal_context(cp_context_t *context) {
 	assert(context->env->locked > 0);
 #endif
 }
+
+
+// Debug helpers
+
+#ifndef NDEBUG
+CP_HIDDEN const char *cpi_context_owner(cp_context_t *ctx) {
+	static char buffer[64];
+	
+	if (ctx->plugin != NULL) {
+		snprintf(buffer, sizeof(buffer), "plugin %s", ctx->plugin->plugin->identifier);
+	} else {
+		strncpy(buffer, "the client program", sizeof(buffer));
+	}
+	buffer[sizeof(buffer)/sizeof(char) - 1] = '\0';
+	return buffer;
+}
+#endif
 
 #endif
