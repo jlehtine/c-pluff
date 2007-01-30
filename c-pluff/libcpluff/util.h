@@ -84,6 +84,27 @@ CP_HIDDEN int cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
 CP_HIDDEN void cpi_process_free_ptr(list_t *list, lnode_t *node, void *dummy);
 
 
+// Version strings
+
+/**
+ * Compares two version strings. The comparison algorithm is derived from the
+ * way Debian package management system compares package versions. First the
+ * the longest prefix of each string composed entirely of non-digit characters
+ * is determined. These are compared lexically so that all the letters sort
+ * earlier than all the non-letters and otherwise the ordering is based on
+ * ASCII values. If there is a difference it is returned. Otherwise the longest
+ * prefix of remainder of each string composed entirely of digit characters
+ * is determined. These are compared numerically with empty string interpreted
+ * as zero. Again, if there is different it is returned. Otherwise the
+ * comparison continues with a non-digit component and so on.
+ * 
+ * @param v1 the first version string to compare
+ * @param v2 the second version string to compare
+ * @return less than, equal to or greater than zero when @a v1 < @a v2, @a v1 == @a v2 or @a v1 > @a v2, correspondingly
+ */
+CP_HIDDEN int cpi_vercmp(const char *v1, const char *v2);
+
+
 // Miscellaneous utility functions 
 
 /**

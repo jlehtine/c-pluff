@@ -9,7 +9,7 @@ permission to copy, distribute and modify it.
 	<xs:element name="plugin">
 		<xs:complexType>
 			<xs:sequence>
-				<xs:element minOccurs="0" ref="interface"/>
+				<xs:element minOccurs="0" ref="backwards-compatibility"/>
             	<xs:element minOccurs="0" ref="requires"/>
             	<xs:element minOccurs="0" ref="runtime"/>
             	<xs:element minOccurs="0" maxOccurs="unbounded" ref="extension-point"/>
@@ -17,15 +17,14 @@ permission to copy, distribute and modify it.
             </xs:sequence>
 			<xs:attribute name="id" type="xs:string" use="required"/>
 			<xs:attribute name="name" type="xs:string"/>
-			<xs:attribute name="release-version" type="xs:string"/>
+			<xs:attribute name="version" type="xs:string"/>
 			<xs:attribute name="provider-name" type="xs:string"/>
 		</xs:complexType>
 	</xs:element>
-	<xs:element name="interface">
+	<xs:element name="backwards-compatibility">
 		<xs:complexType>
-			<xs:attribute name="version" type="xs:integer" use="required"/>
-			<xs:attribute name="abi-compatibility" type="xs:integer" use="required"/>
-			<xs:attribute name="api-compatibility" type="xs:integer"/>
+			<xs:attribute name="abi" type="xs:string"/>
+			<xs:attribute name="api" type="xs:string"/>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="requires">
@@ -38,7 +37,7 @@ permission to copy, distribute and modify it.
 	</xs:element>
 	<xs:element name="c-pluff">
 		<xs:complexType>
-			<xs:attribute name="if-version" type="xs:integer" use="required"/>
+			<xs:attribute name="version" type="xs:string" use="required"/>
 		</xs:complexType>
 	</xs:element>
 	<xs:element name="import">

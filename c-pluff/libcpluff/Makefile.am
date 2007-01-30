@@ -10,8 +10,6 @@ LIBS += $(LIBS_LIBCPLUFF)
 CPPFLAGS = @CPPFLAGS@
 CPPFLAGS += -I. -DCP_C_API=CP_EXPORT -DCP_HOST="\"$(host)\"" -DCP_DATADIR="\"$(datadir)\""
 
-LIB_VERSION = $(CP_API_VERSION):$(CP_API_REVISION):$(CP_API_AGE)
-
 DOXYGEN = doxygen
 DOXYGEN_SOURCE = cpluffdef.h $(srcdir)/cpluff.h
 
@@ -23,7 +21,7 @@ endif
 if WINDOWS_THREADS
 libcpluff_la_SOURCES += thread_windows.c
 endif
-libcpluff_la_LDFLAGS = -version-info $(CP_API_VERSION) -no-undefined
+libcpluff_la_LDFLAGS = -no-undefined -version-info $(CP_C_LIB_VERSION)
 
 include_HEADERS = cpluff.h cpluffdef.h
 

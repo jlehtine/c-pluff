@@ -7,18 +7,22 @@ dnl unlimited permission to copy, distribute and modify it.
 dnl Version information
 dnl -------------------
 
-dnl Release version
-define(RELEASE_VERSION, 0)
+dnl Version information
+define(CP_M4_VERSION_MAJOR, [0])
+define(CP_M4_VERSION_MINOR, [0])
+define(CP_M4_VERSION_REV, [0])
+define(CP_M4_RELEASE_VERSION, CP_M4_VERSION_MAJOR.CP_M4_VERSION_MINOR.CP_M4_VERSION_REV)
 
-dnl Interface version (compatibility)
-dnl (use interface version 0 for inofficial versions and snapshots)
-define(IF_VERSION, 0)
-define(IF_API_COMPATIBILITY, 0)
-define(IF_ABI_COMPATIBILITY, 0)
+dnl Backwards compatibility information
+define(CP_M4_ABI_COMPATIBILITY, [0.0])
+
+dnl Library version information
+define(CP_M4_C_LIB_VERSION, [0:0:0])
+define(CP_M4_CXX_LIB_VERSION, [0:0:0])
 
 # Autoconf initialization
 # -----------------------
-AC_INIT([C-Pluff], RELEASE_VERSION, [johannes.lehtinen@iki.fi], [cpluff])
+AC_INIT([C-Pluff], CP_M4_RELEASE_VERSION, [johannes.lehtinen@iki.fi], [cpluff])
 AC_COPYRIGHT([Copyright 2006 Johannes Lehtinen
 This configure script is free software; Johannes Lehtinen gives unlimited
 permission to copy, distribute and modify it.])
@@ -26,14 +30,17 @@ AC_CONFIG_SRCDIR([libcpluff/cpluff.h])
 AC_CONFIG_AUX_DIR([auxliary])
 AC_CONFIG_HEADERS([config.h])
 
-# API version information
-# -----------------------
-# Use version/revision 0 for inofficial versions and snapshots
-CP_IF_VERSION=IF_VERSION
-CP_IF_API_COMPATIBILITY=IF_API_COMPATIBILITY
-AC_SUBST([CP_IF_VERSION])
-AC_SUBST([CP_IF_API_COMPATIBILITY])
-AC_DEFINE([CP_IF_ABI_COMPATIBILITY], IF_ABI_COMPATIBILITY, [The version of the earliest interface this interface is backwards compatible with when it comes to ABI])
+# Version information
+# -------------------
+CP_VERSION_MAJOR=CP_M4_VERSION_MAJOR
+CP_VERSION_MINOR=CP_M4_VERSION_MINOR
+AC_DEFINE([CP_ABI_COMPATIBILITY], "CP_M4_ABI_COMPATIBILITY", [The earliest ABI compatible version or undefined])
+CP_C_LIB_VERSION=CP_M4_C_LIB_VERSION
+CP_CXX_LIB_VERSION=CP_M4_CXX_LIB_VERSION
+AC_SUBST([CP_VERSION_MAJOR])
+AC_SUBST([CP_VERSION_MINOR])
+AC_SUBST([CP_C_LIB_VERSION])
+AC_SUBST([CP_CXX_LIB_VERSION])
 
 # Automake initialization
 # -----------------------
@@ -269,7 +276,6 @@ AC_OUTPUT
 AC_MSG_NOTICE([-----------------------------------------------------------])
 AC_MSG_NOTICE([C-Pluff configuration])
 AC_MSG_NOTICE([  release version:                $PACKAGE_VERSION])
-AC_MSG_NOTICE([  core API version:               $CP_CORE_API_CURRENT:$CP_CORE_API_REVISION:$CP_CORE_API_AGE])
 if test -n "$cp_threads"; then
   val="yes ($cp_threads)"
 else

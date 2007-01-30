@@ -504,14 +504,14 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 			if (plugins[i]->name != NULL) {
 				noticef("  %s %s %s \"%s\"",
 					plugins[i]->identifier,
-					plugins[i]->release_version != NULL ? plugins[i]->release_version : "<unversioned>",
+					plugins[i]->version != NULL ? plugins[i]->version : "<unversioned>",
 					state_to_string(cp_get_plugin_state(contexts[active_context], plugins[i]->identifier)),
 					plugins[i]->name
 				);
 			} else {
 				noticef("  %s %s %s",
 					plugins[i]->identifier,
-					plugins[i]->release_version != NULL ? plugins[i]->release_version : "<unversioned>",
+					plugins[i]->version != NULL ? plugins[i]->version : "<unversioned>",
 					state_to_string(cp_get_plugin_state(contexts[active_context], plugins[i]->identifier))
 				);
 			}
@@ -552,7 +552,7 @@ static char *str_or_null(const char *str) {
 
 static void show_plugin_info_import(cp_plugin_import_t *import) {
 	noticef("    plugin_id = \"%s\",", import->plugin_id);
-	noticef("    if_version = %d,", import->if_version);
+	noticef("    version = %s,", str_or_null(import->version));
 	noticef("    optional = %d,", import->optional);
 }
 
@@ -725,13 +725,12 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 		notice("{");
 		noticef("  identifier = \"%s\",", plugin->identifier);
 		noticef("  name = %s,", str_or_null(plugin->name));
-		noticef("  version = %s,", str_or_null(plugin->release_version));
+		noticef("  version = %s,", str_or_null(plugin->version));
 		noticef("  provider_name = %s,", str_or_null(plugin->provider_name));
-		noticef("  if_version = %d,", plugin->if_version);
-		noticef("  if_abi_compatibility = %d,", plugin->if_abi_compatibility);
-		noticef("  if_api_compatibility = %d,", plugin->if_api_compatibility);
+		noticef("  abi_bw_compatibility = %s,", str_or_null(plugin->abi_bw_compatibility));
+		noticef("  api_bw_compatibility = %s,", str_or_null(plugin->api_bw_compatibility));
 		noticef("  plugin_path = %s,", str_or_null(plugin->plugin_path));
-		noticef("  req_cpluff_if_version = %d,", plugin->req_cpluff_if_version);
+		noticef("  req_cpluff_version = %s,", str_or_null(plugin->req_cpluff_version));
 		noticef("  num_imports = %u,", plugin->num_imports);
 		if (plugin->num_imports) {
 			notice("  imports = {{");
@@ -916,7 +915,7 @@ int main(int argc, char *argv[]) {
 	noticef(
 		/* TRANSLATORS: This is the version string displayed on startup. */
 		_("C-Pluff framework, version %s for %s"),
-		cp_get_release_version(), cp_get_host_type());
+		cp_get_version(), cp_get_host_type());
 	notice(_("Type \"help\" for help on available commands."));
 
 	// Initialize context array 

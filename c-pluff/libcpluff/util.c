@@ -10,6 +10,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include <assert.h>
 #include "../kazlib/list.h"
 #include "cpluff.h"
@@ -72,6 +73,106 @@ CP_HIDDEN void cpi_process_free_ptr(list_t *list, lnode_t *node, void *dummy) {
 	list_delete(list, node);
 	lnode_destroy(node);
 	free(ptr);
+}
+
+static const char *vercmp_nondigit_end(const char *v) {
+	while (*v != '\0' && (*v < '0' || *v > '9')) {
+		v++;
+	}
+	return v;
+}
+
+static const char *vercmp_digit_end(const char *v) {
+	while (*v >= '0' && *v <= '9') {
+		v++;
+	}
+	return v;
+}
+
+static int vercmp_char_value(char c) {
+	if (c == '\0') {
+		return 0;
+	} else if (c >= 'A' && c <= 'Z') {
+		return 1 + (c - 'A');
+	} else if (c >= 'a' && c <= 'z') {
+		return 1 + ('Z' - 'A' + 1) + (c - 'a');
+	} else {
+		int i = 1 + ('Z' - 'A' + 1) + ('z' - 'a' + 1) + ((int) c - CHAR_MIN);
+		if (c > 'z') {
+			i -= 'z' - 'a' + 1;
+		}
+		if (c > 'Z') {
+			i -= 'Z' - 'A' + 1;
+		}
+		if (c > '\0') {
+			i--;
+		}
+		return i;
+	}
+}
+
+static int vercmp_num_value(const char *v, const char *vn) {
+	
+	// Skip leading zeros
+	while (v < vn && *v == '0') {
+		v++;
+	}
+	
+	// Empty string equals to zero
+	if (v == vn) {
+		return 0;
+	}
+	
+	// Otherwise return the integer value
+	else {
+		char str[16];
+		strncpy(str, v, vn - v < 16 ? vn - v : 16);
+		str[vn - v < 16 ? vn - v : 15] = '\0';
+		return atoi(str);
+	}
+}
+
+CP_HIDDEN int cpi_vercmp(const char *v1, const char *v2) {
+	const char *v1n;
+	const char *v2n;
+	
+	// Component comparison loop
+	while (*v1 != '\0' || *v2 != '\0') {
+		
+		// Determine longest non-digit prefix
+		v1n = vercmp_nondigit_end(v1);
+		v2n = vercmp_nondigit_end(v2);
+		
+		// Compare the non-digit strings
+		while (v1 < v1n || v2 < v2n) {
+			char c1 = (v1 < v1n ? *v1++ : '\0');
+			char c2 = (v2 < v2n ? *v2++ : '\0');
+			int diff = vercmp_char_value(c1) - vercmp_char_value(c2);
+			if (diff != 0) {
+				return diff;
+			}
+			assert(v1 <= v1n && v2 < v2n);
+		}
+		assert(v1 == v1n && v2 == v2n);
+		
+		// Determine the longest digit prefix
+		v1n = vercmp_digit_end(v1);
+		v2n = vercmp_digit_end(v2);
+		
+		// Compare the digit strings
+		{
+			int i1 = vercmp_num_value(v1, v1n);
+			int i2 = vercmp_num_value(v2, v2n);
+			int diff = i1 - i2;
+			if (diff != 0) {
+				return diff;
+			}
+		}
+		v1 = v1n;
+		v2 = v2n;
+		
+	}
+	return 0;
 }
 
 #ifdef HAVE_DMALLOC_H

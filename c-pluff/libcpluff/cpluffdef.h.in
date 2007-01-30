@@ -108,51 +108,27 @@
  * C-Pluff version information. Notice that this version information
  * is static version information included in header files. The
  * macros introduced here can be used for compile time checks.
- *
- * Here is an example of how the compile time version information could be used
- * to create software that can be built against mutually incompatible
- * versions of the C-Pluff interface.
- *
- * @code
- * #if CP_IF_VERSION >= 42
- *   // code using interfaces introduced in the interface version 42
- * #elif CP_IF_VERSION >= 38
- *   // alternative compatibility support code for interface versions 38-41
- * #endif
- *
- * #if CP_IF_VERSION >= 42 && CP_IF_API_COMPATIBILITY <= 42
- *   // code written for the C-Pluff interface version 42
- * #endif
- * @endcode
  */
 /*@{*/
 
 /**
- * The C-Pluff release version string. Release version identifies a specific
- * version of the C-Pluff distribution. Software compatibility checks should
- * use interface version information instead.
+ * The C-Pluff release version string. This string identifies a specific
+ * version of the C-Pluff distribution. Compile time software compatibility
+ * checks should use #CP_VERSION_MAJOR and #CP_VERSION_MINOR instead.
  */
-#define CP_RELEASE_VERSION "@PACKAGE_VERSION@"
+#define CP_VERSION "@PACKAGE_VERSION@"
 
 /**
- * The version of this C-Pluff C/C++ interface. This is an integer number.
- * It is incremented whenever there have been changes to the interface.
+ * The major version number component of the release version. This is an
+ * integer.
  */
-#define CP_IF_VERSION @CP_IF_VERSION@
+#define CP_VERSION_MAJOR @CP_VERSION_MAJOR@
 
 /**
- * The version of the earliest C-Pluff C/C++ interface this interface is
- * backwards compatible with when it comes to the application programming
- * interface (API). That is, client software developed against any interface
- * version from @a CP_IF_API_COMPATIBILITY to #CP_IF_VERSION (inclusive) can be
- * successfully build against this interface.
- *
- * Notice that API is the compile time interface and therefore this describes
- * source level compatibility only. Binary compatibility depends on the
- * compatibility of the application binary interface (ABI) and it may be
- * more restricted.
+ * The minor version number component of the release version. This is an
+ * integer.
  */
-#define CP_IF_API_COMPATIBILITY @CP_IF_API_COMPATIBILITY@
+#define CP_VERSION_MINOR @CP_VERSION_MINOR@
 
 /*@}*/
 

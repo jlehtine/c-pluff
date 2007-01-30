@@ -237,7 +237,24 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	
 	do {
 		int ppath_len, lname_len;
+		int cpluff_compatibility = 1;
 	
+		// Check C-Pluff compatibility
+		if (plugin->plugin->req_cpluff_version != NULL) {
+#ifdef CP_ABI_COMPATIBILITY
+			cpluff_compatibility = (
+				cpi_vercmp(plugin->plugin->req_cpluff_version, CP_VERSION) <= 0
+			 	&& cpi_vercmp(plugin->plugin->req_cpluff_version, CP_ABI_COMPATIBILITY) >= 0);
+#else
+			cpluff_compatibility = (cpi_vercmp(plugin->plugin->req_cpluff_version, CP_VERSION) == 0);
+#endif
+		}
+		if (!cpluff_compatibility) {
+			cpi_errorf(context, _("Plug-in %s could not be resolved due to version incompatibility with C-Pluff."), plugin->plugin->identifier);
+			status = CP_ERR_DEPENDENCY;
+			break;
+		}
+
 		// Construct a path to plug-in runtime library
 		/// @todo Add platform specific prefix (for example, "lib") 
 		ppath_len = strlen(plugin->plugin->plugin_path);
@@ -310,12 +327,15 @@ static int resolve_plugin_import(cp_context_t *context, cp_plugin_t *plugin, cp_
 			
 	// Check plug-in version
 	if (ip != NULL
-		&& import->if_version != -1
-		&& (ip->plugin->if_version == -1
-			|| ip->plugin->if_version < import->if_version
-			|| ip->plugin->if_abi_compatibility > import->if_version)) {
+		&& import->version != NULL
+		&& (ip->plugin->version == NULL
+			|| (ip->plugin->abi_bw_compatibility == NULL
+				&& cpi_vercmp(import->version, ip->plugin->version) != 0)
+			|| (ip->plugin->abi_bw_compatibility != NULL
+				&& (cpi_vercmp(import->version, ip->plugin->version) > 0
+					|| cpi_vercmp(import->version, ip->plugin->abi_bw_compatibility) < 0)))) {
 		cpi_errorf(context,
-			_("Plug-in %s could not be resolved because of version incompatibility with plug-in %s."),
+			_("Plug-in %s could not be resolved due to version incompatibility with plug-in %s."),
 			plugin->plugin->identifier,
 			import->plugin_id);
 		*ipptr = NULL;
@@ -363,7 +383,7 @@ static int resolve_plugin_prel_rec(cp_context_t *context, cp_plugin_t *plugin) {
 	plugin->processed = 1;
 
 	do {
-	
+
 		// Recursively resolve the imported plug-ins
 		assert(plugin->imported == NULL);
 		if ((plugin->imported = list_create(LISTCOUNT_T_MAX)) == NULL) {
@@ -1011,6 +1031,7 @@ static void unresolve_plugin(cp_context_t *context, cp_plugin_t *plugin) {
 static void free_plugin_import_content(cp_plugin_import_t *import) {
 	assert(import != NULL);
 	free(import->plugin_id);
+	free(import->version);
 }
 
 static void free_ext_point_content(cp_ext_point_t *ext_point) {
@@ -1049,9 +1070,12 @@ CP_HIDDEN void cpi_free_plugin(cp_plugin_info_t *plugin) {
 	assert(plugin != NULL);
 	free(plugin->name);
 	free(plugin->identifier);
-	free(plugin->release_version);
+	free(plugin->version);
 	free(plugin->provider_name);
 	free(plugin->plugin_path);
+	free(plugin->abi_bw_compatibility);
+	free(plugin->api_bw_compatibility);
+	free(plugin->req_cpluff_version);
 	for (i = 0; i < plugin->num_imports; i++) {
 		free_plugin_import_content(plugin->imports + i);
 	}

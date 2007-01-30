@@ -88,8 +88,8 @@ static cp_fatal_error_func_t fatal_error_handler = NULL;
  * Function definitions
  * ----------------------------------------------------------------------*/
 
-CP_C_API const char *cp_get_release_version(void) {
-	return CP_RELEASE_VERSION;
+CP_C_API const char *cp_get_version(void) {
+	return CP_VERSION;
 }
 
 CP_C_API const char *cp_get_host_type(void) {

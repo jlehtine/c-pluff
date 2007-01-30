@@ -111,7 +111,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 						// Insert plug-in to the list of available plug-ins 
 						if ((hnode = hash_lookup(avail_plugins, plugin->identifier)) != NULL) {
 							cp_plugin_info_t *plugin2 = hnode_get(hnode);
-							if (plugin->if_version > plugin2->if_version) {
+							if (cpi_vercmp(plugin->version, plugin2->version) > 0) {
 								hash_delete_free(avail_plugins, hnode);
 								cpi_free_plugin(plugin2);
 								hnode = NULL;
@@ -119,7 +119,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 						}
 						if (hnode == NULL) {
 							if (!hash_alloc_insert(avail_plugins, plugin->identifier, plugin)) {
-								cpi_errorf(context, _("Plug-in %s version %s could not be loaded due to insufficient system resources."), plugin->identifier, plugin->release_version);
+								cpi_errorf(context, _("Plug-in %s version %s could not be loaded due to insufficient system resources."), plugin->identifier, plugin->version);
 								cpi_free_plugin(plugin);
 								status = CP_ERR_RESOURCE;
 								// continue loading plug-ins from other directories 

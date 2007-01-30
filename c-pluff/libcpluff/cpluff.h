@@ -398,13 +398,11 @@ struct cp_plugin_info_t {
 	char *name;
 	
 	/**
-	 * An optional release version string. NULL if not available. The
-	 * release version is intended only for display purposes (compatibility
-	 * checks use interface version information instead). This
-	 * corresponds to the @a release-version attribute of the @a plugin element in
+	 * An optional release version string. NULL if not available. This
+	 * corresponds to the @a version attribute of the @a plugin element in
 	 * a plug-in descriptor.
 	 */
-	char *release_version;
+	char *version;
 	
 	/**
 	 * An optional provider name. NULL if not available. This is the name of
@@ -416,42 +414,7 @@ struct cp_plugin_info_t {
 	char *provider_name;
 	
 	/**
-	 * Optional interface version. -1 if not available. This is the
-	 * version of the interface provided by the plug-in to its clients.
-	 * If the plug-in provides any interfaces (such as
-	 * extension points or global symbols) then it should also declare
-	 * versioning for the interface. Backwards compatibility information is
-	 * available at @ref if_abi_compatibility. This corresponds to the @a version
-	 * attribute of the @a interface element in a plug-in descriptor.
-	 */
-	int if_version;
-	
-	/**
-	 * Optional interface binary compatibility information. -1 if plug-in does not
-	 * have a versioned interface. This is the earliest version of the plug-in
-	 * interface that is backwards compatible with the current interface when
-	 * it comes to the application binary interface (ABI). That is, a client
-	 * compiled against any plug-in interface from @a if_abi_compatibility to
-	 * @ref if_version (inclusive) can use this version of the plug-in.
-	 * This corresponds to the @a abi-compatibility attribute of the
-	 * @a interface element in a plug-in descriptor.
-	 */
-	int if_abi_compatibility;
-	
-	/**
-	 * Optional interface source compatibility information. -1 if not available.
-	 * This is the earliest version of the plug-in interface that is backwards
-	 * compatible with the current interface when it comes to the
-	 * application programming interface (API). That is, a client developed
-	 * for any plug-in interface from @a if_api_compatibility to
-	 * @ref if_version (inclusive) can be compiled against the current version of
-	 * the plug-in interface. This corresponds to the @a api-compatibility
-	 * attribute of the @a interface element in a plug-in descriptor.
-	 */
-	int if_api_compatibility;
-	
-	/**
-	 * Path of the plugin directory, or NULL if not known. This is the
+	 * Path of the plugin directory or NULL if not known. This is the
 	 * (absolute or relative) path to the plug-in directory containing
 	 * plug-in data and the plug-in runtime library. The value corresponds
 	 * to the path specified to ::cp_load_plugin_descriptor when loading
@@ -460,12 +423,41 @@ struct cp_plugin_info_t {
 	char *plugin_path;
 	
 	/**
-	 * Optional C-Pluff interface version requirement. -1 if not available.
-	 * This is the version of the C-Pluff C/C++ interface the plug-in was
-	 * compiled against. The value is used to determine the compatibility of
-	 * the plug-in runtime and the C-Pluff implementation.
+	 * Optional ABI compatibility information. NULL if not available.
+	 * This is the earliest version of the plug-in interface the current
+	 * interface is backwards compatible with when it comes to the application
+	 * binary interface (ABI) of the plug-in. That is, plug-in clients compiled against
+	 * any plug-in interface version from @a abi_bw_compatibility to
+	 * @ref version (inclusive) can use the current version of the plug-in
+	 * binary. This describes binary or runtime compatibility.
+	 * The value corresponds to the @a abi-compatibility
+	 * attribute of the @a backwards-compatibility element in a plug-in descriptor.
 	 */
-	int req_cpluff_if_version;
+	char *abi_bw_compatibility;
+	
+	/**
+	 * Optional API compatibility information. NULL if not available.
+	 * This is the earliest version of the plug-in interface the current
+	 * interface is backwards compatible with when it comes to the
+	 * application programming interface (API) of the plug-in. That is,
+	 * plug-in clients written for any plug-in interface version from
+	 * @a api_bw_compatibility to @ref version (inclusive) can be compiled
+	 * against the current version of the plug-in API. This describes
+	 * source or build time compatibility. The value corresponds to the
+	 * @a api-compatibility attribute of the @a backwards-compatibility
+	 * element in a plug-in descriptor. 
+	 */
+	char *api_bw_compatibility;
+	
+	/**
+	 * Optional C-Pluff version requirement. NULL if not available.
+	 * This is the version of the C-Pluff implementation the plug-in was
+	 * compiled against. It is used to determine the compatibility of
+	 * the plug-in runtime and the linked in C-Pluff implementation. Any
+	 * C-Pluff version that is backwards compatible on binary level with the
+	 * specified version fulfills the requirement.
+	 */
+	char *req_cpluff_version;
 	
 	/** Number of import entries in the @ref imports array. */
 	unsigned int num_imports;
@@ -529,13 +521,14 @@ struct cp_plugin_import_t {
 	char *plugin_id;
 	
 	/**
-	 * An optional interface version requirement. -1 if no version requirement.
-	 * This is the version of the interface of the imported plug-in the
-	 * importing plug-in was compiled against.
+	 * An optional version requirement. NULL if no version requirement.
+	 * This is the version of the imported plug-in the importing plug-in was
+	 * compiled against. Any version of the imported plug-in that is
+	 * backwards compatible with this version fulfills the requirement.
 	 * This corresponds to the @a if-version attribute of the @a import
 	 * element in a plug-in descriptor.
 	 */
-	int if_version;
+	char *version;
 	
 	/**
 	 * Is this import optional. 1 for optional and 0 for mandatory import.
@@ -800,11 +793,11 @@ struct cp_plugin_runtime_t {
 
 /**
  * Returns the release version string of the linked in C-Pluff
- * implementation. This information is intended for display purposes.
+ * implementation.
  * 
  * @return the C-Pluff release version string
  */
-CP_C_API const char *cp_get_release_version(void);
+CP_C_API const char *cp_get_version(void);
 
 /**
  * Returns the canonical host type associated with the linked in C-Pluff implementation.
