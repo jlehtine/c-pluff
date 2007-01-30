@@ -54,6 +54,11 @@
 #else
 #define CP_PURE
 #endif
+#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
+#define CP_NONNULL(...) __attribute__((nonnull (__VA_ARGS__)))
+#else
+#define CP_NONNULL(...)
+#endif
 
 
 #endif //DEFINES_H_
