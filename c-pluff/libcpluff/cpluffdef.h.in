@@ -161,8 +161,8 @@
  * @def CP_GCC_NONNULL
  *
  * Specifies that some pointer arguments to a function should have
- * non-NULL values. Takes a variable length of argument indexes as arguments.
- * This attribute is supported in GCC since version 3.3.
+ * non-NULL values. Takes a variable length list of argument indexes as
+ * arguments. This attribute is supported in GCC since version 3.3.
  * It can be used for enhanced error checking and some optimizations.
  */
 
