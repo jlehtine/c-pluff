@@ -24,8 +24,9 @@
 
 // Function declarations for command implementations 
 static void cmd_help(int argc, char *argv[]);
-static void cmd_add_plugin_dir(int argc, char *argv[]);
-static void cmd_remove_plugin_dir(int argc, char *argv[]);
+static void cmd_register_pcollection(int argc, char *argv[]);
+static void cmd_unregister_pcollection(int argc, char *argv[]);
+static void cmd_unregister_pcollections(int argc, char *argv[]);
 static void cmd_load_plugin(int argc, char *argv[]);
 static void cmd_scan_plugins(int argc, char *argv[]);
 static void cmd_list_plugins(int argc, char *argv[]);
@@ -49,10 +50,11 @@ cp_context_t *context;
 /// The available commands 
 const command_info_t commands[] = {
 	{ "help", N_("displays command help"), cmd_help },
-	{ "add-plugin-dir", N_("registers a plug-in directory"), cmd_add_plugin_dir },
-	{ "remove-plugin-dir", N_("unregisters a plug-in directory"), cmd_remove_plugin_dir },
+	{ "register-collection", N_("registers a plug-in collection"), cmd_register_pcollection },
+	{ "unregister-collection", N_("unregisters a plug-in collection"), cmd_unregister_pcollection },
+	{ "unregister-collections", N_("unregisters all plug-in collections"), cmd_unregister_pcollections },
 	{ "load-plugin", N_("loads and installs a plug-in from the specified path"), cmd_load_plugin },
-	{ "scan-plugins", N_("scans plug-ins in the registered plug-in directories"), cmd_scan_plugins },
+	{ "scan-plugins", N_("scans plug-ins in the registered plug-in collections"), cmd_scan_plugins },
 	{ "start-plugin", N_("starts a plug-in"), cmd_start_plugin },
 	{ "stop-plugin", N_("stops a plug-in"), cmd_stop_plugin },
 	{ "stop-all-plugins", N_("stops all plug-ins"), cmd_stop_all_plugins },
@@ -249,24 +251,33 @@ static void plugin_listener(const char *plugin_id, cp_plugin_state_t old_state, 
 		state_to_string(new_state));
 }
 
-static void cmd_add_plugin_dir(int argc, char *argv[]) {
+static void cmd_register_pcollection(int argc, char *argv[]) {
 	cp_status_t status;
 	
 	if (argc != 2) {
-		error(_("Usage: add-plugin-dir <path>"));
-	} else if ((status = cp_add_plugin_dir(context, argv[1])) != CP_OK) {
-		errorf(_("cp_add_plugin_dir failed with error code %d."), status);
+		error(_("Usage: register-collection <path>"));
+	} else if ((status = cp_register_pcollection(context, argv[1])) != CP_OK) {
+		errorf(_("cp_register_pcollection failed with error code %d."), status);
 	} else {
-		noticef(_("Registered plug-in directory %s."), argv[1]);
+		noticef(_("Registered plug-in collection at %s."), argv[1]);
 	}
 }
 
-static void cmd_remove_plugin_dir(int argc, char *argv[]) {
+static void cmd_unregister_pcollection(int argc, char *argv[]) {
 	if (argc != 2) {
-		error(_("Usage: remove-plugin-dir <path>"));
+		error(_("Usage: unregister-collection <path>"));
 	} else {
-		cp_remove_plugin_dir(context, argv[1]);
-		noticef(_("Unregistered plug-in directory %s."), argv[1]);
+		cp_unregister_pcollection(context, argv[1]);
+		noticef(_("Unregistered plug-in collection at %s."), argv[1]);
+	}
+}
+
+static void cmd_unregister_pcollections(int argc, char *argv[]) {
+	if (argc != 1) {
+		error(_("Usage: unregister-collections"));
+	} else {
+		cp_unregister_pcollections(context);
+		notice(_("Unregistered all plug-in collections."));
 	}
 }
 

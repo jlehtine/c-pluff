@@ -75,7 +75,7 @@ CP_HIDDEN int cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
 
 /**
  * Processes a node of the list by freeing the associated pointer and
- * deleting the node.
+ * deleting and destroying the node.
  * 
  * @param list the list being processed
  * @param node the list node being processed

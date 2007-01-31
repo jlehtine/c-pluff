@@ -904,26 +904,38 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *status);
 CP_C_API void cp_destroy_context(cp_context_t *ctx);
 
 /**
- * Registers a plug-in collection with a plug-in context. The
+ * Registers a plug-in collection with a plug-in context. A plug-in collection
+ * is a directory that has plug-ins as its immediate subdirectories. The
  * plug-in context will scan the directory when ::cp_scan_plugins is called.
- * Returns @ref CP_OK if the directory has already been registered.
+ * Returns @ref CP_OK if the directory has already been registered. A plug-in
+ * collection can be unregistered using ::cp_unregister_pcollection or
+ * ::cp_unregister_pcollections.
  * 
  * @param ctx the plug-in context
  * @param dir the directory
- * @return @ref CP_OK (zero) on success or @ref CP_ERR_RESOURCE if insufficient system resources
+ * @return @ref CP_OK (zero) on success or @ref CP_ERR_RESOURCE if insufficient memory
  */
-CP_C_API cp_status_t cp_add_plugin_dir(cp_context_t *ctx, const char *dir);
+CP_C_API cp_status_t cp_register_pcollection(cp_context_t *ctx, const char *dir);
 
 /**
- * Unregisters a previously registered directory of plug-ins from a plug-in context.
- * Does not delete the directory itself. Plug-ins already loaded from the
- * removed directory are not affected. Does nothing
- * if the directory has not been registered.
+ * Unregisters a previously registered plug-in collection from a
+ * plug-in context. Plug-ins already loaded from the collection are not
+ * affected. Does nothing if the directory has not been registered.
+ * Plug-in collections can be registered using ::cp_register_pcollection.
  * 
  * @param ctx the plug-in context
  * @param dir the previously registered directory
  */
-CP_C_API void cp_remove_plugin_dir(cp_context_t *ctx, const char *dir);
+CP_C_API void cp_unregister_pcollection(cp_context_t *ctx, const char *dir);
+
+/**
+ * Unregisters all plug-in collections from a plug-in context.
+ * Plug-ins already loaded are not affected. Plug-in collections can
+ * be registered using ::cp_register_pcollection.
+ * 
+ * @param ctx the plug-in context
+ */
+CP_C_API void cp_unregister_pcollections(cp_context_t *ctx);
 
 /*@}*/
 

@@ -437,7 +437,7 @@ CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t
 
 // Plug-in directories 
 
-CP_C_API cp_status_t cp_add_plugin_dir(cp_context_t *context, const char *dir) {
+CP_C_API cp_status_t cp_register_pcollection(cp_context_t *context, const char *dir) {
 	char *d = NULL;
 	lnode_t *node = NULL;
 	cp_status_t status = CP_OK;
@@ -479,27 +479,20 @@ CP_C_API cp_status_t cp_add_plugin_dir(cp_context_t *context, const char *dir) {
 		}
 	}
 	
-	// Report errors 
-	switch (status) {
-		case CP_OK:
-			break;
-		case CP_ERR_RESOURCE:
-			cpi_errorf(context, _("Could not add plug-in directory %s due to insufficient system resources."), dir);
-			break;
-		default:
-			cpi_errorf(context, _("Could not add plug-in directory %s."), dir);
-			break;
+	// Report error
+	if (status == CP_ERR_RESOURCE) {
+		cpi_errorf(context, _("Could not register plug-in collection directory %s due to insufficient memory."), dir);
 	}
 
 	// Report success
 	if (status == CP_OK) {
-		cpi_debugf(context, "Plug-in directory %s was added.", dir);
+		cpi_debugf(context, "Plug-in collection directory %s was registered.", dir);
 	}
 	
 	return status;
 }
 
-CP_C_API void cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
+CP_C_API void cp_unregister_pcollection(cp_context_t *context, const char *dir) {
 	char *d;
 	lnode_t *node;
 	
@@ -516,7 +509,16 @@ CP_C_API void cp_remove_plugin_dir(cp_context_t *context, const char *dir) {
 		free(d);
 	}
 	cpi_unlock_context(context);
-	cpi_debugf(context, "Plug-in directory %s was removed.", dir);
+	cpi_debugf(context, "Plug-in collection directory %s was unregistered.", dir);
+}
+
+CP_C_API void cp_unregister_pcollections(cp_context_t *context) {
+	CHECK_NOT_NULL(context);
+	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
+	list_process(context->env->plugin_dirs, NULL, cpi_process_free_ptr);
+	cpi_unlock_context(context);
+	cpi_debug(context, "All plug-in collection directories were unregistered.");
 }
 
 
