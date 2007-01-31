@@ -33,7 +33,7 @@ extern "C" {
  * @param ptr2 the second pointer
  * @return zero if the pointers are equal, otherwise non-zero
  */
-CP_HIDDEN int cpi_comp_ptr(const void *ptr1, const void *ptr2) CP_CONST;
+CP_HIDDEN int cpi_comp_ptr(const void *ptr1, const void *ptr2) CP_GCC_CONST;
 
 /**
  * Returns a hash value for a pointer.
@@ -41,7 +41,7 @@ CP_HIDDEN int cpi_comp_ptr(const void *ptr1, const void *ptr2) CP_CONST;
  * @param ptr the pointer being hashed
  * @return the corresponding hash value
  */
-CP_HIDDEN hash_val_t cpi_hashfunc_ptr(const void *ptr) CP_CONST;
+CP_HIDDEN hash_val_t cpi_hashfunc_ptr(const void *ptr) CP_GCC_CONST;
 
 /**
  * Adds a new pointer to a list if the pointer is not yet included.
@@ -68,7 +68,7 @@ CP_HIDDEN int cpi_ptrset_remove(list_t *set, const void *ptr);
  * @param ptr the pointer
  * @return non-zero if the pointer is included, zero otherwise
  */
-CP_HIDDEN int cpi_ptrset_contains(list_t *set, const void *ptr) CP_PURE;
+CP_HIDDEN int cpi_ptrset_contains(list_t *set, const void *ptr) CP_GCC_PURE;
 
 
 // Other list processing utility functions 
@@ -102,7 +102,7 @@ CP_HIDDEN void cpi_process_free_ptr(list_t *list, lnode_t *node, void *dummy);
  * @param v2 the second version string to compare
  * @return less than, equal to or greater than zero when @a v1 < @a v2, @a v1 == @a v2 or @a v1 > @a v2, correspondingly
  */
-CP_HIDDEN int cpi_vercmp(const char *v1, const char *v2);
+CP_HIDDEN int cpi_vercmp(const char *v1, const char *v2) CP_GCC_PURE;
 
 
 // Miscellaneous utility functions 

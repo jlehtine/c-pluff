@@ -14,6 +14,42 @@
 
 
 /* ------------------------------------------------------------------------
+ * Version information
+ * ----------------------------------------------------------------------*/
+
+/**
+ * @defgroup versionInfo Version information
+ * @ingroup cDefines cxxDefines
+ *
+ * C-Pluff version information. Notice that this version information
+ * is static version information included in header files. The
+ * macros introduced here can be used for compile time checks.
+ */
+/*@{*/
+
+/**
+ * The C-Pluff release version string. This string identifies a specific
+ * version of the C-Pluff distribution. Compile time software compatibility
+ * checks should use #CP_VERSION_MAJOR and #CP_VERSION_MINOR instead.
+ */
+#define CP_VERSION "@PACKAGE_VERSION@"
+
+/**
+ * The major version number component of the release version. This is an
+ * integer.
+ */
+#define CP_VERSION_MAJOR @CP_VERSION_MAJOR@
+
+/**
+ * The minor version number component of the release version. This is an
+ * integer.
+ */
+#define CP_VERSION_MINOR @CP_VERSION_MINOR@
+
+/*@}*/
+
+
+/* ------------------------------------------------------------------------
  * Symbol visibility
  * ----------------------------------------------------------------------*/
 
@@ -98,39 +134,49 @@
 
 
 /* ------------------------------------------------------------------------
- * Version information
+ * GCC attributes
  * ----------------------------------------------------------------------*/
 
 /**
- * @defgroup versionInfo Version information
+ * @defgroup cDefinesGCCAttributes GCC attributes
  * @ingroup cDefines cxxDefines
  *
- * C-Pluff version information. Notice that this version information
- * is static version information included in header files. The
- * macros introduced here can be used for compile time checks.
+ * These macros conditionally define GCC attributes for declarations.
+ * They are used in C-Pluff API declarations to enable better optimization
+ * and error checking when using GCC. In non-GCC platforms they have
+ * empty values.
  */
 /*@{*/
 
 /**
- * The C-Pluff release version string. This string identifies a specific
- * version of the C-Pluff distribution. Compile time software compatibility
- * checks should use #CP_VERSION_MAJOR and #CP_VERSION_MINOR instead.
+ * @def CP_GCC_PURE
+ *
+ * Declares a function as pure function having no side effects.
+ * This attribute is supported in GCC since version 2.96.
+ * Such functions can be subject to common subexpression elimination
+ * and loop optimization.
  */
-#define CP_VERSION "@PACKAGE_VERSION@"
 
 /**
- * The major version number component of the release version. This is an
- * integer.
+ * @def CP_GCC_NONNULL
+ *
+ * Specifies that some pointer arguments to a function should have
+ * non-NULL values. Takes a variable length of argument indexes as arguments.
+ * This attribute is supported in GCC since version 3.3.
+ * It can be used for enhanced error checking and some optimizations.
  */
-#define CP_VERSION_MAJOR @CP_VERSION_MAJOR@
 
-/**
- * The minor version number component of the release version. This is an
- * integer.
- */
-#define CP_VERSION_MINOR @CP_VERSION_MINOR@
+#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 96)
+#define CP_GCC_PURE __attribute__((pure))
+#else
+#define CP_GCC_PURE
+#endif
+#if __GNUC__ > 3 || (__GNUC__ == 3 && __GNUC_MINOR__ >= 3)
+#define CP_GCC_NONNULL(...) __attribute__((nonnull (__VA_ARGS__)))
+#else
+#define CP_GCC_NONNULL(...)
+#endif
 
 /*@}*/
-
 
 #endif /*CPLUFFDEF_H_*/

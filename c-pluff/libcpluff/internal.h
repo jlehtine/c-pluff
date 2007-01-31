@@ -264,28 +264,28 @@ CP_HIDDEN void cpi_unlock_framework(void);
  * 
  * @param context the plug-in context
  */
-CP_HIDDEN void cpi_lock_context(cp_context_t *context) CP_NONNULL(1);
+CP_HIDDEN void cpi_lock_context(cp_context_t *context) CP_GCC_NONNULL(1);
 
 /**
  * Releases exclusive access to a plug-in context.
  * 
  * @param context the plug-in context
  */
-CP_HIDDEN void cpi_unlock_context(cp_context_t *context) CP_NONNULL(1);
+CP_HIDDEN void cpi_unlock_context(cp_context_t *context) CP_GCC_NONNULL(1);
 
 /**
  * Waits until the specified plug-in context is signalled.
  * 
  * @param context the plug-in context
  */
-CP_HIDDEN void cpi_wait_context(cp_context_t *context) CP_NONNULL(1);
+CP_HIDDEN void cpi_wait_context(cp_context_t *context) CP_GCC_NONNULL(1);
 
 /**
  * Signals the specified plug-in context.
  * 
  * @param context the plug-in context
  */
-CP_HIDDEN void cpi_signal_context(cp_context_t *context) CP_NONNULL(1);
+CP_HIDDEN void cpi_signal_context(cp_context_t *context) CP_GCC_NONNULL(1);
 
 #else
 #define cpi_lock_context(dummy) do {} while (0)
@@ -306,7 +306,7 @@ CP_HIDDEN void cpi_signal_context(cp_context_t *context) CP_NONNULL(1);
  * @param severity the severity of the message
  * @param msg the localized message
  */
-CP_HIDDEN void cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) CP_NONNULL(1, 3);
+CP_HIDDEN void cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) CP_GCC_NONNULL(1, 3);
 
 /**
  * Formats and logs a message.
@@ -316,7 +316,7 @@ CP_HIDDEN void cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char
  * @param msg the localized message format
  * @param ... the message parameters
  */
-CP_HIDDEN CP_PRINTF(3, 4) void cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char *msg, ...) CP_NONNULL(1, 3);
+CP_HIDDEN void cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const char *msg, ...) CP_GCC_PRINTF(3, 4) CP_GCC_NONNULL(1, 3);
 
 /**
  * Returns whether the messages of the specified severity level are
@@ -326,7 +326,7 @@ CP_HIDDEN CP_PRINTF(3, 4) void cpi_logf(cp_context_t *ctx, cp_log_severity_t sev
  * @param severity the severity
  * @return whether the messages of the specified severity level are logged
  */
-CP_HIDDEN int cpi_is_logged(cp_context_t *ctx, cp_log_severity_t severity) CP_NONNULL(1);
+CP_HIDDEN int cpi_is_logged(cp_context_t *ctx, cp_log_severity_t severity) CP_GCC_NONNULL(1);
 
 /**
  * Unregisters loggers in the specified logger list. Either unregisters all
@@ -335,7 +335,7 @@ CP_HIDDEN int cpi_is_logged(cp_context_t *ctx, cp_log_severity_t severity) CP_NO
  * @param loggers the logger list
  * @param plugin the plug-in whose loggers to unregister or NULL for all
  */
-CP_HIDDEN void cpi_unregister_loggers(list_t *loggers, cp_plugin_t *plugin) CP_NONNULL(1);
+CP_HIDDEN void cpi_unregister_loggers(list_t *loggers, cp_plugin_t *plugin) CP_GCC_NONNULL(1);
 
 // Convenience macros for logging
 #define cpi_error(ctx, msg) cpi_log((ctx), CP_LOG_ERROR, (msg))
@@ -361,7 +361,7 @@ CP_HIDDEN void cpi_unregister_loggers(list_t *loggers, cp_plugin_t *plugin) CP_N
  * @param listeners the listener list
  * @param plugin the plug-in whose listeners to unregister or NULL for all
  */
-CP_HIDDEN void cpi_unregister_plisteners(list_t *listeners, cp_plugin_t *plugin) CP_NONNULL(1);
+CP_HIDDEN void cpi_unregister_plisteners(list_t *listeners, cp_plugin_t *plugin) CP_GCC_NONNULL(1);
 
 /**
  * Returns the owner name for a context.
@@ -369,7 +369,7 @@ CP_HIDDEN void cpi_unregister_plisteners(list_t *listeners, cp_plugin_t *plugin)
  * @param ctx the context
  * @return owner name
  */
-CP_HIDDEN const char *cpi_context_owner(cp_context_t *ctx) CP_NONNULL(1);
+CP_HIDDEN const char *cpi_context_owner(cp_context_t *ctx) CP_GCC_NONNULL(1);
 
 #endif
 
@@ -379,7 +379,7 @@ CP_HIDDEN const char *cpi_context_owner(cp_context_t *ctx) CP_NONNULL(1);
  * @param msg the formatted error message
  * @param ... parameters
  */
-CP_HIDDEN CP_NORETURN void cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_NONNULL(1);
+CP_HIDDEN void cpi_fatalf(const char *msg, ...) CP_GCC_NORETURN CP_GCC_PRINTF(1, 2) CP_GCC_NONNULL(1);
 
 /**
  * Reports a fatal NULL argument to an API function.
@@ -387,7 +387,7 @@ CP_HIDDEN CP_NORETURN void cpi_fatalf(const char *msg, ...) CP_PRINTF(1, 2) CP_N
  * @param arg the argument name
  * @param func the API function name
  */
-CP_HIDDEN CP_NORETURN void cpi_fatal_null_arg(const char *arg, const char *func) CP_NONNULL(1, 2);
+CP_HIDDEN void cpi_fatal_null_arg(const char *arg, const char *func) CP_GCC_NORETURN CP_GCC_NONNULL(1, 2);
 
 /**
  * Checks that we are currently not in a specific callback function invocation.
@@ -398,7 +398,7 @@ CP_HIDDEN CP_NORETURN void cpi_fatal_null_arg(const char *arg, const char *func)
  * @param funcmask the bitmask of disallowed callback functions
  * @param func the current plug-in framework function
  */
-CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func) CP_NONNULL(1, 3);
+CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char *func) CP_GCC_NONNULL(1, 3);
 
 
 // Context management
@@ -411,7 +411,7 @@ CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char 
  * @param status a pointer to the location where the status code is to be stored
  * @return the newly allocated context or NULL on failure
  */
-CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *env, cp_status_t *status) CP_NONNULL(2, 3);
+CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *env, cp_status_t *status) CP_GCC_NONNULL(2, 3);
 
 /**
  * Frees the resources associated with a plug-in context. Also frees the
@@ -420,7 +420,7 @@ CP_HIDDEN cp_context_t * cpi_new_context(cp_plugin_t *plugin, cp_plugin_env_t *e
  * 
  * @param context the plug-in context to free
  */
-CP_HIDDEN void cpi_free_context(cp_context_t *context) CP_NONNULL(1);
+CP_HIDDEN void cpi_free_context(cp_context_t *context) CP_GCC_NONNULL(1);
 
 /**
  * Destroys all contexts and releases the context list resources.
@@ -436,7 +436,7 @@ CP_HIDDEN void cpi_destroy_all_contexts(void);
  * @param context the plug-in context
  * @param event the plug-in event
  */
-CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t *event) CP_NONNULL(1, 2);
+CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t *event) CP_GCC_NONNULL(1, 2);
 
 
 // Plug-in management
@@ -446,7 +446,7 @@ CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t
  * 
  * @param plugin the plug-in to be freed
  */
-CP_HIDDEN void cpi_free_plugin(cp_plugin_info_t *plugin) CP_NONNULL(1);
+CP_HIDDEN void cpi_free_plugin(cp_plugin_info_t *plugin) CP_GCC_NONNULL(1);
 
 /**
  * Starts the specified plug-in and its dependencies.
@@ -455,7 +455,7 @@ CP_HIDDEN void cpi_free_plugin(cp_plugin_info_t *plugin) CP_NONNULL(1);
  * @param plugin the plug-in
  * @return @ref CP_OK (zero) on success or an error code on failure
  */
-CP_HIDDEN cp_status_t cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin) CP_NONNULL(1, 2);
+CP_HIDDEN cp_status_t cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugin) CP_GCC_NONNULL(1, 2);
 
 
 // Dynamic resource management
@@ -468,14 +468,14 @@ CP_HIDDEN cp_status_t cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugi
  * @param df the deallocation function
  * @return @ref CP_OK (zero) on success or an error code on failure
  */
-CP_HIDDEN cp_status_t cpi_register_info(void *res, cpi_dealloc_func_t df) CP_NONNULL(1, 2);
+CP_HIDDEN cp_status_t cpi_register_info(void *res, cpi_dealloc_func_t df) CP_GCC_NONNULL(1, 2);
 
 /**
  * Increases the usage count for the specified dynamic information object.
  * 
  * @param res the resource
  */
-CP_HIDDEN void cpi_use_info(void *res) CP_NONNULL(1);
+CP_HIDDEN void cpi_use_info(void *res) CP_GCC_NONNULL(1);
 
 /**
  * Destroys all dynamic information objects.
@@ -491,7 +491,7 @@ CP_HIDDEN void cpi_destroy_all_infos(void);
  * 
  * @param plugin the plug-in to be stopped
  */
-CP_HIDDEN void cpi_stop_plugin_run(cp_plugin_t *plugin) CP_NONNULL(1);
+CP_HIDDEN void cpi_stop_plugin_run(cp_plugin_t *plugin) CP_GCC_NONNULL(1);
 
 
 #ifdef __cplusplus
