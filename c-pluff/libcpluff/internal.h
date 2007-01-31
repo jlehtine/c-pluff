@@ -355,6 +355,15 @@ CP_HIDDEN void cpi_unregister_loggers(list_t *loggers, cp_plugin_t *plugin) CP_N
 #ifndef NDEBUG
 
 /**
+ * Unregisters plug-in listeners in the specified list. Either unregisters all
+ * listeners or only listeners installed by the specified plug-in.
+ * 
+ * @param listeners the listener list
+ * @param plugin the plug-in whose listeners to unregister or NULL for all
+ */
+CP_HIDDEN void cpi_unregister_plisteners(list_t *listeners, cp_plugin_t *plugin) CP_NONNULL(1);
+
+/**
  * Returns the owner name for a context.
  * 
  * @param ctx the context

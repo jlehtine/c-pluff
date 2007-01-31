@@ -845,6 +845,12 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			context->env->in_stop_func_invocation--;
 		}
 
+		// Unregister all logger functions
+		cpi_unregister_loggers(plugin->context->env->loggers, plugin);
+
+		// Unregister all plug-in listeners
+		cpi_unregister_plisteners(plugin->context->env->plugin_listeners, plugin);
+	
 		// Release resolved symbols
 		if (plugin->context->resolved_symbols != NULL) {
 			while (!hash_isempty(plugin->context->resolved_symbols)) {
@@ -881,9 +887,6 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			plugin->defined_symbols = NULL;
 		}
 		
-		// Unregister all logger functions
-		cpi_unregister_loggers(plugin->context->env->loggers, plugin);
-	
 		// Destroy the plug-in object
 		context->env->in_destroy_func_invocation++;
 		plugin->runtime_funcs->destroy(plugin->plugin_data);

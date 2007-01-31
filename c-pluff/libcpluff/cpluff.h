@@ -951,7 +951,7 @@ CP_C_API void cp_unregister_pcollections(cp_context_t *ctx);
 /*@{*/
 
 /**
- * Registers a new logger with a plug-in context or updates the settings of a
+ * Registers a logger with a plug-in context or updates the settings of a
  * registered logger. The logger will receive selected log messages.
  * If the specified logger is not yet known, a new logger registration
  * is made, otherwise the settings for the existing logger are updated.
@@ -1202,8 +1202,10 @@ CP_C_API cp_plugin_state_t cp_get_plugin_state(cp_context_t *ctx, const char *id
 /**
  * Registers a plug-in listener with a plug-in context. The listener is called
  * synchronously immediately after a plug-in state change. There can be several
- * listeners registered with the same context. If a plug-in registers a
- * listener it must unregister it when the plug-in is stopped.
+ * listeners registered with the same context. A plug-in listener can be
+ * unregistered using ::cp_unregister_plistener and it is automatically
+ * unregistered when the registering plug-in is stopped or when the context
+ * is destroyed.
  * 
  * @param ctx the plug-in context
  * @param listener the plug-in listener to be added

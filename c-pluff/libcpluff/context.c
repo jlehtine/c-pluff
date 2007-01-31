@@ -22,19 +22,6 @@
 
 
 /* ------------------------------------------------------------------------
- * Data types
- * ----------------------------------------------------------------------*/
-
-/**
- * A holder structure for a plug-in listener.
- */
-typedef struct el_holder_t {
-	cp_plugin_listener_func_t plugin_listener;
-	void *user_data;
-} el_holder_t;
-
-
-/* ------------------------------------------------------------------------
  * Variables
  * ----------------------------------------------------------------------*/
 
@@ -47,49 +34,6 @@ static list_t *contexts = NULL;
  * ----------------------------------------------------------------------*/
 
 // Generic 
-
-/**
- * Processes a node by freeing the associated el_holder_t and deleting the
- * node from the list.
- * 
- * @param list the list being processed
- * @param node the node being processed
- * @param dummy not used
- */
-static void process_free_el_holder(list_t *list, lnode_t *node, void *dummy) {
-	el_holder_t *h = lnode_get(node);
-	list_delete(list, node);
-	lnode_destroy(node);
-	free(h);
-}
-
-/**
- * Compares plug-in listener holders.
- * 
- * @param h1 the first holder to be compared
- * @param h2 the second holder to be compared
- * @return zero if the holders point to the same function, otherwise non-zero
- */
-static int comp_el_holder(const void *h1, const void *h2) {
-	const el_holder_t *plh1 = h1;
-	const el_holder_t *plh2 = h2;
-	
-	return (plh1->plugin_listener != plh2->plugin_listener);
-}
-
-/**
- * Processes a node by delivering the specified event to the associated
- * plug-in listener.
- * 
- * @param list the list being processed
- * @param node the node being processed
- * @param event the event
- */
-static void process_event(list_t *list, lnode_t *node, void *event) {
-	el_holder_t *h = lnode_get(node);
-	cpi_plugin_event_t *e = event;
-	h->plugin_listener(e->plugin_id, e->old_state, e->new_state, h->user_data);
-}
 
 static void free_plugin_env(cp_plugin_env_t *env) {
 	assert(env != NULL);
@@ -111,7 +55,7 @@ static void free_plugin_env(cp_plugin_env_t *env) {
 		env->plugin_dirs = NULL;
 	}
 	if (env->plugin_listeners != NULL) {
-		list_process(env->plugin_listeners, NULL, process_free_el_holder);
+		cpi_unregister_plisteners(env->plugin_listeners, NULL);
 		list_destroy(env->plugin_listeners);
 		env->plugin_listeners = NULL;
 	}
@@ -337,101 +281,6 @@ CP_HIDDEN void cpi_destroy_all_contexts(void) {
 		contexts = NULL;
 	}
 	cpi_unlock_framework();
-}
-
-
-// Plug-in listeners 
-
-CP_C_API cp_status_t cp_register_plistener(cp_context_t *context, cp_plugin_listener_func_t listener, void *user_data) {
-	cp_status_t status = CP_ERR_RESOURCE;
-	el_holder_t *holder;
-	lnode_t *node;
-
-	CHECK_NOT_NULL(context);
-	CHECK_NOT_NULL(listener);
-	
-	cpi_lock_context(context);
-	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
-	if ((holder = malloc(sizeof(el_holder_t))) != NULL) {
-		holder->plugin_listener = listener;
-		holder->user_data = user_data;
-		if ((node = lnode_create(holder)) != NULL) {
-			list_append(context->env->plugin_listeners, node);
-			status = CP_OK;
-		} else {
-			free(holder);
-		}
-	}
-	cpi_unlock_context(context);
-	if (status != CP_OK) {
-		cpi_error(context, _("A plug-in listener could not be registered due to insufficient system resources."));
-	} else {
-		cpi_debugf(context, "A plug-in listener was added by %s.", cpi_context_owner(context));
-	}
-	return status;
-}
-
-CP_C_API void cp_unregister_plistener(cp_context_t *context, cp_plugin_listener_func_t listener) {
-	el_holder_t holder;
-	lnode_t *node;
-	
-	CHECK_NOT_NULL(context);
-	holder.plugin_listener = listener;
-	cpi_lock_context(context);
-	cpi_check_invocation(context, CPI_CF_LOGGER | CPI_CF_LISTENER, __func__);
-	node = list_find(context->env->plugin_listeners, &holder, comp_el_holder);
-	if (node != NULL) {
-		process_free_el_holder(context->env->plugin_listeners, node, NULL);
-	}
-	cpi_unlock_context(context);
-	cpi_debugf(context, "A plug-in listener was removed by %s.", cpi_context_owner(context));
-}
-
-CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t *event) {
-	assert(event != NULL);
-	assert(event->plugin_id != NULL);
-	cpi_lock_context(context);
-	context->env->in_event_listener_invocation++;
-	list_process(context->env->plugin_listeners, (void *) event, process_event);
-	context->env->in_event_listener_invocation--;
-	cpi_unlock_context(context);
-	if (cpi_is_logged(context, CP_LOG_INFO)) {
-		char *str;
-		switch (event->new_state) {
-			case CP_PLUGIN_UNINSTALLED:
-				str = _("Plug-in %s has been uninstalled.");
-				break;
-			case CP_PLUGIN_INSTALLED:
-				if (event->old_state < CP_PLUGIN_INSTALLED) {
-					str = _("Plug-in %s has been installed.");
-				} else {
-					str = _("Plug-in %s runtime has been unloaded.");
-				}
-				break;
-			case CP_PLUGIN_RESOLVED:
-				if (event->old_state < CP_PLUGIN_RESOLVED) {
-					str = _("Plug-in %s dependencies have been resolved and the plug-in runtime has been loaded.");
-				} else {
-					str = _("Plug-in %s has been stopped.");
-				}
-				break;
-			case CP_PLUGIN_STARTING:
-				str = _("Plug-in %s is starting.");
-				break;
-			case CP_PLUGIN_STOPPING:
-				str = _("Plug-in %s is stopping.");
-				break;
-			case CP_PLUGIN_ACTIVE:
-				str = _("Plug-in %s has been started.");
-				break;
-			default:
-				str = NULL;
-				break;
-		}
-		if (str != NULL) {
-			cpi_infof(context, str, event->plugin_id);
-		}
-	}
 }
 
 
