@@ -24,6 +24,7 @@
 
 // Function declarations for command implementations 
 static void cmd_help(int argc, char *argv[]);
+static void cmd_set_log_level(int argc, char *argv[]);
 static void cmd_register_pcollection(int argc, char *argv[]);
 static void cmd_unregister_pcollection(int argc, char *argv[]);
 static void cmd_unregister_pcollections(int argc, char *argv[]);
@@ -51,8 +52,9 @@ static void cmd_exit(int argc, char *argv[]);
 static cp_context_t *context;
 
 /// The available commands 
-const command_info_t commands[] = {
+CP_HIDDEN const command_info_t commands[] = {
 	{ "help", N_("displays command help"), cmd_help },
+	{ "set-log-level", N_("sets the display log level"), cmd_set_log_level },
 	{ "register-collection", N_("registers a plug-in collection"), cmd_register_pcollection },
 	{ "unregister-collection", N_("unregisters a plug-in collection"), cmd_unregister_pcollection },
 	{ "unregister-collections", N_("unregisters all plug-in collections"), cmd_unregister_pcollections },
@@ -76,11 +78,21 @@ const command_info_t commands[] = {
 };
 
 /// The available load flags 
-const flag_info_t load_flags[] = {
+CP_HIDDEN const flag_info_t load_flags[] = {
 	{ "upgrade", CP_LP_UPGRADE },
 	{ "stop-all-on-upgrade", CP_LP_STOP_ALL_ON_UPGRADE },
 	{ "stop-all-on-install", CP_LP_STOP_ALL_ON_INSTALL },
 	{ "restart-active", CP_LP_RESTART_ACTIVE },
+	{ NULL, -1 }
+};
+
+/// The available log levels
+CP_HIDDEN const log_level_info_t log_levels[] = {
+	{ "debug", CP_LOG_DEBUG },
+	{ "info", CP_LOG_INFO },
+	{ "warning", CP_LOG_WARNING },
+	{ "error", CP_LOG_ERROR },
+	{ "none", CP_LOG_ERROR + 1 },
 	{ NULL, -1 }
 };
 
@@ -228,6 +240,34 @@ static void logger(cp_log_severity_t severity, const char *msg, const char *apid
 		noticef("%s: %s: %s", prefix, apid, msg);
 	} else {
 		noticef("%s: %s", prefix, msg);
+	}
+}
+
+static void cmd_set_log_level(int argc, char *argv[]) {
+	if (argc != 2) {
+		errorf(_("Usage: %s <level>"), argv[0]);
+	} else {
+		int i;
+		
+		for (i = 0; log_levels[i].name != NULL; i++) {
+			if (!strcmp(argv[1], log_levels[i].name)) {
+				break;
+			}
+		}
+		if (log_levels[i].name == NULL) {
+			errorf(_("Unknown log level %s."), argv[1]);
+			notice(_("Available log levels are:"));
+			for (i = 0; log_levels[i].name != NULL; i++) {
+				noticef("  %s", log_levels[i].name);
+			}
+		} else {
+			if (log_levels[i].level <= CP_LOG_ERROR) {
+				cp_register_logger(context, logger, NULL, log_levels[i].level);
+			} else {
+				cp_unregister_logger(context, logger);
+			}
+			noticef(_("Using display log level %s."), log_levels[i].name);			
+		}
 	}
 }
 
@@ -678,15 +718,6 @@ static void cmd_list_extensions(int argc, char *argv[]) {
 	}	
 }
 
-static char *my_strdup(const char *str) {
-	char *dup;
-	
-	if ((dup = malloc((strlen(str) + 1) * sizeof(char))) != NULL) {
-		strcpy(dup, str);
-	}
-	return dup; 
-}
-
 static char **argv_dup(int argc, char *argv[]) {
 	char **dup;
 	int i;
@@ -696,7 +727,7 @@ static char **argv_dup(int argc, char *argv[]) {
 	}
 	dup[0] = "";
 	for (i = 1; i < argc; i++) {
-		if ((dup[i] = my_strdup(argv[i])) == NULL) {
+		if ((dup[i] = strdup(argv[i])) == NULL) {
 			for (i--; i > 0; i--) {
 				free(dup[i]);
 			}
@@ -812,11 +843,11 @@ int main(int argc, char *argv[]) {
 
 	// Display startup information 
 	noticef(
-		/* TRANSLATORS: This is the version string displayed on startup. */
+		/* TRANSLATORS: This is a version string displayed on startup. */
 		_("C-Pluff console, version %s"), PACKAGE_VERSION);
 	noticef(
-		/* TRANSLATORS: This is the version string displayed on startup. */
-		_("C-Pluff framework, version %s for %s"),
+		/* TRANSLATORS: This is a version string displayed on startup. */
+		_("C-Pluff library, version %s for %s"),
 		cp_get_version(), cp_get_host_type());
 	notice(_("Type \"help\" for help on available commands."));
 
@@ -834,7 +865,8 @@ int main(int argc, char *argv[]) {
 	}
 
 	// Initialize logging
-	cp_register_logger(context, logger, NULL, CP_LOG_DEBUG);
+	cp_register_logger(context, logger, NULL, log_levels[1].level);
+	noticef(_("Using display log level %s."), log_levels[1].name);
 
 	// Initialize plug-in listener
 	cp_register_plistener(context, plugin_listener, NULL);
@@ -843,10 +875,9 @@ int main(int argc, char *argv[]) {
 	cmdline_init();
 	
 	/* TRANSLATORS: This is the input prompt for cpluff-console. */
-	prompt = _("> ");
+	prompt = _("C-Pluff console > ");
 	
 	while (1) {
-		char prompt[32];
 		char *cmdline;
 		int argc;
 		char **argv;

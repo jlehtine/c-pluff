@@ -11,6 +11,7 @@
 #include <ctype.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include <cpluffdef.h>
 
 static char *cp_console_compl_flagsgen(const char *text, int state) {
 	static int counter;
@@ -27,10 +28,28 @@ static char *cp_console_compl_flagsgen(const char *text, int state) {
 	if (load_flags[counter].name == NULL) {
 		return NULL;
 	} else {
-		buffer = malloc(sizeof(char) * (strlen(load_flags[counter].name) + 1));
-		if (buffer != NULL) {
-			strcpy(buffer, load_flags[counter].name);
-		}
+		buffer = strdup(load_flags[counter].name);
+		counter++;
+		return buffer;
+	}
+}
+
+static char *cp_console_compl_loggen(const char *text, int state) {
+	static int counter;
+	static int textlen;
+	char *buffer;
+	
+	if (!state) {
+		counter = 0;
+		textlen = strlen(text);
+	}
+	while(log_levels[counter].name != NULL && strncmp(text, log_levels[counter].name, textlen)) {
+		counter++;
+	}
+	if (log_levels[counter].name == NULL) {
+		return NULL;
+	} else {
+		buffer = strdup(log_levels[counter].name);
 		counter++;
 		return buffer;
 	}
@@ -68,19 +87,22 @@ static char **cp_console_completion(const char *text, int start, int end) {
 	if (i >= start) {
 		matches = rl_completion_matches(text, cp_console_compl_cmdgen);
 		rl_attempted_completion_over = 1;
-	} else if (!strncmp(rl_line_buffer + i, "load-plugins", start - i < 12 ? start - i : 12)) {
+	} else if (!strncmp(rl_line_buffer + i, "scan-plugins", start - i < 12 ? start - i : 12)) {
 		matches = rl_completion_matches(text, cp_console_compl_flagsgen);
+		rl_attempted_completion_over = 1;
+	} else if (!strncmp(rl_line_buffer + i, "set-log-level", start - i < 13 ? start - i : 13)) {
+		matches = rl_completion_matches(text, cp_console_compl_loggen);
 		rl_attempted_completion_over = 1;
 	}
 	return matches;
 }
 
-void cmdline_init(void) {
+CP_HIDDEN void cmdline_init(void) {
 	rl_readline_name = PACKAGE_NAME;
 	rl_attempted_completion_function = cp_console_completion;
 }
 
-char *cmdline_input(const char *prompt) {
+CP_HIDDEN char *cmdline_input(const char *prompt) {
 	static char *cmdline = NULL;
 	
 	// Free previously returned command line, if any 

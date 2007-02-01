@@ -58,12 +58,23 @@ typedef struct command_info_t {
 typedef struct flag_info_t {
 	
 	/// The name of the flag 
-	char *name;
+	const char *name;
 	
 	/// The value of the flag 
 	int value;
 	
 } flag_info_t;
+
+/// Type for log level information
+typedef struct log_level_info_t {
+	
+	/// The name of the log level
+	const char *name;
+	
+	/// The value of the log level
+	int level;
+	
+} log_level_info_t;
 
 
 /* ------------------------------------------------------------------------
@@ -75,6 +86,9 @@ extern const command_info_t commands[];
 
 /// The available load flags 
 extern const flag_info_t load_flags[];
+
+/// The available logging levels
+extern const log_level_info_t log_levels[];
 
 
 /* ------------------------------------------------------------------------
