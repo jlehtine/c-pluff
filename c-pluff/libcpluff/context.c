@@ -93,12 +93,14 @@ CP_HIDDEN void cpi_free_context(cp_context_t *context) {
 	}
 	
 	// Destroy symbol lists
-	assert(context->resolved_symbols == NULL
-			|| hash_isempty(context->resolved_symbols));
-	hash_destroy(context->resolved_symbols);
-	assert(context->symbol_providers == NULL
-			|| hash_isempty(context->symbol_providers));
-	hash_destroy(context->symbol_providers);
+	if (context->resolved_symbols != NULL) {
+		assert(hash_isempty(context->resolved_symbols));
+		hash_destroy(context->resolved_symbols);
+	}
+	if (context->symbol_providers != NULL) {
+		assert(hash_isempty(context->symbol_providers));
+		hash_destroy(context->symbol_providers);
+	}
 
 	// Free context
 	free(context);	

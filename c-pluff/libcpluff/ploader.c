@@ -133,14 +133,23 @@ static void descriptor_errorf(ploader_context_t *plcontext, int warn,
 		vsnprintf(message, sizeof(message), error_msg, ap);
 		va_end(ap);
 		message[127] = '\0';
-		cpi_errorf(plcontext->context,
-			warn
-				? N_("Suspicious plug-in descriptor content in %s, line %d, column %d (%s).")
-				: N_("Invalid plug-in descriptor content in %s, line %d, column %d (%s)."),
+		cpi_lock_context(plcontext->context);
+		if (warn) {
+			cpi_warnf(plcontext->context,
+				N_("Suspicious plug-in descriptor content in %s, line %d, column %d (%s)."),
 			plcontext->file,
 			XML_GetCurrentLineNumber(plcontext->parser),
 			XML_GetCurrentColumnNumber(plcontext->parser) + 1,
 			message);
+		} else {				
+			cpi_errorf(plcontext->context,
+				N_("Invalid plug-in descriptor content in %s, line %d, column %d (%s)."),
+				plcontext->file,
+				XML_GetCurrentLineNumber(plcontext->parser),
+				XML_GetCurrentColumnNumber(plcontext->parser) + 1,
+				message);
+		}
+		cpi_unlock_context(plcontext->context);
 	}
 	if (!warn) {
 		plcontext->error_count++;
@@ -156,11 +165,13 @@ static void descriptor_errorf(ploader_context_t *plcontext, int warn,
 static void resource_error(ploader_context_t *plcontext) {
 	if (plcontext->context != NULL
 		&& plcontext->resource_error_count == 0) {
+		cpi_lock_context(plcontext->context);
 		cpi_errorf(plcontext->context,
 			N_("Insufficient system resources to parse plug-in descriptor content in %s, line %d, column %d."),
 			plcontext->file,
 			XML_GetCurrentLineNumber(plcontext->parser),
 			XML_GetCurrentColumnNumber(plcontext->parser) + 1);
+		cpi_unlock_context(plcontext->context);
 	}
 	plcontext->resource_error_count++;
 }
