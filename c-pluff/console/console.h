@@ -68,7 +68,7 @@ typedef struct command_info_t {
 	char *name;
 	
 	/// The description for the command 
-	char *description;
+	const char *description;
 	
 	/// The command implementation 
 	command_func_t implementation;
@@ -84,6 +84,9 @@ typedef struct flag_info_t {
 	/// The name of the flag 
 	const char *name;
 	
+	/// The description of the flag
+	const char *description;
+	
 	/// The value of the flag 
 	int value;
 	
@@ -94,6 +97,9 @@ typedef struct log_level_info_t {
 	
 	/// The name of the log level
 	const char *name;
+	
+	/// The descriptor of the log level
+	const char *description;
 	
 	/// The value of the log level
 	int level;

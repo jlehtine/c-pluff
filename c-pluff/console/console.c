@@ -79,79 +79,27 @@ CP_HIDDEN const command_info_t commands[] = {
 
 /// The available load flags 
 CP_HIDDEN const flag_info_t load_flags[] = {
-	{ "upgrade", CP_LP_UPGRADE },
-	{ "stop-all-on-upgrade", CP_LP_STOP_ALL_ON_UPGRADE },
-	{ "stop-all-on-install", CP_LP_STOP_ALL_ON_INSTALL },
-	{ "restart-active", CP_LP_RESTART_ACTIVE },
-	{ NULL, -1 }
+	{ "upgrade", N_("enables upgrades of installed plug-ins"), CP_LP_UPGRADE },
+	{ "stop-all-on-upgrade", N_("stops all plug-ins on first upgrade"), CP_LP_STOP_ALL_ON_UPGRADE },
+	{ "stop-all-on-install", N_("stops all plug-ins on first install or upgrade"), CP_LP_STOP_ALL_ON_INSTALL },
+	{ "restart-active", N_("restarts the currently active plug-ins after the scan"), CP_LP_RESTART_ACTIVE },
+	{ NULL, NULL, -1 }
 };
 
 /// The available log levels
 CP_HIDDEN const log_level_info_t log_levels[] = {
-	{ "debug", CP_LOG_DEBUG },
-	{ "info", CP_LOG_INFO },
-	{ "warning", CP_LOG_WARNING },
-	{ "error", CP_LOG_ERROR },
-	{ "none", CP_LOG_ERROR + 1 },
-	{ NULL, -1 }
+	{ "debug", N_("detailed debug messages"), CP_LOG_DEBUG },
+	{ "info", N_("informational messages"), CP_LOG_INFO },
+	{ "warning", N_("warnings about possible problems"), CP_LOG_WARNING },
+	{ "error", N_("error messages"), CP_LOG_ERROR },
+	{ "none", N_("disable logging"), CP_LOG_ERROR + 1 },
+	{ NULL, NULL, -1 }
 };
 
 
 /* ------------------------------------------------------------------------
  * Function definitions
  * ----------------------------------------------------------------------*/
-
-/**
- * Prints an error message out.
- * 
- * @param msg the error message
- */
-static void error(const char *msg) {
-	fprintf(stderr, _("ERROR: %s\n"), msg);
-}
-
-/**
- * Prints a formatted error message out.
- * 
- * @param msg the formatting rule
- * @param ... the parameters
- */
-static void errorf(const char *msg, ...) {
-	va_list vl;
-	char buffer[256];
-
-	va_start(vl, msg);
-	vsnprintf(buffer, sizeof(buffer), msg, vl);
-	buffer[sizeof(buffer)/sizeof(char) - 1] = '\0';
-	va_end(vl);
-	error(buffer);
-}
-
-/**
- * Prints a notice out.
- * 
- * @param msg the message
- */
-static void notice(const char *msg) {
-	puts(msg);
-}
-
-/**
- * Prints a formatted notice out.
- * 
- * @param msg the message
- * @param ... the parameters
- */
-static void noticef(const char *msg, ...) {
-	va_list vl;
-	char buffer[256];
-
-	va_start(vl, msg);
-	vsnprintf(buffer, sizeof(buffer), msg, vl);
-	buffer[sizeof(buffer)/sizeof(char) - 1] = '\0';
-	va_end(vl);
-	notice(buffer);
-}
 
 /**
  * Parses a command line (in place) into white-space separated elements.
@@ -181,7 +129,7 @@ static int cmdline_parse(char *cmdline, char **argv[]) {
 		}
 	}
 	if (cmdline[i] != '\0') {
-		error(_("Command has too many arguments."));
+		fputs(_("Command has too many arguments.\n"), stdout);
 		return -1;
 	} else {
 		*argv = sargv;
@@ -201,51 +149,46 @@ static void cmd_exit(int argc, char *argv[]) {
 static void cmd_help(int argc, char *argv[]) {
 	int i;
 	
-	notice(_("The following commands are available:"));
+	fputs(_("The following commands are available:\n"), stdout);
 	for (i = 0; commands[i].name != NULL; i++) {
-		noticef("  %s - %s", commands[i].name, _(commands[i].description));
+		printf("  %s - %s\n", commands[i].name, _(commands[i].description));
 	}
 }
 
 static void logger(cp_log_severity_t severity, const char *msg, const char *apid, void *dummy) {
-	char *prefix;
-	
+	const char *level;
 	switch (severity) {
-		
-		case CP_LOG_ERROR:
-			if (apid != NULL) {
-				errorf("%s: %s", apid, msg);
-			} else {
-				error(msg);
-			}
-			return;
-			
-		case CP_LOG_WARNING:
-			prefix = "WARNING";
-			break;
-			
 		case CP_LOG_DEBUG:
-			prefix = "DEBUG";
+			/* TRANSLATORS: A tag for debug level log entries. */
+			level = _("DEBUG");
 			break;
-			
 		case CP_LOG_INFO:
-			prefix = "INFO";
+			/* TRANSLATORS: A tag for info level log entries. */
+			level = _("INFO");
 			break;
-			
+		case CP_LOG_WARNING:
+			/* TRANSLATORS: A tag for warning level log entries. */
+			level = _("WARNING");
+			break;
+		case CP_LOG_ERROR:
+			/* TRANSLATORS: A tag for error level log entries. */
+			level = _("ERROR");
+			break;
 		default:
-			prefix = "UNKNOWN";
+			/* TRANSLATORS: A tag for unknown severity level. */ 
+			level = _("UNKNOWN");
 			break;
 	}
 	if (apid != NULL) {
-		noticef("%s: %s: %s", prefix, apid, msg);
+		fprintf(stderr, "%s [%s] %s\n", level, apid, msg);
 	} else {
-		noticef("%s: %s", prefix, msg);
-	}
+		fprintf(stderr, "%s [console] %s\n", level, msg);
+	} 
 }
 
 static void cmd_set_log_level(int argc, char *argv[]) {
 	if (argc != 2) {
-		errorf(_("Usage: %s <level>"), argv[0]);
+		printf(_("Usage: %s <level>\n"), argv[0]);
 	} else {
 		int i;
 		
@@ -255,10 +198,10 @@ static void cmd_set_log_level(int argc, char *argv[]) {
 			}
 		}
 		if (log_levels[i].name == NULL) {
-			errorf(_("Unknown log level %s."), argv[1]);
-			notice(_("Available log levels are:"));
+			printf(_("Unknown log level %s.\n"), argv[1]);
+			fputs(_("Available log levels are:\n"), stdout);
 			for (i = 0; log_levels[i].name != NULL; i++) {
-				noticef("  %s", log_levels[i].name);
+				printf("  %s - %s\n", log_levels[i].name, _(log_levels[i].description));
 			}
 		} else {
 			if (log_levels[i].level <= CP_LOG_ERROR) {
@@ -266,57 +209,69 @@ static void cmd_set_log_level(int argc, char *argv[]) {
 			} else {
 				cp_unregister_logger(context, logger);
 			}
-			noticef(_("Using display log level %s."), log_levels[i].name);			
+			/* TRANSLATORS: The first %s is the log level name and the second the localized log level description. */
+			printf(_("Using display log level %s (%s).\n"), log_levels[i].name, _(log_levels[i].description));			
 		}
 	}
 }
 
-static char *state_to_string(cp_plugin_state_t state) {
-	switch (state) {
-		case CP_PLUGIN_UNINSTALLED:
-			return "UNINSTALLED";
-		case CP_PLUGIN_INSTALLED:
-			return "INSTALLED";
-		case CP_PLUGIN_RESOLVED:
-			return "RESOLVED";
-		case CP_PLUGIN_STARTING:
-			return "STARTING";
-		case CP_PLUGIN_STOPPING:
-			return "STOPPING";
-		case CP_PLUGIN_ACTIVE:
-			return "ACTIVE";
+static const char *status_to_desc(cp_status_t status) {
+	switch (status) {
+		case CP_OK:
+			return _("success");
+		case CP_ERR_RESOURCE:
+			return _("insufficient system resources");
+		case CP_ERR_UNKNOWN:
+			return _("unknown object specified");
+		case CP_ERR_IO:
+			return _("I/O error");
+		case CP_ERR_MALFORMED:
+			return _("malformed plug-in descriptor");
+		case CP_ERR_CONFLICT:
+			return _("plug-in or symbol conflicts with existing one");
+		case CP_ERR_DEPENDENCY:
+			return _("unsatisfiable dependencies");
+		case CP_ERR_RUNTIME:
+			return _("error in plug-in runtime");
 		default:
-			return "(unknown)";
+			return _("unknown error code");
 	}
+}
+
+static void api_failed(const char *func, cp_status_t status) {
+	printf(_("%s failed with error code %d (%s).\n"),
+		func,
+		status,
+		status_to_desc(status));
 }
 
 static void cmd_register_pcollection(int argc, char *argv[]) {
 	cp_status_t status;
 	
 	if (argc != 2) {
-		errorf(_("Usage: %s <path>"), argv[0]);
+		printf(_("Usage: %s <path>\n"), argv[0]);
 	} else if ((status = cp_register_pcollection(context, argv[1])) != CP_OK) {
-		errorf(_("cp_register_pcollection failed with error code %d."), status);
+		api_failed("cp_register_pcollection", status);
 	} else {
-		noticef(_("Registered plug-in collection at %s."), argv[1]);
+		printf(_("Registered plug-in collection at %s.\n"), argv[1]);
 	}
 }
 
 static void cmd_unregister_pcollection(int argc, char *argv[]) {
 	if (argc != 2) {
-		errorf(_("Usage: %s <path>"), argv[0]);
+		printf(_("Usage: %s <path>\n"), argv[0]);
 	} else {
 		cp_unregister_pcollection(context, argv[1]);
-		noticef(_("Unregistered plug-in collection at %s."), argv[1]);
+		printf(_("Unregistered plug-in collection at %s.\n"), argv[1]);
 	}
 }
 
 static void cmd_unregister_pcollections(int argc, char *argv[]) {
 	if (argc != 1) {
-		errorf(_("Usage: %s"), argv[0]);
+		printf(_("Usage: %s\n"), argv[0]);
 	} else {
 		cp_unregister_pcollections(context);
-		notice(_("Unregistered all plug-in collections."));
+		fputs(_("Unregistered all plug-in collections.\n"), stdout);
 	}
 }
 
@@ -325,14 +280,14 @@ static void cmd_load_plugin(int argc, char *argv[]) {
 	cp_status_t status;
 		
 	if (argc != 2) {
-		errorf(_("Usage: %s <path>"), argv[0]);
+		printf(_("Usage: %s <path>\n"), argv[0]);
 	} else if ((plugin = cp_load_plugin_descriptor(context, argv[1], &status)) == NULL) {
-		errorf(_("cp_load_plugin_descriptor failed with error code %d."), status);
+		api_failed("cp_load_plugin_descriptor", status);
 	} else if ((status = cp_install_plugin(context, plugin)) != CP_OK) {
-		errorf(_("cp_install_plugin failed with error code %d."), status);
+		api_failed("cp_install_plugin", status); 
 		cp_release_info(plugin);
 	} else {
-		noticef(_("Installed plug-in %s."), plugin->identifier);
+		printf(_("Installed plug-in %s.\n"), plugin->identifier);
 		cp_release_info(plugin);
 	}
 }
@@ -353,21 +308,40 @@ static void cmd_scan_plugins(int argc, char *argv[]) {
 			}
 		}
 		if (load_flags[j].name == NULL) {
-			errorf(_("Unknown flag %s."), argv[i]);
-			errorf(_("Usage: %s [<flag>...]"), argv[0]);
-			notice(_("Available flags are:"));
+			printf(_("Unknown flag %s.\n"), argv[i]);
+			printf(_("Usage: %s [<flag>...]\n"), argv[0]);
+			fputs(_("Available flags are:\n"), stdout);
 			for (j = 0; load_flags[j].name != NULL; j++) {
-				noticef("  %s", load_flags[j].name);
+				printf("  %s - %s\n", load_flags[j].name, _(load_flags[j].description));
 			}
 			return;
 		}
 	}
 	
 	if ((status = cp_scan_plugins(context, flags)) != CP_OK) {
-		errorf(_("cp_load_plugins failed with error code %d."), status);
+		api_failed("cp_scan_plugins", status);
 		return;
 	}
-	notice(_("Plug-ins loaded."));
+	fputs(_("Plug-ins loaded.\n"), stdout);
+}
+
+static char *state_to_string(cp_plugin_state_t state) {
+	switch (state) {
+		case CP_PLUGIN_UNINSTALLED:
+			return _("uninstalled");
+		case CP_PLUGIN_INSTALLED:
+			return _("installed");
+		case CP_PLUGIN_RESOLVED:
+			return _("resolved");
+		case CP_PLUGIN_STARTING:
+			return _("starting");
+		case CP_PLUGIN_STOPPING:
+			return _("stopping");
+		case CP_PLUGIN_ACTIVE:
+			return _("active");
+		default:
+			return _("unknown");
+	}
 }
 
 static void cmd_list_plugins(int argc, char *argv[]) {
@@ -376,26 +350,23 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 	int i;
 
 	if (argc != 1) {
-		errorf(_("Usage: %s"), argv[0]);
+		printf(_("Usage: %s\n"), argv[0]);
 	} else if ((plugins = cp_get_plugins_info(context, &status, NULL)) == NULL) {
-		errorf(_("cp_get_plugins_info failed with error code %d."), status);
+		api_failed("cp_get_plugins_info", status);
 	} else {
-		notice(_("Installed plug-ins:"));
+		const char format[] = "  %-32s %12s %-16s %s\n";
+		fputs(_("Installed plug-ins:\n"), stdout);
+		printf(format,
+			_("IDENTIFIER"),
+			_("VERSION"),
+			_("STATE"),
+			_("NAME"));
 		for (i = 0; plugins[i] != NULL; i++) {
-			if (plugins[i]->name != NULL) {
-				noticef("  %s %s %s \"%s\"",
-					plugins[i]->identifier,
-					plugins[i]->version != NULL ? plugins[i]->version : "<unversioned>",
-					state_to_string(cp_get_plugin_state(context, plugins[i]->identifier)),
-					plugins[i]->name
-				);
-			} else {
-				noticef("  %s %s %s",
-					plugins[i]->identifier,
-					plugins[i]->version != NULL ? plugins[i]->version : "<unversioned>",
-					state_to_string(cp_get_plugin_state(context, plugins[i]->identifier))
-				);
-			}
+			printf(format,
+				plugins[i]->identifier,
+				plugins[i]->version != NULL ? plugins[i]->version : "",
+				state_to_string(cp_get_plugin_state(context, plugins[i]->identifier)),
+				plugins[i]->name != NULL ? plugins[i]->name : "");
 		}
 		cp_release_info(plugins);
 	}
@@ -419,7 +390,7 @@ static char *str_or_null(const char *str) {
 		}
 		if (do_realloc) {
 			if ((buffer = realloc(buffer, buffer_size * sizeof(char))) == NULL) {
-				error(_("Insufficient memory."));
+				fputs(_("Insufficient memory.\n"), stdout);
 				abort();
 			}
 		}
@@ -432,17 +403,24 @@ static char *str_or_null(const char *str) {
 }
 
 static void show_plugin_info_import(cp_plugin_import_t *import) {
-	noticef("    plugin_id = \"%s\",", import->plugin_id);
-	noticef("    version = %s,", str_or_null(import->version));
-	noticef("    optional = %d,", import->optional);
+	printf("    plugin_id = \"%s\",\n"
+		"    version = %s,\n"
+		"    optional = %d,\n",
+		import->plugin_id,
+		str_or_null(import->version),
+		import->optional);
 }
 
 static void show_plugin_info_ext_point(cp_ext_point_t *ep) {
 	assert(ep->plugin != NULL);
-	noticef("    local_id = \"%s\",", ep->local_id);
-	noticef("    identifier = \"%s\",", ep->identifier);
-	noticef("    name = %s,", str_or_null(ep->name));
-	noticef("    schema_path = %s,", str_or_null(ep->schema_path));
+	printf("    local_id = \"%s\",\n"
+		"    identifier = \"%s\",\n"
+		"    name = %s,\n"
+		"    schema_path = %s,\n",
+		ep->local_id,
+		ep->identifier,
+	 	str_or_null(ep->name),
+	  	str_or_null(ep->schema_path));
 }
 
 static void strcat_quote_xml(char *dst, const char *src, int is_attr) {
@@ -532,7 +510,7 @@ static void show_plugin_info_cfg(cp_cfg_element_t *ce, int indent) {
 	}
 	if (do_realloc) {
 		if ((buffer = realloc(buffer, buffer_size * sizeof(char))) == NULL) {
-			error(_("Insufficient memory."));
+			fputs(_("Insufficient memory.\n"), stdout);
 			abort();
 		}
 	}
@@ -557,7 +535,8 @@ static void show_plugin_info_cfg(cp_cfg_element_t *ce, int indent) {
 			strcat_quote_xml(buffer, ce->value, 0);
 		}
 		if (ce->num_children) {
-			notice(buffer);
+			fputs(buffer, stdout);
+			putchar('\n');
 			for (i = 0; i < ce->num_children; i++) {
 				show_plugin_info_cfg(ce->children + i, indent + 2);
 			}
@@ -577,18 +556,23 @@ static void show_plugin_info_cfg(cp_cfg_element_t *ce, int indent) {
 	} else {
 		strcat(buffer, "/>");
 	}
-	notice(buffer);
+	fputs(buffer, stdout);
+	putchar('\n');
 }
 
 static void show_plugin_info_extension(cp_extension_t *e) {
 	assert(e->plugin != NULL);
-	noticef("    name = %s,", str_or_null(e->name));
-	noticef("    ext_point_id = \"%s\",", e->ext_point_id);
-	noticef("    local_id = %s,", str_or_null(e->local_id));
-	noticef("    identifier = %s,", str_or_null(e->identifier));
-	notice("    configuration = {");
+	printf("    name = %s,\n"
+		"    ext_point_id = \"%s\",\n"
+		"    local_id = %s,\n"
+		"    identifier = %s,\n"
+		"    configuration = {\n",
+		str_or_null(e->name),
+		e->ext_point_id,
+		str_or_null(e->local_id),
+		str_or_null(e->identifier));
 	show_plugin_info_cfg(e->configuration, 6);
-	notice("    },");
+	fputs("    },\n", stdout);
 }
 
 static void cmd_show_plugin_info(int argc, char *argv[]) {
@@ -597,58 +581,65 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 	int i;
 	
 	if (argc != 2) {
-		errorf(_("Usage: %s <plugin>"), argv[0]);
+		printf(_("Usage: %s <plugin>\n"), argv[0]);
 	} else if ((plugin = cp_get_plugin_info(context, argv[1], &status)) == NULL) {
-		errorf(_("cp_get_plugin_info failed with error code %d."), status);
+		api_failed("cp_get_plugin_info", status);
 	} else {
-		notice("{");
-		noticef("  identifier = \"%s\",", plugin->identifier);
-		noticef("  name = %s,", str_or_null(plugin->name));
-		noticef("  version = %s,", str_or_null(plugin->version));
-		noticef("  provider_name = %s,", str_or_null(plugin->provider_name));
-		noticef("  abi_bw_compatibility = %s,", str_or_null(plugin->abi_bw_compatibility));
-		noticef("  api_bw_compatibility = %s,", str_or_null(plugin->api_bw_compatibility));
-		noticef("  plugin_path = %s,", str_or_null(plugin->plugin_path));
-		noticef("  req_cpluff_version = %s,", str_or_null(plugin->req_cpluff_version));
-		noticef("  num_imports = %u,", plugin->num_imports);
+		printf("{"
+			"  identifier = \"%s\",\n"
+			"  name = %s,\n"
+			"  version = %s,\n"
+			"  provider_name = %s,\n"
+			"  abi_bw_compatibility = %s,\n"
+			"  api_bw_compatibility = %s,\n"
+			"  plugin_path = %s,\n"
+			"  req_cpluff_version = %s,\n",
+			plugin->identifier,
+			str_or_null(plugin->name),
+			str_or_null(plugin->version),
+			str_or_null(plugin->provider_name),
+			str_or_null(plugin->abi_bw_compatibility),
+			str_or_null(plugin->api_bw_compatibility),
+			str_or_null(plugin->plugin_path),
+			str_or_null(plugin->req_cpluff_version));
 		if (plugin->num_imports) {
-			notice("  imports = {{");
+			fputs("  imports = {{\n", stdout);
 			for (i = 0; i < plugin->num_imports; i++) {
 				if (i)
-					notice("  }, {");
+					fputs("  }, {\n", stdout);
 				show_plugin_info_import(plugin->imports + i);
 			}
-			notice("  }},");
+			fputs("  }},\n", stdout);
 		} else {
-			notice("  imports = {},");
+			fputs("  imports = {},\n", stdout);
 		}
-		noticef("  runtime_lib_name = %s,", str_or_null(plugin->runtime_lib_name));
-		noticef("  runtime_funcs_symbol = %s,", str_or_null(plugin->runtime_funcs_symbol));
-		noticef("  num_ext_points = %u,", plugin->num_ext_points);
+		printf("  runtime_lib_name = %s,\n"
+			"  runtime_funcs_symbol = %s,\n",
+			str_or_null(plugin->runtime_lib_name),
+			str_or_null(plugin->runtime_funcs_symbol));
 		if (plugin->num_ext_points) {
-			notice("  ext_points = {{");
+			fputs("  ext_points = {{\n", stdout);
 			for (i = 0; i < plugin->num_ext_points; i++) {
 				if (i)
-					notice("  }, {");
+					fputs("  }, {\n", stdout);
 				show_plugin_info_ext_point(plugin->ext_points + i);
 			}
-			notice("  }},");
+			fputs("  }},\n", stdout);
 		} else {
-			notice("  ext_points = {},");
+			fputs("  ext_points = {},\n", stdout);
 		}
-		noticef("  num_extensions = %u,", plugin->num_extensions);
 		if (plugin->num_extensions) {
-			notice("  extensions = {{");
+			fputs("  extensions = {{\n", stdout);
 			for (i = 0; i < plugin->num_extensions; i++) {
 				if (i)
-					notice("  }, {");
+					fputs("  }, {\n", stdout);
 				show_plugin_info_extension(plugin->extensions + i);
 			}
-			notice("  }}");
+			fputs("  }}\n", stdout);
 		} else {
-			notice("  extensions = {},");
+			fputs("  extensions = {},\n", stdout);
 		}
-		notice("}");
+		fputs("}\n", stdout);
 		cp_release_info(plugin);
 	}
 }
@@ -659,24 +650,19 @@ static void cmd_list_ext_points(int argc, char *argv[]) {
 	int i;
 
 	if (argc != 1) {
-		errorf(_("Usage: %s"), argv[0]);
+		printf(_("Usage: %s\n"), argv[0]);
 	} else if ((ext_points = cp_get_ext_points_info(context, &status, NULL)) == NULL) {
-		errorf(_("cp_get_ext_points_info failed with error code %d."), status);
+		api_failed("cp_get_ext_points_info", status);
 	} else {
-		notice(_("Installed extension points:"));
+		const char format[] = "  %-32s %s\n";
+		fputs(_("Installed extension points:\n"), stdout);
+		printf(format,
+			_("IDENTIFIER"),
+			_("NAME"));
 		for (i = 0; ext_points[i] != NULL; i++) {
-			if (ext_points[i]->name != NULL) {
-				noticef("  %s \"%s\" (%s)",
-					ext_points[i]->identifier,
-					ext_points[i]->name,
-					ext_points[i]->plugin->identifier
-				);
-			} else {
-				noticef("  %s (%s)",
-					ext_points[i]->identifier,
-					ext_points[i]->plugin->identifier
-				);
-			}
+			printf(format,
+				ext_points[i]->identifier,
+				ext_points[i]->name != NULL ? ext_points[i]->name : ""); 
 		}
 		cp_release_info(ext_points);
 	}	
@@ -688,23 +674,27 @@ static void cmd_list_extensions(int argc, char *argv[]) {
 	int i;
 
 	if (argc != 1) {
-		errorf(_("Usage: %s"), argv[0]);
+		printf(_("Usage: %s\n"), argv[0]);
 	} else if ((extensions = cp_get_extensions_info(context, NULL, &status, NULL)) == NULL) {
-		errorf(_("cp_get_extensions_info failed with error code %d."), status);
+		api_failed("cp_get_extensions_info", status);
 	} else {
-		notice(_("Installed extensions:"));
+		const char format[] = "  %-32s %s\n";
+		fputs(_("Installed extensions:\n"), stdout);
+		printf(format,
+			_("IDENTIFIER"),
+			_("NAME"));
 		for (i = 0; extensions[i] != NULL; i++) {
-			if (extensions[i]->name != NULL) {
-				noticef("  %s \"%s\" (%s)",
-					extensions[i]->identifier != NULL ? extensions[i]->identifier : _("<unidentified>"),
-					extensions[i]->name,
-					extensions[i]->plugin->identifier
-				);
+			if (extensions[i]->identifier == NULL) {
+				char buffer[128];
+				snprintf(buffer, sizeof(buffer), "%s%s", extensions[i]->plugin->identifier, _(".<anonymous>"));
+				strcpy(buffer + sizeof(buffer)/sizeof(char) - 4, "...");
+				printf(format,
+					buffer,
+					extensions[i]->name != NULL ? extensions[i]->name : "");
 			} else {
-				noticef("  %s (%s)",
-					extensions[i]->identifier != NULL ? extensions[i]->identifier : _("<unidentified>"),
-					extensions[i]->plugin->identifier
-				);
+				printf(format,
+					extensions[i]->identifier,
+					extensions[i]->name != NULL ? extensions[i]->name : "");
 			}
 		}
 		cp_release_info(extensions);
@@ -736,12 +726,12 @@ static void cmd_set_context_args(int argc, char *argv[]) {
 	char **ctx_argv;
 
 	if (argc != 1) {
-		errorf(_("Usage: %s [<arg>...]"), argv[0]);
+		printf(_("Usage: %s [<arg>...]\n"), argv[0]);
 	} else if ((ctx_argv = argv_dup(argc, argv)) == NULL) {
-		error(_("Insufficient memory."));
+		fputs(_("Insufficient memory.\n"), stdout);
 	} else {
 		cp_set_context_args(context, argc, ctx_argv);
-		notice(_("Context startup arguments have been set."));
+		fputs(_("Context startup arguments have been set.\n"), stdout);
 	}
 }
 
@@ -749,34 +739,34 @@ static void cmd_start_plugin(int argc, char *argv[]) {
 	cp_status_t status;
 	
 	if (argc != 2) {
-		errorf(_("Usage: %s <plugin>"), argv[0]);
+		printf(_("Usage: %s <plugin>\n"), argv[0]);
 	} else if ((status = cp_start_plugin(context, argv[1])) != CP_OK) {
-		errorf(_("cp_start_plugin failed with error code %d."), status);
+		api_failed("cp_start_plugin", status);
 	} else {
-		noticef(_("Started plug-in %s."), argv[1]);
+		printf(_("Started plug-in %s.\n"), argv[1]);
 	}
 }
 
 static void cmd_run_plugins_step(int argc, char *argv[]) {
 	
 	if (argc != 1) {
-		errorf(_("Usage: %s"), argv[0]);
+		printf(_("Usage: %s\n"), argv[0]);
 	} else {
 		int pending = cp_run_plugins_step(context);
 		if (pending) {
-			notice(_("Ran plug-ins for one step. There are pending run functions."));
+			fputs(_("Ran plug-ins for one step. There are pending run functions.\n"), stdout);
 		} else {
-			notice(_("Ran plug-ins for one step. No more pending run functions."));
+			fputs(_("Ran plug-ins for one step. No more pending run functions.\n"), stdout);
 		}
 	}
 }
 
 static void cmd_run_plugins(int argc, char *argv[]) {
 	if (argc != 1) {
-		errorf(_("Usage: %s"), argv[0]);
+		printf(_("Usage: %s\n"), argv[0]);
 	} else {
 		cp_run_plugins(context);
-		notice(_("Ran plug-ins. No more pending run functions."));
+		fputs(_("Ran plug-ins. No more pending run functions.\n"), stdout);
 	}
 }
 
@@ -784,20 +774,20 @@ static void cmd_stop_plugin(int argc, char *argv[]) {
 	cp_status_t status;
 	
 	if (argc != 2) {
-		errorf(_("Usage: %s <plugin>"), argv[0]);
+		printf(_("Usage: %s <plugin>\n"), argv[0]);
 	} else if ((status = cp_stop_plugin(context, argv[1])) != CP_OK) {
-		errorf(_("cp_stop_plugin failed with error code %d."), status);
+		api_failed("cp_stop_plugin", status);
 	} else {
-		noticef(_("Stopped plug-in %s."), argv[1]);
+		printf(_("Stopped plug-in %s.\n"), argv[1]);
 	}
 }
 
 static void cmd_stop_plugins(int argc, char *argv[]) {
 	if (argc != 1) {
-		errorf(_("Usage: %s"), argv[0]);
+		printf(_("Usage: %s\n"), argv[0]);
 	} else {
 		cp_stop_plugins(context);
-		notice(_("Stopped all plug-ins."));
+		fputs(_("Stopped all plug-ins.\n"), stdout);
 	}
 }
 
@@ -805,20 +795,20 @@ static void cmd_uninstall_plugin(int argc, char *argv[]) {
 	cp_status_t status;
 	
 	if (argc != 2) {
-		errorf(_("Usage: %s <plugin>"), argv[0]);
+		printf(_("Usage: %s <plugin>\n"), argv[0]);
 	} else if ((status = cp_uninstall_plugin(context, argv[1])) != CP_OK) {
-		errorf(_("cp_uninstall_plugin failed with error code %d."), status);
+		api_failed("cp_uninstall_plugin", status);
 	} else {
-		noticef(_("Uninstalled plug-in %s."), argv[1]);
+		printf(_("Uninstalled plug-in %s.\n"), argv[1]);
 	}
 }
 
 static void cmd_uninstall_plugins(int argc, char *argv[]) {
 	if (argc != 1) {
-		errorf(_("Usage: %s"), argv[0]);
+		printf(_("Usage: %s\n"), argv[0]);
 	} else {
 		cp_uninstall_plugins(context);
-		notice(_("Uninstalled all plug-ins."));
+		fputs(_("Uninstalled all plug-ins.\n"), stdout);
 	}
 }
 
@@ -835,33 +825,33 @@ int main(int argc, char *argv[]) {
 #endif
 
 	// Display startup information 
-	noticef(
+	printf(
 		/* TRANSLATORS: This is a version string displayed on startup. */
-		_("C-Pluff console, version %s"), PACKAGE_VERSION);
-	noticef(
+		_("C-Pluff Console, version %s\n"), PACKAGE_VERSION);
+	printf(
 		/* TRANSLATORS: This is a version string displayed on startup. */
-		_("C-Pluff library, version %s for %s"),
+		_("C-Pluff Library, version %s for %s\n"),
 		cp_get_version(), cp_get_host_type());
-	notice(_("Type \"help\" for help on available commands."));
 
 	// Initialize C-Pluff library 
 	if ((status = cp_init()) != CP_OK) {
-		errorf(_("cp_init failed with error code %d."), status);
+		api_failed("cp_init", status);
 		exit(1);
 	}
 	
 	// Create a plug-in context
 	context = cp_create_context(&status);
 	if (context == NULL) {
-		errorf(_("cp_create_context failed with error code %d."), status);
+		api_failed("cp_create_context", status);
 		exit(1);
 	}
 
 	// Initialize logging
 	cp_register_logger(context, logger, NULL, log_levels[1].level);
-	noticef(_("Using display log level %s."), log_levels[1].name);
+	printf(_("Using display log level %s (%s).\n"), log_levels[1].name, _(log_levels[1].description));
 
 	// Command line loop 
+	fputs(_("Type \"help\" for help on available commands.\n"), stdout);
 	cmdline_init();
 	
 	/* TRANSLATORS: This is the input prompt for cpluff-console. */
@@ -893,7 +883,7 @@ int main(int argc, char *argv[]) {
 			}
 		}
 		if (commands[i].name == NULL) {
-			errorf(_("Unknown command %s."), argv[0]);
+			printf(_("Unknown command %s.\n"), argv[0]);
 		}
 	}
 }
