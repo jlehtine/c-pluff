@@ -376,6 +376,12 @@ CP_C_API void cp_unregister_pcollections(cp_context_t *context) {
 CP_C_API void cp_set_context_args(cp_context_t *ctx, int argc, char **argv) {
 	CHECK_NOT_NULL(ctx);
 	CHECK_NOT_NULL(argv);
+	if (argc < 1) {
+		cpi_fatalf(_("Argument count must be at least 1 in call to cp_set_context_args."));
+	}
+	if (argv[argc] != NULL) {
+		cpi_fatalf(_("The argument array must be NULL-terminated in call to cp_set_context_args."));
+	}
 	cpi_lock_context(ctx);
 	ctx->env->argc = argc;
 	ctx->env->argv = argv;

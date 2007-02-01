@@ -33,11 +33,14 @@ static void cmd_list_plugins(int argc, char *argv[]);
 static void cmd_show_plugin_info(int argc, char *argv[]);
 static void cmd_list_ext_points(int argc, char *argv[]);
 static void cmd_list_extensions(int argc, char *argv[]);
+static void cmd_set_context_args(int argc, char *argv[]);
 static void cmd_start_plugin(int argc, char *argv[]);
+static void cmd_run_plugins_step(int argc, char *argv[]);
+static void cmd_run_plugins(int argc, char *argv[]);
 static void cmd_stop_plugin(int argc, char *argv[]);
-static void cmd_stop_all_plugins(int argc, char *argv[]);
+static void cmd_stop_plugins(int argc, char *argv[]);
 static void cmd_uninstall_plugin(int argc, char *argv[]);
-static void cmd_uninstall_all_plugins(int argc, char *argv[]);
+static void cmd_uninstall_plugins(int argc, char *argv[]);
 static void cmd_exit(int argc, char *argv[]);
 
 /* ------------------------------------------------------------------------
@@ -45,7 +48,7 @@ static void cmd_exit(int argc, char *argv[]);
  * ----------------------------------------------------------------------*/
 
 /// The plug-in context
-cp_context_t *context;
+static cp_context_t *context;
 
 /// The available commands 
 const command_info_t commands[] = {
@@ -55,11 +58,14 @@ const command_info_t commands[] = {
 	{ "unregister-collections", N_("unregisters all plug-in collections"), cmd_unregister_pcollections },
 	{ "load-plugin", N_("loads and installs a plug-in from the specified path"), cmd_load_plugin },
 	{ "scan-plugins", N_("scans plug-ins in the registered plug-in collections"), cmd_scan_plugins },
+	{ "set-context-args", N_("sets context startup arguments"), cmd_set_context_args },
 	{ "start-plugin", N_("starts a plug-in"), cmd_start_plugin },
+	{ "run-plugins-step", N_("runs one plug-in function"), cmd_run_plugins_step },
+	{ "run-plugins", N_("runs plug-in functions until no further work to be done"), cmd_run_plugins },
 	{ "stop-plugin", N_("stops a plug-in"), cmd_stop_plugin },
-	{ "stop-all-plugins", N_("stops all plug-ins"), cmd_stop_all_plugins },
+	{ "stop-plugins", N_("stops all plug-ins"), cmd_stop_plugins },
 	{ "uninstall-plugin", N_("uninstalls a plug-in"), cmd_uninstall_plugin },
-	{ "uninstall-all-plugins", N_("uninstalls all plug-ins"), cmd_uninstall_all_plugins },
+	{ "uninstall-plugins", N_("uninstalls all plug-ins"), cmd_uninstall_plugins },
 	{ "list-plugins", N_("lists the installed plug-ins"), cmd_list_plugins },
 	{ "list-ext-points", N_("lists the installed extension points"), cmd_list_ext_points },
 	{ "list-extensions", N_("lists the installed extensions"), cmd_list_extensions },
@@ -255,7 +261,7 @@ static void cmd_register_pcollection(int argc, char *argv[]) {
 	cp_status_t status;
 	
 	if (argc != 2) {
-		error(_("Usage: register-collection <path>"));
+		errorf(_("Usage: %s <path>"), argv[0]);
 	} else if ((status = cp_register_pcollection(context, argv[1])) != CP_OK) {
 		errorf(_("cp_register_pcollection failed with error code %d."), status);
 	} else {
@@ -265,7 +271,7 @@ static void cmd_register_pcollection(int argc, char *argv[]) {
 
 static void cmd_unregister_pcollection(int argc, char *argv[]) {
 	if (argc != 2) {
-		error(_("Usage: unregister-collection <path>"));
+		errorf(_("Usage: %s <path>"), argv[0]);
 	} else {
 		cp_unregister_pcollection(context, argv[1]);
 		noticef(_("Unregistered plug-in collection at %s."), argv[1]);
@@ -274,7 +280,7 @@ static void cmd_unregister_pcollection(int argc, char *argv[]) {
 
 static void cmd_unregister_pcollections(int argc, char *argv[]) {
 	if (argc != 1) {
-		error(_("Usage: unregister-collections"));
+		errorf(_("Usage: %s"), argv[0]);
 	} else {
 		cp_unregister_pcollections(context);
 		notice(_("Unregistered all plug-in collections."));
@@ -286,7 +292,7 @@ static void cmd_load_plugin(int argc, char *argv[]) {
 	cp_status_t status;
 		
 	if (argc != 2) {
-		error(_("Usage: load-plugin <path>"));
+		errorf(_("Usage: %s <path>"), argv[0]);
 	} else if ((plugin = cp_load_plugin_descriptor(context, argv[1], &status)) == NULL) {
 		errorf(_("cp_load_plugin_descriptor failed with error code %d."), status);
 	} else if ((status = cp_install_plugin(context, plugin)) != CP_OK) {
@@ -315,7 +321,7 @@ static void cmd_scan_plugins(int argc, char *argv[]) {
 		}
 		if (load_flags[j].name == NULL) {
 			errorf(_("Unknown flag %s."), argv[i]);
-			error(_("Usage: cp-load-plugins [<flag> [<flag>]...]"));
+			errorf(_("Usage: %s [<flag>...]"), argv[0]);
 			notice(_("Available flags are:"));
 			for (j = 0; load_flags[j].name != NULL; j++) {
 				noticef("  %s", load_flags[j].name);
@@ -337,7 +343,7 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 	int i;
 
 	if (argc != 1) {
-		error(_("Usage: list-plugins"));
+		errorf(_("Usage: %s"), argv[0]);
 	} else if ((plugins = cp_get_plugins_info(context, &status, NULL)) == NULL) {
 		errorf(_("cp_get_plugins_info failed with error code %d."), status);
 	} else {
@@ -558,7 +564,7 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 	int i;
 	
 	if (argc != 2) {
-		error(_("Usage: show-plugin-info <plugin>"));
+		errorf(_("Usage: %s <plugin>"), argv[0]);
 	} else if ((plugin = cp_get_plugin_info(context, argv[1], &status)) == NULL) {
 		errorf(_("cp_get_plugin_info failed with error code %d."), status);
 	} else {
@@ -620,7 +626,7 @@ static void cmd_list_ext_points(int argc, char *argv[]) {
 	int i;
 
 	if (argc != 1) {
-		error(_("Usage: list-ext-points"));
+		errorf(_("Usage: %s"), argv[0]);
 	} else if ((ext_points = cp_get_ext_points_info(context, &status, NULL)) == NULL) {
 		errorf(_("cp_get_ext_points_info failed with error code %d."), status);
 	} else {
@@ -649,7 +655,7 @@ static void cmd_list_extensions(int argc, char *argv[]) {
 	int i;
 
 	if (argc != 1) {
-		error(_("Usage: list-extensions"));
+		errorf(_("Usage: %s"), argv[0]);
 	} else if ((extensions = cp_get_extensions_info(context, NULL, &status, NULL)) == NULL) {
 		errorf(_("cp_get_extensions_info failed with error code %d."), status);
 	} else {
@@ -672,11 +678,54 @@ static void cmd_list_extensions(int argc, char *argv[]) {
 	}	
 }
 
+static char *my_strdup(const char *str) {
+	char *dup;
+	
+	if ((dup = malloc((strlen(str) + 1) * sizeof(char))) != NULL) {
+		strcpy(dup, str);
+	}
+	return dup; 
+}
+
+static char **argv_dup(int argc, char *argv[]) {
+	char **dup;
+	int i;
+	
+	if ((dup = malloc((argc + 1) * sizeof(char *))) == NULL) {
+		return NULL;
+	}
+	dup[0] = "";
+	for (i = 1; i < argc; i++) {
+		if ((dup[i] = my_strdup(argv[i])) == NULL) {
+			for (i--; i > 0; i--) {
+				free(dup[i]);
+			}
+			free(dup);
+			return NULL;
+		}
+	}
+	dup[argc] = NULL;
+	return dup;
+}
+
+static void cmd_set_context_args(int argc, char *argv[]) {
+	char **ctx_argv;
+
+	if (argc != 1) {
+		errorf(_("Usage: %s [<arg>...]"), argv[0]);
+	} else if ((ctx_argv = argv_dup(argc, argv)) == NULL) {
+		error(_("Insufficient memory."));
+	} else {
+		cp_set_context_args(context, argc, ctx_argv);
+		notice(_("Context startup arguments have been set."));
+	}
+}
+
 static void cmd_start_plugin(int argc, char *argv[]) {
 	cp_status_t status;
 	
 	if (argc != 2) {
-		error(_("Usage: start-plugin <plugin>"));
+		errorf(_("Usage: %s <plugin>"), argv[0]);
 	} else if ((status = cp_start_plugin(context, argv[1])) != CP_OK) {
 		errorf(_("cp_start_plugin failed with error code %d."), status);
 	} else {
@@ -684,11 +733,34 @@ static void cmd_start_plugin(int argc, char *argv[]) {
 	}
 }
 
+static void cmd_run_plugins_step(int argc, char *argv[]) {
+	
+	if (argc != 1) {
+		errorf(_("Usage: %s"), argv[0]);
+	} else {
+		int pending = cp_run_plugins_step(context);
+		if (pending) {
+			notice(_("Ran plug-ins for one step. There are pending run functions."));
+		} else {
+			notice(_("Ran plug-ins for one step. No more pending run functions."));
+		}
+	}
+}
+
+static void cmd_run_plugins(int argc, char *argv[]) {
+	if (argc != 1) {
+		errorf(_("Usage: %s"), argv[0]);
+	} else {
+		cp_run_plugins(context);
+		notice(_("Ran plug-ins. No more pending run functions."));
+	}
+}
+
 static void cmd_stop_plugin(int argc, char *argv[]) {
 	cp_status_t status;
 	
 	if (argc != 2) {
-		error(_("Usage: stop-plugin <plugin>"));
+		errorf(_("Usage: %s <plugin>"), argv[0]);
 	} else if ((status = cp_stop_plugin(context, argv[1])) != CP_OK) {
 		errorf(_("cp_stop_plugin failed with error code %d."), status);
 	} else {
@@ -696,9 +768,9 @@ static void cmd_stop_plugin(int argc, char *argv[]) {
 	}
 }
 
-static void cmd_stop_all_plugins(int argc, char *argv[]) {
+static void cmd_stop_plugins(int argc, char *argv[]) {
 	if (argc != 1) {
-		error(_("Usage: stop-all-plugins"));
+		errorf(_("Usage: %s"), argv[0]);
 	} else {
 		cp_stop_plugins(context);
 		notice(_("Stopped all plug-ins."));
@@ -709,7 +781,7 @@ static void cmd_uninstall_plugin(int argc, char *argv[]) {
 	cp_status_t status;
 	
 	if (argc != 2) {
-		error(_("Usage: uninstall-plugin <plugin>"));
+		errorf(_("Usage: %s <plugin>"), argv[0]);
 	} else if ((status = cp_uninstall_plugin(context, argv[1])) != CP_OK) {
 		errorf(_("cp_uninstall_plugin failed with error code %d."), status);
 	} else {
@@ -717,9 +789,9 @@ static void cmd_uninstall_plugin(int argc, char *argv[]) {
 	}
 }
 
-static void cmd_uninstall_all_plugins(int argc, char *argv[]) {
+static void cmd_uninstall_plugins(int argc, char *argv[]) {
 	if (argc != 1) {
-		error(_("Usage: uninstall-all-plugins"));
+		errorf(_("Usage: %s"), argv[0]);
 	} else {
 		cp_uninstall_plugins(context);
 		notice(_("Uninstalled all plug-ins."));
