@@ -829,14 +829,14 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		cpi_fatalf(_("Plug-in %s is being stopped while still providing symbols to the main program."), plugin->plugin->identifier);
 	}
 
-	// Wait until possible run functions have stopped
-	cpi_stop_plugin_run(plugin);
-
 	// Destroy plug-in instance
-	if (plugin->runtime_funcs != NULL) {
+	event.plugin_id = plugin->plugin->identifier;
+	if (plugin->context != NULL) {
 	
+		// Wait until possible run functions have stopped
+		cpi_stop_plugin_run(plugin);
+
 		// Stop the plug-in
-		event.plugin_id = plugin->plugin->identifier;
 		if (plugin->runtime_funcs->stop != NULL) {
 
 			// About to stop the plug-in 
@@ -848,14 +848,15 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			context->env->in_stop_func_invocation++;
 			plugin->runtime_funcs->stop(plugin->plugin_data);
 			context->env->in_stop_func_invocation--;
+
 		}
 
 		// Unregister all logger functions
 		cpi_unregister_loggers(plugin->context->env->loggers, plugin);
 
 		// Unregister all plug-in listeners
-		cpi_unregister_plisteners(plugin->context->env->plugin_listeners, plugin);
-	
+		cpi_unregister_plisteners(plugin->context->env->plugin_listeners, plugin);	
+
 		// Release resolved symbols
 		if (plugin->context->resolved_symbols != NULL) {
 			while (!hash_isempty(plugin->context->resolved_symbols)) {
@@ -897,14 +898,13 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		plugin->runtime_funcs->destroy(plugin->plugin_data);
 		context->env->in_destroy_func_invocation--;
 		plugin->plugin_data = NULL;
-	}
-	
-	// Free plug-in context
-	if (plugin->context != NULL) {
+
+		// Free plug-in context
 		cpi_free_context(plugin->context);
 		plugin->context = NULL;
-	}
 		
+	}
+	
 	// Plug-in stopped 
 	cpi_ptrset_remove(context->env->started_plugins, plugin);
 	event.old_state = plugin->state;

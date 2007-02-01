@@ -506,7 +506,8 @@ CP_HIDDEN void cpi_destroy_all_infos(void);
 
 /**
  * Waits for all the run functions registered by the specified plug-in to
- * return and then unregisters them.
+ * return and then unregisters them. The caller must have locked the
+ * associated context.
  * 
  * @param plugin the plug-in to be stopped
  */

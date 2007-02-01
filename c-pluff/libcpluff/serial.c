@@ -145,7 +145,7 @@ CP_HIDDEN void cpi_stop_plugin_run(cp_plugin_t *plugin) {
 	
 	CHECK_NOT_NULL(plugin);
 	ctx = plugin->context;
-	cpi_lock_context(ctx);
+	assert(cpi_is_context_locked(ctx));
 	while (!stopped) {
 		lnode_t *node;
 		
@@ -175,5 +175,4 @@ CP_HIDDEN void cpi_stop_plugin_run(cp_plugin_t *plugin) {
 			cpi_wait_context(ctx);
 		}
 	}
-	cpi_unlock_context(ctx);
 }

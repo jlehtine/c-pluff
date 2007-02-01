@@ -145,13 +145,20 @@ CP_HIDDEN int cpi_vercmp(const char *v1, const char *v2) {
 		
 		// Compare the non-digit strings
 		while (v1 < v1n || v2 < v2n) {
-			char c1 = (v1 < v1n ? *v1++ : '\0');
-			char c2 = (v2 < v2n ? *v2++ : '\0');
+			char c1 = '\0';
+			char c2 = '\0';
+			
+			if (v1 < v1n) {
+				c1 = *v1++;
+			}
+			if (v2 < v2n) {
+				c2 = *v2++;
+			}
 			int diff = vercmp_char_value(c1) - vercmp_char_value(c2);
 			if (diff != 0) {
 				return diff;
 			}
-			assert(v1 <= v1n && v2 < v2n);
+			assert(v1 <= v1n && v2 <= v2n);
 		}
 		assert(v1 == v1n && v2 == v2n);
 		
