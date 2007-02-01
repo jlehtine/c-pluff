@@ -1126,14 +1126,16 @@ CP_C_API void cp_uninstall_plugins(cp_context_t *ctx) CP_GCC_NONNULL(1);
  * Returns static information about the specified plug-in. The returned
  * information must not be modified and the caller must
  * release the information by calling ::cp_release_info when the
- * information is not needed anymore.
+ * information is not needed anymore. When a plug-in runtime calls this
+ * function it may pass NULL as the identifier to get information about the
+ * plug-in itself.
  * 
  * @param ctx the plug-in context
- * @param id identifier of the plug-in to be examined
+ * @param id identifier of the plug-in to be examined or NULL for self
  * @param status a pointer to the location where status code is to be stored, or NULL
  * @return pointer to the information structure or NULL on failure
  */
-CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *ctx, const char *id, cp_status_t *status) CP_GCC_NONNULL(1, 2);
+CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *ctx, const char *id, cp_status_t *status) CP_GCC_NONNULL(1);
 
 /**
  * Returns static information about the installed plug-ins. The returned
