@@ -502,7 +502,7 @@ static void XMLCALL character_data_handler(
 static void XMLCALL start_element_handler(
 	void *userData, const XML_Char *name, const XML_Char **atts) {
 	static const XML_Char * const req_plugin_atts[] = { "id", NULL };
-	static const XML_Char * const opt_plugin_atts[] = { "name", "release-version", "provider-name", NULL };
+	static const XML_Char * const opt_plugin_atts[] = { "name", "version", "provider-name", NULL };
 	static const XML_Char * const req_bwcompatibility_atts[] = { NULL };
 	static const XML_Char * const opt_bwcompatibility_atts[] = { "abi", "api", NULL };
 	static const XML_Char * const req_cpluff_atts[] = { "version", NULL };
@@ -535,7 +535,7 @@ static void XMLCALL start_element_handler(
 					} else if (!strcmp(atts[i], "id")) {
 						plcontext->plugin->identifier
 							= parser_strdup(plcontext, atts[i+1]);
-					} else if (!strcmp(atts[i], "release-version")) {
+					} else if (!strcmp(atts[i], "version")) {
 						plcontext->plugin->version
 							= parser_strdup(plcontext, atts[i+1]);
 					} else if (!strcmp(atts[i], "provider-name")) {
@@ -692,7 +692,7 @@ static void XMLCALL start_element_handler(
 			break;
 
 		case PARSER_REQUIRES:
-			if (!strcmp(name, "cpluff")) {
+			if (!strcmp(name, "c-pluff")) {
 				if (check_attributes(plcontext, name, atts,
 						req_cpluff_atts, opt_cpluff_atts)) {
 					for (i = 0; atts[i] != NULL; i += 2) {

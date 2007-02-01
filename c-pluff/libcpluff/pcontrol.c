@@ -422,6 +422,9 @@ static int resolve_plugin_prel_rec(cp_context_t *context, cp_plugin_t *plugin) {
 				node = NULL;
 			}
 		}
+		if (status != CP_OK) {
+			break;
+		}
 		
 		// Resolve this plug-in
 		assert(plugin->state == CP_PLUGIN_INSTALLED);

@@ -142,8 +142,7 @@ CP_HIDDEN void cpi_destroy_all_infos(void) {
 		
 		hash_scan_begin(&scan, infos);
 		while ((node = hash_scan_next(&scan)) != NULL) {
-			info_resource_t *ir = hnode_get(node);
-			
+			info_resource_t *ir = hnode_get(node);			
 			hash_scan_delfree(infos, node);
 			ir->dealloc_func(ir->resource);
 			free(ir);
@@ -575,7 +574,7 @@ CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t
 				break;
 			case CP_PLUGIN_RESOLVED:
 				if (event->old_state < CP_PLUGIN_RESOLVED) {
-					str = N_("Plug-in %s dependencies have been resolved and the plug-in runtime has been loaded.");
+					str = N_("Plug-in %s runtime has been loaded.");
 				} else {
 					str = N_("Plug-in %s has been stopped.");
 				}

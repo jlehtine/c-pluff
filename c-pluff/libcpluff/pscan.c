@@ -186,31 +186,35 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 		hash_scan_begin(&hscan, avail_plugins);
 		while ((hnode = hash_scan_next(&hscan)) != NULL) {
 			cp_plugin_info_t *plugin;
-			cp_plugin_state_t state;
+			cp_plugin_t *ip = NULL;
+			hnode_t *hn2;
 			int s;
 			
 			plugin = hnode_get(hnode);
-			state = cp_get_plugin_state(context, plugin->identifier);
+			hn2 = hash_lookup(context->env->plugins, plugin->identifier);
+			if (hn2 != NULL) {
+				ip = hnode_get(hn2);
+			}
 			
 			// Unload the installed plug-in if it is to be upgraded 
-			if (state >= CP_PLUGIN_INSTALLED
-				&& (flags & CP_LP_UPGRADE)) {
+			if (ip != NULL
+				&& (flags & CP_LP_UPGRADE)
+				&& ((ip->plugin->version == NULL && plugin->version != NULL)
+					|| (ip->plugin->version != NULL
+						&& plugin->version != NULL
+						&& cpi_vercmp(plugin->version, ip->plugin->version) > 0))) {
 				if ((flags & (CP_LP_STOP_ALL_ON_UPGRADE | CP_LP_STOP_ALL_ON_INSTALL))
 					&& !plugins_stopped) {
 					plugins_stopped = 1;
 					cp_stop_plugins(context);
 				}
 				s = cp_uninstall_plugin(context, plugin->identifier);
-				if (s != CP_OK) {
-					status = s;
-					break;
-				}
-				state = CP_PLUGIN_UNINSTALLED;
-				assert(cp_get_plugin_state(context, plugin->identifier) == state);
+				assert(s == CP_OK);
+				ip = NULL;
 			}
 			
 			// Install the plug-in, if to be installed 
-			if (state == CP_PLUGIN_UNINSTALLED) {
+			if (ip == NULL) {
 				if ((flags & CP_LP_STOP_ALL_ON_INSTALL) && !plugins_stopped) {
 					plugins_stopped = 1;
 					cp_stop_plugins(context);
@@ -219,9 +223,11 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 					status = s;
 					break;
 				}
-				hash_scan_delfree(avail_plugins, hnode);
-				cp_release_info(plugin);
 			}
+			
+			// Remove the plug-in from the hash
+			hash_scan_delfree(avail_plugins, hnode);
+			cp_release_info(plugin);
 		}
 		
 		// Restart stopped plug-ins if necessary 

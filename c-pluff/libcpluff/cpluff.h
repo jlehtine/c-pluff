@@ -231,7 +231,7 @@ enum cp_log_severity_t {
 	/** Used for messages warning about possible problems */
 	CP_LOG_WARNING,
 	
-	/** Used for messages reporting plug-in framework errors */
+	/** Used for messages reporting errors */
 	CP_LOG_ERROR
 	
 };

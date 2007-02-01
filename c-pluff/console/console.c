@@ -179,11 +179,7 @@ static void logger(cp_log_severity_t severity, const char *msg, const char *apid
 			level = _("UNKNOWN");
 			break;
 	}
-	if (apid != NULL) {
-		fprintf(stderr, "%s [%s] %s\n", level, apid, msg);
-	} else {
-		fprintf(stderr, "%s [console] %s\n", level, msg);
-	} 
+	fprintf(stderr, "C-Pluff: %s: [%s] %s\n", level, apid != NULL ? apid : _("console"), msg);
 }
 
 static void cmd_set_log_level(int argc, char *argv[]) {
@@ -354,7 +350,7 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 	} else if ((plugins = cp_get_plugins_info(context, &status, NULL)) == NULL) {
 		api_failed("cp_get_plugins_info", status);
 	} else {
-		const char format[] = "  %-32s %12s %-16s %s\n";
+		const char format[] = "  %-24s %-8s %-12s %s\n";
 		fputs(_("Installed plug-ins:\n"), stdout);
 		printf(format,
 			_("IDENTIFIER"),
@@ -372,33 +368,37 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 	}
 }
 
-static char *str_or_null(const char *str) {
-	static char *buffer = NULL;
-	static int buffer_size = 0;
-	
-	if (str != NULL) {
-		int rs = strlen(str) + 3;
-		int do_realloc = 0;
+struct str_list_entry_t {
+	char *str;
+	struct str_list_entry_t *next;
+};
 
-		while (buffer_size < rs) {
-			if (buffer_size == 0) {
-				buffer_size = 64;
-			} else {
-				buffer_size *= 2;
-			}
-			do_realloc = 1;
+static struct str_list_entry_t *str_list = NULL;
+	
+static char *str_or_null(const char *str) {
+	if (str != NULL) {
+		char *s = malloc((strlen(str) + 3) * sizeof(char));
+		struct str_list_entry_t *entry = malloc(sizeof(struct str_list_entry_t));
+		if (s == NULL || entry == NULL) {
+			fputs(_("Insufficient memory.\n"), stdout);
+			abort();
 		}
-		if (do_realloc) {
-			if ((buffer = realloc(buffer, buffer_size * sizeof(char))) == NULL) {
-				fputs(_("Insufficient memory.\n"), stdout);
-				abort();
-			}
-		}
-		snprintf(buffer, buffer_size, "\"%s\"", str);
-		buffer[buffer_size - 1] = '\0';
-		return buffer;
+		sprintf(s, "\"%s\"", str);
+		entry->next = str_list;
+		entry->str = s;
+		str_list = entry;
+		return s;
 	} else {
 		return "NULL";
+	}
+}
+
+static void str_or_null_free(void) {
+	while (str_list != NULL) {
+		struct str_list_entry_t *next = str_list->next;
+		free(str_list->str);
+		free(str_list);
+		str_list = next;
 	}
 }
 
@@ -585,7 +585,7 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 	} else if ((plugin = cp_get_plugin_info(context, argv[1], &status)) == NULL) {
 		api_failed("cp_get_plugin_info", status);
 	} else {
-		printf("{"
+		printf("{\n"
 			"  identifier = \"%s\",\n"
 			"  name = %s,\n"
 			"  version = %s,\n"
@@ -641,6 +641,7 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 		}
 		fputs("}\n", stdout);
 		cp_release_info(plugin);
+		str_or_null_free();
 	}
 }
 
@@ -855,7 +856,7 @@ int main(int argc, char *argv[]) {
 	cmdline_init();
 	
 	/* TRANSLATORS: This is the input prompt for cpluff-console. */
-	prompt = _("C-Pluff console > ");
+	prompt = _("C-Pluff Console > ");
 	
 	while (1) {
 		char *cmdline;
