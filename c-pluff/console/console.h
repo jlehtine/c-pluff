@@ -14,6 +14,7 @@
 #ifdef HAVE_DMALLOC_H
 #include <dmalloc.h>
 #endif
+#include <cpluff.h>
 
 
 /* ------------------------------------------------------------------------
@@ -37,6 +38,26 @@
  * Data types
  * ----------------------------------------------------------------------*/
 
+/// Type of argument completion
+typedef enum arg_compl_t {
+	
+	/// Do not use completion
+	CPC_COMPL_NONE,
+	
+	/// Use file name completion
+	CPC_COMPL_FILE,
+	
+	/// Use scan flag completion
+	CPC_COMPL_FLAG,
+	
+	/// Use log level completion
+	CPC_COMPL_LOG_LEVEL,
+	
+	/// Use plug-in identifier completion
+	CPC_COMPL_PLUGIN,
+	
+} arg_compl_t;
+
 /// Type for command implementations 
 typedef void (*command_func_t)(int argc, char *argv[]);
 
@@ -51,6 +72,9 @@ typedef struct command_info_t {
 	
 	/// The command implementation 
 	command_func_t implementation;
+	
+	/// The type of argument completion to use
+	arg_compl_t arg_completion;
 	
 } command_info_t;
 
@@ -81,14 +105,17 @@ typedef struct log_level_info_t {
  * Global variables
  * ----------------------------------------------------------------------*/
 
+/// The plug-in context
+CP_HIDDEN extern cp_context_t *context;
+
 /// The available commands 
-extern const command_info_t commands[];
+CP_HIDDEN extern const command_info_t commands[];
 
 /// The available load flags 
-extern const flag_info_t load_flags[];
+CP_HIDDEN extern const flag_info_t load_flags[];
 
 /// The available logging levels
-extern const log_level_info_t log_levels[];
+CP_HIDDEN extern const log_level_info_t log_levels[];
 
 
 /* ------------------------------------------------------------------------
@@ -99,7 +126,7 @@ extern const log_level_info_t log_levels[];
  * Initializes command line reading. Must be called once to initialize
  * everything before using cmdline_input.
  */
-void cmdline_init(void);
+CP_HIDDEN void cmdline_init(void);
 
 /**
  * Returns a command line entered by the user. Uses the specified prompt.
@@ -109,7 +136,7 @@ void cmdline_init(void);
  * @param prompt the prompt to be used
  * @return the command line entered by the user
  */
-char *cmdline_input(const char *prompt);
+CP_HIDDEN char *cmdline_input(const char *prompt);
 
 #ifndef CONSOLE_H_
 #define CONSOLE_H_

@@ -49,32 +49,32 @@ static void cmd_exit(int argc, char *argv[]);
  * ----------------------------------------------------------------------*/
 
 /// The plug-in context
-static cp_context_t *context;
+CP_HIDDEN cp_context_t *context;
 
 /// The available commands 
 CP_HIDDEN const command_info_t commands[] = {
-	{ "help", N_("displays command help"), cmd_help },
-	{ "set-log-level", N_("sets the display log level"), cmd_set_log_level },
-	{ "register-collection", N_("registers a plug-in collection"), cmd_register_pcollection },
-	{ "unregister-collection", N_("unregisters a plug-in collection"), cmd_unregister_pcollection },
-	{ "unregister-collections", N_("unregisters all plug-in collections"), cmd_unregister_pcollections },
-	{ "load-plugin", N_("loads and installs a plug-in from the specified path"), cmd_load_plugin },
-	{ "scan-plugins", N_("scans plug-ins in the registered plug-in collections"), cmd_scan_plugins },
-	{ "set-context-args", N_("sets context startup arguments"), cmd_set_context_args },
-	{ "start-plugin", N_("starts a plug-in"), cmd_start_plugin },
-	{ "run-plugins-step", N_("runs one plug-in function"), cmd_run_plugins_step },
-	{ "run-plugins", N_("runs plug-in functions until no further work to be done"), cmd_run_plugins },
-	{ "stop-plugin", N_("stops a plug-in"), cmd_stop_plugin },
-	{ "stop-plugins", N_("stops all plug-ins"), cmd_stop_plugins },
-	{ "uninstall-plugin", N_("uninstalls a plug-in"), cmd_uninstall_plugin },
-	{ "uninstall-plugins", N_("uninstalls all plug-ins"), cmd_uninstall_plugins },
-	{ "list-plugins", N_("lists the installed plug-ins"), cmd_list_plugins },
-	{ "list-ext-points", N_("lists the installed extension points"), cmd_list_ext_points },
-	{ "list-extensions", N_("lists the installed extensions"), cmd_list_extensions },
-	{ "show-plugin-info", N_("shows static plug-in information"), cmd_show_plugin_info },
-	{ "quit", N_("quits the program"), cmd_exit },
-	{ "exit", N_("quits the program"), cmd_exit },
-	{ NULL, NULL, NULL }
+	{ "help", N_("displays command help"), cmd_help, CPC_COMPL_NONE },
+	{ "set-log-level", N_("sets the display log level"), cmd_set_log_level, CPC_COMPL_LOG_LEVEL },
+	{ "register-collection", N_("registers a plug-in collection"), cmd_register_pcollection, CPC_COMPL_FILE },
+	{ "unregister-collection", N_("unregisters a plug-in collection"), cmd_unregister_pcollection, CPC_COMPL_FILE },
+	{ "unregister-collections", N_("unregisters all plug-in collections"), cmd_unregister_pcollections, CPC_COMPL_NONE },
+	{ "load-plugin", N_("loads and installs a plug-in from the specified path"), cmd_load_plugin, CPC_COMPL_FILE },
+	{ "scan-plugins", N_("scans plug-ins in the registered plug-in collections"), cmd_scan_plugins, CPC_COMPL_FLAG },
+	{ "set-context-args", N_("sets context startup arguments"), cmd_set_context_args, CPC_COMPL_FILE },
+	{ "start-plugin", N_("starts a plug-in"), cmd_start_plugin, CPC_COMPL_PLUGIN },
+	{ "run-plugins-step", N_("runs one plug-in function"), cmd_run_plugins_step, CPC_COMPL_NONE },
+	{ "run-plugins", N_("runs plug-in functions until no further work to be done"), cmd_run_plugins, CPC_COMPL_NONE },
+	{ "stop-plugin", N_("stops a plug-in"), cmd_stop_plugin, CPC_COMPL_PLUGIN },
+	{ "stop-plugins", N_("stops all plug-ins"), cmd_stop_plugins, CPC_COMPL_NONE },
+	{ "uninstall-plugin", N_("uninstalls a plug-in"), cmd_uninstall_plugin, CPC_COMPL_PLUGIN },
+	{ "uninstall-plugins", N_("uninstalls all plug-ins"), cmd_uninstall_plugins, CPC_COMPL_NONE },
+	{ "list-plugins", N_("lists the installed plug-ins"), cmd_list_plugins, CPC_COMPL_NONE },
+	{ "list-ext-points", N_("lists the installed extension points"), cmd_list_ext_points, CPC_COMPL_NONE },
+	{ "list-extensions", N_("lists the installed extensions"), cmd_list_extensions, CPC_COMPL_NONE },
+	{ "show-plugin-info", N_("shows static plug-in information"), cmd_show_plugin_info, CPC_COMPL_PLUGIN },
+	{ "quit", N_("quits the program"), cmd_exit, CPC_COMPL_NONE },
+	{ "exit", N_("quits the program"), cmd_exit, CPC_COMPL_NONE },
+	{ NULL, NULL, NULL, CPC_COMPL_NONE }
 };
 
 /// The available load flags 
@@ -288,13 +288,6 @@ static char *state_to_string(cp_plugin_state_t state) {
 		default:
 			return "(unknown)";
 	}
-}
-
-static void plugin_listener(const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *dummy) {
-	noticef(_("PLUGIN EVENT: %s: %s -> %s"),
-		plugin_id,
-		state_to_string(old_state),
-		state_to_string(new_state));
 }
 
 static void cmd_register_pcollection(int argc, char *argv[]) {
@@ -867,9 +860,6 @@ int main(int argc, char *argv[]) {
 	// Initialize logging
 	cp_register_logger(context, logger, NULL, log_levels[1].level);
 	noticef(_("Using display log level %s."), log_levels[1].name);
-
-	// Initialize plug-in listener
-	cp_register_plistener(context, plugin_listener, NULL);
 
 	// Command line loop 
 	cmdline_init();

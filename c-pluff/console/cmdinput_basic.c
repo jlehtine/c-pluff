@@ -8,7 +8,6 @@
 #include "console.h"
 #include <stdio.h>
 #include <string.h>
-#include <cpluffdef.h>
 
 #define CMDLINE_SIZE 256
 
