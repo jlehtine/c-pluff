@@ -401,7 +401,7 @@ static void show_plugin_info_import(cp_plugin_import_t *import) {
 static void show_plugin_info_ext_point(cp_ext_point_t *ep) {
 	assert(ep->plugin != NULL);
 	noticef("    local_id = \"%s\",", ep->local_id);
-	noticef("    global_id = \"%s\",", ep->global_id);
+	noticef("    identifier = \"%s\",", ep->identifier);
 	noticef("    name = %s,", str_or_null(ep->name));
 	noticef("    schema_path = %s,", str_or_null(ep->schema_path));
 }
@@ -544,9 +544,9 @@ static void show_plugin_info_cfg(cp_cfg_element_t *ce, int indent) {
 static void show_plugin_info_extension(cp_extension_t *e) {
 	assert(e->plugin != NULL);
 	noticef("    name = %s,", str_or_null(e->name));
-	noticef("    local_id = %s,", str_or_null(e->local_id));
-	noticef("    global_id = %s,", str_or_null(e->global_id));
 	noticef("    ext_point_id = \"%s\",", e->ext_point_id);
+	noticef("    local_id = %s,", str_or_null(e->local_id));
+	noticef("    identifier = %s,", str_or_null(e->identifier));
 	notice("    configuration = {");
 	show_plugin_info_cfg(e->configuration, 6);
 	notice("    },");
@@ -628,13 +628,13 @@ static void cmd_list_ext_points(int argc, char *argv[]) {
 		for (i = 0; ext_points[i] != NULL; i++) {
 			if (ext_points[i]->name != NULL) {
 				noticef("  %s \"%s\" (%s)",
-					ext_points[i]->global_id,
+					ext_points[i]->identifier,
 					ext_points[i]->name,
 					ext_points[i]->plugin->identifier
 				);
 			} else {
 				noticef("  %s (%s)",
-					ext_points[i]->global_id,
+					ext_points[i]->identifier,
 					ext_points[i]->plugin->identifier
 				);
 			}
@@ -657,13 +657,13 @@ static void cmd_list_extensions(int argc, char *argv[]) {
 		for (i = 0; extensions[i] != NULL; i++) {
 			if (extensions[i]->name != NULL) {
 				noticef("  %s \"%s\" (%s)",
-					extensions[i]->global_id != NULL ? extensions[i]->global_id : _("<unidentified>"),
+					extensions[i]->identifier != NULL ? extensions[i]->identifier : _("<unidentified>"),
 					extensions[i]->name,
 					extensions[i]->plugin->identifier
 				);
 			} else {
 				noticef("  %s (%s)",
-					extensions[i]->global_id != NULL ? extensions[i]->global_id : _("<unidentified>"),
+					extensions[i]->identifier != NULL ? extensions[i]->identifier : _("<unidentified>"),
 					extensions[i]->plugin->identifier
 				);
 			}

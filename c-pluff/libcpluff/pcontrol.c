@@ -52,7 +52,7 @@ static void unregister_extensions(cp_context_t *context, cp_plugin_info_t *plugi
 		cp_ext_point_t *ep = plugin->ext_points + i;
 		hnode_t *hnode;
 		
-		if ((hnode = hash_lookup(context->env->ext_points, ep->global_id)) != NULL
+		if ((hnode = hash_lookup(context->env->ext_points, ep->identifier)) != NULL
 			&& hnode_get(hnode) == ep) {
 			hash_delete_free(context->env->ext_points, hnode);
 		}
@@ -136,10 +136,10 @@ CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *
 			cp_ext_point_t *ep = plugin->ext_points + i;
 			hnode_t *hnode;
 			
-			if ((hnode = hash_lookup(context->env->ext_points, ep->global_id)) != NULL) {
-				cpi_errorf(context, _("Plug-in %s could not be installed because extension point %s conflicts with an already installed extension point."), plugin->identifier, ep->global_id);
+			if ((hnode = hash_lookup(context->env->ext_points, ep->identifier)) != NULL) {
+				cpi_errorf(context, _("Plug-in %s could not be installed because extension point %s conflicts with an already installed extension point."), plugin->identifier, ep->identifier);
 				status = CP_ERR_CONFLICT;
-			} else if (!hash_alloc_insert(context->env->ext_points, ep->global_id, ep)) {
+			} else if (!hash_alloc_insert(context->env->ext_points, ep->identifier, ep)) {
 				status = CP_ERR_RESOURCE;
 			}
 		}
@@ -1041,14 +1041,14 @@ static void free_plugin_import_content(cp_plugin_import_t *import) {
 static void free_ext_point_content(cp_ext_point_t *ext_point) {
 	free(ext_point->name);
 	free(ext_point->local_id);
-	free(ext_point->global_id);
+	free(ext_point->identifier);
 	free(ext_point->schema_path);
 }
 
 static void free_extension_content(cp_extension_t *extension) {
 	free(extension->name);
 	free(extension->local_id);
-	free(extension->global_id);
+	free(extension->identifier);
 	free(extension->ext_point_id);
 }
 

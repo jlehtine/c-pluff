@@ -569,7 +569,7 @@ struct cp_ext_point_t {
 	 * constructed by concatenating the identifier of the host plug-in and
 	 * the local identifier of the extension point.
 	 */
-	char *global_id;
+	char *identifier;
 
 	/**
 	 * An optional extension point name. NULL if not available. The extension
@@ -621,7 +621,7 @@ struct cp_extension_t {
      * This is automatically constructed by concatenating the identifier
      * of the host plug-in and the local identifier of the extension.
      */
-    char *global_id;
+    char *identifier;
 	 
 	/** 
 	 * An optional extension name. NULL if not available. The extension name

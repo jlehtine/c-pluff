@@ -595,7 +595,7 @@ static void XMLCALL start_element_handler(
 					ext_point->plugin = plcontext->plugin;
 					ext_point->name = NULL;
 					ext_point->local_id = NULL;
-					ext_point->global_id = NULL;
+					ext_point->identifier = NULL;
 					ext_point->schema_path = NULL;
 					for (i = 0; atts[i] != NULL; i += 2) {
 						if (!strcmp(atts[i], "name")) {
@@ -604,7 +604,7 @@ static void XMLCALL start_element_handler(
 						} else if (!strcmp(atts[i], "id")) {
 							ext_point->local_id
 								= parser_strdup(plcontext, atts[i+1]);
-							ext_point->global_id
+							ext_point->identifier
 								= parser_strscat(plcontext,
 									plcontext->plugin->identifier, ".", atts[i+1], NULL);
 						} else if (!strcmp(atts[i], "schema")) {
@@ -648,7 +648,7 @@ static void XMLCALL start_element_handler(
 					extension->plugin = plcontext->plugin;
 					extension->name = NULL;
 					extension->local_id = NULL;
-					extension->global_id = NULL;
+					extension->identifier = NULL;
 					extension->ext_point_id = NULL;
 					extension->configuration = NULL;
 					for (i = 0; atts[i] != NULL; i += 2) {
@@ -658,7 +658,7 @@ static void XMLCALL start_element_handler(
 						} else if (!strcmp(atts[i], "id")) {
 							extension->local_id
 								= parser_strdup(plcontext, atts[i+1]);
-							extension->global_id
+							extension->identifier
 								= parser_strscat(plcontext,
 									plcontext->plugin->identifier, ".", atts[i+1], NULL);
 						} else if (!strcmp(atts[i], "name")) {
