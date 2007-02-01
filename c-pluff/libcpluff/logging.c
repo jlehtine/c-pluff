@@ -9,6 +9,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <stdarg.h>
 #include <assert.h>
 #include "cpluff.h"
@@ -106,6 +107,14 @@ CP_C_API cp_status_t cp_register_logger(cp_context_t *context, cp_logger_func_t 
 		update_logging_limits(context);
 		
 	} while (0);
+
+	// Report error
+	if (status == CP_ERR_RESOURCE) {
+		cpi_error(context, N_("Logger could not be registered due to insufficient memory."));		
+	} else if (cpi_is_logged(context, CP_LOG_DEBUG)) {
+		char owner[64];
+		cpi_debugf(context, N_("%s registered a logger."), cpi_context_owner(context, owner, sizeof(owner)));
+	}
 	cpi_unlock_context(context);
 
 	// Release resources on error
@@ -116,13 +125,6 @@ CP_C_API cp_status_t cp_register_logger(cp_context_t *context, cp_logger_func_t 
 		if (lh != NULL) {
 			free(lh);
 		}
-	}
-
-	// Report error
-	if (status == CP_ERR_RESOURCE) {
-		cpi_error(context, _("Logger could not be registered due to insufficient memory."));		
-	} else {
-		cpi_debugf(context, "A logger was registered by %s.", cpi_context_owner(context));
 	}
 
 	return status;
@@ -145,14 +147,18 @@ CP_C_API void cp_unregister_logger(cp_context_t *context, cp_logger_func_t logge
 		free(lh);
 		update_logging_limits(context);
 	}
+	if (cpi_is_logged(context, CP_LOG_DEBUG)) {
+		char owner[64];
+		cpi_debugf(context, N_("%s unregistered a logger."), cpi_context_owner(context, owner, sizeof(owner)));
+	}
 	cpi_unlock_context(context);
-	cpi_debugf(context, "A logger was unregistered by %s.", cpi_context_owner(context));
 }
 
 static void do_log(cp_context_t *context, cp_log_severity_t severity, const char *msg) {
 	lnode_t *node;
 	const char *apid = NULL;
-	
+
+	assert(cpi_is_context_locked(context));	
 	if (context->env->in_logger_invocation) {
 		cpi_fatalf(_("Encountered a recursive logging request within a logger invocation."));
 	}
@@ -173,37 +179,24 @@ static void do_log(cp_context_t *context, cp_log_severity_t severity, const char
 
 CP_HIDDEN void cpi_log(cp_context_t *context, cp_log_severity_t severity, const char *msg) {
 	assert(context != NULL);
-	cpi_lock_context(context);
-	if (severity >= context->env->log_min_severity) {
-		do_log(context, severity, msg);
-	}
-	cpi_unlock_context(context);
+	assert(msg != NULL);
+	assert(severity >= CP_LOG_DEBUG && severity <= CP_LOG_ERROR);
+	do_log(context, severity, _(msg));
 }
 
 CP_HIDDEN void cpi_logf(cp_context_t *context, cp_log_severity_t severity, const char *msg, ...) {
-	assert(context != NULL);
-	cpi_lock_context(context);
-	if (severity >= context->env->log_min_severity) {
-		char buffer[256];
-		va_list va;
-		
-		va_start(va, msg);
-		vsnprintf(buffer, sizeof(buffer), msg, va);
-		va_end(va);
-		buffer[sizeof(buffer)/sizeof(char) - 1] = '\0';
-		do_log(context, severity, buffer);
-	}
-	cpi_unlock_context(context);
-}
-
-CP_HIDDEN int cpi_is_logged(cp_context_t *context, cp_log_severity_t severity) {
-	int is_logged;
+	char buffer[256];
+	va_list va;
 	
 	assert(context != NULL);
-	cpi_lock_context(context);
-	is_logged = severity >= context->env->log_min_severity;
-	cpi_unlock_context(context);
-	return is_logged;
+	assert(msg != NULL);
+	assert(severity >= CP_LOG_DEBUG && severity <= CP_LOG_ERROR);
+		
+	va_start(va, msg);
+	vsnprintf(buffer, sizeof(buffer), _(msg), va);
+	va_end(va);
+	strcpy(buffer + sizeof(buffer)/sizeof(char) - 4, "...");
+	do_log(context, severity, buffer);
 }
 
 static void process_unregister_logger(list_t *list, lnode_t *node, void *plugin) {
@@ -223,5 +216,24 @@ CP_HIDDEN void cpi_unregister_loggers(list_t *loggers, cp_plugin_t *plugin) {
 CP_C_API void cp_log(cp_context_t *context, cp_log_severity_t severity, const char *msg) {
 	CHECK_NOT_NULL(context);
 	CHECK_NOT_NULL(msg);
-	cpi_log(context, severity, msg);
+	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
+	if (severity < CP_LOG_DEBUG || severity > CP_LOG_ERROR) {
+		cpi_fatalf(_("Illegal severity value in call to %s."), __func__);
+	}
+	if (cpi_is_logged(context, severity)) {
+		do_log(context, severity, msg);
+	}
+	cpi_unlock_context(context);
+}
+
+CP_C_API int cp_is_logged(cp_context_t *context, cp_log_severity_t severity) {
+	int is_logged;
+	
+	CHECK_NOT_NULL(context);
+	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
+	is_logged = cpi_is_logged(context, severity);
+	cpi_unlock_context(context);
+	return is_logged;
 }

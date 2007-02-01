@@ -82,6 +82,11 @@ CP_C_API cp_status_t cp_run_function(cp_context_t *ctx, cp_run_func_t runfunc) {
 		}
 
 	} while (0);
+
+	// Log error
+	if (status == CP_ERR_RESOURCE) {
+		cpi_error(ctx, N_("Could not register a run function due to insufficient memory."));
+	}	
 	cpi_unlock_context(ctx);
 	
 	// Free resources on error
@@ -92,11 +97,6 @@ CP_C_API cp_status_t cp_run_function(cp_context_t *ctx, cp_run_func_t runfunc) {
 		if (rf != NULL) {
 			free(rf);
 		}
-	}
-	
-	// Log error
-	if (status == CP_ERR_RESOURCE) {
-		cpi_error(ctx, _("Could not register a run function due to insufficient memory."));
 	}
 	
 	return status;

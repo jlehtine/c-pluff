@@ -39,7 +39,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 	
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
-	cpi_debug(context, "Plug-in scan is starting.");
+	cpi_debug(context, N_("Plug-in scan is starting."));
 	do {
 		lnode_t *lnode;
 		hscan_t hscan;
@@ -87,7 +87,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 							}
 							new_pdir_path = realloc(pdir_path, pdir_path_size * sizeof(char));
 							if (new_pdir_path == NULL) {
-								cpi_errorf(context, _("Could not check possible plug-in location %s%c%s due to insufficient system resources."), dir_path, CP_FNAMESEP_CHAR, de->d_name);
+								cpi_errorf(context, N_("Could not check possible plug-in location %s%c%s due to insufficient system resources."), dir_path, CP_FNAMESEP_CHAR, de->d_name);
 								status = CP_ERR_RESOURCE;
 								// continue loading plug-ins from other directories 
 								continue;
@@ -119,7 +119,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 						}
 						if (hnode == NULL) {
 							if (!hash_alloc_insert(avail_plugins, plugin->identifier, plugin)) {
-								cpi_errorf(context, _("Plug-in %s version %s could not be loaded due to insufficient system resources."), plugin->identifier, plugin->version);
+								cpi_errorf(context, N_("Plug-in %s version %s could not be loaded due to insufficient system resources."), plugin->identifier, plugin->version);
 								cpi_free_plugin(plugin);
 								status = CP_ERR_RESOURCE;
 								// continue loading plug-ins from other directories 
@@ -131,13 +131,13 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 					errno = 0;
 				}
 				if (errno) {
-					cpi_errorf(context, _("Could not read plug-in directory %s: %s"), dir_path, strerror(errno));
+					cpi_errorf(context, N_("Could not read plug-in directory %s: %s"), dir_path, strerror(errno));
 					status = CP_ERR_IO;
 					// continue loading plug-ins from other directories 
 				}
 				closedir(dir);
 			} else {
-				cpi_errorf(context, _("Could not open plug-in directory %s: %s"), dir_path, strerror(errno));
+				cpi_errorf(context, N_("Could not open plug-in directory %s: %s"), dir_path, strerror(errno));
 				status = CP_ERR_IO;
 				// continue loading plug-ins from other directories 
 			}
@@ -241,8 +241,21 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 		}
 		
 	} while (0);
-	cpi_unlock_context(context);
 
+	// Report error
+	switch (status) {
+		case CP_OK:
+			cpi_debug(context, N_("Plug-in scan has completed successfully."));
+			break;
+		case CP_ERR_RESOURCE:
+			cpi_error(context, N_("Could not scan plug-ins due to insufficient system resources."));
+			break;
+		default:
+			cpi_error(context, N_("Could not scan plug-ins."));
+			break;
+	}
+	cpi_unlock_context(context);
+	
 	// Release resources 
 	if (pdir_path != NULL) {
 		free(pdir_path);
@@ -267,18 +280,5 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 		cp_release_info(plugins);
 	}
 
-	// Error handling 
-	switch (status) {
-		case CP_OK:
-			cpi_debug(context, "Plug-in scan has completed successfully.");
-			break;
-		case CP_ERR_RESOURCE:
-			cpi_error(context, _("Could not scan plug-ins due to insufficient system resources."));
-			break;
-		default:
-			cpi_error(context, _("Could not scan plug-ins."));
-			break;
-	}
-	
 	return status;
 }

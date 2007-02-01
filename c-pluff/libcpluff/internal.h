@@ -16,6 +16,7 @@
  * ----------------------------------------------------------------------*/
 
 #include "defines.h"
+#include <assert.h>
 #if defined(DLOPEN_POSIX)
 #include <dlfcn.h>
 #elif defined(DLOPEN_LIBTOOL)
@@ -296,11 +297,30 @@ CP_HIDDEN void cpi_signal_context(cp_context_t *context) CP_GCC_NONNULL(1);
 #define cpi_unlock_framework() do {} while(0)
 #endif
 
+/** 
+ * @def cpi_is_context_locked
+ * 
+ * Returns whether the context is locked. This is intended to be used in
+ * assertions only and it is not defined if debugging is not enabled.
+ */
+
+#ifndef NDEBUG
+#ifdef CP_THREADS
+#define cpi_is_context_locked(ctx) cpi_is_mutex_locked((ctx)->env->mutex)
+#else
+#define cpi_is_context_locked(ctx) ((ctx)->env->locked)
+#endif
+#endif
+
 
 // Logging
 
 /**
- * Logs a message.
+ * Logs a message. Calls dgettext for @a msg to localize it before delivering
+ * it to loggers. The caller must have locked the context. This
+ * function logs the message unconditionally. Use convenience macros
+ * @ref cpi_error, @ref cpi_warn, @ref cpi_info and @ref cpi_debug
+ * to log based on the minimum severity level logged.
  * 
  * @param ctx the related plug-in context
  * @param severity the severity of the message
@@ -309,7 +329,11 @@ CP_HIDDEN void cpi_signal_context(cp_context_t *context) CP_GCC_NONNULL(1);
 CP_HIDDEN void cpi_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) CP_GCC_NONNULL(1, 3);
 
 /**
- * Formats and logs a message.
+ * Formats and logs a message. Calls dgettext for @a msg to localize it before
+ * formatting the message. The caller must have locked the context. This
+ * function logs the message unconditionally. Use convenience macros
+ * @ref cpi_errorf, @ref cpi_warnf, @ref cpi_infof and @ref cpi_debugf
+ * to log based on the minimum severity level logged. 
  * 
  * @param ctx the related plug-in context
  * @param severity the severity of the message
@@ -320,13 +344,25 @@ CP_HIDDEN void cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const cha
 
 /**
  * Returns whether the messages of the specified severity level are
- * being logged for the specified context.
+ * being logged for the specified context. The caller must have locked the context.
  * 
  * @param ctx the plug-in context
  * @param severity the severity
  * @return whether the messages of the specified severity level are logged
  */
-CP_HIDDEN int cpi_is_logged(cp_context_t *ctx, cp_log_severity_t severity) CP_GCC_NONNULL(1);
+#define cpi_is_logged(context, severity) (assert(cpi_is_context_locked(context)), (severity) >= (context)->env->log_min_severity)
+
+// Convenience macros for logging
+#define cpi_log_cond(ctx, level, msg) do { if (cpi_is_logged((ctx), (level))) cpi_log((ctx), (level), (msg)); } while (0)
+#define cpi_logf_cond(ctx, level, msg, ...) do { if (cpi_is_logged((ctx), (level))) cpi_logf((ctx), (level), (msg), __VA_ARGS__); } while (0)
+#define cpi_error(ctx, msg) cpi_log_cond((ctx), CP_LOG_ERROR, (msg))
+#define cpi_errorf(ctx, msg, ...) cpi_logf_cond((ctx), CP_LOG_ERROR, (msg), __VA_ARGS__)
+#define cpi_warn(ctx, msg) cpi_log_cond((ctx), CP_LOG_WARNING, (msg))
+#define cpi_warnf(ctx, msg, ...) cpi_logf_cond((ctx), CP_LOG_WARNING, (msg), __VA_ARGS__)
+#define cpi_info(ctx, msg) cpi_log_cond((ctx), CP_LOG_INFO, (msg))
+#define cpi_infof(ctx, msg, ...) cpi_logf_cond((ctx), CP_LOG_INFO, (msg), __VA_ARGS__)
+#define cpi_debug(ctx, msg) cpi_log_cond((ctx), CP_LOG_DEBUG, (msg))
+#define cpi_debugf(ctx, msg, ...) cpi_logf_cond((ctx), CP_LOG_DEBUG, (msg), __VA_ARGS__)
 
 /**
  * Unregisters loggers in the specified logger list. Either unregisters all
@@ -336,23 +372,6 @@ CP_HIDDEN int cpi_is_logged(cp_context_t *ctx, cp_log_severity_t severity) CP_GC
  * @param plugin the plug-in whose loggers to unregister or NULL for all
  */
 CP_HIDDEN void cpi_unregister_loggers(list_t *loggers, cp_plugin_t *plugin) CP_GCC_NONNULL(1);
-
-// Convenience macros for logging
-#define cpi_error(ctx, msg) cpi_log((ctx), CP_LOG_ERROR, (msg))
-#define cpi_errorf(ctx, msg, ...) cpi_logf((ctx), CP_LOG_ERROR, (msg), __VA_ARGS__)
-#define cpi_warn(ctx, msg) cpi_log((ctx), CP_LOG_WARNING, (msg))
-#define cpi_warnf(ctx, msg, ...) cpi_logf((ctx), CP_LOG_WARNING, (msg), __VA_ARGS__)
-#define cpi_info(ctx, msg) cpi_log((ctx), CP_LOG_INFO, (msg))
-#define cpi_infof(ctx, msg, ...) cpi_logf((ctx), CP_LOG_INFO, (msg), __VA_ARGS__)
-#ifndef NDEBUG
-#define cpi_debug(ctx, msg) cpi_log((ctx), CP_LOG_DEBUG, (msg))
-#define cpi_debugf(ctx, msg, ...) cpi_logf((ctx), CP_LOG_DEBUG, (msg), __VA_ARGS__)
-#else
-#define cpi_debug(ctx, msg) do {} while (0)
-#define cpi_debugf(ctx, msg, ...) do {} while (0)
-#endif
-
-#ifndef NDEBUG
 
 /**
  * Unregisters plug-in listeners in the specified list. Either unregisters all
@@ -367,11 +386,11 @@ CP_HIDDEN void cpi_unregister_plisteners(list_t *listeners, cp_plugin_t *plugin)
  * Returns the owner name for a context.
  * 
  * @param ctx the context
- * @return owner name
+ * @param name the location where the name of the owner is to be stored
+ * @param size maximum size of the owner string, including the terminating zero
+ * @return the pointer passed in as @a name
  */
-CP_HIDDEN const char *cpi_context_owner(cp_context_t *ctx) CP_GCC_NONNULL(1);
-
-#endif
+CP_HIDDEN char *cpi_context_owner(cp_context_t *ctx, char *name, size_t size) CP_GCC_NONNULL(1);
 
 /**
  * Reports a fatal error. This method does not return.

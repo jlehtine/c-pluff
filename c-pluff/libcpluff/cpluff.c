@@ -149,5 +149,5 @@ CP_HIDDEN void cpi_fatalf(const char *msg, ...) {
 }
 
 CP_HIDDEN void cpi_fatal_null_arg(const char *arg, const char *func) {
-	cpi_fatalf(_("Argument %s has illegal NULL value in call to function %s."), arg, func);
+	cpi_fatalf(_("Argument %s has illegal NULL value in call to %s."), arg, func);
 }

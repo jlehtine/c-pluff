@@ -180,7 +180,7 @@ CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *context, const char
 	if (plugin != NULL) {
 		cpi_use_info(plugin);
 	} else {
-		cpi_warnf(context, _("Could not return information about unknown plug-in %s."), id);
+		cpi_warnf(context, N_("Could not return information about unknown plug-in %s."), id);
 		status = CP_ERR_UNKNOWN;
 	}
 	cpi_unlock_context(context);
@@ -238,11 +238,15 @@ CP_C_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *context, cp_statu
 		status = cpi_register_info(plugins, (void (*)(void *)) dealloc_plugins_info);
 		
 	} while (0);
+
+	// Report error
+	if (status != CP_OK) {
+		cpi_error(context, N_("Plug-in information could not be returned due to insufficient memory."));
+	}
 	cpi_unlock_context(context);
-	
+
 	// Release resources on error 
 	if (status != CP_OK) {
-		cpi_error(context, _("Plug-in information could not be returned due to insufficient memory."));
 		if (plugins != NULL) {
 			dealloc_plugins_info(plugins);
 			plugins = NULL;
@@ -324,11 +328,15 @@ CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *context, cp_stat
 		status = cpi_register_info(ext_points, (void (*)(void *)) dealloc_ext_points_info);
 		
 	} while (0);
+	
+	// Report error
+	if (status != CP_OK) {
+		cpi_error(context, N_("Extension point information could not be returned due to insufficient memory."));
+	}
 	cpi_unlock_context(context);
 	
 	// Release resources on error 
 	if (status != CP_OK) {
-		cpi_error(context, _("Extension point information could not be returned due to insufficient memory."));
 		if (ext_points != NULL) {
 			dealloc_ext_points_info(ext_points);
 			ext_points = NULL;
@@ -415,11 +423,15 @@ CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *context, const c
 		status = cpi_register_info(extensions, (void (*)(void *)) dealloc_extensions_info);
 		
 	} while (0);
+	
+	// Report error
+	if (status != CP_OK) {
+		cpi_error(context, N_("Extension information could not be returned due to insufficient memory."));
+	}
 	cpi_unlock_context(context);
 	
 	// Release resources on error 
 	if (status != CP_OK) {
-		cpi_error(context, _("Extension information could not be returned due to insufficient memory."));
 		if (extensions != NULL) {
 			dealloc_extensions_info(extensions);
 			extensions = NULL;
@@ -508,12 +520,16 @@ CP_C_API cp_status_t cp_register_plistener(cp_context_t *context, cp_plugin_list
 			free(holder);
 		}
 	}
-	cpi_unlock_context(context);
+	
+	// Report error or success
 	if (status != CP_OK) {
 		cpi_error(context, _("A plug-in listener could not be registered due to insufficient memory."));
-	} else {
-		cpi_debugf(context, "A plug-in listener was registered by %s.", cpi_context_owner(context));
+	} else if (cpi_is_logged(context, CP_LOG_DEBUG)) {
+		char owner[64];
+		cpi_debugf(context, N_("%s registered a plug-in listener."), cpi_context_owner(context, owner, sizeof(owner)));
 	}
+	cpi_unlock_context(context);
+	
 	return status;
 }
 
@@ -529,8 +545,11 @@ CP_C_API void cp_unregister_plistener(cp_context_t *context, cp_plugin_listener_
 	if (node != NULL) {
 		process_unregister_plistener(context->env->plugin_listeners, node, NULL);
 	}
+	if (cpi_is_logged(context, CP_LOG_DEBUG)) {
+		char owner[64];
+		cpi_debugf(context, N_("%s unregistered a plug-in listener."), cpi_context_owner(context, owner, sizeof(owner)));
+	}
 	cpi_unlock_context(context);
-	cpi_debugf(context, "A plug-in listener was unregistered by %s.", cpi_context_owner(context));
 }
 
 CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t *event) {
@@ -545,30 +564,30 @@ CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t
 		char *str;
 		switch (event->new_state) {
 			case CP_PLUGIN_UNINSTALLED:
-				str = _("Plug-in %s has been uninstalled.");
+				str = N_("Plug-in %s has been uninstalled.");
 				break;
 			case CP_PLUGIN_INSTALLED:
 				if (event->old_state < CP_PLUGIN_INSTALLED) {
-					str = _("Plug-in %s has been installed.");
+					str = N_("Plug-in %s has been installed.");
 				} else {
-					str = _("Plug-in %s runtime has been unloaded.");
+					str = N_("Plug-in %s runtime has been unloaded.");
 				}
 				break;
 			case CP_PLUGIN_RESOLVED:
 				if (event->old_state < CP_PLUGIN_RESOLVED) {
-					str = _("Plug-in %s dependencies have been resolved and the plug-in runtime has been loaded.");
+					str = N_("Plug-in %s dependencies have been resolved and the plug-in runtime has been loaded.");
 				} else {
-					str = _("Plug-in %s has been stopped.");
+					str = N_("Plug-in %s has been stopped.");
 				}
 				break;
 			case CP_PLUGIN_STARTING:
-				str = _("Plug-in %s is starting.");
+				str = N_("Plug-in %s is starting.");
 				break;
 			case CP_PLUGIN_STOPPING:
-				str = _("Plug-in %s is stopping.");
+				str = N_("Plug-in %s is stopping.");
 				break;
 			case CP_PLUGIN_ACTIVE:
-				str = _("Plug-in %s has been started.");
+				str = N_("Plug-in %s has been started.");
 				break;
 			default:
 				str = NULL;

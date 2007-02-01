@@ -316,6 +316,13 @@ CP_C_API cp_status_t cp_register_pcollection(cp_context_t *context, const char *
 		list_append(context->env->plugin_dirs, node);
 		
 	} while (0);
+
+	// Report error or success
+	if (status != CP_OK) {
+		cpi_errorf(context, N_("Could not register plug-in collection directory %s due to insufficient memory."), dir);
+	} else {
+		cpi_debugf(context, N_("Plug-in collection directory %s was registered."), dir);
+	}
 	cpi_unlock_context(context);
 
 	// Release resources on failure 
@@ -326,16 +333,6 @@ CP_C_API cp_status_t cp_register_pcollection(cp_context_t *context, const char *
 		if (node != NULL) {
 			lnode_destroy(node);
 		}
-	}
-	
-	// Report error
-	if (status == CP_ERR_RESOURCE) {
-		cpi_errorf(context, _("Could not register plug-in collection directory %s due to insufficient memory."), dir);
-	}
-
-	// Report success
-	if (status == CP_OK) {
-		cpi_debugf(context, "Plug-in collection directory %s was registered.", dir);
 	}
 	
 	return status;
@@ -358,7 +355,7 @@ CP_C_API void cp_unregister_pcollection(cp_context_t *context, const char *dir) 
 		free(d);
 	}
 	cpi_unlock_context(context);
-	cpi_debugf(context, "Plug-in collection directory %s was unregistered.", dir);
+	cpi_debugf(context, N_("Plug-in collection directory %s was unregistered."), dir);
 }
 
 CP_C_API void cp_unregister_pcollections(cp_context_t *context) {
@@ -367,7 +364,7 @@ CP_C_API void cp_unregister_pcollections(cp_context_t *context) {
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	list_process(context->env->plugin_dirs, NULL, cpi_process_free_ptr);
 	cpi_unlock_context(context);
-	cpi_debug(context, "All plug-in collection directories were unregistered.");
+	cpi_debug(context, N_("All plug-in collection directories were unregistered."));
 }
 
 
@@ -377,10 +374,10 @@ CP_C_API void cp_set_context_args(cp_context_t *ctx, int argc, char **argv) {
 	CHECK_NOT_NULL(ctx);
 	CHECK_NOT_NULL(argv);
 	if (argc < 1) {
-		cpi_fatalf(_("Argument count must be at least 1 in call to cp_set_context_args."));
+		cpi_fatalf(_("Argument count must be at least 1 in call to %s."), __func__);
 	}
 	if (argv[argc] != NULL) {
-		cpi_fatalf(_("The argument array must be NULL-terminated in call to cp_set_context_args."));
+		cpi_fatalf(_("The argument array must be NULL-terminated in call to %s."), __func__);
 	}
 	cpi_lock_context(ctx);
 	ctx->env->argc = argc;
@@ -407,11 +404,7 @@ CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char 
 	assert(ctx != NULL);
 	assert(funcmask != 0);
 	assert(func != NULL);
-#ifdef CP_THREADS
-	assert(cpi_is_mutex_locked(ctx->env->mutex));
-#else
-	assert(ctx->env->locked);
-#endif
+	assert(cpi_is_context_locked(ctx));
 	if ((funcmask & CPI_CF_LOGGER)
 		&&ctx->env->in_logger_invocation) {
 		cpi_fatalf(_("%s was called from within a logger invocation."), func);
@@ -478,18 +471,15 @@ CP_HIDDEN void cpi_signal_context(cp_context_t *context) {
 
 // Debug helpers
 
-#ifndef NDEBUG
-CP_HIDDEN const char *cpi_context_owner(cp_context_t *ctx) {
-	static char buffer[64];
-	
+CP_HIDDEN char *cpi_context_owner(cp_context_t *ctx, char *name, size_t size) {
 	if (ctx->plugin != NULL) {
-		snprintf(buffer, sizeof(buffer), "plugin %s", ctx->plugin->plugin->identifier);
+		snprintf(name, size, "Plug-in %s", ctx->plugin->plugin->identifier);
 	} else {
-		strncpy(buffer, "the client program", sizeof(buffer));
+		strncpy(name, "The client program", size);
 	}
-	buffer[sizeof(buffer)/sizeof(char) - 1] = '\0';
-	return buffer;
+	assert(size >= 4);
+	strcpy(name + size - 4, "...");
+	return name;
 }
-#endif
 
 #endif

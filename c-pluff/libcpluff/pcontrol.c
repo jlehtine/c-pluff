@@ -97,7 +97,7 @@ CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *
 		// Check that there is no conflicting plug-in already loaded 
 		if (hash_lookup(context->env->plugins, plugin->identifier) != NULL) {
 			cpi_errorf(context,
-				_("Plug-in %s could not be installed because a plug-in with the same identifier is already installed."), 
+				N_("Plug-in %s could not be installed because a plug-in with the same identifier is already installed."), 
 				plugin->identifier);
 			status = CP_ERR_CONFLICT;
 			break;
@@ -137,7 +137,7 @@ CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *
 			hnode_t *hnode;
 			
 			if ((hnode = hash_lookup(context->env->ext_points, ep->identifier)) != NULL) {
-				cpi_errorf(context, _("Plug-in %s could not be installed because extension point %s conflicts with an already installed extension point."), plugin->identifier, ep->identifier);
+				cpi_errorf(context, N_("Plug-in %s could not be installed because extension point %s conflicts with an already installed extension point."), plugin->identifier, ep->identifier);
 				status = CP_ERR_CONFLICT;
 			} else if (!hash_alloc_insert(context->env->ext_points, ep->identifier, ep)) {
 				status = CP_ERR_RESOURCE;
@@ -196,13 +196,14 @@ CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *
 		}
 		unregister_extensions(context, plugin);
 	}
-	cpi_unlock_context(context);
 
 	// Report possible resource error
 	if (status == CP_ERR_RESOURCE) {
 		cpi_errorf(context,
-			_("Plug-in %s could not be installed due to insufficient system resources."), plugin->identifier);
+			N_("Plug-in %s could not be installed due to insufficient system resources."), plugin->identifier);
 	}
+	cpi_unlock_context(context);
+
 	return status;
 }
 
@@ -250,7 +251,7 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 #endif
 		}
 		if (!cpluff_compatibility) {
-			cpi_errorf(context, _("Plug-in %s could not be resolved due to version incompatibility with C-Pluff."), plugin->plugin->identifier);
+			cpi_errorf(context, N_("Plug-in %s could not be resolved due to version incompatibility with C-Pluff."), plugin->plugin->identifier);
 			status = CP_ERR_DEPENDENCY;
 			break;
 		}
@@ -261,7 +262,7 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		lname_len = strlen(plugin->plugin->runtime_lib_name);
 		if ((rlpath = malloc(sizeof(char) *
 			(ppath_len + lname_len + strlen(CP_SHREXT) + 2))) == NULL) {
-			cpi_errorf(context, _("Plug-in %s runtime could not be loaded due to insufficient memory."), plugin->plugin->identifier);
+			cpi_errorf(context, N_("Plug-in %s runtime could not be loaded due to insufficient memory."), plugin->plugin->identifier);
 			status = CP_ERR_RESOURCE;
 			break;
 		}
@@ -273,7 +274,7 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		// Open the plug-in runtime library 
 		plugin->runtime_lib = DLOPEN(rlpath);
 		if (plugin->runtime_lib == NULL) {
-			cpi_errorf(context, _("Plug-in %s runtime library %s could not be opened."), plugin->plugin->identifier, plugin->plugin->runtime_lib_name);
+			cpi_errorf(context, N_("Plug-in %s runtime library %s could not be opened."), plugin->plugin->identifier, plugin->plugin->runtime_lib_name);
 			status = CP_ERR_RUNTIME;
 			break;
 		}
@@ -282,13 +283,13 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		if (plugin->plugin->runtime_funcs_symbol != NULL) {
 			plugin->runtime_funcs = (cp_plugin_runtime_t *) DLSYM(plugin->runtime_lib, plugin->plugin->runtime_funcs_symbol);
 			if (plugin->runtime_funcs == NULL) {
-				cpi_errorf(context, _("Plug-in %s symbol %s containing runtime function information could not be resolved."), plugin->plugin->identifier, plugin->plugin->runtime_funcs_symbol);
+				cpi_errorf(context, N_("Plug-in %s symbol %s containing runtime function information could not be resolved."), plugin->plugin->identifier, plugin->plugin->runtime_funcs_symbol);
 				status = CP_ERR_RUNTIME;
 				break;
 			}
 			if (plugin->runtime_funcs->create == NULL
 				|| plugin->runtime_funcs->destroy == NULL) {
-				cpi_errorf(context, _("Plug-in %s runtime has a null constructor or destructor."), plugin->plugin->identifier);
+				cpi_errorf(context, N_("Plug-in %s runtime has a null constructor or destructor."), plugin->plugin->identifier);
 				status = CP_ERR_RUNTIME;
 				break;
 			}
@@ -335,7 +336,7 @@ static int resolve_plugin_import(cp_context_t *context, cp_plugin_t *plugin, cp_
 				&& (cpi_vercmp(import->version, ip->plugin->version) > 0
 					|| cpi_vercmp(import->version, ip->plugin->abi_bw_compatibility) < 0)))) {
 		cpi_errorf(context,
-			_("Plug-in %s could not be resolved due to version incompatibility with plug-in %s."),
+			N_("Plug-in %s could not be resolved due to version incompatibility with plug-in %s."),
 			plugin->plugin->identifier,
 			import->plugin_id);
 		*ipptr = NULL;
@@ -345,7 +346,7 @@ static int resolve_plugin_import(cp_context_t *context, cp_plugin_t *plugin, cp_
 	// Check if missing mandatory plug-in
 	if (ip == NULL && !import->optional) {
 		cpi_errorf(context,
-			_("Plug-in %s could not be resolved because it depends on plug-in %s which is not installed."),
+			N_("Plug-in %s could not be resolved because it depends on plug-in %s which is not installed."),
 			plugin->plugin->identifier,
 			import->plugin_id);
 		*ipptr = NULL;
@@ -411,7 +412,7 @@ static int resolve_plugin_prel_rec(cp_context_t *context, cp_plugin_t *plugin) {
 					status = CP_ERR_RESOURCE;
 					break;
 				} else if ((s = resolve_plugin_prel_rec(context, ip)) != CP_OK && s != CP_OK_PRELIMINARY) {
-					cpi_errorf(context, _("Plug-in %s could not be resolved because it depends on plug-in %s which could not be resolved."), plugin->plugin->identifier, ip->plugin->identifier);
+					cpi_errorf(context, N_("Plug-in %s could not be resolved because it depends on plug-in %s which could not be resolved."), plugin->plugin->identifier, ip->plugin->identifier);
 					error_reported = 1;
 					status = s;
 					break;
@@ -450,7 +451,7 @@ static int resolve_plugin_prel_rec(cp_context_t *context, cp_plugin_t *plugin) {
 
 	// Handle errors
 	if (status == CP_ERR_RESOURCE && !error_reported) {
-		cpi_errorf(context, _("Plug-in %s could not be resolved because of insufficient memory."), plugin->plugin->identifier);
+		cpi_errorf(context, N_("Plug-in %s could not be resolved because of insufficient memory."), plugin->plugin->identifier);
 	}
 	
 	return status;
@@ -653,12 +654,12 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	switch (status) {
 		case CP_ERR_RESOURCE:
 			cpi_errorf(context,
-				_("Plug-in %s could not be started due to insufficient memory."),
+				N_("Plug-in %s could not be started due to insufficient memory."),
 				plugin->plugin->identifier);
 			break;
 		case CP_ERR_RUNTIME:
 			cpi_errorf(context,
-				_("Plug-in %s failed to start due to plug-in runtime error."),
+				N_("Plug-in %s failed to start due to plug-in runtime error."),
 				plugin->plugin->identifier);
 			break;
 		default:
@@ -676,13 +677,13 @@ static void warn_dependency_loop(cp_context_t *context, cp_plugin_t *plugin, lis
 	
 	// Take the message base
 	if (dynamic) {
-		msgbase = _("Detected a dynamic plug-in dependency loop: ");
+		msgbase = N_("Detected a dynamic plug-in dependency loop: %s");
 	} else {
-		msgbase = _("Detected a static plug-in dependency loop: ");
+		msgbase = N_("Detected a static plug-in dependency loop: %s");
 	}
 	
 	// Calculate the required message space
-	msgsize = strlen(msgbase);
+	msgsize = 0;
 	msgsize += strlen(plugin->plugin->identifier);
 	msgsize += 2;
 	node = list_last(importing);
@@ -697,8 +698,7 @@ static void warn_dependency_loop(cp_context_t *context, cp_plugin_t *plugin, lis
 	}
 	msg = malloc(sizeof(char) * msgsize);
 	if (msg != NULL) {
-		strcpy(msg, msgbase);
-		strcat(msg, plugin->plugin->identifier);
+		strcpy(msg, plugin->plugin->identifier);
 		node = list_last(importing);
 		while (node != NULL) {
 			cp_plugin_t *p = lnode_get(node);
@@ -710,8 +710,10 @@ static void warn_dependency_loop(cp_context_t *context, cp_plugin_t *plugin, lis
 			node = list_prev(importing, node);
 		}
 		strcat(msg, ".");
-		cpi_warn(context, msg);
+		cpi_warnf(context, msgbase, msg);
 		free(msg);
+	} else {
+		cpi_warnf(context, msgbase, plugin->plugin->identifier);
 	}
 }
 
@@ -743,7 +745,7 @@ static int start_plugin_rec(cp_context_t *context, cp_plugin_t *plugin, list_t *
 	}
 	if (!cpi_ptrset_add(importing, plugin)) {
 		cpi_errorf(context,
-			_("Plug-in %s could not be started due to insufficient memory."),
+			N_("Plug-in %s could not be started due to insufficient memory."),
 			plugin->plugin->identifier);
 		return CP_ERR_RESOURCE;
 	}
@@ -779,7 +781,7 @@ CP_HIDDEN cp_status_t cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugi
 			list_destroy(importing);
 		} else {
 			cpi_errorf(context,
-				_("Plug-in %s could not be started due to insufficient memory."),
+				N_("Plug-in %s could not be started due to insufficient memory."),
 				plugin->plugin->identifier);
 			status = CP_ERR_RESOURCE;
 		}
@@ -801,7 +803,7 @@ CP_C_API cp_status_t cp_start_plugin(cp_context_t *context, const char *id) {
 	if (node != NULL) {
 		status = cpi_start_plugin(context, hnode_get(node));
 	} else {
-		cpi_warnf(context, _("Unknown plug-in %s could not be started."), id);
+		cpi_warnf(context, N_("Unknown plug-in %s could not be started."), id);
 		status = CP_ERR_UNKNOWN;
 	}
 	cpi_unlock_context(context);
@@ -964,7 +966,7 @@ CP_C_API cp_status_t cp_stop_plugin(cp_context_t *context, const char *id) {
 		plugin = hnode_get(node);
 		stop_plugin(context, plugin);
 	} else {
-		cpi_warnf(context, _("Unknown plug-in %s could not be stopped."), id);
+		cpi_warnf(context, N_("Unknown plug-in %s could not be stopped."), id);
 		status = CP_ERR_UNKNOWN;
 	}
 	cpi_unlock_context(context);
@@ -1173,7 +1175,7 @@ CP_C_API cp_status_t cp_uninstall_plugin(cp_context_t *context, const char *id) 
 	if (node != NULL) {
 		uninstall_plugin(context, node);
 	} else {
-		cpi_warnf(context, _("Unknown plug-in %s could not be uninstalled."), id);
+		cpi_warnf(context, N_("Unknown plug-in %s could not be uninstalled."), id);
 		status = CP_ERR_UNKNOWN;
 	}
 	cpi_unlock_context(context);

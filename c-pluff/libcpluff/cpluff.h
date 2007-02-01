@@ -222,10 +222,7 @@ enum cp_plugin_state_t {
  */
 enum cp_log_severity_t {
 
-	/**
-	 * Used for detailed debug messages. This level of logging is enabled
-	 * only if debugging has been enabled at framework compilation time.
-	 */
+	/** Used for detailed debug messages */
 	CP_LOG_DEBUG,
 	
 	/** Used for informational messages such as plug-in state changes */
@@ -983,6 +980,15 @@ CP_C_API void cp_unregister_logger(cp_context_t *ctx, cp_logger_func_t logger) C
  * @param msg the log message (possibly localized)
  */
 CP_C_API void cp_log(cp_context_t *ctx, cp_log_severity_t severity, const char *msg) CP_GCC_NONNULL(1, 3);
+
+/**
+ * Returns whether a message of the specified severity would get logged.
+ * 
+ * @param ctx the plug-in context
+ * @param severity the target logging severity
+ * @return whether a message of the specified severity would get logged
+ */
+CP_C_API int cp_is_logged(cp_context_t *ctx, cp_log_severity_t severity) CP_GCC_NONNULL(1);
 
 /*@}*/
 

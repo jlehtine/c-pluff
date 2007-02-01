@@ -89,21 +89,21 @@ CP_C_API cp_status_t cp_define_symbol(cp_context_t *context, const char *name, v
 		} 
 
 	} while (0);
-	cpi_unlock_context(context);
 	
 	// Report error
 	if (status != CP_OK) {
 		switch (status) {
 			case CP_ERR_RESOURCE:
-				cpi_errorf(context, _("Plug-in %s could not define symbol %s due to insufficient memory."), context->plugin->plugin->identifier, name);
+				cpi_errorf(context, N_("Plug-in %s could not define symbol %s due to insufficient memory."), context->plugin->plugin->identifier, name);
 				break;
 			case CP_ERR_CONFLICT:
-				cpi_errorf(context, _("Plug-in %s tried to redefine symbol %s."), context->plugin->plugin->identifier, name);
+				cpi_errorf(context, N_("Plug-in %s tried to redefine symbol %s."), context->plugin->plugin->identifier, name);
 				break;
 			default:
 				break;
 		}
 	}
+	cpi_unlock_context(context);
 	
 	return status;
 }
@@ -142,7 +142,7 @@ CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const c
 		// Look up the symbol defining plug-in
 		node = hash_lookup(context->env->plugins, id);
 		if (node == NULL) {
-			cpi_warnf(context, _("Symbol %s in unknown plug-in %s could not be resolved."), name, id);
+			cpi_warnf(context, N_("Symbol %s in unknown plug-in %s could not be resolved."), name, id);
 			status = CP_ERR_UNKNOWN;
 			break;
 		}
@@ -150,7 +150,7 @@ CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const c
 
 		// Make sure the plug-in has been started
 		if ((status = cpi_start_plugin(context, pp)) != CP_OK) {
-			cpi_errorf(context, _("Symbol %s in plug-in %s could not be resolved because the plug-in could not be started."), name, id);
+			cpi_errorf(context, N_("Symbol %s in plug-in %s could not be resolved because the plug-in could not be started."), name, id);
 			error_reported = 1;
 			break;
 		}
@@ -165,7 +165,7 @@ CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const c
 			symbol = DLSYM(pp->runtime_lib, name);
 		}
 		if (symbol == NULL) {
-			cpi_warnf(context, _("Symbol %s in plug-in %s could not be resolved because it is not defined or exported."), name, id);
+			cpi_warnf(context, N_("Symbol %s in plug-in %s could not be resolved because it is not defined or exported."), name, id);
 			status = CP_ERR_UNKNOWN;
 			break;
 		}
@@ -216,7 +216,7 @@ CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const c
 				status = CP_ERR_RESOURCE;
 				break;
 			}
-			cpi_debugf(context, _("A dynamic dependency was created from plug-in %s to plug-in %s."), context->plugin->plugin->identifier, pp->plugin->identifier);
+			cpi_debugf(context, "A dynamic dependency was created from plug-in %s to plug-in %s.", context->plugin->plugin->identifier, pp->plugin->identifier);
 		}
 		
 		// Increase usage counts
@@ -224,6 +224,10 @@ CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const c
 		provider_info->usage_count++;
 		pp->syms_usage_count++;
 
+		if (cpi_is_logged(context, CP_LOG_DEBUG)) {
+			char owner[64];
+			cpi_debugf(context, "%s resolved symbol %s defined by plug-in %s.", cpi_context_owner(context, owner, sizeof(owner)), id, pp->plugin->identifier);
+		}
 	} while (0);
 
 	// Clean up
@@ -239,12 +243,12 @@ CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const c
 		}
 		free(provider_info);
 	}
-	cpi_unlock_context(context);
 
 	// Report insufficient memory error
 	if (status == CP_ERR_RESOURCE && !error_reported) {
-		cpi_errorf(context, _("Symbol %s in plug-in %s could not be resolved due to insufficient memory."), name, id);
+		cpi_errorf(context, N_("Symbol %s in plug-in %s could not be resolved due to insufficient memory."), name, id);
 	}
+	cpi_unlock_context(context);
 
 	// Return error code
 	if (error != NULL) {
@@ -269,7 +273,7 @@ CP_C_API void cp_release_symbol(cp_context_t *context, const void *ptr) {
 
 		// Look up the symbol
 		if ((node = hash_lookup(context->resolved_symbols, ptr)) == NULL) {
-			cpi_errorf(context, _("Could not release an unknown symbol %p."), ptr);
+			cpi_errorf(context, N_("Could not release an unknown symbol %p."), ptr);
 			break;
 		}
 		symbol_info = hnode_get(node);
@@ -287,7 +291,10 @@ CP_C_API void cp_release_symbol(cp_context_t *context, const void *ptr) {
 		if (symbol_info->usage_count == 0) {
 			hash_delete_free(context->resolved_symbols, node);
 			free(symbol_info);
-			cpi_debugf(context, _("Plug-in %s released symbol %p defined by plug-in %s."), context->plugin->plugin->identifier, ptr, provider_info->plugin->plugin->identifier);
+			if (cpi_is_logged(context, CP_LOG_DEBUG)) {
+				char owner[64];
+				cpi_debugf(context, _("%s released the pointer %p defined by plug-in %s."), cpi_context_owner(context, owner, sizeof(owner)), ptr, provider_info->plugin->plugin->identifier);
+			}
 		}
 	
 		// Check if the symbol providing plug-in is not being used anymore

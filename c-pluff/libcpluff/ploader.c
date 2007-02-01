@@ -135,8 +135,8 @@ static void descriptor_errorf(ploader_context_t *plcontext, int warn,
 		message[127] = '\0';
 		cpi_errorf(plcontext->context,
 			warn
-				? _("Suspicious plug-in descriptor content in %s, line %d, column %d (%s).")
-				: _("Invalid plug-in descriptor content in %s, line %d, column %d (%s)."),
+				? N_("Suspicious plug-in descriptor content in %s, line %d, column %d (%s).")
+				: N_("Invalid plug-in descriptor content in %s, line %d, column %d (%s)."),
 			plcontext->file,
 			XML_GetCurrentLineNumber(plcontext->parser),
 			XML_GetCurrentColumnNumber(plcontext->parser) + 1,
@@ -157,7 +157,7 @@ static void resource_error(ploader_context_t *plcontext) {
 	if (plcontext->context != NULL
 		&& plcontext->resource_error_count == 0) {
 		cpi_errorf(plcontext->context,
-			_("Insufficient system resources to parse plug-in descriptor content in %s, line %d, column %d."),
+			N_("Insufficient system resources to parse plug-in descriptor content in %s, line %d, column %d."),
 			plcontext->file,
 			XML_GetCurrentLineNumber(plcontext->parser),
 			XML_GetCurrentColumnNumber(plcontext->parser) + 1);
@@ -1052,12 +1052,14 @@ CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *context, con
 			// Parse the data 
 			if (!(i = XML_ParseBuffer(parser, bytes_read, bytes_read == 0))
 				&& context != NULL) {
+				cpi_lock_context(context);
 				cpi_errorf(context,
-					_("XML parsing error in %s, line %d, column %d (%s)."),
+					N_("XML parsing error in %s, line %d, column %d (%s)."),
 					file,
 					XML_GetErrorLineNumber(parser),
 					XML_GetErrorColumnNumber(parser) + 1,
 					XML_ErrorString(XML_GetErrorCode(parser)));
+				cpi_unlock_context(context);
 			}
 			if (!i || plcontext->state == PARSER_ERROR) {
 				status = CP_ERR_MALFORMED;
@@ -1093,27 +1095,27 @@ CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *context, con
 	} while (0);
 
 	// Report possible errors
-	if (context != NULL) {
+	if (context != NULL && status != CP_OK) {
+		cpi_lock_context(context);
 		switch (status) {
-			case CP_OK:
-				break;
 			case CP_ERR_MALFORMED:
 				cpi_errorf(context,
-					_("Plug-in descriptor in %s is invalid."), path);
+					N_("Plug-in descriptor in %s is invalid."), path);
 				break;
 			case CP_ERR_IO:
 				cpi_errorf(context,
-					_("An I/O error occurred while loading a plug-in descriptor from %s."), path);
+					N_("An I/O error occurred while loading a plug-in descriptor from %s."), path);
 				break;
 			case CP_ERR_RESOURCE:
 				cpi_errorf(context,
-					_("Insufficient system resources to load a plug-in descriptor from %s."), path);
+					N_("Insufficient system resources to load a plug-in descriptor from %s."), path);
 				break;
 			default:
 				cpi_errorf(context,
-					_("Failed to load a plug-in descriptor from %s."), path);
+					N_("Failed to load a plug-in descriptor from %s."), path);
 				break;
 		}
+		cpi_unlock_context(context);
 	}
 
 	// Release persistently allocated data on failure 
