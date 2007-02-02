@@ -19,6 +19,6 @@ cd "$basedir"
 test -e po/Makefile.in.in || gettextize
 test -e auxliary/ltmain.sh || libtoolize
 aclocal -I m4
+autoconf
 autoheader
 automake -a
-autoconf
