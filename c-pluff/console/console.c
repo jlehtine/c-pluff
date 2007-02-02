@@ -139,6 +139,9 @@ static int cmdline_parse(char *cmdline, char **argv[]) {
 
 static void cmd_exit(int argc, char *argv[]) {
 	
+	// Uninitialize input
+	cmdline_destroy();
+	
 	// Destroy C-Pluff framework 
 	cp_destroy();
 	
