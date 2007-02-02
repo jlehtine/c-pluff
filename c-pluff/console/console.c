@@ -281,10 +281,10 @@ static void cmd_load_plugin(int argc, char *argv[]) {
 		api_failed("cp_load_plugin_descriptor", status);
 	} else if ((status = cp_install_plugin(context, plugin)) != CP_OK) {
 		api_failed("cp_install_plugin", status); 
-		cp_release_info(plugin);
+		cp_release_info(context, plugin);
 	} else {
 		printf(_("Installed plug-in %s.\n"), plugin->identifier);
-		cp_release_info(plugin);
+		cp_release_info(context, plugin);
 	}
 }
 
@@ -364,7 +364,7 @@ static void cmd_list_plugins(int argc, char *argv[]) {
 				state_to_string(cp_get_plugin_state(context, plugins[i]->identifier)),
 				plugins[i]->name != NULL ? plugins[i]->name : "");
 		}
-		cp_release_info(plugins);
+		cp_release_info(context, plugins);
 	}
 }
 
@@ -640,7 +640,7 @@ static void cmd_show_plugin_info(int argc, char *argv[]) {
 			fputs("  extensions = {},\n", stdout);
 		}
 		fputs("}\n", stdout);
-		cp_release_info(plugin);
+		cp_release_info(context, plugin);
 		str_or_null_free();
 	}
 }
@@ -665,7 +665,7 @@ static void cmd_list_ext_points(int argc, char *argv[]) {
 				ext_points[i]->identifier,
 				ext_points[i]->name != NULL ? ext_points[i]->name : ""); 
 		}
-		cp_release_info(ext_points);
+		cp_release_info(context, ext_points);
 	}	
 }
 
@@ -698,7 +698,7 @@ static void cmd_list_extensions(int argc, char *argv[]) {
 					extensions[i]->name != NULL ? extensions[i]->name : "");
 			}
 		}
-		cp_release_info(extensions);
+		cp_release_info(context, extensions);
 	}	
 }
 

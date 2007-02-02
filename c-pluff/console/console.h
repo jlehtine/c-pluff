@@ -144,6 +144,12 @@ CP_HIDDEN void cmdline_init(void);
  */
 CP_HIDDEN char *cmdline_input(const char *prompt);
 
+/**
+ * Releases command line reading resources. Must be called after command
+ * line input is not needed and before destroying the context.
+ */
+CP_HIDDEN void cmdline_destroy(void);
+
 #ifndef CONSOLE_H_
 #define CONSOLE_H_
 

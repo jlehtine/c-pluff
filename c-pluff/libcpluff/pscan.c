@@ -178,7 +178,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 					list_append(started_plugins, lnode);
 				}
 			}
-			cp_release_info(plugins);
+			cpi_release_info(context, plugins);
 			plugins = NULL;
 		}
 		
@@ -227,7 +227,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 			
 			// Remove the plug-in from the hash
 			hash_scan_delfree(avail_plugins, hnode);
-			cp_release_info(plugin);
+			cp_release_info(context, plugin);
 		}
 		
 		// Restart stopped plug-ins if necessary 
@@ -274,7 +274,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 		while ((hnode = hash_scan_next(&hscan)) != NULL) {
 			cp_plugin_info_t *p = hnode_get(hnode);
 			hash_scan_delfree(avail_plugins, hnode);
-			cp_release_info(p);
+			cp_release_info(context, p);
 		}
 		hash_destroy(avail_plugins);
 	}
@@ -283,7 +283,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 		list_destroy(started_plugins);
 	}
 	if (plugins != NULL) {
-		cp_release_info(plugins);
+		cp_release_info(context, plugins);
 	}
 
 	return status;

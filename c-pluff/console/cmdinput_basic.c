@@ -39,3 +39,5 @@ CP_HIDDEN char *cmdline_input(const char *prompt) {
 	}
 	return cmdline;
 }
+
+CP_HIDDEN void cmdline_destroy(void) {}

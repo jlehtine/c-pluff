@@ -39,6 +39,25 @@ static void free_plugin_env(cp_plugin_env_t *env) {
 	assert(env != NULL);
 	
 	// Free environment data
+	if (env->plugin_listeners != NULL) {
+		cpi_unregister_plisteners(env->plugin_listeners, NULL);
+		list_destroy(env->plugin_listeners);
+		env->plugin_listeners = NULL;
+	}
+	if (env->loggers != NULL) {
+		cpi_unregister_loggers(env->loggers, NULL);
+		env->loggers = NULL;
+	}
+	if (env->plugin_dirs != NULL) {
+		list_process(env->plugin_dirs, NULL, cpi_process_free_ptr);
+		list_destroy(env->plugin_dirs);
+		env->plugin_dirs = NULL;
+	}
+	if (env->infos != NULL) {
+		assert(hash_isempty(env->infos));
+		hash_destroy(env->infos);
+		env->infos = NULL;
+	}
 	if (env->plugins != NULL) {
 		assert(hash_isempty(env->plugins));
 		hash_destroy(env->plugins);
@@ -48,20 +67,6 @@ static void free_plugin_env(cp_plugin_env_t *env) {
 		assert(list_isempty(env->started_plugins));
 		list_destroy(env->started_plugins);
 		env->started_plugins = NULL;
-	}
-	if (env->plugin_dirs != NULL) {
-		list_process(env->plugin_dirs, NULL, cpi_process_free_ptr);
-		list_destroy(env->plugin_dirs);
-		env->plugin_dirs = NULL;
-	}
-	if (env->plugin_listeners != NULL) {
-		cpi_unregister_plisteners(env->plugin_listeners, NULL);
-		list_destroy(env->plugin_listeners);
-		env->plugin_listeners = NULL;
-	}
-	if (env->loggers != NULL) {
-		cpi_unregister_loggers(env->loggers, NULL);
-		env->loggers = NULL;
 	}
 	if (env->ext_points != NULL) {
 		assert(hash_isempty(env->ext_points));
@@ -164,6 +169,7 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 		env->loggers = list_create(LISTCOUNT_T_MAX);
 		env->log_min_severity = CP_LOG_NONE;
 		env->plugin_dirs = list_create(LISTCOUNT_T_MAX);
+		env->infos = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
 		env->plugins = hash_create(HASHCOUNT_T_MAX,
 			(int (*)(const void *, const void *)) strcmp, NULL);
 		env->started_plugins = list_create(LISTCOUNT_T_MAX);
@@ -179,6 +185,7 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 			|| env->mutex == NULL
 #endif
 			|| env->plugin_dirs == NULL
+			|| env->infos == NULL
 			|| env->plugins == NULL
 			|| env->started_plugins == NULL
 			|| env->ext_points == NULL
@@ -264,6 +271,9 @@ CP_C_API void cp_destroy_context(cp_context_t *context) {
 
 	// Unload all plug-ins 
 	cp_uninstall_plugins(context);
+
+	// Release remaining information objects
+	cpi_release_infos(context);
 	
 	// Free context
 	cpi_free_context(context);

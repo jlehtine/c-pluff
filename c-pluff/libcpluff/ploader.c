@@ -128,28 +128,24 @@ static void descriptor_errorf(ploader_context_t *plcontext, int warn,
 	va_list ap;
 	char message[128];
 
-	if (plcontext->context != NULL) {	
-		va_start(ap, error_msg);
-		vsnprintf(message, sizeof(message), error_msg, ap);
-		va_end(ap);
-		message[127] = '\0';
-		cpi_lock_context(plcontext->context);
-		if (warn) {
-			cpi_warnf(plcontext->context,
-				N_("Suspicious plug-in descriptor content in %s, line %d, column %d (%s)."),
+	va_start(ap, error_msg);
+	vsnprintf(message, sizeof(message), error_msg, ap);
+	va_end(ap);
+	message[127] = '\0';
+	if (warn) {
+		cpi_warnf(plcontext->context,
+			N_("Suspicious plug-in descriptor content in %s, line %d, column %d (%s)."),
+		plcontext->file,
+		XML_GetCurrentLineNumber(plcontext->parser),
+		XML_GetCurrentColumnNumber(plcontext->parser) + 1,
+		message);
+	} else {				
+		cpi_errorf(plcontext->context,
+			N_("Invalid plug-in descriptor content in %s, line %d, column %d (%s)."),
 			plcontext->file,
 			XML_GetCurrentLineNumber(plcontext->parser),
 			XML_GetCurrentColumnNumber(plcontext->parser) + 1,
 			message);
-		} else {				
-			cpi_errorf(plcontext->context,
-				N_("Invalid plug-in descriptor content in %s, line %d, column %d (%s)."),
-				plcontext->file,
-				XML_GetCurrentLineNumber(plcontext->parser),
-				XML_GetCurrentColumnNumber(plcontext->parser) + 1,
-				message);
-		}
-		cpi_unlock_context(plcontext->context);
 	}
 	if (!warn) {
 		plcontext->error_count++;
@@ -163,15 +159,12 @@ static void descriptor_errorf(ploader_context_t *plcontext, int warn,
  * @param context the parsing context
  */
 static void resource_error(ploader_context_t *plcontext) {
-	if (plcontext->context != NULL
-		&& plcontext->resource_error_count == 0) {
-		cpi_lock_context(plcontext->context);
+	if (plcontext->resource_error_count == 0) {
 		cpi_errorf(plcontext->context,
 			N_("Insufficient system resources to parse plug-in descriptor content in %s, line %d, column %d."),
 			plcontext->file,
 			XML_GetCurrentLineNumber(plcontext->parser),
 			XML_GetCurrentColumnNumber(plcontext->parser) + 1);
-		cpi_unlock_context(plcontext->context);
 	}
 	plcontext->resource_error_count++;
 }
@@ -959,6 +952,10 @@ static void XMLCALL end_element_handler(
 	}
 }
 
+static void dealloc_plugin_info(cp_context_t *ctx, cp_plugin_info_t *plugin) {
+	cpi_free_plugin(plugin);
+}
+
 CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *context, const char *path, cp_status_t *error) {
 	char *file = NULL;
 	cp_status_t status = CP_OK;
@@ -967,10 +964,10 @@ CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *context, con
 	ploader_context_t *plcontext = NULL;
 	cp_plugin_info_t *plugin = NULL;
 
+	CHECK_NOT_NULL(context);
 	CHECK_NOT_NULL(path);
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
-	cpi_unlock_context(context);
 	do {
 		int path_len;
 
@@ -1099,15 +1096,14 @@ CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *context, con
 		file = NULL;
 		
 		// Increase plug-in usage count
-		if ((status = cpi_register_info(plcontext->plugin, (void (*)(void *)) cpi_free_plugin)) != CP_OK) {
+		if ((status = cpi_register_info(context, plcontext->plugin, (void (*)(cp_context_t *, void *)) dealloc_plugin_info)) != CP_OK) {
 			break;
 		}
 		
 	} while (0);
 
 	// Report possible errors
-	if (context != NULL && status != CP_OK) {
-		cpi_lock_context(context);
+	if (status != CP_OK) {
 		switch (status) {
 			case CP_ERR_MALFORMED:
 				cpi_errorf(context,
@@ -1126,8 +1122,8 @@ CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *context, con
 					N_("Failed to load a plug-in descriptor from %s."), path);
 				break;
 		}
-		cpi_unlock_context(context);
 	}
+	cpi_unlock_context(context);
 
 	// Release persistently allocated data on failure 
 	if (status != CP_OK) {

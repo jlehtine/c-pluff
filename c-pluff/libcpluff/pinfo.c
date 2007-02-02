@@ -26,7 +26,7 @@ typedef struct info_resource_t {
 
 	/// Pointer to the resource
 	void *resource;	
-	
+
 	/// Usage count for the resource
 	int usage_count;
 	
@@ -52,23 +52,19 @@ typedef struct el_holder_t {
 
 
 /* ------------------------------------------------------------------------
- * Variables
- * ----------------------------------------------------------------------*/
-
-/// Map of in-use dynamic resources
-static hash_t *infos = NULL;
-
-
-/* ------------------------------------------------------------------------
  * Function definitions
  * ----------------------------------------------------------------------*/
 
 // General information object management
 
-CP_HIDDEN cp_status_t cpi_register_info(void *res, cpi_dealloc_func_t df) {
+CP_HIDDEN cp_status_t cpi_register_info(cp_context_t *context, void *res, cpi_dealloc_func_t df) {
 	cp_status_t status = CP_OK;
 	info_resource_t *ir = NULL;
-	
+
+	assert(context != NULL);
+	assert(res != NULL);
+	assert(df != NULL);
+	assert(cpi_is_context_locked(context));
 	do {
 		if ((ir = malloc(sizeof(info_resource_t))) == NULL) {
 			status = CP_ERR_RESOURCE;
@@ -77,18 +73,16 @@ CP_HIDDEN cp_status_t cpi_register_info(void *res, cpi_dealloc_func_t df) {
 		ir->resource = res;
 		ir->usage_count = 1;
 		ir->dealloc_func = df;
-		cpi_lock_framework();
-		if (infos == NULL
-			&& (infos = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr)) == NULL) {
+		if (!hash_alloc_insert(context->env->infos, res, ir)) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
-		if (!hash_alloc_insert(infos, res, ir)) {
-			status = CP_ERR_RESOURCE;
-		}
-		cpi_unlock_framework();
-		
 	} while (0);
+	
+	// Report success
+	if (status == CP_OK) {
+		cpi_debugf(context, _("Information object %p was registered."), res);
+	}		
 	
 	// Release resources on failure
 	if (status != CP_OK) {
@@ -100,57 +94,65 @@ CP_HIDDEN cp_status_t cpi_register_info(void *res, cpi_dealloc_func_t df) {
 	return status;
 }
 
-CP_HIDDEN void cpi_use_info(void *res) {
+CP_HIDDEN void cpi_use_info(cp_context_t *context, void *res) {
 	hnode_t *node;
 	
-	cpi_lock_framework();
-	if (infos != NULL
-		&& (node = hash_lookup(infos, res)) != NULL) {
+	assert(context != NULL);
+	assert(res != NULL);
+	assert(cpi_is_context_locked(context));
+	if ((node = hash_lookup(context->env->infos, res)) != NULL) {
 		info_resource_t *ir = hnode_get(node);
 		ir->usage_count++;
+		cpi_debugf(context, _("Information object %p reference count increased to %d."), res, ir->usage_count);
 	} else {
-		cpi_fatalf(_("Could not increase usage count on unknown information object."));
+		cpi_fatalf(_("Could not increase reference count on unknown information object %p."), res);
 	}
-	cpi_unlock_framework();
 }
 
-CP_C_API void cp_release_info(void *info) {
+CP_HIDDEN void cpi_release_info(cp_context_t *context, void *info) {
 	hnode_t *node;
 	
-	CHECK_NOT_NULL(info);
-	cpi_lock_framework();
-	if (infos != NULL
-		&& (node = hash_lookup(infos, info)) != NULL) {
+	assert(context != NULL);
+	assert(info != NULL);
+	assert(cpi_is_context_locked(context));
+	if ((node = hash_lookup(context->env->infos, info)) != NULL) {
 		info_resource_t *ir = hnode_get(node);
 		assert(ir != NULL && info == ir->resource);
 		if (--ir->usage_count == 0) {
-			hash_delete_free(infos, node);
-			ir->dealloc_func(info);
+			hash_delete_free(context->env->infos, node);
+			ir->dealloc_func(context, info);
+			cpi_debugf(context, _("Information object %p was unregistered."), info);
 			free(ir);
+		} else {
+			cpi_debugf(context, _("Information object %p reference count decreased to %d."), info, ir->usage_count);
 		}
 	} else {
-		cpi_fatalf(_("Trying to release unregistered information object %p."), info);
+		cpi_fatalf(_("Could not release unknown information object %p."), info);
 	}
-	cpi_unlock_framework();
 }
 
-CP_HIDDEN void cpi_destroy_all_infos(void) {
-	cpi_lock_framework();
-	if (infos != NULL) {
-		hscan_t scan;
-		hnode_t *node;
+CP_C_API void cp_release_info(cp_context_t *context, void *info) {
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(info);
+	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
+	cpi_release_info(context, info);
+	cpi_unlock_context(context);
+}
+
+CP_HIDDEN void cpi_release_infos(cp_context_t *context) {
+	hscan_t scan;
+	hnode_t *node;
 		
-		hash_scan_begin(&scan, infos);
-		while ((node = hash_scan_next(&scan)) != NULL) {
-			info_resource_t *ir = hnode_get(node);			
-			hash_scan_delfree(infos, node);
-			ir->dealloc_func(ir->resource);
-			free(ir);
-		}
-		hash_destroy(infos);
-		infos = NULL;
+	hash_scan_begin(&scan, context->env->infos);
+	while ((node = hash_scan_next(&scan)) != NULL) {
+		info_resource_t *ir = hnode_get(node);			
+		cpi_lock_context(context);
+		cpi_errorf(context, _("Unreleased information object %p with reference count %d when destroying the associated context. Not releasing the object."), ir->resource, ir->usage_count);
+		cpi_unlock_context(context);
+		hash_scan_delfree(context->env->infos, node);
+		free(ir);
 	}
-	cpi_unlock_framework();
 }
 
 
@@ -177,7 +179,7 @@ CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *context, const char
 		assert(plugin != NULL);
 	}
 	if (plugin != NULL) {
-		cpi_use_info(plugin);
+		cpi_use_info(context, plugin);
 	} else {
 		cpi_warnf(context, N_("Could not return information about unknown plug-in %s."), id);
 		status = CP_ERR_UNKNOWN;
@@ -190,12 +192,13 @@ CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *context, const char
 	return plugin;
 }
 
-static void dealloc_plugins_info(cp_plugin_info_t **plugins) {
+static void dealloc_plugins_info(cp_context_t *context, cp_plugin_info_t **plugins) {
 	int i;
 	
+	assert(context != NULL);
 	assert(plugins != NULL);
 	for (i = 0; plugins[i] != NULL; i++) {
-		cp_release_info(plugins[i]);
+		cpi_release_info(context, plugins[i]);
 	}
 	free(plugins);
 }
@@ -227,14 +230,14 @@ CP_C_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *context, cp_statu
 			cp_plugin_t *rp = hnode_get(node);
 			
 			assert(i < n);
-			cpi_use_info(rp->plugin);
+			cpi_use_info(context, rp->plugin);
 			plugins[i] = rp->plugin;
 			i++;
 		}
 		plugins[i] = NULL;
 		
 		// Register the array
-		status = cpi_register_info(plugins, (void (*)(void *)) dealloc_plugins_info);
+		status = cpi_register_info(context, plugins, (void (*)(cp_context_t *, void *)) dealloc_plugins_info);
 		
 	} while (0);
 
@@ -247,7 +250,7 @@ CP_C_API cp_plugin_info_t ** cp_get_plugins_info(cp_context_t *context, cp_statu
 	// Release resources on error 
 	if (status != CP_OK) {
 		if (plugins != NULL) {
-			dealloc_plugins_info(plugins);
+			dealloc_plugins_info(context, plugins);
 			plugins = NULL;
 		}
 	}
@@ -280,12 +283,13 @@ CP_C_API cp_plugin_state_t cp_get_plugin_state(cp_context_t *context, const char
 	return state;
 }
 
-static void dealloc_ext_points_info(cp_ext_point_t **ext_points) {
+static void dealloc_ext_points_info(cp_context_t *context, cp_ext_point_t **ext_points) {
 	int i;
 	
+	assert(context != NULL);
 	assert(ext_points != NULL);
 	for (i = 0; ext_points[i] != NULL; i++) {
-		cp_release_info(ext_points[i]->plugin);
+		cpi_release_info(context, ext_points[i]->plugin);
 	}
 	free(ext_points);
 }
@@ -317,14 +321,14 @@ CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *context, cp_stat
 			cp_ext_point_t *ep = hnode_get(node);
 			
 			assert(i < n);
-			cpi_use_info(ep->plugin);
+			cpi_use_info(context, ep->plugin);
 			ext_points[i] = ep;
 			i++;
 		}
 		ext_points[i] = NULL;
 		
 		// Register the array
-		status = cpi_register_info(ext_points, (void (*)(void *)) dealloc_ext_points_info);
+		status = cpi_register_info(context, ext_points, (void (*)(cp_context_t *, void *)) dealloc_ext_points_info);
 		
 	} while (0);
 	
@@ -337,7 +341,7 @@ CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *context, cp_stat
 	// Release resources on error 
 	if (status != CP_OK) {
 		if (ext_points != NULL) {
-			dealloc_ext_points_info(ext_points);
+			dealloc_ext_points_info(context, ext_points);
 			ext_points = NULL;
 		}
 	}
@@ -352,12 +356,13 @@ CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *context, cp_stat
 	return ext_points;
 }
 
-static void dealloc_extensions_info(cp_extension_t **extensions) {
+static void dealloc_extensions_info(cp_context_t *context, cp_extension_t **extensions) {
 	int i;
 	
+	assert(context != NULL);
 	assert(extensions != NULL);
 	for (i = 0; extensions[i] != NULL; i++) {
-		cp_release_info(extensions[i]->plugin);
+		cpi_release_info(context, extensions[i]->plugin);
 	}
 	free(extensions);
 }
@@ -410,7 +415,7 @@ CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *context, const c
 				cp_extension_t *e = lnode_get(lnode);
 				
 				assert(i < n);
-				cpi_use_info(e->plugin);
+				cpi_use_info(context, e->plugin);
 				extensions[i] = e;
 				i++;
 				lnode = list_next(el, lnode);
@@ -419,7 +424,7 @@ CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *context, const c
 		extensions[i] = NULL;
 		
 		// Register the array
-		status = cpi_register_info(extensions, (void (*)(void *)) dealloc_extensions_info);
+		status = cpi_register_info(context, extensions, (void (*)(cp_context_t *, void *)) dealloc_extensions_info);
 		
 	} while (0);
 	
@@ -432,7 +437,7 @@ CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *context, const c
 	// Release resources on error 
 	if (status != CP_OK) {
 		if (extensions != NULL) {
-			dealloc_extensions_info(extensions);
+			dealloc_extensions_info(context, extensions);
 			extensions = NULL;
 		}
 	}

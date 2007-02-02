@@ -1005,25 +1005,26 @@ CP_C_API int cp_is_logged(cp_context_t *ctx, cp_log_severity_t severity) CP_GCC_
 /**
  * Loads a plug-in descriptor from the specified plug-in installation
  * path and returns information about the plug-in. The plug-in descriptor
- * is validated during loading. Possible errors are reported via the
- * specified plug-in context (if non-NULL). The plug-in is
- * not installed to any context. If operation fails or the descriptor
+ * is validated during loading. Possible loading errors are reported via the
+ * specified plug-in context. The plug-in is not installed to the context.
+ * If operation fails or the descriptor
  * is invalid then NULL is returned. The caller must release the returned
  * information by calling ::cp_release_plugin_info when it does not
  * need the information anymore, typically after installing the plug-in.
  * The returned plug-in information must not be modified.
  * 
- * @param ctx the plug-in context for error reporting, or NULL for none
+ * @param ctx the plug-in context
  * @param path the installation path of the plug-in
  * @param status a pointer to the location where status code is to be stored, or NULL
  * @return pointer to the information structure or NULL if error occurs
  */
-CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const char *path, cp_status_t *status) CP_GCC_NONNULL(2);
+CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const char *path, cp_status_t *status) CP_GCC_NONNULL(1, 2);
 
 /**
  * Installs the plug-in described by the specified plug-in information
  * structure to the specified plug-in context. The plug-in information
- * must have been obtained from ::cp_load_plugin_descriptor.
+ * must have been loaded using ::cp_load_plugin_descriptor with the same
+ * plug-in context.
  * The installation fails on #CP_ERR_CONFLICT if the context already
  * has an installed plug-in with the same plug-in identifier. Installation
  * also fails if the plug-in tries to install an extension point which
@@ -1187,15 +1188,16 @@ CP_C_API cp_ext_point_t ** cp_get_ext_points_info(cp_context_t *ctx, cp_status_t
 CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *ctx, const char *extpt_id, cp_status_t *status, int *num) CP_GCC_NONNULL(1);
 
 /**
- * Releases previously obtained dynamically allocated information. The
+ * Releases a previously obtained reference counted information object. The
  * documentation for functions returning such information refers
  * to this function. The information must not be accessed after it has
  * been released. The framework uses reference counting to deallocate
  * the information when it is not in use anymore.
  * 
+ * @param ctx the plug-in context
  * @param info the information to be released
  */
-CP_C_API void cp_release_info(void *info) CP_GCC_NONNULL(1);
+CP_C_API void cp_release_info(cp_context_t *ctx, void *info) CP_GCC_NONNULL(1, 2);
 
 /**
  * Returns the current state of the specified plug-in. Returns

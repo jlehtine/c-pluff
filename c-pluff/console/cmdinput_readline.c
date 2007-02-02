@@ -12,6 +12,7 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+static cp_plugin_info_t **plugins = NULL;
 
 static char *cp_console_compl_cmdgen(const char *text, int state) {
 	static int counter;
@@ -76,13 +77,12 @@ static char *cp_console_compl_loggen(const char *text, int state) {
 static char *cp_console_compl_plugingen(const char *text, int state) {
 	static int counter;
 	static int textlen;
-	static cp_plugin_info_t **plugins = NULL;
 	
 	if (!state) {
 		counter = 0;
 		textlen = strlen(text);
 		if (plugins != NULL) {
-			cp_release_info(plugins);
+			cp_release_info(context, plugins);
 		}
 		plugins = cp_get_plugins_info(context, NULL, NULL);
 	}
@@ -91,6 +91,8 @@ static char *cp_console_compl_plugingen(const char *text, int state) {
 			counter++;
 		}
 		if (plugins[counter] == NULL) {
+			cp_release_info(context, plugins);
+			plugins = NULL;
 			return NULL;
 		} else {
 			char *buffer = strdup(plugins[counter]->identifier);
@@ -171,4 +173,11 @@ CP_HIDDEN char *cmdline_input(const char *prompt) {
 	}
 	
 	return cmdline;
+}
+
+CP_HIDDEN void cmdline_destroy(void) {
+	if (plugins != NULL) {
+		cp_release_info(context, plugins);
+		plugins = NULL;
+	}
 }

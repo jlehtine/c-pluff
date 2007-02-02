@@ -104,7 +104,7 @@ CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *
 		}
 
 		// Increase usage count for the plug-in descriptor
-		cpi_use_info(plugin);
+		cpi_use_info(context, plugin);
 
 		// Allocate space for the plug-in state 
 		if ((rp = malloc(sizeof(cp_plugin_t))) == NULL) {
@@ -1109,14 +1109,15 @@ CP_HIDDEN void cpi_free_plugin(cp_plugin_info_t *plugin) {
 /**
  * Frees any memory allocated for a registered plug-in.
  * 
+ * @param context the plug-in context
  * @param plugin the plug-in to be freed
  */
-static void free_registered_plugin(cp_plugin_t *plugin) {
-
+static void free_registered_plugin(cp_context_t *context, cp_plugin_t *plugin) {
+	assert(context != NULL);
 	assert(plugin != NULL);
 
 	// Release plug-in information
-	cp_release_info(plugin->plugin);
+	cpi_release_info(context, plugin->plugin);
 
 	// Release data structures 
 	if (plugin->importing != NULL) {
@@ -1161,7 +1162,7 @@ static void uninstall_plugin(cp_context_t *context, hnode_t *node) {
 	hash_delete_free(context->env->plugins, node);
 
 	// Free the plug-in data structures
-	free_registered_plugin(plugin);
+	free_registered_plugin(context, plugin);
 }
 
 CP_C_API cp_status_t cp_uninstall_plugin(cp_context_t *context, const char *id) {

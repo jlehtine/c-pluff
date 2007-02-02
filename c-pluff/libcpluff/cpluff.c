@@ -117,7 +117,6 @@ CP_C_API void cp_destroy(void) {
 		assert(!framework_locked);
 #endif
 		cpi_destroy_all_contexts();
-		cpi_destroy_all_infos();
 		reset();
 	}
 }

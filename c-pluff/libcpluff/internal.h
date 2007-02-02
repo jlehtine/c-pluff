@@ -142,6 +142,9 @@ struct cp_plugin_env_t {
 	/// List of registered plug-in directories 
 	list_t *plugin_dirs;
 
+	/// Map of in-use reference counter information object
+	hash_t *infos;
+
 	/// Maps plug-in identifiers to plug-in state structures 
 	hash_t *plugins;
 
@@ -219,8 +222,14 @@ struct cp_plugin_t {
 };
 
 
-/// Resource deallocation function
-typedef void (*cpi_dealloc_func_t)(void *resource);
+/**
+ * Deallocates a reference counted resource when the reference count drops
+ * to zero. The plug-in context is locked on call to the function.
+ * 
+ * @param ctx the associated plug-in context
+ * @param resource the resource
+ */
+typedef void (*cpi_dealloc_func_t)(cp_context_t *ctx, void *resource);
 
 typedef struct cpi_plugin_event_t cpi_plugin_event_t;
 
@@ -480,26 +489,45 @@ CP_HIDDEN cp_status_t cpi_start_plugin(cp_context_t *context, cp_plugin_t *plugi
 // Dynamic resource management
 
 /**
- * Registers a new dynamic information object which uses reference counting.
- * Initializes the use count to 1.
+ * Registers a new reference counted information object.
+ * Initializes the reference count to 1. The object is released and
+ * deallocated using the specified deallocation function @a df when its
+ * reference count becomes zero. Reference count is incresed by
+ * ::cpi_use_info and decreased by ::cp_release_info. The caller must have
+ * locked the plug-in context.
  * 
+ * @param ctx the associated plug-in context
  * @param res the resource
  * @param df the deallocation function
  * @return @ref CP_OK (zero) on success or an error code on failure
  */
-CP_HIDDEN cp_status_t cpi_register_info(void *res, cpi_dealloc_func_t df) CP_GCC_NONNULL(1, 2);
+CP_HIDDEN cp_status_t cpi_register_info(cp_context_t *ctx, void *res, cpi_dealloc_func_t df) CP_GCC_NONNULL(1, 2, 3);
 
 /**
- * Increases the usage count for the specified dynamic information object.
+ * Increases the reference count for the specified information object.
+ * The caller must have locked the plug-in context.
  * 
+ * @param ctx the plug-in context
  * @param res the resource
  */
-CP_HIDDEN void cpi_use_info(void *res) CP_GCC_NONNULL(1);
+CP_HIDDEN void cpi_use_info(cp_context_t *ctx, void *res) CP_GCC_NONNULL(1, 2);
 
 /**
- * Destroys all dynamic information objects.
+ * Decreases the reference count for the specified information object.
+ * The caller must have locked the plug-in context.
+ * 
+ * @param ctx the plug-in context
+ * @param res the resource
  */
-CP_HIDDEN void cpi_destroy_all_infos(void);
+CP_HIDDEN void cpi_release_info(cp_context_t *ctx, void *res) CP_GCC_NONNULL(1, 2);
+
+/**
+ * Checks for remaining information objects in the specified plug-in context.
+ * Does not destroy the infos hash.
+ * 
+ * @param ctx the plug-in context
+ */
+CP_HIDDEN void cpi_release_infos(cp_context_t *ctx) CP_GCC_NONNULL(1);
 
 
 // Serialized execution
