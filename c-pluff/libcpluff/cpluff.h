@@ -829,7 +829,7 @@ CP_C_API const char *cp_get_host_type(void) CP_GCC_PURE;
  * 
  * @param error_handler the fatal error handler
  */
-CP_C_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler) CP_GCC_NONNULL(1);
+CP_C_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler);
 
 /**
  * Initializes the plug-in framework. This function must be called

@@ -366,8 +366,8 @@ CP_C_API void cp_unregister_pcollection(cp_context_t *context, const char *dir) 
 		lnode_destroy(node);
 		free(d);
 	}
-	cpi_unlock_context(context);
 	cpi_debugf(context, N_("Plug-in collection directory %s was unregistered."), dir);
+	cpi_unlock_context(context);
 }
 
 CP_C_API void cp_unregister_pcollections(cp_context_t *context) {
@@ -375,8 +375,8 @@ CP_C_API void cp_unregister_pcollections(cp_context_t *context) {
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	list_process(context->env->plugin_dirs, NULL, cpi_process_free_ptr);
-	cpi_unlock_context(context);
 	cpi_debug(context, N_("All plug-in collection directories were unregistered."));
+	cpi_unlock_context(context);
 }
 
 
