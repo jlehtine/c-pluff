@@ -1,0 +1,7 @@
+getversion
+gethosttype
+initdestroy
+initcreatedestroy
+initloaddestroy
+initinstalldestroy
+initstartdestroy
