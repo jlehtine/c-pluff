@@ -262,12 +262,10 @@ libcpluff/Makefile
 libcpluff/cpluffdef.h
 libcpluff/Doxyfile-ref
 libcpluff/Doxyfile-impl
-libcpluffxx/Makefile
-libcpluffxx/Doxyfile-ref
-libcpluffxx/Doxyfile-impl
 loader/Makefile
 console/Makefile
-po/Makefile.in])
+po/Makefile.in
+test/Makefile])
 AC_OUTPUT
 
 

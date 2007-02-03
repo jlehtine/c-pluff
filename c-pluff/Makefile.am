@@ -6,8 +6,8 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libcpluff libcpluffxx loader console examples po
-DOC_DIRS = libcpluff libcpluffxx
+SUBDIRS = libcpluff loader console examples po test
+DOC_DIRS = libcpluff
 
 RECURSIVE_DOC_TARGETS = refdoc impldoc
 
