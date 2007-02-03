@@ -1,0 +1,4 @@
+#! /bin/sh
+
+trap "" SIGABRT
+! ./testsuite fatalerrorreset 2> /dev/null

@@ -6,7 +6,7 @@ LIBS += $(LIBS_OTHER)
 
 check_PROGRAMS = testsuite
 
-testsuite_SOURCES = initdestroy.c cpinfo.c testmain.c test.h
+testsuite_SOURCES = loggers.c collections.c initdestroy.c fatalerror.c cpinfo.c testmain.c test.h
 testsuite_LDFLAGS = -dlopen self
 
 check-local:
@@ -16,13 +16,27 @@ check-local:
 	echo 'C-Pluff Test Suite'; \
 	echo '===================================================================='; \
 	while read test; do \
-		if srcdir='$(srcdir)' ./testsuite $$test; then \
-			echo "OK: $$test"; \
+		if test -x "$(srcdir)/test-$$test"; then \
+			srcdir='$(srcdir)' "$(srcdir)/test-$$test"; \
+			rc=$$?; \
 		else \
-			echo "FAIL: $$test"; \
-			numf=$$(($$numf + 1)); \
+			srcdir='$(srcdir)' ./testsuite "$$test"; \
+			rc=$$?; \
 		fi; \
-		numt=$$(($$numt + 1)); \
+		case $$rc in \
+			77) \
+				echo "SKIPPED: $$test"; \
+				;; \
+			0) \
+				echo "OK: $$test"; \
+				numt=$$(($$numt + 1)); \
+				;; \
+			*) \
+				echo "FAIL: $$test"; \
+				numt=$$(($$numt + 1)); \
+				numf=$$(($$numf + 1)); \
+				;; \
+		esac; \
 	done < '$(srcdir)/tests.txt'; \
 	echo '===================================================================='; \
 	if test $$numf -gt 0; then \

@@ -44,6 +44,14 @@ CP_HIDDEN void fail(const char *func, const char *file, int line, const char *ms
 CP_HIDDEN const char *plugindir(const char *plugin) CP_GCC_NONNULL(1);
 
 /**
+ * Returns the plug-in collection path for the specified test collection.
+ * The returned string is valid until the next call to pcollectiondir.
+ * 
+ * @return plug-in collection path for the specified test collection
+ */
+CP_HIDDEN const char *pcollectiondir(const char *collection) CP_GCC_NONNULL(1);
+
+/**
  * Initializes the C-Pluff framework and creates a plug-in context.
  * Checks for any failures on the way. Also prints out context errors/warnings
  * and maintains a count of logged context errors if so requested.
