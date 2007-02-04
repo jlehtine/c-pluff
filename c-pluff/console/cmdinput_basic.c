@@ -5,9 +5,9 @@
 
 // Basic command line input functionality 
 
-#include "console.h"
 #include <stdio.h>
 #include <string.h>
+#include "console.h"
 
 #define CMDLINE_SIZE 256
 

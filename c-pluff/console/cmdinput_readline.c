@@ -5,12 +5,12 @@
 
 // GNU readline based command line input 
 
-#include "console.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
 #include <readline/readline.h>
 #include <readline/history.h>
+#include "console.h"
 
 static cp_plugin_info_t **plugins = NULL;
 

@@ -5,7 +5,9 @@
 
 // Core console logic 
 
-#include "console.h"
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -16,6 +18,7 @@
 #endif
 #include <assert.h>
 #include <cpluff.h>
+#include "console.h"
 
 
 /* ------------------------------------------------------------------------
