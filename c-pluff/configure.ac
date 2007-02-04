@@ -229,8 +229,8 @@ LIBS_OTHER="\$(top_builddir)/libcpluff/libcpluff.la $LIBS_OTHER"
 # Debugging support
 # -----------------
 AC_ARG_ENABLE([debug],
-  AS_HELP_STRING([--enable-debug], [enable debugging and assertion checks]))
-if ! test "$enable_debug" = yes; then
+  AS_HELP_STRING([--enable-assertions], [enable assertion checks for debugging]))
+if ! test "$enable_assertions" = yes; then
   CPPFLAGS="$CPPFLAGS -DNDEBUG"
 fi
 AC_ARG_ENABLE([gcc-warnings],
@@ -287,13 +287,13 @@ val=no
 test "$USE_NLS" = no || val="yes (gettext)"
 AC_MSG_NOTICE([  localization support:           $val])
 AC_MSG_NOTICE([  use GNU readline library:       $have_readline])
-if test "$enable_debug" = yes; then
+if test "$enable_assertions" = yes; then
   val=yes
 else
   val=no;
 fi
 AC_MSG_NOTICE([  file name separator character:  '$cp_fnamesep'])
-AC_MSG_NOTICE([  debugging and assertion checks: $val])
+AC_MSG_NOTICE([  assertion checks for debugging: $val])
 if test "$with_dmalloc" = yes; then
   val="yes (dmalloc)"
 else
