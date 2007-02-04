@@ -23,3 +23,12 @@ unreglogger
 updatelogger
 logmsg
 islogged
+loadminimal
+loadmaximal
+install
+installtwo
+installconflict
+scanupgrade
+scanstoponupgrade
+scanstoponinstall
+scanrestart

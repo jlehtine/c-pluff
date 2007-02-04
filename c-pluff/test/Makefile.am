@@ -6,7 +6,7 @@ LIBS += $(LIBS_OTHER)
 
 check_PROGRAMS = testsuite
 
-testsuite_SOURCES = loggers.c collections.c initdestroy.c fatalerror.c cpinfo.c testmain.c test.h
+testsuite_SOURCES = pscanning.c pinstallation.c loggers.c collections.c initdestroy.c fatalerror.c cpinfo.c testmain.c test.h
 testsuite_LDFLAGS = -dlopen self
 
 check-local:

@@ -1,0 +1,13 @@
+#! /bin/sh
+
+set -e
+
+tmpdir="tmp/test-loadmaximal"
+mkdir -p "$tmpdir"
+LC_ALL=C ../console/cpluff-console <<EOI > "$tmpdir"/console-out.txt
+set-log-level error
+load-plugin $srcdir/plugins/maximal
+show-plugin-info maximal
+EOI
+sed -n -e '/^{$/,/^}$/{/^  plugin_path =/!p}' < "$tmpdir"/console-out.txt > "$tmpdir"/filtered.txt
+diff -u "$srcdir"/expected/output-loadmaximal.txt "$tmpdir"/filtered.txt

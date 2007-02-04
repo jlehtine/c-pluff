@@ -1,0 +1,13 @@
+#! /bin/sh
+
+set -e
+
+tmpdir="tmp/test-loadminimal"
+mkdir -p "$tmpdir"
+LC_ALL=C ../console/cpluff-console <<EOI > "$tmpdir"/console-out.txt
+set-log-level error
+load-plugin $srcdir/plugins/minimal
+show-plugin-info minimal
+EOI
+sed -n -e '/^{$/,/^}$/{/^  plugin_path =/!p}' < "$tmpdir"/console-out.txt > "$tmpdir"/filtered.txt
+diff -u "$srcdir"/expected/output-loadminimal.txt "$tmpdir"/filtered.txt
