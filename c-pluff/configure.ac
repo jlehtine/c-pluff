@@ -168,6 +168,16 @@ if test "$with_dmalloc" = yes; then
   AC_DEFINE([DMALLOC_FUNC_CHECK], [], [Define to use additional dmalloc checks])
 fi
 
+# Check if Electric Fence usage requested
+# ---------------------------------------
+AC_ARG_WITH([efence],
+  AS_HELP_STRING([--with-efence],
+    [link with Eletric Fence malloc debugger]))
+if test "$with_efence" = yes; then
+  AC_CHECK_LIB([efence], [malloc],,
+    AC_MSG_ERROR([Electric Fence requested but efence library not found]))
+fi
+
 # Check for the dlopen mechanism (Posix dlopen or GNU Libtool libltdl)
 # --------------------------------------------------------------------
 AC_ARG_WITH([dlopen],
@@ -294,11 +304,20 @@ else
 fi
 AC_MSG_NOTICE([  file name separator character:  '$cp_fnamesep'])
 AC_MSG_NOTICE([  assertion checks for debugging: $val])
-if test "$with_dmalloc" = yes; then
-  val="yes (dmalloc)"
-else
-  val=no
-fi
+case "$with_dmalloc:$with_efence" in
+  yes:yes)
+    val='yes (dmalloc, efence)'
+    ;;
+  yes:*)
+    val='yes (dmalloc)'
+    ;;
+  *:yes)
+    val='yes (efence)'
+    ;;
+  *)
+    val=no
+    ;;
+esac
 AC_MSG_NOTICE([  memory debugger:                $val])
 AC_MSG_NOTICE([  compiler and linker settings:])
 AC_MSG_NOTICE([    CC='$CC'])
