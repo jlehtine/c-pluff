@@ -57,26 +57,26 @@ extern "C" {
  * This flag enables upgrades of installed plug-ins by unloading
  * the old version and installing the new version.
  */
-#define CP_LP_UPGRADE 0x01
+#define CP_SP_UPGRADE 0x01
 
 /**
  * This flag causes all plug-ins to be stopped before any
  * plug-ins are to be upgraded.
  */
-#define CP_LP_STOP_ALL_ON_UPGRADE 0x02
+#define CP_SP_STOP_ALL_ON_UPGRADE 0x02
 
 /**
  * This flag causes all plug-ins to be stopped before any
  * plugins are to be installed (also if new version is to be installed
  * as part of an upgrade).
  */
-#define CP_LP_STOP_ALL_ON_INSTALL 0x04
+#define CP_SP_STOP_ALL_ON_INSTALL 0x04
 
 /**
  * Setting this flag causes the currently active plug-ins to be restarted
  * after all changes to the plug-ins have been made (if they were stopped).
  */
-#define CP_LP_RESTART_ACTIVE 0x08
+#define CP_SP_RESTART_ACTIVE 0x08
 
 /*@}*/
 
@@ -1047,12 +1047,12 @@ CP_C_API cp_status_t cp_install_plugin(cp_context_t *ctx, cp_plugin_info_t *pi) 
  * 
  * When several versions of the same plug-in is available the most recent
  * version will be installed. The upgrade behavior depends on the specified
- * @ref cScanFlags "flags". If #CP_LP_UPGRADE is set then upgrades to installed plug-ins are
+ * @ref cScanFlags "flags". If #CP_SP_UPGRADE is set then upgrades to installed plug-ins are
  * allowed. The old version is unloaded and the new version installed instead.
- * If #CP_LP_STOP_ALL_ON_UPGRADE is set then all active plug-ins are stopped
- * if any plug-ins are to be upgraded. If #CP_LP_STOP_ALL_ON_INSTALL is set then
+ * If #CP_SP_STOP_ALL_ON_UPGRADE is set then all active plug-ins are stopped
+ * if any plug-ins are to be upgraded. If #CP_SP_STOP_ALL_ON_INSTALL is set then
  * all active plug-ins are stopped if any plug-ins are to be installed or
- * upgraded. Finally, if #CP_LP_RESTART_ACTIVE is set all currently active
+ * upgraded. Finally, if #CP_SP_RESTART_ACTIVE is set all currently active
  * plug-ins will be restarted after the changes (if they were stopped).
  * 
  * When removing plug-in files from the plug-in directories, the

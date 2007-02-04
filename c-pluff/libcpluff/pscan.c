@@ -146,8 +146,8 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 		}
 		
 		// Copy the list of started plug-ins, if necessary 
-		if ((flags & CP_LP_RESTART_ACTIVE)
-			&& (flags & (CP_LP_UPGRADE | CP_LP_STOP_ALL_ON_INSTALL))) {
+		if ((flags & CP_SP_RESTART_ACTIVE)
+			&& (flags & (CP_SP_UPGRADE | CP_SP_STOP_ALL_ON_INSTALL))) {
 			int i;
 			cp_status_t s;
 
@@ -198,12 +198,12 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 			
 			// Unload the installed plug-in if it is to be upgraded 
 			if (ip != NULL
-				&& (flags & CP_LP_UPGRADE)
+				&& (flags & CP_SP_UPGRADE)
 				&& ((ip->plugin->version == NULL && plugin->version != NULL)
 					|| (ip->plugin->version != NULL
 						&& plugin->version != NULL
 						&& cpi_vercmp(plugin->version, ip->plugin->version) > 0))) {
-				if ((flags & (CP_LP_STOP_ALL_ON_UPGRADE | CP_LP_STOP_ALL_ON_INSTALL))
+				if ((flags & (CP_SP_STOP_ALL_ON_UPGRADE | CP_SP_STOP_ALL_ON_INSTALL))
 					&& !plugins_stopped) {
 					plugins_stopped = 1;
 					cp_stop_plugins(context);
@@ -215,7 +215,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 			
 			// Install the plug-in, if to be installed 
 			if (ip == NULL) {
-				if ((flags & CP_LP_STOP_ALL_ON_INSTALL) && !plugins_stopped) {
+				if ((flags & CP_SP_STOP_ALL_ON_INSTALL) && !plugins_stopped) {
 					plugins_stopped = 1;
 					cp_stop_plugins(context);
 				}

@@ -38,20 +38,20 @@ void scanupgrade(void) {
 	scanupgrade_checkpver(ctx, "plugin1", NULL);
 
 	// Now allow upgrade of plugin1
-	check(cp_scan_plugins(ctx, CP_LP_UPGRADE) == CP_OK);
+	check(cp_scan_plugins(ctx, CP_SP_UPGRADE) == CP_OK);
 	scanupgrade_checkpver(ctx, "plugin1", "2");
 	
 	// Register even new version and upgrade while running
 	check(cp_register_pcollection(ctx, pcollectiondir("collection1v3")) == CP_OK);
 	check(cp_start_plugin(ctx, "plugin1") == CP_OK);
 	check(cp_get_plugin_state(ctx, "plugin1") == CP_PLUGIN_ACTIVE);
-	check(cp_scan_plugins(ctx, CP_LP_UPGRADE) == CP_OK);
+	check(cp_scan_plugins(ctx, CP_SP_UPGRADE) == CP_OK);
 	check(cp_get_plugin_state(ctx, "plugin1") == CP_PLUGIN_INSTALLED);
 	scanupgrade_checkpver(ctx, "plugin1", "3");
 	
 	// Check that plug-in is not downgraded when newer versions are unregistered
 	cp_unregister_pcollection(ctx, pcollectiondir("collection1v3"));
-	check(cp_scan_plugins(ctx, CP_LP_UPGRADE) == CP_OK);
+	check(cp_scan_plugins(ctx, CP_SP_UPGRADE) == CP_OK);
 	scanupgrade_checkpver(ctx, "plugin1", "3");
 
 	cp_destroy();
@@ -73,7 +73,7 @@ void scanstoponupgrade(void) {
 	check(cp_start_plugin(ctx, "plugin2a") == CP_OK);
 	check(cp_get_plugin_state(ctx, "plugin2a") == CP_PLUGIN_ACTIVE);
 	check(cp_register_pcollection(ctx, pcollectiondir("collection1v2")) == CP_OK);
-	check(cp_scan_plugins(ctx, CP_LP_UPGRADE) == CP_OK);
+	check(cp_scan_plugins(ctx, CP_SP_UPGRADE) == CP_OK);
 	check(cp_get_plugin_state(ctx, "plugin1") == CP_PLUGIN_INSTALLED);
 	check(cp_get_plugin_state(ctx, "plugin2a") == CP_PLUGIN_ACTIVE);
 	
@@ -81,7 +81,7 @@ void scanstoponupgrade(void) {
 	check(cp_start_plugin(ctx, "plugin1") == CP_OK);
 	check(cp_get_plugin_state(ctx, "plugin1") == CP_PLUGIN_ACTIVE);
 	check(cp_register_pcollection(ctx, pcollectiondir("collection1v3")) == CP_OK);
-	check(cp_scan_plugins(ctx, CP_LP_UPGRADE | CP_LP_STOP_ALL_ON_UPGRADE) == CP_OK);
+	check(cp_scan_plugins(ctx, CP_SP_UPGRADE | CP_SP_STOP_ALL_ON_UPGRADE) == CP_OK);
 	check(cp_get_plugin_state(ctx, "plugin1") == CP_PLUGIN_INSTALLED);
 	check(cp_get_plugin_state(ctx, "plugin2a") == CP_PLUGIN_RESOLVED);
 
@@ -110,7 +110,7 @@ void scanstoponinstall(void) {
 	check(cp_uninstall_plugin(ctx, "plugin2a") == CP_OK);
 	check(cp_get_plugin_state(ctx, "plugin1") == CP_PLUGIN_ACTIVE);
 	check(cp_get_plugin_state(ctx, "plugin2a") == CP_PLUGIN_UNINSTALLED);
-	check(cp_scan_plugins(ctx, CP_LP_STOP_ALL_ON_INSTALL) == CP_OK);
+	check(cp_scan_plugins(ctx, CP_SP_STOP_ALL_ON_INSTALL) == CP_OK);
 	check(cp_get_plugin_state(ctx, "plugin1") == CP_PLUGIN_RESOLVED);
 	check(cp_get_plugin_state(ctx, "plugin2a") == CP_PLUGIN_INSTALLED);
 	
@@ -118,7 +118,7 @@ void scanstoponinstall(void) {
 	check(cp_start_plugin(ctx, "plugin2a") == CP_OK);
 	check(cp_get_plugin_state(ctx, "plugin2a") == CP_PLUGIN_ACTIVE);
 	check(cp_register_pcollection(ctx, pcollectiondir("collection1v2")) == CP_OK);
-	check(cp_scan_plugins(ctx, CP_LP_UPGRADE | CP_LP_STOP_ALL_ON_INSTALL) == CP_OK);
+	check(cp_scan_plugins(ctx, CP_SP_UPGRADE | CP_SP_STOP_ALL_ON_INSTALL) == CP_OK);
 	check(cp_get_plugin_state(ctx, "plugin2a") == CP_PLUGIN_RESOLVED);
 
 	cp_destroy();
@@ -141,14 +141,14 @@ void scanrestart(void) {
 
 	// Check that upgraded plug-in is correctly restarted after upgrade
 	check(cp_register_pcollection(ctx, pcollectiondir("collection1v2")) == CP_OK);
-	check(cp_scan_plugins(ctx, CP_LP_UPGRADE | CP_LP_RESTART_ACTIVE) == CP_OK);
+	check(cp_scan_plugins(ctx, CP_SP_UPGRADE | CP_SP_RESTART_ACTIVE) == CP_OK);
 	check(cp_get_plugin_state(ctx, "plugin1") == CP_PLUGIN_ACTIVE);
 	check(cp_get_plugin_state(ctx, "plugin2a") == CP_PLUGIN_INSTALLED);
 	check(cp_get_plugin_state(ctx, "plugin2b") == CP_PLUGIN_ACTIVE);
 
 	// Check that other plug-ins are correctly restarted after upgrade
 	check(cp_register_pcollection(ctx, pcollectiondir("collection1v3")) == CP_OK);
-	check(cp_scan_plugins(ctx, CP_LP_UPGRADE | CP_LP_STOP_ALL_ON_UPGRADE | CP_LP_RESTART_ACTIVE) == CP_OK);
+	check(cp_scan_plugins(ctx, CP_SP_UPGRADE | CP_SP_STOP_ALL_ON_UPGRADE | CP_SP_RESTART_ACTIVE) == CP_OK);
 	check(cp_get_plugin_state(ctx, "plugin1") == CP_PLUGIN_ACTIVE);
 	check(cp_get_plugin_state(ctx, "plugin2a") == CP_PLUGIN_INSTALLED);
 	check(cp_get_plugin_state(ctx, "plugin2b") == CP_PLUGIN_ACTIVE);

@@ -79,10 +79,10 @@ CP_HIDDEN const command_info_t commands[] = {
 
 /// The available load flags 
 CP_HIDDEN const flag_info_t load_flags[] = {
-	{ "upgrade", N_("enables upgrades of installed plug-ins"), CP_LP_UPGRADE },
-	{ "stop-all-on-upgrade", N_("stops all plug-ins on first upgrade"), CP_LP_STOP_ALL_ON_UPGRADE },
-	{ "stop-all-on-install", N_("stops all plug-ins on first install or upgrade"), CP_LP_STOP_ALL_ON_INSTALL },
-	{ "restart-active", N_("restarts the currently active plug-ins after the scan"), CP_LP_RESTART_ACTIVE },
+	{ "upgrade", N_("enables upgrades of installed plug-ins"), CP_SP_UPGRADE },
+	{ "stop-all-on-upgrade", N_("stops all plug-ins on first upgrade"), CP_SP_STOP_ALL_ON_UPGRADE },
+	{ "stop-all-on-install", N_("stops all plug-ins on first install or upgrade"), CP_SP_STOP_ALL_ON_INSTALL },
+	{ "restart-active", N_("restarts the currently active plug-ins after the scan"), CP_SP_RESTART_ACTIVE },
 	{ NULL, NULL, -1 }
 };
 
