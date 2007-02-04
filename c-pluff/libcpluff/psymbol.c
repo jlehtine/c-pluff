@@ -305,8 +305,8 @@ CP_C_API void cp_release_symbol(cp_context_t *context, const void *ptr) {
 			if (!provider_info->imported) {
 				cpi_ptrset_remove(context->plugin->imported, provider_info->plugin);
 				cpi_ptrset_remove(provider_info->plugin->importing, context->plugin);
+				cpi_debugf(context, _("A dynamic dependency from plug-in %s to plug-in %s was removed."), context->plugin->plugin->identifier, provider_info->plugin->plugin->identifier);
 			}
-			cpi_debugf(context, _("A dynamic dependency from plug-in %s to plug-in %s was removed."), context->plugin->plugin->identifier, provider_info->plugin->plugin->identifier);
 			free(provider_info);
 		}
 		

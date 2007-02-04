@@ -210,7 +210,6 @@ static void process_unregister_logger(list_t *list, lnode_t *node, void *plugin)
 
 CP_HIDDEN void cpi_unregister_loggers(list_t *loggers, cp_plugin_t *plugin) {
 	list_process(loggers, plugin, process_unregister_logger);
-	list_destroy(loggers);
 }
 
 CP_C_API void cp_log(cp_context_t *context, cp_log_severity_t severity, const char *msg) {

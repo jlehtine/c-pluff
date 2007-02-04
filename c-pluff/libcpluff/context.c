@@ -46,6 +46,7 @@ static void free_plugin_env(cp_plugin_env_t *env) {
 	}
 	if (env->loggers != NULL) {
 		cpi_unregister_loggers(env->loggers, NULL);
+		list_destroy(env->loggers);
 		env->loggers = NULL;
 	}
 	if (env->plugin_dirs != NULL) {
