@@ -28,7 +28,9 @@ loadmaximal
 install
 installtwo
 installconflict
+uninstall
 scanupgrade
 scanstoponupgrade
 scanstoponinstall
 scanrestart
+plugincallbacks

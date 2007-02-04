@@ -18,6 +18,10 @@
 #endif
 #endif
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /**
  * Prints failure message and aborts the test program.
  * 
@@ -61,5 +65,9 @@ CP_HIDDEN const char *pcollectiondir(const char *collection) CP_GCC_NONNULL(1);
  * @return the created plug-in context
  */
 CP_HIDDEN cp_context_t *init_context(cp_log_severity_t min_disp_sev, int *error_counter);
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif /*TEST_H_*/
