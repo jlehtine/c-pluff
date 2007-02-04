@@ -565,15 +565,15 @@ static void show_plugin_info_cfg(cp_cfg_element_t *ce, int indent) {
 
 static void show_plugin_info_extension(cp_extension_t *e) {
 	assert(e->plugin != NULL);
-	printf("    name = %s,\n"
-		"    ext_point_id = \"%s\",\n"
+	printf("    ext_point_id = \"%s\",\n"
 		"    local_id = %s,\n"
 		"    identifier = %s,\n"
+		"    name = %s,\n"
 		"    configuration = {\n",
-		str_or_null(e->name),
 		e->ext_point_id,
 		str_or_null(e->local_id),
-		str_or_null(e->identifier));
+		str_or_null(e->identifier),
+		str_or_null(e->name));
 	show_plugin_info_cfg(e->configuration, 6);
 	fputs("    },\n", stdout);
 }
