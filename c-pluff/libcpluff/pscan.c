@@ -70,7 +70,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 				errno = 0;
 				while ((de = readdir(dir)) != NULL) {
 					if (de->d_name[0] != '\0' && de->d_name[0] != '.') {
-						int pdir_path_len = dir_path_len + 1 + strlen(de->d_name);
+						int pdir_path_len = dir_path_len + 1 + strlen(de->d_name) + 1;
 						cp_plugin_info_t *plugin;
 						cp_status_t s;
 						hnode_t *hnode;
@@ -113,14 +113,14 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 							cp_plugin_info_t *plugin2 = hnode_get(hnode);
 							if (cpi_vercmp(plugin->version, plugin2->version) > 0) {
 								hash_delete_free(avail_plugins, hnode);
-								cpi_free_plugin(plugin2);
+								cp_release_info(context, plugin2);
 								hnode = NULL;
 							}
 						}
 						if (hnode == NULL) {
 							if (!hash_alloc_insert(avail_plugins, plugin->identifier, plugin)) {
 								cpi_errorf(context, N_("Plug-in %s version %s could not be loaded due to insufficient system resources."), plugin->identifier, plugin->version);
-								cpi_free_plugin(plugin);
+								cp_release_info(context, plugin);
 								status = CP_ERR_RESOURCE;
 								// continue loading plug-ins from other directories 
 								continue;

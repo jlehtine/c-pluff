@@ -96,10 +96,11 @@ CP_HIDDEN void cpi_process_free_ptr(list_t *list, lnode_t *node, void *dummy);
  * prefix of remainder of each string composed entirely of digit characters
  * is determined. These are compared numerically with empty string interpreted
  * as zero. Again, if there is different it is returned. Otherwise the
- * comparison continues with a non-digit component and so on.
+ * comparison continues with a non-digit component and so on. A NULL version
+ * is earlier than any non-NULL version. Two NULL versions are equal.
  * 
- * @param v1 the first version string to compare
- * @param v2 the second version string to compare
+ * @param v1 the first version string to compare or NULL
+ * @param v2 the second version string to compare or NULL
  * @return less than, equal to or greater than zero when @a v1 < @a v2, @a v1 == @a v2 or @a v1 > @a v2, correspondingly
  */
 CP_HIDDEN int cpi_vercmp(const char *v1, const char *v2) CP_GCC_PURE;

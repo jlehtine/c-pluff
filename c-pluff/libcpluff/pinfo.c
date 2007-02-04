@@ -171,19 +171,22 @@ CP_C_API cp_plugin_info_t * cp_get_plugin_info(cp_context_t *context, const char
 	// Look up the plug-in and return information 
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_LOGGER, __func__);
-	if (id != NULL) {
-		node = hash_lookup(context->env->plugins, id);
-		plugin = ((cp_plugin_t *) hnode_get(node))->plugin;
-	} else {
-		plugin = context->plugin->plugin;
-		assert(plugin != NULL);
-	}
-	if (plugin != NULL) {
+	do {
+		
+		// Lookup plug-in information
+		if (id != NULL) {
+			if ((node = hash_lookup(context->env->plugins, id)) == NULL) {
+				cpi_warnf(context, N_("Could not return information about unknown plug-in %s."), id);
+				status = CP_ERR_UNKNOWN;
+				break;
+			}
+			plugin = ((cp_plugin_t *) hnode_get(node))->plugin;
+		} else {
+			plugin = context->plugin->plugin;
+			assert(plugin != NULL);
+		}
 		cpi_use_info(context, plugin);
-	} else {
-		cpi_warnf(context, N_("Could not return information about unknown plug-in %s."), id);
-		status = CP_ERR_UNKNOWN;
-	}
+	} while (0);
 	cpi_unlock_context(context);
 
 	if (error != NULL) {

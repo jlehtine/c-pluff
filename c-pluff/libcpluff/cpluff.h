@@ -884,7 +884,9 @@ CP_C_API void cp_destroy(void);
  * program may have more than one plug-in context but the plug-ins that
  * interact with each other should be placed in the same context. The
  * resources associated with the context are released by calling
- * ::cp_destroy_context when the context is not needed anymore.
+ * ::cp_destroy_context when the context is not needed anymore. Remaining
+ * contexts are automatically destroyed when the plug-in framework is
+ * destroyed. 
  * 
  * @param status pointer to the location where status code is to be stored, or NULL
  * @return the newly created plugin context, or NULL on failure

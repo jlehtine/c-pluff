@@ -136,6 +136,16 @@ CP_HIDDEN int cpi_vercmp(const char *v1, const char *v2) {
 	const char *v1n;
 	const char *v2n;
 	
+	// Check for NULL versions
+	if (v1 == NULL && v2 != NULL) {
+		return -1;
+	} else if (v1 == NULL && v2 == NULL) {
+		return 0;
+	} else if (v1 != NULL && v2 == NULL) {
+		return 1;
+	}
+	assert(v1 != NULL && v2 != NULL);
+	
 	// Component comparison loop
 	while (*v1 != '\0' || *v2 != '\0') {
 		
