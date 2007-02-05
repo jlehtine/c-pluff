@@ -14,7 +14,7 @@ void initdestroy(void) {
 void initcreatedestroy(void) {
 	int i;
 	
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 3; i++) {
 		int errors;
 		
 		init_context(CP_LOG_ERROR, &errors);
@@ -26,7 +26,7 @@ void initcreatedestroy(void) {
 void initloaddestroy(void) {
 	int i;
 	
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 3; i++) {
 		cp_context_t *ctx;
 		cp_plugin_info_t *pi;
 		cp_status_t status;
@@ -44,7 +44,7 @@ void initloaddestroy(void) {
 void initinstalldestroy(void) {
 	int i;
 	
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 3; i++) {
 		cp_context_t *ctx;
 		cp_plugin_info_t *pi;
 		cp_status_t status;
@@ -63,7 +63,7 @@ void initinstalldestroy(void) {
 void initstartdestroy(void) {
 	int i;
 	
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 3; i++) {
 		cp_context_t *ctx;
 		cp_plugin_info_t *pi;
 		cp_status_t status;
@@ -83,7 +83,7 @@ void initstartdestroy(void) {
 void initstartdestroyboth(void) {
 	int i;
 	
-	for (i = 0; i < 10; i++) {
+	for (i = 0; i < 3; i++) {
 		cp_context_t *ctx;
 		cp_plugin_info_t *pi;
 		cp_status_t status;
