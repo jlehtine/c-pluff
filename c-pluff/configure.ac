@@ -281,23 +281,8 @@ if test "$enable_assertions" = yes; then
 else
   val=no;
 fi
-AC_MSG_NOTICE([  file name separator character:  '$cp_fnamesep'])
 AC_MSG_NOTICE([  assertion checks for debugging: $val])
-case "$with_dmalloc:$with_efence" in
-  yes:yes)
-    val='yes (dmalloc, efence)'
-    ;;
-  yes:*)
-    val='yes (dmalloc)'
-    ;;
-  *:yes)
-    val='yes (efence)'
-    ;;
-  *)
-    val=no
-    ;;
-esac
-AC_MSG_NOTICE([  memory debugger:                $val])
+AC_MSG_NOTICE([  file name separator character:  '$cp_fnamesep'])
 AC_MSG_NOTICE([  compiler and linker settings:])
 AC_MSG_NOTICE([    CC='$CC'])
 AC_MSG_NOTICE([    CPPFLAGS='$CPPFLAGS'])
