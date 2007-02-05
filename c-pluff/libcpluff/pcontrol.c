@@ -76,6 +76,7 @@ static void unregister_extensions(cp_context_t *context, cp_plugin_info_t *plugi
 			}
 			if (list_isempty(el)) {
 				hash_delete_free(context->env->extensions, hnode);
+				list_destroy(el);
 			}
 		}
 	}
