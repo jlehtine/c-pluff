@@ -878,14 +878,11 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		// Release defined symbols
 		if (plugin->defined_symbols != NULL) {
 			hscan_t scan;
+			hnode_t *node;
 			
-			while (!hash_isempty(plugin->defined_symbols)) {
-				hnode_t *node;
-				char *n;
-				
-				hash_scan_begin(&scan, plugin->defined_symbols);
-				node = hash_scan_next(&scan);
-				n = hnode_getkey(node);
+			hash_scan_begin(&scan, plugin->defined_symbols);
+			while ((node = hash_scan_next(&scan)) != NULL) {
+				char *n = (char *) hnode_getkey(node);
 				hash_scan_delfree(plugin->defined_symbols, node);
 				free(n);
 			}
