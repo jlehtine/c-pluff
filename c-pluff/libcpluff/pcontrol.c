@@ -885,7 +885,7 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 				
 				hash_scan_begin(&scan, plugin->defined_symbols);
 				node = hash_scan_next(&scan);
-				n = hnode_get(node);
+				n = hnode_getkey(node);
 				hash_scan_delfree(plugin->defined_symbols, node);
 				free(n);
 			}
