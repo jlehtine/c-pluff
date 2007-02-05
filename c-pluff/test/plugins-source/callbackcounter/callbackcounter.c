@@ -33,14 +33,23 @@ static void *create(cp_context_t *ctx) {
 	return data;
 }
 
+static int run(void *d) {
+	struct runtime_data *data = d;
+	
+	data->counters->run++;
+	return (data->counters->run < 3);
+}
+
 static int start(void *d) {
 	struct runtime_data *data = d;
 	
 	data->counters->start++;
-	if (cp_define_symbol(data->ctx, "cbc_counters", data->counters) != CP_OK) {
+	if (cp_define_symbol(data->ctx, "cbc_counters", data->counters) != CP_OK
+		|| cp_run_function(data->ctx, run) != CP_OK) {
 		return CP_ERR_RUNTIME;
-	}
-	return CP_OK;	
+	} else {
+		return CP_OK;
+	}	
 }
 
 static void stop(void *d) {
