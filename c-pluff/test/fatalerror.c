@@ -7,12 +7,14 @@ void fatalerrordefault(void) {
 }
 
 static void error_handler(const char *msg) {
+	free_test_resources();
 	exit(0);
 }
 
 void fatalerrorhandled(void) {
 	cp_set_fatal_error_handler(error_handler);
 	cp_start_plugin(NULL, NULL);
+	free_test_resources();
 	exit(1);
 }
 

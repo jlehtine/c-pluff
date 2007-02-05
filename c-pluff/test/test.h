@@ -63,6 +63,12 @@ CP_HIDDEN const char *pcollectiondir(const char *collection) CP_GCC_NONNULL(1);
  */
 CP_HIDDEN cp_context_t *init_context(cp_log_severity_t min_disp_sev, int *error_counter);
 
+/**
+ * Frees any test resources. This can be called to ensure there are no memory
+ * leaks due to leaked test resources.
+ */
+CP_HIDDEN void free_test_resources(void);
+
 #ifdef __cplusplus
 }
 #endif

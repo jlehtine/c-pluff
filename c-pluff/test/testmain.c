@@ -63,46 +63,59 @@ CP_HIDDEN cp_context_t *init_context(cp_log_severity_t min_disp_sev, int *error_
 	return ctx;
 }
 
+static char *plugindir_buffer = NULL;
+
 CP_HIDDEN const char *plugindir(const char *plugin) {
-	static char *buffer = NULL;
 	const char *srcdir;
 	
-	if (buffer != NULL) {
-		free(buffer);
-		buffer = NULL;
+	if (plugindir_buffer != NULL) {
+		free(plugindir_buffer);
+		plugindir_buffer = NULL;
 	}
 	if ((srcdir = getenv("srcdir")) == NULL) {
 		srcdir=".";
 	}
-	if ((buffer = malloc((strlen(srcdir) + strlen("/plugins/") + strlen(plugin) + 1) * sizeof(char))) == NULL) {
+	if ((plugindir_buffer = malloc((strlen(srcdir) + strlen("/plugins/") + strlen(plugin) + 1) * sizeof(char))) == NULL) {
 		fputs("testsuite: ERROR: Insufficient memory.\n", stderr);
 		exit(2);
 	}
-	strcpy(buffer, srcdir);
-	strcat(buffer, CP_FNAMESEP_STR "plugins" CP_FNAMESEP_STR);
-	strcat(buffer, plugin);
-	return buffer;
+	strcpy(plugindir_buffer, srcdir);
+	strcat(plugindir_buffer, CP_FNAMESEP_STR "plugins" CP_FNAMESEP_STR);
+	strcat(plugindir_buffer, plugin);
+	return plugindir_buffer;
 }
 
+static char *pcollectiondir_buffer = NULL;
+
 CP_HIDDEN const char *pcollectiondir(const char *collection) {
-	static char *buffer = NULL;
 	const char *srcdir;
 	
-	if (buffer != NULL) {
-		free(buffer);
-		buffer = NULL;
+	if (pcollectiondir_buffer != NULL) {
+		free(pcollectiondir_buffer);
+		pcollectiondir_buffer = NULL;
 	}
 	if ((srcdir = getenv("srcdir")) == NULL) {
 		srcdir=".";
 	}
-	if ((buffer = malloc((strlen(srcdir) + strlen("/pcollections/") + strlen(collection) + 1) * sizeof(char))) == NULL) {
+	if ((pcollectiondir_buffer = malloc((strlen(srcdir) + strlen("/pcollections/") + strlen(collection) + 1) * sizeof(char))) == NULL) {
 		fputs("testsuite: ERROR: Insufficient memory.\n", stderr);
 		exit(2);
 	}
-	strcpy(buffer, srcdir);
-	strcat(buffer, CP_FNAMESEP_STR "pcollections" CP_FNAMESEP_STR);
-	strcat(buffer, collection);
-	return buffer;
+	strcpy(pcollectiondir_buffer, srcdir);
+	strcat(pcollectiondir_buffer, CP_FNAMESEP_STR "pcollections" CP_FNAMESEP_STR);
+	strcat(pcollectiondir_buffer, collection);
+	return pcollectiondir_buffer;
+}
+
+CP_HIDDEN void free_test_resources(void) {
+	if (plugindir_buffer != NULL) {
+		free(plugindir_buffer);
+		plugindir_buffer = NULL;
+	}
+	if (pcollectiondir_buffer != NULL) {
+		free(pcollectiondir_buffer);
+		pcollectiondir_buffer = NULL;
+	}
 }
 
 int main(int argc, char *argv[]) {
@@ -130,6 +143,9 @@ int main(int argc, char *argv[]) {
 	
 	// Execute the test
 	((void (*)(void)) ptr)();
+	
+	// Free test resources
+	free_test_resources();
 	
 	// Successfully completed
 	exit(0);
