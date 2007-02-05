@@ -1,3 +1,6 @@
+# This can be defined to a debugging wrapper program such as Valgrind.
+TEST_WRAPPER =
+
 CPPFLAGS = @CPPFLAGS@
 CPPFLAGS += -DCP_HOST="\"$(host)\""
 
@@ -6,10 +9,10 @@ LIBS += $(LIBS_OTHER)
 
 check_PROGRAMS = testsuite
 
-testsuite_SOURCES = pcallbacks.c pscanning.c pinstallation.c loggers.c collections.c initdestroy.c fatalerror.c cpinfo.c testmain.c test.h
+testsuite_SOURCES = pcallbacks.c pscanning.c pinstallation.c ploading.c loggers.c collections.c initdestroy.c fatalerror.c cpinfo.c testmain.c test.h
 testsuite_LDFLAGS = -dlopen self
 
-tmpinstalldir := $(shell mkdir -p tmp-install && cd tmp-install && pwd)
+tmpinstalldir := $(shell mkdir -p tmp/install && cd tmp/install && pwd)
 
 check-local: install-plugins
 	@numf=0; numt=0; \
@@ -19,10 +22,10 @@ check-local: install-plugins
 	echo '===================================================================='; \
 	while read test; do \
 		if test -x "$(srcdir)/test-$$test"; then \
-			srcdir='$(srcdir)' "$(srcdir)/test-$$test"; \
+			srcdir='$(srcdir)' TEST_WRAPPER='$(TEST_WRAPPER)' "$(srcdir)/test-$$test"; \
 			rc=$$?; \
 		else \
-			srcdir='$(srcdir)' ./testsuite "$$test"; \
+			eval srcdir='$(srcdir)' libtool --mode=execute $(TEST_WRAPPER) ./testsuite "\$$test"; \
 			rc=$$?; \
 		fi; \
 		case $$rc in \
@@ -62,13 +65,13 @@ distclean-local:
 maintainer-clean-local:
 	cd plugins-source && $(MAKE) maintainer-clean
 
-install-plugins: build-plugins install-test-libcpluff
+install-plugins: build-plugins install-libcpluff
 	cd plugins-source && $(MAKE) DESTDIR=$(tmpinstalldir) install
 
 build-plugins:
 	cd plugins-source && $(MAKE)
 
-install-test-libcpluff:
-	cd ../libcpluff && $(MAKE) DESTDIR=$(tmpinstalldir) install-libLTLIBRARIES
+install-libcpluff:
+	cd ../libcpluff && $(MAKE) DESTDIR=$(tmpinstalldir) install
 
-.PHONY: build-plugins install-plugins install-test-libcpluff
+.PHONY: build-plugins install-plugins install-libcpluff

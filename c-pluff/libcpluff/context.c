@@ -77,6 +77,10 @@ static void free_plugin_env(cp_plugin_env_t *env) {
 		assert(hash_isempty(env->extensions));
 		hash_destroy(env->extensions);
 	}
+	if (env->run_funcs != NULL) {
+		assert(list_isempty(env->run_funcs));
+		list_destroy(env->run_funcs);
+	}
 	
 	// Destroy mutex 
 #ifdef CP_THREADS
@@ -190,7 +194,8 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 			|| env->plugins == NULL
 			|| env->started_plugins == NULL
 			|| env->ext_points == NULL
-			|| env->extensions == NULL) {
+			|| env->extensions == NULL
+			|| env->run_funcs == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}

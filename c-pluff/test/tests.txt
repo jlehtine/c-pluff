@@ -23,6 +23,7 @@ unreglogger
 updatelogger
 logmsg
 islogged
+loadonlymaximal
 loadminimal
 loadmaximal
 install

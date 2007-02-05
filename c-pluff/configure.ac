@@ -155,29 +155,6 @@ fi
 AM_CONDITIONAL([POSIX_THREADS], test "$cp_threads" = Posix)
 AM_CONDITIONAL([WINDOWS_THREADS], test "$cp_threads" = Windows)
 
-# Check if dmalloc usage requested
-# --------------------------------
-AC_ARG_WITH([dmalloc],
-  AS_HELP_STRING([--with-dmalloc],
-    [compile and link with dmalloc to debug memory usage]))
-if test "$with_dmalloc" = yes; then
-  AC_CHECK_HEADERS([dmalloc.h],,
-    AC_MSG_WARN([Dmalloc header files not found (not including)]))
-  AC_CHECK_LIB([dmalloc${cp_threads+th}], [malloc],,
-    AC_MSG_ERROR([Dmalloc library is required for requested dmalloc support]))
-  AC_DEFINE([DMALLOC_FUNC_CHECK], [], [Define to use additional dmalloc checks])
-fi
-
-# Check if Electric Fence usage requested
-# ---------------------------------------
-AC_ARG_WITH([efence],
-  AS_HELP_STRING([--with-efence],
-    [link with Eletric Fence malloc debugger]))
-if test "$with_efence" = yes; then
-  AC_CHECK_LIB([efence], [malloc],,
-    AC_MSG_ERROR([Electric Fence requested but efence library not found]))
-fi
-
 # Check for the dlopen mechanism (Posix dlopen or GNU Libtool libltdl)
 # --------------------------------------------------------------------
 AC_ARG_WITH([dlopen],
@@ -223,13 +200,15 @@ AC_ARG_WITH([readline],
   AS_HELP_STRING([--with-readline],
     [use the GNU Readline Library]))
 have_readline=no
+LIB_READLINE=
 if test "$with_readline" != no; then
   AC_CHECK_HEADER([readline/readline.h],
-    AC_CHECK_LIB([readline], [add_history], [LIBS_OTHER="-lreadline $LIBS_OTHER"; have_readline=yes]))
+    AC_CHECK_LIB([readline], [add_history], [LIB_READLINE="-lreadline"; have_readline=yes]))
   if test "$with_readline" = yes && test "$have_readline" != yes; then
     AC_MSG_ERROR([GNU readline requested but headers or library not found])
   fi
 fi
+AC_SUBST([LIB_READLINE])
 AM_CONDITIONAL([HAVE_READLINE], test "$have_readline" = yes)
 
 # Link non-library parts with the C-Pluff library
@@ -327,4 +306,5 @@ AC_MSG_NOTICE([    LDFLAGS='$LDFLAGS'])
 AC_MSG_NOTICE([    LIBS='$LIBS'])
 AC_MSG_NOTICE([    LIBS_LIBCPLUFF='$LIBS_LIBCPLUFF'])
 AC_MSG_NOTICE([    LIBS_OTHER='$LIBS_OTHER'])
+AC_MSG_NOTICE([    LIB_READLINE='$LIB_READLINE'])
 AC_MSG_NOTICE([-----------------------------------------------------------])

@@ -16,9 +16,6 @@
 #ifdef ENABLE_NLS
 #include <libintl.h>
 #endif
-#ifdef HAVE_DMALLOC_H
-#include <dmalloc.h>
-#endif
 
 
 /* ------------------------------------------------------------------------

@@ -192,19 +192,11 @@ CP_HIDDEN int cpi_vercmp(const char *v1, const char *v2) {
 	return 0;
 }
 
-#ifdef HAVE_DMALLOC_H
-CP_HIDDEN char * cpi_strdup_dm(const char *src, const char *file, int line) {
-#else
 CP_HIDDEN char * cpi_strdup(const char *src) {
-#endif
 	char *dst;
 	size_t size = sizeof(char) * (strlen(src) + 1);
 
-#ifdef HAVE_DMALLOC_H
-	dst = dmalloc_malloc(file, line, size, DMALLOC_FUNC_MALLOC, 0, 0);
-#else
 	dst = malloc(size);
-#endif
 	if (dst != NULL) {
 		strcpy(dst, src);
 	}

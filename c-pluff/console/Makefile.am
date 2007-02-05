@@ -5,7 +5,7 @@
 # permission to copy, distribute and modify it.
 
 LIBS = @LIBS@
-LIBS += $(LIBS_OTHER)
+LIBS += $(LIBS_OTHER) $(LIB_READLINE)
 
 bin_PROGRAMS = cpluff-console
 

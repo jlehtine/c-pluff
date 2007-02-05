@@ -10,9 +10,6 @@
 #include <libintl.h>
 #include <locale.h>
 #endif
-#ifdef HAVE_DMALLOC_H
-#include <dmalloc.h>
-#endif
 #include <cpluff.h>
 
 

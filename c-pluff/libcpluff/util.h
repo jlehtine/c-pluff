@@ -114,15 +114,7 @@ CP_HIDDEN int cpi_vercmp(const char *v1, const char *v2) CP_GCC_PURE;
  * 
  * @param str the string to be duplicated
  */
-#ifdef HAVE_DMALLOC_H
-CP_HIDDEN char * cpi_strdup_dm(const char *src, const char *file, int line);
-#else
 CP_HIDDEN char * cpi_strdup(const char *src);
-#endif
-
-#ifdef HAVE_DMALLOC_H
-#define cpi_strdup(a) cpi_strdup_dm((a), __FILE__, __LINE__)
-#endif
 
 
 #ifdef __cplusplus

@@ -4,9 +4,6 @@
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
-#ifdef HAVE_DMALLOC_H
-#include <dmalloc.h>
-#endif
 #include <cpluff.h>
 
 // GNU C attribute defines
