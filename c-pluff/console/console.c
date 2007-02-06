@@ -487,9 +487,7 @@ static int strlen_quoted_xml(const char *str,int is_attr) {
 }
 
 static void show_plugin_info_cfg(cp_cfg_element_t *ce, int indent) {
-	static char *buffer = NULL;
-	static int buffer_size = 0;
-	int do_realloc;
+	char *buffer = NULL;
 	int rs;
 	int i;
 
@@ -504,21 +502,10 @@ static void show_plugin_info_cfg(cp_cfg_element_t *ce, int indent) {
 		rs += 4;
 	}
 	
-	// Enlarge buffer if necessary
-	do_realloc = 0;
-	while (buffer_size < rs) {
-		if (buffer_size == 0) {
-			buffer_size = 64;
-		} else {
-			buffer_size *= 2;
-		}
-		do_realloc = 1;
-	}
-	if (do_realloc) {
-		if ((buffer = realloc(buffer, buffer_size * sizeof(char))) == NULL) {
-			fputs(_("Insufficient memory.\n"), stdout);
-			abort();
-		}
+	// Allocate buffer
+	if ((buffer = malloc(rs * sizeof(char))) == NULL) {
+		fputs(_("Insufficient memory.\n"), stderr);
+		abort();
 	}
 	
 	// Create the string
@@ -564,6 +551,7 @@ static void show_plugin_info_cfg(cp_cfg_element_t *ce, int indent) {
 	}
 	fputs(buffer, stdout);
 	putchar('\n');
+	free(buffer);
 }
 
 static void show_plugin_info_extension(cp_extension_t *e) {
