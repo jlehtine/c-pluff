@@ -38,3 +38,5 @@ plugincallbacks
 pluginmissingdep
 plugindepchain
 plugindeploop
+extpoints
+extensions

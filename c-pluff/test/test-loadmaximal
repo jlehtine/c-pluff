@@ -4,7 +4,7 @@ set -e
 
 tmpdir="tmp/test-loadmaximal"
 mkdir -p "$tmpdir"
-libtool --mode=execute $TEST_WRAPPER ../console/cpluff-console <<EOI > "$tmpdir"/console-out.txt
+LC_ALL=C libtool --mode=execute $TEST_WRAPPER ../console/cpluff-console <<EOI > "$tmpdir"/console-out.txt
 set-log-level error
 load-plugin $srcdir/plugins/maximal
 show-plugin-info maximal
