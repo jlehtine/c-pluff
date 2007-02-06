@@ -1,6 +1,9 @@
 # This can be defined to a debugging wrapper program such as Valgrind.
 TEST_WRAPPER =
 
+# This can be defined to a subset of test cases to be performed
+SELECTED_TESTS = all
+
 CPPFLAGS = @CPPFLAGS@
 CPPFLAGS += -DCP_HOST="\"$(host)\""
 
@@ -16,11 +19,8 @@ tmpinstalldir := $(shell mkdir -p tmp/install && cd tmp/install && pwd)
 
 check-local: install-plugins
 	@numf=0; numt=0; \
-	echo; \
-	echo '===================================================================='; \
-	echo 'C-Pluff Test Suite'; \
-	echo '===================================================================='; \
-	while read test; do \
+	run_test () { \
+		local test="$$1"; \
 		if test -x "$(srcdir)/test-$$test"; then \
 			srcdir='$(srcdir)' TEST_WRAPPER='$(TEST_WRAPPER)' "$(srcdir)/test-$$test"; \
 			rc=$$?; \
@@ -42,7 +42,20 @@ check-local: install-plugins
 				numf=$$(($$numf + 1)); \
 				;; \
 		esac; \
-	done < '$(srcdir)/tests.txt'; \
+	}; \
+	echo; \
+	echo '===================================================================='; \
+	echo 'C-Pluff Test Suite'; \
+	echo '===================================================================='; \
+	if test '$(SELECTED_TESTS)' = all; then \
+		while read test; do \
+			run_test "$$test"; \
+		done < '$(srcdir)/tests.txt'; \
+	else \
+		for test in $(SELECTED_TESTS); do \
+			run_test "$$test"; \
+		done; \
+	fi; \
 	echo '===================================================================='; \
 	if test $$numf -gt 0; then \
 		echo "FAILED: $$numf/$$numt"; \

@@ -166,7 +166,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 				if (state == CP_PLUGIN_STARTING || state == CP_PLUGIN_ACTIVE) {
 					char *pid;
 				
-					if ((pid = cpi_strdup(plugins[i]->identifier)) == NULL) {
+					if ((pid = strdup(plugins[i]->identifier)) == NULL) {
 						status = CP_ERR_RESOURCE;
 						break;
 					}

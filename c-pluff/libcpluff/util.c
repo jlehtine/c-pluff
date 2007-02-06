@@ -191,14 +191,3 @@ CP_HIDDEN int cpi_vercmp(const char *v1, const char *v2) {
 	}
 	return 0;
 }
-
-CP_HIDDEN char * cpi_strdup(const char *src) {
-	char *dst;
-	size_t size = sizeof(char) * (strlen(src) + 1);
-
-	dst = malloc(size);
-	if (dst != NULL) {
-		strcpy(dst, src);
-	}
-	return dst;
-}

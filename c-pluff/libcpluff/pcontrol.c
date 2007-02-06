@@ -230,6 +230,7 @@ static void unresolve_plugin_runtime(cp_plugin_t *plugin) {
  */
 static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	char *rlpath = NULL;
+	int rlpath_len;
 	cp_status_t status = CP_OK;
 	
 	assert(plugin->runtime_lib == NULL);
@@ -257,16 +258,17 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			break;
 		}
 
-		// Construct a path to plug-in runtime library
-		/// @todo Add platform specific prefix (for example, "lib") 
+		// Construct a path to plug-in runtime library.
+		/// @todo Add platform specific prefix (for example, "lib")
 		ppath_len = strlen(plugin->plugin->plugin_path);
 		lname_len = strlen(plugin->plugin->runtime_lib_name);
-		if ((rlpath = malloc(sizeof(char) *
-			(ppath_len + lname_len + strlen(CP_SHREXT) + 2))) == NULL) {
+		rlpath_len = ppath_len + lname_len + strlen(CP_SHREXT) + 2;
+		if ((rlpath = malloc(rlpath_len * sizeof(char))) == NULL) {
 			cpi_errorf(context, N_("Plug-in %s runtime could not be loaded due to insufficient memory."), plugin->plugin->identifier);
 			status = CP_ERR_RESOURCE;
 			break;
 		}
+		memset(rlpath, 0, rlpath_len * sizeof(char));
 		strcpy(rlpath, plugin->plugin->plugin_path);
 		rlpath[ppath_len] = CP_FNAMESEP_CHAR;
 		strcpy(rlpath + ppath_len + 1, plugin->plugin->runtime_lib_name);

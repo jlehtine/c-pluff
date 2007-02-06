@@ -81,7 +81,7 @@ CP_C_API cp_status_t cp_define_symbol(cp_context_t *context, const char *name, v
 		}
 
 		// Insert the symbol into the symbol hash
-		n = cpi_strdup(name);
+		n = strdup(name);
 		if (n == NULL || !hash_alloc_insert(context->plugin->defined_symbols, n, ptr)) {
 			free(n);
 			status = CP_ERR_RESOURCE;

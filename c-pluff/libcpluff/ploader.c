@@ -253,8 +253,7 @@ static int check_attributes(ploader_context_t *plcontext,
 static void *parser_malloc(ploader_context_t *plcontext, size_t size) {
 	void *ptr;
 
-	ptr = malloc(size);
-	if (ptr == NULL) {
+	if ((ptr = malloc(size)) == NULL) {
 		resource_error(plcontext);
 	}
 	return ptr;
@@ -271,8 +270,7 @@ static void *parser_malloc(ploader_context_t *plcontext, size_t size) {
 static char *parser_strdup(ploader_context_t *plcontext, const char *src) {
 	char *dup;
 
-	dup = strdup(src);
-	if (dup == NULL) {
+	if ((dup = strdup(src)) == NULL) {
 		resource_error(plcontext);
 	}
 	return dup;

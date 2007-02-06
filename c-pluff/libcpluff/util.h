@@ -106,17 +106,6 @@ CP_HIDDEN void cpi_process_free_ptr(list_t *list, lnode_t *node, void *dummy);
 CP_HIDDEN int cpi_vercmp(const char *v1, const char *v2) CP_GCC_PURE;
 
 
-// Miscellaneous utility functions 
-
-/**
- * Makes a duplicate of the specified string. The required memory is allocated
- * using malloc.
- * 
- * @param str the string to be duplicated
- */
-CP_HIDDEN char * cpi_strdup(const char *src);
-
-
 #ifdef __cplusplus
 }
 #endif //__cplusplus 
