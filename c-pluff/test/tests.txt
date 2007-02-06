@@ -35,3 +35,6 @@ scanstoponupgrade
 scanstoponinstall
 scanrestart
 plugincallbacks
+pluginmissingdep
+plugindepchain
+plugindeploop
