@@ -525,6 +525,7 @@ static void resolve_plugin_failed_rec(cp_plugin_t *plugin) {
 			list_delete(plugin->imported, node);
 			lnode_destroy(node);
 		}
+		list_destroy(plugin->imported);
 		plugin->imported = NULL;
 	}
 }
