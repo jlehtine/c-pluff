@@ -340,7 +340,7 @@ int main(int argc, char *argv[]) {
 		ctx_argv[i - optind + 1] = argv[i];
 	}
 	ctx_argv[argc - optind + 1] = NULL;
-	cp_set_context_args(context, argc - optind + 1, ctx_argv);
+	cp_set_context_args(context, ctx_argv);
 
 	// Load individual plug-ins
 	for (entry = lst_plugin_dirs.first; entry != NULL; entry = entry->next) {

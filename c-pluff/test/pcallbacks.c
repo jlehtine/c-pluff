@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include "plugins-source/callbackcounter/callbackcounter.h"
 #include "test.h"
+
+static char *argv[] = { "testarg0", NULL };
 
 void plugincallbacks(void) {
 	cp_context_t *ctx;
@@ -11,6 +14,7 @@ void plugincallbacks(void) {
 	cbc_counters_t *counters;
 	
 	ctx = init_context(CP_LOG_ERROR, &errors);
+	cp_set_context_args(ctx, argv);
 	check((plugin = cp_load_plugin_descriptor(ctx, "tmp/install/plugins/callbackcounter", &status)) != NULL && status == CP_OK);
 	check(cp_install_plugin(ctx, plugin) == CP_OK);
 	cp_release_info(ctx, plugin);
@@ -24,6 +28,7 @@ void plugincallbacks(void) {
 	check(counters->run == 0);
 	check(counters->stop == 0);
 	check(counters->destroy == 0);
+	check(counters->context_arg_0 != NULL && strcmp(counters->context_arg_0, argv[0]) == 0);
 
 	// Cause warning
 	check(cp_start_plugin(ctx, "nonexisting") == CP_ERR_UNKNOWN);

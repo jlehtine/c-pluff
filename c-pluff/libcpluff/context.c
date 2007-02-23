@@ -388,14 +388,14 @@ CP_C_API void cp_unregister_pcollections(cp_context_t *context) {
 
 // Startup arguments
 
-CP_C_API void cp_set_context_args(cp_context_t *ctx, int argc, char **argv) {
+CP_C_API void cp_set_context_args(cp_context_t *ctx, char **argv) {
+	int argc;
+	
 	CHECK_NOT_NULL(ctx);
 	CHECK_NOT_NULL(argv);
+	for (argc = 0; argv[argc] != NULL; argc++);
 	if (argc < 1) {
 		cpi_fatalf(_("Argument count must be at least 1 in call to %s."), __func__);
-	}
-	if (argv[argc] != NULL) {
-		cpi_fatalf(_("The argument array must be NULL-terminated in call to %s."), __func__);
 	}
 	cpi_lock_context(ctx);
 	ctx->env->argc = argc;
@@ -403,16 +403,18 @@ CP_C_API void cp_set_context_args(cp_context_t *ctx, int argc, char **argv) {
 	cpi_unlock_context(ctx);
 }
 
-CP_C_API int cp_get_context_args(cp_context_t *ctx, char ***argv) {
-	int argc;
+CP_C_API char **cp_get_context_args(cp_context_t *ctx, int *argc) {
+	char **argv;
 	
 	CHECK_NOT_NULL(ctx);
 	CHECK_NOT_NULL(argv);
 	cpi_lock_context(ctx);
-	argc = ctx->env->argc;
-	*argv = ctx->env->argv;
+	if (argc != NULL) {
+		*argc = ctx->env->argc;
+	}
+	argv = ctx->env->argv;
 	cpi_unlock_context(ctx);
-	return argc;
+	return argv;
 }
 
 

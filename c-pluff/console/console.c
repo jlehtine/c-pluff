@@ -725,7 +725,7 @@ static void cmd_set_context_args(int argc, char *argv[]) {
 	} else if ((ctx_argv = argv_dup(argc, argv)) == NULL) {
 		fputs(_("Insufficient memory.\n"), stdout);
 	} else {
-		cp_set_context_args(context, argc, ctx_argv);
+		cp_set_context_args(context, ctx_argv);
 		fputs(_("Context startup arguments have been set.\n"), stdout);
 	}
 }

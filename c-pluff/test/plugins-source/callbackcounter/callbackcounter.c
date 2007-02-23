@@ -28,6 +28,7 @@ static void *create(cp_context_t *ctx) {
 		return NULL;
 	}
 	memset(data->counters, 0, sizeof(cbc_counters_t));
+	data->counters->context_arg_0 = NULL;
 	data->counters->create++;
 	
 	return data;
@@ -54,8 +55,15 @@ static int run(void *d) {
 
 static int start(void *d) {
 	struct runtime_data *data = d;
+	char **argv;
 	
 	data->counters->start++;
+	argv = cp_get_context_args(data->ctx, NULL);
+	if (argv != NULL && argv[0] != NULL) {
+		if ((data->counters->context_arg_0 = strdup(argv[0])) == NULL) {
+			return CP_ERR_RESOURCE;
+		}
+	}
 	if (cp_define_symbol(data->ctx, "cbc_counters", data->counters) != CP_OK
 		|| cp_register_logger(data->ctx, logger, data, CP_LOG_WARNING) != CP_OK
 		|| cp_register_plistener(data->ctx, listener, data) != CP_OK

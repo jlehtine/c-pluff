@@ -1339,18 +1339,17 @@ CP_C_API int cp_run_plugins_step(cp_context_t *ctx) CP_GCC_NONNULL(1);
  * Sets startup arguments for the specified plug-in context. Like for usual
  * C main functions, the first argument is expected to be the name of the
  * program being executed or an empty string and the argument array should be
- * terminated by NULL entry not counted in @a argc. If the main program is
+ * terminated by NULL entry. If the main program is
  * about to pass startup arguments to plug-ins it should call this function
  * before starting any plug-ins in the context. The arguments are not copied
  * and the caller is responsible for keeping the argument data available once
- * the arguments have been set. Plug-ins can access the startup arguments using
- * ::cp_get_context_args.
+ * the arguments have been set until the context is destroyed. Plug-ins can
+ * access the startup arguments using ::cp_get_context_args.
  * 
  * @param ctx the plug-in context
- * @param argc the number of arguments
  * @param argv a NULL-terminated array of arguments
  */
-CP_C_API void cp_set_context_args(cp_context_t *ctx, int argc, char **argv) CP_GCC_NONNULL(1, 3);
+CP_C_API void cp_set_context_args(cp_context_t *ctx, char **argv) CP_GCC_NONNULL(1, 2);
 
 /**
  * Returns the startup arguments associated with the specified
@@ -1360,10 +1359,10 @@ CP_C_API void cp_set_context_args(cp_context_t *ctx, int argc, char **argv) CP_G
  * arguments have been set.
  * 
  * @param ctx the plug-in context
- * @param argv a pointer to the location where pointer to the argument array is to be stored
- * @return the number of startup arguments or 0 if not set
+ * @param argc a pointer to a location where the number of startup arguments is stored, or NULL for none
+ * @return an argument array terminated by NULL or NULL if not set
  */
-CP_C_API int cp_get_context_args(cp_context_t *ctx, char ***argv) CP_GCC_NONNULL(1, 2);
+CP_C_API char **cp_get_context_args(cp_context_t *ctx, int *argc) CP_GCC_NONNULL(1);
 
 /*@}*/
 

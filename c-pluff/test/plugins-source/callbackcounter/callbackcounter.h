@@ -31,6 +31,9 @@ struct cbc_counters_t {
 	
 	/** Call counter for the destroy function */
 	int destroy;
+	
+	/** Copy of context arg 0 from the call to start, or NULL */
+	char *context_arg_0;
 };
 
 #ifdef __cplusplus
