@@ -8,7 +8,7 @@ static const char *argv0;
 
 CP_HIDDEN void fail(const char *func, const char *file, int line, const char *msg) {
 	fprintf(stderr, "%s: %s:%d: %s: %s\n", argv0, file, line, func, msg);
-	exit(1);
+	abort();
 }
 
 static void full_logger(cp_log_severity_t severity, const char *msg, const char *apid, void *user_data) {

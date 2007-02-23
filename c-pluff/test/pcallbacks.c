@@ -11,7 +11,7 @@ void plugincallbacks(void) {
 	cbc_counters_t *counters;
 	
 	ctx = init_context(CP_LOG_ERROR, &errors);
-	check((plugin = cp_load_plugin_descriptor(ctx, "tmp-install/plugins/callbackcounter", &status)) != NULL && status == CP_OK);
+	check((plugin = cp_load_plugin_descriptor(ctx, "tmp/install/plugins/callbackcounter", &status)) != NULL && status == CP_OK);
 	check(cp_install_plugin(ctx, plugin) == CP_OK);
 	cp_release_info(ctx, plugin);
 	
@@ -19,6 +19,18 @@ void plugincallbacks(void) {
 	check((counters = cp_resolve_symbol(ctx, "callbackcounter", "cbc_counters", &status)) != NULL && status == CP_OK);
 	check(counters->create == 1);
 	check(counters->start == 1);
+	check(counters->logger == 0);
+	check(counters->listener == 1);
+	check(counters->run == 0);
+	check(counters->stop == 0);
+	check(counters->destroy == 0);
+
+	// Cause warning
+	check(cp_start_plugin(ctx, "nonexisting") == CP_ERR_UNKNOWN);
+	check(counters->create == 1);
+	check(counters->start == 1);
+	check(counters->logger == 1);
+	check(counters->listener == 1);
 	check(counters->run == 0);
 	check(counters->stop == 0);
 	check(counters->destroy == 0);
@@ -27,6 +39,8 @@ void plugincallbacks(void) {
 	check(cp_run_plugins_step(ctx));
 	check(counters->create == 1);
 	check(counters->start == 1);
+	check(counters->logger == 1);
+	check(counters->listener == 1);
 	check(counters->run == 1);
 	check(counters->stop == 0);
 	check(counters->destroy == 0);
@@ -35,6 +49,8 @@ void plugincallbacks(void) {
 	cp_run_plugins(ctx);
 	check(counters->create == 1);
 	check(counters->start == 1);
+	check(counters->logger == 1);
+	check(counters->listener == 1);
 	check(counters->run == 3);
 	check(counters->stop == 0);
 	check(counters->destroy == 0);
@@ -50,6 +66,8 @@ void plugincallbacks(void) {
 	check(cp_stop_plugin(ctx, "callbackcounter") == CP_OK);
 	check(counters->create == 1);
 	check(counters->start == 1);
+	check(counters->logger == 1);
+	check(counters->listener == 2);
 	check(counters->run == 3);
 	check(counters->stop == 1);
 	// for now 1 but might be 0 in future (delay destroy)
@@ -59,6 +77,8 @@ void plugincallbacks(void) {
 	check(cp_uninstall_plugin(ctx, "callbackcounter") == CP_OK);
 	check(counters->create == 1);
 	check(counters->start == 1);
+	check(counters->logger == 1);
+	check(counters->listener == 2);
 	check(counters->run == 3);
 	check(counters->stop == 1);
 	check(counters->destroy == 1);

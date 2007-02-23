@@ -17,6 +17,12 @@ struct cbc_counters_t {
 	/** Call counter for the start function */
 	int start;
 	
+	/** Call counter for the logger function */
+	int logger;
+	
+	/** Call counter for the plug-in listener function */
+	int listener;
+	
 	/** Call counter for the run function */
 	int run;
 	

@@ -34,7 +34,7 @@ CP_HIDDEN void fail(const char *func, const char *file, int line, const char *ms
  * 
  * @param cond the condition that should be true
  */
-#define check(cond) { if (!(cond)) { fail(__func__, __FILE__, __LINE__, "Failed condition: " #cond); } } while (0)
+#define check(cond) do { if (!(cond)) { fail(__func__, __FILE__, __LINE__, "Failed condition: " #cond); }} while (0)
 
 /**
  * Returns the plug-in path for the specified test plug-in.

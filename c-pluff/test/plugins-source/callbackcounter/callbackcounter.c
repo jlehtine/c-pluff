@@ -33,6 +33,18 @@ static void *create(cp_context_t *ctx) {
 	return data;
 }
 
+static void logger(cp_log_severity_t severity, const char *msg, const char *apid, void *user_data) {
+	struct runtime_data *data = user_data;
+	
+	data->counters->logger++;
+}
+
+static void listener(const char *plugin_id, cp_plugin_state_t old_state, cp_plugin_state_t new_state, void *user_data) {
+	struct runtime_data *data = user_data;
+	
+	data->counters->listener++;
+}
+
 static int run(void *d) {
 	struct runtime_data *data = d;
 	
@@ -45,6 +57,8 @@ static int start(void *d) {
 	
 	data->counters->start++;
 	if (cp_define_symbol(data->ctx, "cbc_counters", data->counters) != CP_OK
+		|| cp_register_logger(data->ctx, logger, data, CP_LOG_WARNING) != CP_OK
+		|| cp_register_plistener(data->ctx, listener, data) != CP_OK
 		|| cp_run_function(data->ctx, run) != CP_OK) {
 		return CP_ERR_RUNTIME;
 	} else {
