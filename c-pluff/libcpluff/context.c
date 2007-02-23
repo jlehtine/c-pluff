@@ -407,7 +407,6 @@ CP_C_API char **cp_get_context_args(cp_context_t *ctx, int *argc) {
 	char **argv;
 	
 	CHECK_NOT_NULL(ctx);
-	CHECK_NOT_NULL(argv);
 	cpi_lock_context(ctx);
 	if (argc != NULL) {
 		*argc = ctx->env->argc;
