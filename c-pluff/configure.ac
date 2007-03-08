@@ -23,7 +23,7 @@ define(CP_M4_CXX_LIB_VERSION, [0:0:0])
 # Autoconf initialization
 # -----------------------
 AC_INIT([C-Pluff], CP_M4_RELEASE_VERSION, [johannes.lehtinen@iki.fi], [cpluff])
-AC_COPYRIGHT([Copyright 2006 Johannes Lehtinen
+AC_COPYRIGHT([Copyright 2007 Johannes Lehtinen
 This configure script is free software; Johannes Lehtinen gives unlimited
 permission to copy, distribute and modify it.])
 AC_CONFIG_SRCDIR([libcpluff/cpluff.h])
