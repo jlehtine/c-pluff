@@ -15,7 +15,8 @@ fi
 
 # Generate files in top level directory
 cd "$basedir"
-mkdir -p m4
+test -d auxliary || mkdir auxliary
+test -d m4 || mkdir m4
 test -e po/Makefile.in.in || gettextize
 if ! test -e auxliary/config.rpath; then
     d="`type -p gettextize`"
