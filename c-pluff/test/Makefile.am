@@ -76,27 +76,20 @@ check-local: install-plugins
 	echo; \
 	test $$numf -eq 0
 
-mostly-clean-local:
-	cd plugins-source && $(MAKE) mostly-clean
-
 clean-local:
-	cd plugins-source && $(MAKE) clean
-
-distclean-local:
-	cd plugins-source && $(MAKE) distclean
-
-maintainer-clean-local:
-	cd plugins-source && $(MAKE) maintainer-clean
+	rm -rf tmp
 
 dist-hook:
 	mkdir -p $(distdir)
 	cp -p $(srcdir)/test-* $(distdir)
 	mkdir -p $(distdir)/expected
 	cp -p $(srcdir)/expected/*.txt $(distdir)/expected
+	rm -rf $(distdir)/plugins
 	mkdir -p $(distdir)/plugins
-	cd $(srcdir)/plugins && cp -p --parents */plugin.xml $(distdir)/plugins
+	cd $(srcdir)/plugins && for d in *; do mkdir $(distdir)/plugins/"$$d" || exit 1; done && cp -p --parents */plugin.xml $(distdir)/plugins
+	rm -rf $(distdir)/pcollections
 	mkdir -p $(distdir)/pcollections
-	cd $(srcdir)/pcollections && cp -p --parents */*/plugin.xml $(distdir)/pcollections
+	cd $(srcdir)/pcollections && for d in */*; do mkdir -p $(distdir)/pcollections/"$$d" || exit 1; done && cp -p --parents */*/plugin.xml $(distdir)/pcollections
 
 install-plugins: build-plugins install-libcpluff
 	cd plugins-source && $(MAKE) DESTDIR=$(tmpinstalldir) install
