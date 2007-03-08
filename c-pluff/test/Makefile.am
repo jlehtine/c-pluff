@@ -10,6 +10,10 @@ TEST_WRAPPER =
 # This can be defined to a subset of test cases to be performed
 SELECTED_TESTS = all
 
+DIST_SUBDIRS = plugins-source
+
+EXTRA_DIST = tests.txt
+
 CPPFLAGS = @CPPFLAGS@
 CPPFLAGS += -DCP_HOST="\"$(host)\""
 
@@ -83,6 +87,16 @@ distclean-local:
 
 maintainer-clean-local:
 	cd plugins-source && $(MAKE) maintainer-clean
+
+dist-hook:
+	mkdir -p $(distdir)
+	cp -p $(srcdir)/test-* $(distdir)
+	mkdir -p $(distdir)/expected
+	cp -p $(srcdir)/expected/*.txt $(distdir)/expected
+	mkdir -p $(distdir)/plugins
+	cd $(srcdir)/plugins && cp -p --parents */plugin.xml $(distdir)/plugins
+	mkdir -p $(distdir)/pcollections
+	cd $(srcdir)/pcollections && cp -p --parents */*/plugin.xml $(distdir)/pcollections
 
 install-plugins: build-plugins install-libcpluff
 	cd plugins-source && $(MAKE) DESTDIR=$(tmpinstalldir) install

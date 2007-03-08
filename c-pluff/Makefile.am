@@ -7,22 +7,11 @@
 ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = libcpluff loader console po test
+
+EXTRA_DIST = COPYRIGHT.txt autogen.sh doc doxygen.footer doxygen.css plugin.xsd
+
 DOC_DIRS = libcpluff
-
 RECURSIVE_DOC_TARGETS = refdoc impldoc
-
-check-copyright: COPYRIGHT_HOLDER = Johannes Lehtinen
-check-copyright:
-	( echo; \
-		echo "Checking copyright notices for holder $(COPYRIGHT_HOLDER)."; \
-		echo "The following source files might have outdated/incomplete copyright notices"; \
-		echo "(if $(COPYRIGHT_HOLDER) is a copyright holder for them):"; \
-		find $(top_srcdir) -type f \
-			\( -name '*.c' -or -name '*.h' -or -name '*.am' -or \
-				-name 'configure.ac' -or -name '*.h.in' -or -name '*.xsd' \
-				-or -name '*.pot' -or -name doxygen.cfg.in \) \
-			! -exec sh -c "grep -q -E \"Copyright (\`date -r '{}' '+%Y'\`|`date '+%Y'`) $(COPYRIGHT_HOLDER)\" '{}'" \; \
-			-print )
 
 $(RECURSIVE_DOC_TARGETS):
 	@target=$@; \
@@ -30,4 +19,7 @@ $(RECURSIVE_DOC_TARGETS):
 		(cd $$d && $(MAKE) $(AM_MAKEFLAGS) $$target) || eval exit 1; \
 	done
 
-.PHONY: check-copyright $(RECURSIVE_DOC_TARGETS)
+dist-hook:
+	rm -f $(distdir)/ABOUT-NLS $(distdir)/ChangeLog
+
+.PHONY: $(RECURSIVE_DOC_TARGETS)
