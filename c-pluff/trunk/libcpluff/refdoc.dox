@@ -26,7 +26,7 @@
  *
  * This is reference documentation for the
  * <a href="http://www.c-pluff.org/">C-Pluff</a> C API.
- * C-Pluff is a cross-platform plug-in framework for C programs.
+ * C-Pluff is a plug-in framework for C programs.
  * It has been strongly inspired by the Java plug-in framework in
  * <a href="http://www.eclipse.org/">Eclipse</a>. C-Pluff focuses on
  * providing core services for plug-in interaction and plug-in
