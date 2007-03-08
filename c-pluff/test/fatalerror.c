@@ -25,8 +25,19 @@
 #include <stdlib.h>
 #include "test.h"
 
+static int testvar;
+
+static void cause_fatal_error(void) {
+	cp_context_t *ctx;
+	
+	cp_init();
+	ctx = init_context(CP_LOG_ERROR + 1, NULL);
+	cp_release_info(ctx, &testvar);
+	cp_destroy();
+}
+
 void fatalerrordefault(void) {
-	cp_start_plugin(NULL, NULL);
+	cause_fatal_error();
 }
 
 static void error_handler(const char *msg) {
@@ -36,7 +47,7 @@ static void error_handler(const char *msg) {
 
 void fatalerrorhandled(void) {
 	cp_set_fatal_error_handler(error_handler);
-	cp_start_plugin(NULL, NULL);
+	cause_fatal_error();
 	free_test_resources();
 	exit(1);
 }
@@ -44,5 +55,5 @@ void fatalerrorhandled(void) {
 void fatalerrorreset(void) {
 	cp_set_fatal_error_handler(error_handler);
 	cp_set_fatal_error_handler(NULL);
-	cp_start_plugin(NULL, NULL);
+	cause_fatal_error();
 }
