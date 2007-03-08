@@ -21,7 +21,7 @@ if ! test -e auxliary/config.rpath; then
     d="`type -p gettextize`"
     d="`dirname "$d"`"
     d="`dirname "$d"`"
-    cp "$d"/share/gettext/config.rpath auxliary
+    ln -s "$d"/share/gettext/config.rpath auxliary/config.rpath
 fi
 test -e auxliary/ltmain.sh || libtoolize
 aclocal -I m4
