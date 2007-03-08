@@ -1,0 +1,12 @@
+To build C-Pluff, follow the usual autotools procedure:
+
+  ./configure
+  make
+
+For help on available configuration options:
+
+  ./configure --help
+
+To install the library and header files:
+
+  make install
