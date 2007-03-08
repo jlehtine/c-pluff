@@ -1,6 +1,6 @@
 dnl Process this file with autoconf to produce a configure script.
-dnl
-dnl Copyright 2006 Johannes Lehtinen
+
+dnl Copyright 2007 Johannes Lehtinen
 dnl This configure.ac script is free software; Johannes Lehtinen gives
 dnl unlimited permission to copy, distribute and modify it.
 

@@ -1,3 +1,9 @@
+## Process this file with automake to produce Makefile.in.
+
+# Copyright 2007 Johannes Lehtinen
+# This Makefile is free software; Johannes Lehtinen gives unlimited
+# permission to copy, distribute and modify it.
+
 # This can be defined to a debugging wrapper program such as Valgrind.
 TEST_WRAPPER =
 
