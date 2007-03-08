@@ -1,0 +1,11 @@
+# List of source files which contain translatable strings.
+libcpluff/context.c
+libcpluff/cpluff.c
+libcpluff/pcontrol.c
+libcpluff/ploader.c
+libcpluff/thread_posix.c
+libcpluff/thread_windows.c
+libcpluff/util.c
+console/cmdinput_basic.c
+console/cmdinput_readline.c
+console/console.c

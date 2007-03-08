@@ -1,0 +1,108 @@
+/*-------------------------------------------------------------------------
+ * C-Pluff, a plug-in framework for C
+ * Copyright 2007 Johannes Lehtinen
+ * 
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *-----------------------------------------------------------------------*/
+
+/**
+ * @mainpage
+ *
+ * This is reference documentation for the
+ * <a href="http://www.c-pluff.org/">C-Pluff</a> C API.
+ * C-Pluff is a cross-platform plug-in framework for C programs.
+ * It has been strongly inspired by the Java plug-in framework in
+ * <a href="http://www.eclipse.org/">Eclipse</a>. C-Pluff focuses on
+ * providing core services for plug-in interaction and plug-in
+ * management. It aims to be platform neutral and supports dynamic changes to
+ * plug-in configuration without stopping the whole application or framework.
+ * It does not yet provide special facilities for distribution such as
+ * signed plug-in packages or remote plug-in repositories but it is
+ * possible to build such features on top of the current framework.
+ *
+ * The latest version of the framework implementation
+ * and documentation is available at http://www.c-pluff.org/.
+ *
+ * - <a class="el" href="modules.html">API elements</a>
+ * - <a class="el" href="files.html">Header files</a>
+ * - @ref cMainProgram "Main program"
+ * - @ref cPlugin "Plug-in"
+ * - @ref cBuilding "Building C-Pluff programs"
+ *
+ * This documentation has been generated from the C-Pluff source code
+ * using <a href="http://www.doxygen.org">Doxygen</a>.
+ */
+
+/**
+ * @page cMainProgram Main program
+ *
+ * @section cMainProgramOverview Overview
+ *
+ * The main program is the part of executable that is located outside the
+ * plug-in framework. The main program is responsible for setting up
+ * the plug-in framework and for loading the desired set of
+ * @ref cPlugin "plug-ins". The main program should preferably be very
+ * thin, a mere plug-in loader, because it can not fully participate in plug-in
+ * interaction. C-Pluff distribution provides a plug-in loader,
+ * @ref cpluff-loader, which can be used as a generic main program for
+ * arbitrary plug-in collections.
+ *
+ * @section cMainProgramResponsibilities Responsibilities
+ *
+ * The main program has several responsibilities:
+ *
+ * - @ref cMainProgramInit "initializing the plug-in framework"
+ * - loading plug-ins
+ * - controlling plug-in execution
+ * - destroying the plug-in framework
+ *
+ * @subsection cMainProgramInit Initializing the plug-in framework
+ *
+ * Plug-in framework must be initialized before its services can be used.
+ * Initialization is not a thread-safe operation and should generally be
+ * done by the main program before any additional plug-in framework accessing
+ * threads are started. Initialization is done by calling ::cp_init.
+ * Additionally, the main program can use ::cp_set_fatal_error_handler to register
+ * a function that is called when a fatal error occurs. A fatal error is one
+ * that prevents the framework from continuing operation. For example,
+ * errors in operating system locking operations and a NULL pointer being
+ * passed as an argument which is expected to have a non-NULL value are fatal
+ * erors.
+ *
+ * Here is an example of possible initialization code.
+ *
+ * @code
+ * #include <locale.h>
+ * #include <cpluff.h>
+ *
+ * void handle_fatal_error(const char *msg) {
+ *   // ... log error, flush logs, send bug report, etc. ...
+ *   fprintf(stderr, "A fatal error occurred: %s\n", msg);
+ *   abort();
+ * }
+ *
+ * void initialize(void) {
+ *   setlocale(LC_ALL, "");
+ *   cp_set_fatal_error_handler(handle_fatal_error);
+ *   cp_init();
+ * }
+ * @endcode
+ *
+ * (TODO)
+ */
