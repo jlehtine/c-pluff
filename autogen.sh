@@ -15,7 +15,14 @@ fi
 
 # Generate files in top level directory
 cd "$basedir"
+mkdir -p m4
 test -e po/Makefile.in.in || gettextize
+if ! test -e auxliary/config.rpath; then
+    d="`type -p gettextize`"
+    d="`dirname "$d"`"
+    d="`dirname "$d"`"
+    cp "$d"/share/gettext/config.rpath auxliary
+fi
 test -e auxliary/ltmain.sh || libtoolize
 aclocal -I m4
 autoconf
