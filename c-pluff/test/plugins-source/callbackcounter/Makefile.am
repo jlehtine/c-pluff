@@ -7,6 +7,8 @@
 LIBS = @LIBS@
 LIBS += $(LIBS_OTHER)
 
+EXTRA_DIST = plugin.xml
+
 plugindir = /plugins/callbackcounter
 
 plugin_LTLIBRARIES = libruntime.la

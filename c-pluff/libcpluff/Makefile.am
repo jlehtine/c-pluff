@@ -17,7 +17,7 @@ DOXYGEN_SOURCE = cpluffdef.h $(srcdir)/cpluff.h $(srcdir)/refdoc.dox
 DOXYGEN_STYLE = $(top_srcdir)/doxygen.footer $(top_srcdir)/doxygen.css
 
 lib_LTLIBRARIES = libcpluff.la
-libcpluff_la_SOURCES = psymbol.c pscan.c ploader.c pinfo.c pcontrol.c serial.c logging.c context.c cpluff.c util.c ../kazlib/list.c ../kazlib/list.h ../kazlib/hash.c ../kazlib/hash.h internal.h util.h defines.h
+libcpluff_la_SOURCES = psymbol.c pscan.c ploader.c pinfo.c pcontrol.c serial.c logging.c context.c cpluff.c util.c ../kazlib/list.c ../kazlib/list.h ../kazlib/hash.c ../kazlib/hash.h internal.h thread.h util.h defines.h
 if POSIX_THREADS
 libcpluff_la_SOURCES += thread_posix.c
 endif
