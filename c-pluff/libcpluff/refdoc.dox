@@ -24,7 +24,8 @@
 /**
  * @mainpage
  *
- * This is reference documentation for the @em C-Pluff C API.
+ * This is reference documentation for the
+ * <a href="http://www.c-pluff.org/">C-Pluff</a> C API.
  * C-Pluff is a cross-platform plug-in framework for C programs.
  * It has been strongly inspired by the Java plug-in framework in
  * <a href="http://www.eclipse.org/">Eclipse</a>. C-Pluff focuses on
@@ -44,8 +45,8 @@
  * - @ref cPlugin "Plug-in"
  * - @ref cBuilding "Building C-Pluff programs"
  *
- * This documentation has been generated from the C-Pluff source code.
- * Copyright 2007 Johannes Lehtinen.
+ * This documentation has been generated from the C-Pluff source code
+ * using <a href="http://www.doxygen.org">Doxygen</a>.
  */
 
 /**
@@ -102,10 +103,6 @@
  *   cp_init();
  * }
  * @endcode
- */
-
-/**
- * @page cPlugin Plug-in structure
  *
- * This is a reference page about the structure of a plug-in.
+ * (TODO)
  */

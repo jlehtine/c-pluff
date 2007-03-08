@@ -12,6 +12,7 @@ CPPFLAGS += -I. -DCP_C_API=CP_EXPORT -DCP_HOST="\"$(host)\"" -DCP_DATADIR="\"$(d
 
 DOXYGEN = doxygen
 DOXYGEN_SOURCE = cpluffdef.h $(srcdir)/cpluff.h $(srcdir)/refdoc.dox
+DOXYGEN_STYLE = $(top_srcdir)/doxygen.footer $(top_srcdir)/doxygen.css
 
 lib_LTLIBRARIES = libcpluff.la
 libcpluff_la_SOURCES = psymbol.c pscan.c ploader.c pinfo.c pcontrol.c serial.c logging.c context.c cpluff.c util.c ../kazlib/list.c ../kazlib/hash.c internal.h util.h defines.h
@@ -27,7 +28,7 @@ include_HEADERS = cpluff.h cpluffdef.h
 
 refdoc: $(top_srcdir)/doc/reference/c-api/index.html
 
-$(top_srcdir)/doc/reference/c-api/index.html: $(DOXYGEN_SOURCE) Doxyfile-ref
+$(top_srcdir)/doc/reference/c-api/index.html: $(DOXYGEN_SOURCE) Doxyfile-ref $(DOXYGEN_STYLE)
 	mkdir -p doxygen-ref
 	cp -p $^ doxygen-ref
 	cd doxygen-ref && $(DOXYGEN) Doxyfile-ref
@@ -38,7 +39,7 @@ $(top_srcdir)/doc/reference/c-api/index.html: $(DOXYGEN_SOURCE) Doxyfile-ref
 
 impldoc: $(top_srcdir)/doc/implementation/c-api/index.html
 
-$(top_srcdir)/doc/implementation/c-api/index.html: $(srcdir)/*.h $(srcdir)/*.c cpluffdef.h ../config.h Doxyfile-impl
+$(top_srcdir)/doc/implementation/c-api/index.html: $(srcdir)/*.h $(srcdir)/*.c cpluffdef.h ../config.h Doxyfile-impl $(DOXYGEN_STYLE)
 	mkdir -p doxygen-impl
 	cp -p $^ doxygen-impl
 	cd doxygen-impl && $(DOXYGEN) Doxyfile-impl
