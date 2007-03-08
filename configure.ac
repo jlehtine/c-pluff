@@ -253,10 +253,10 @@ libcpluff/Doxyfile-impl
 loader/Makefile
 console/Makefile
 po/Makefile.in
+doc/Makefile
 test/Makefile
 test/plugins-source/Makefile
 test/plugins-source/callbackcounter/Makefile])
-doc/Makefile
 AC_OUTPUT
 
 
