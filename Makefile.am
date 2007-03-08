@@ -10,16 +10,14 @@ SUBDIRS = libcpluff loader console po test
 
 EXTRA_DIST = COPYRIGHT.txt autogen.sh doc doxygen.footer doxygen.css plugin.xsd
 
-DOC_DIRS = libcpluff
-RECURSIVE_DOC_TARGETS = refdoc impldoc
+doc: refdoc
+	cd doc && $(MAKE) $(AM_MAKEFLAGS) $@
 
-$(RECURSIVE_DOC_TARGETS):
-	@target=$@; \
-	for d in $(DOC_DIRS); do \
-		(cd $$d && $(MAKE) $(AM_MAKEFLAGS) $$target) || eval exit 1; \
-	done
+refdoc impldoc:
+	cd libcpluff && $(MAKE) $(AM_MAKEFLAGS) $@
 
 dist-hook:
 	rm -f $(distdir)/ABOUT-NLS $(distdir)/ChangeLog
+	rm -f $(distdir)/doc/*~
 
-.PHONY: $(RECURSIVE_DOC_TARGETS)
+.PHONY: doc refdoc impldoc

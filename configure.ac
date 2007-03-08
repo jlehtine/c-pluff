@@ -256,6 +256,7 @@ po/Makefile.in
 test/Makefile
 test/plugins-source/Makefile
 test/plugins-source/callbackcounter/Makefile])
+doc/Makefile
 AC_OUTPUT
 
 
