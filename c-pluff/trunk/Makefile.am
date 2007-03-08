@@ -11,12 +11,11 @@ SUBDIRS = libcpluff loader console po test
 EXTRA_DIST = COPYRIGHT.txt autogen.sh doc doxygen.footer doxygen.css plugin.xsd
 
 doc: refdoc
-	cd doc && $(MAKE) $(AM_MAKEFLAGS) $@
 
 refdoc impldoc:
 	cd libcpluff && $(MAKE) $(AM_MAKEFLAGS) $@
 
-dist-hook:
+dist-hook: doc
 	rm -f $(distdir)/ABOUT-NLS $(distdir)/ChangeLog
 	rm -f $(distdir)/doc/*~
 
