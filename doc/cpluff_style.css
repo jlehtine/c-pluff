@@ -1,6 +1,8 @@
 @import "common_style.css";
-body {
+html {
   background-color: #eff6fd;
+}
+body {
   margin: 0;
   padding: 0;
 
