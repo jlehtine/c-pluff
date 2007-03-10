@@ -4,4 +4,4 @@
 # This Makefile is free software; Johannes Lehtinen gives unlimited
 # permission to copy, distribute and modify it.
 
-EXTRA_DIST = index.en.html copyright.en.html cpluff_style.css common_style.css img/pageborder.png reference
+EXTRA_DIST = index.en.html copyright.en.html lists.en.html cpluff_style.css common_style.css img/pageborder.png reference
