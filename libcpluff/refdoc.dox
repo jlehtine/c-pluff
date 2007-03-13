@@ -40,10 +40,10 @@
  * and documentation is available at http://www.c-pluff.org/.
  *
  * - <a class="el" href="modules.html">API elements</a>
- * - <a class="el" href="files.html">Header files</a>
- * - @ref cMainProgram "Main program"
- * - @ref cPlugin "Plug-in"
- * - @ref cBuilding "Building C-Pluff programs"
+ * - <a class="el" href="files.html">header files</a>
+ * - @ref cMainProgram "main program"
+ * - @ref cPlugin "plug-in"
+ * - @ref cBuilding "building C-Pluff applications"
  *
  * This documentation has been generated from the C-Pluff source code
  * using <a href="http://www.doxygen.org">Doxygen</a>.
@@ -70,9 +70,9 @@
  * - @ref cMainProgramInitFramework "initializing the plug-in framework"
  * - @ref cMainProgramCreateContext "creating a plug-in context"
  * - @ref cMainProgramLoad "loading plug-ins"
- * - controlling plug-in execution
- * - changing plug-in configuration
- * - destroying the plug-in framework
+ * - @ref cMainProgramExec "controlling plug-in execution"
+ * - @ref cMainProgramChange "changing plug-in configuration" (opt.)
+ * - @ref cMainProgramDestroyFramework "destroying the plug-in framework"
  *
  * @subsection cMainProgramInitFramework Initializing the plug-in framework
  *
@@ -239,5 +239,128 @@
  * }
  * @endcode
  *
- * (TODO)
+ * @subsection cMainProgramExec Controlling plug-in execution
+ *
+ * The main program controls plug-in execution by starting and stopping
+ * plug-ins and by executing run functions registered by plug-ins.
+ * Additionally, the main program can pass startup arguments to plug-ins.
+ *
+ * When plug-ins are installed they are not yet activated and their
+ * runtime library is not even loaded at that point. The main program
+ * typically activates plug-ins by starting a main plug-in
+ * responsible for user interface or core application logic. This plug-in
+ * then implicitly causes other plug-ins to be activated via dependencies and
+ * by dynamically resolving symbols provided by other plug-ins. Plug-ins
+ * recursively activate each other until all initially needed plug-ins have
+ * been started. Some plug-ins might be activated at a later time when their
+ * functionality is needed, for example due to user action.
+ *
+ * If a plug-in needs to perform background operations, that is operations
+ * executed outside the invocation of plug-in provided interface functions,
+ * then it can either start a new thread or it can register a run function.
+ * A run function is a function that is typically executed as part of the
+ * main loop by the main program.
+ *
+ * The following example code shows how a main program might initialize
+ * plug-in startup arguments using ::cp_set_context_args, start the core
+ * plug-in using ::cp_start_plugin and then execute plug-in run functions
+ * using ::cp_run_plugins.
+ *
+ * @code
+ * #include <cpluff.h>
+ *
+ * extern cp_context_t *ctx;
+ * static const char corePluginId[] = "org.example.core";
+ *
+ * void run_plugins(char *argv[]) {
+ *   cp_status_t status;
+ *
+ *   // Set plug-in startup arguments
+ *   cp_set_context_args(ctx, argv);
+ *
+ *   // Start the core plug-in, possibly activating other plug-ins as well
+ *   status = cp_start_plugin(ctx, corePluginId);
+ *   if (status != CP_OK) {
+ *     // ... handle startup failure ...
+ *   }
+ *
+ *   // Execute plug-ins until there is no more work to be done
+ *   cp_run_plugins(ctx);
+ * }
+ *
+ * int main(int argc, char *argv[]) {
+ *   // ... do initialization and load plug-ins ...
+ *
+ *   run_plugins(argv);
+ *
+ *   // ... do destruction ...
+ * }
+ * @endcode
+ *
+ * Alternatively, if the main program has some operations it must perform
+ * as part of the main loop, the call to ::cp_run_plugins can be replaced
+ * by code using ::cp_run_plugins_step like in the following example.
+ *
+ * @code
+ * void mainloop(void) {
+ *   int finished = 0;
+ *
+ *   while (!finished) {
+ *     // ... do main program specific operations ...
+ *
+ *     finished = !cp_run_plugins_step(ctx);
+ *   }
+ * }
+ * @endcode
+ *
+ * @subsection cMainProgramChange Changing plug-in configuration
+ *
+ * C-Pluff has been designed to allow dynamic changes to the plug-in
+ * configuration, that is plug-ins being added or removed without shutting
+ * down the application or the framework. It is the responsibility of the
+ * main program to manage such changes if the application is to support
+ * dynamic configuration changes.
+ *
+ * Adding plug-ins is straightforward because there is no need to
+ * consider dependencies of active plug-ins. For example, if one uses
+ * plug-in collections as introduced above then new plug-ins can be
+ * deployed under the plug-in collection directory while the application is
+ * running and the main program can load them incrementally by calling
+ * ::cp_scan_plugins again. This call might be activated by some user interface
+ * element, for example a plug-in manager component which just downloaded and
+ * installed new plug-ins as requested by the user. The flags
+ * #CP_SP_STOP_ALL_ON_INSTALL and #CP_SP_RESTART_ACTIVE
+ * orred together can be used to cause all active plug-ins to be restarted
+ * if they do not otherwise notice the extensions provided by new plug-ins.
+ *
+ * Upgrading plug-ins is almost as straightforward because the C-Pluff
+ * framework manages plug-in dependencies (assuming the plug-ins have
+ * declared their dependencies properly). The new version of a plug-in
+ * can be deployed under the plug-in collection directory in a
+ * new subdirectory parallel to the old version while the application is
+ * running. The main program can then call ::cp_scan_plugins with
+ * #CP_SP_UPGRADE and #CP_SP_RESTART_ACTIVE orred together. This will stop
+ * the old version of the upgraded plug-in (implicitly stopping all plug-ins
+ * that depend on it), unload the plug-in from the framework, install the
+ * new version of the plug-in and finally restart plug-ins that were
+ * active before the operation. The old version of the plug-in can now
+ * be removed from the plug-in collection. Again, #CP_SP_STOP_ALL_ON_UPGRADE
+ * can be added to restart all active plug-ins.
+ *
+ * Deleting plug-ins must be done by first stopping and unloading the
+ * plug-in to be deleted using ::cp_uninstall_plugin. The the plug-in can
+ * be removed from the plug-in collection.
+ *
+ * @subsection cMainProgramDestroyFramework Destroying the plug-in framework
+ *
+ * The plug-in framework can be destroyed and all resources released by
+ * calling ::cp_destroy as many times as ::cp_init has been called. This
+ * is not a thread-safe operation and should generally be done by the main
+ * program just before application exits. The destroy function
+ * stops and unloads all plug-ins and destroys all plug-in contexts before
+ * destroying the core framework.
+ *
+ * Individual plug-in contexts can be destroyed by calling
+ * ::cp_destroy_context. The destroy function stops and unloads all plug-ins
+ * before destroying the context itself.
  */
