@@ -248,8 +248,8 @@ AC_DEFINE_UNQUOTED([CP_FNAMESEP_STR], ["$cp_fnamesep"], [File name separator str
 AC_CONFIG_FILES([Makefile
 libcpluff/Makefile
 libcpluff/cpluffdef.h
-libcpluff/Doxyfile-ref
-libcpluff/Doxyfile-impl
+libcpluff/dox/Doxyfile-ref
+libcpluff/dox/Doxyfile-impl
 loader/Makefile
 console/Makefile
 po/Makefile.in
