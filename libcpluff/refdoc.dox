@@ -67,14 +67,17 @@
  *
  * The main program has several responsibilities:
  *
- * - @ref cMainProgramInit "initializing the plug-in framework"
- * - loading plug-ins
+ * - @ref cMainProgramInitFramework "initializing the plug-in framework"
+ * - @ref cMainProgramCreateContext "creating a plug-in context"
+ * - @ref cMainProgramLoad "loading plug-ins"
  * - controlling plug-in execution
+ * - changing plug-in configuration
  * - destroying the plug-in framework
  *
- * @subsection cMainProgramInit Initializing the plug-in framework
+ * @subsection cMainProgramInitFramework Initializing the plug-in framework
  *
- * Plug-in framework must be initialized before its services can be used.
+ * Plug-in framework, or the C-Pluff library, must be initialized before its
+ * services can be used.
  * Initialization is not a thread-safe operation and should generally be
  * done by the main program before any additional plug-in framework accessing
  * threads are started. Initialization is done by calling ::cp_init.
@@ -92,15 +95,147 @@
  * #include <cpluff.h>
  *
  * void handle_fatal_error(const char *msg) {
+ *
  *   // ... log error, flush logs, send bug report, etc. ...
+ *
  *   fprintf(stderr, "A fatal error occurred: %s\n", msg);
  *   abort();
  * }
  *
  * void initialize(void) {
+ *   cp_status_t status;
+ *
  *   setlocale(LC_ALL, "");
  *   cp_set_fatal_error_handler(handle_fatal_error);
- *   cp_init();
+ *   status = cp_init();
+ *   if (status != CP_OK) {
+ *     // ... handle initialization failure ...
+ *   }
+ * }
+ * @endcode
+ *
+ * @subsection cMainProgramCreateContext Creating a plug-in context
+ *
+ * A plug-in context represents the co-operation environment of a set of
+ * plug-ins from the perspective of a particular participating plug-in or
+ * the perspective of the main program. From main program perspective, a
+ * plug-in context is a container for a set of plug-ins. A plug-in can interact
+ * with other plug-ins in the same container.
+ *
+ * An extensible application can have more than one plug-in container but
+ * usually one container should suffice. Due to the nature of C programs,
+ * plug-ins deployed to different containers are not very well insulated from
+ * each other. For example, global variables provided by a plug-in in one
+ * container are visible to all plug-ins in all containers. Also, by placing
+ * all plug-ins in the same container they can more efficiently share common
+ * base components which themselves might provide extensibility.
+ *
+ * A main program creates a plug-in context, to be used as a container for
+ * plugins, using ::cp_create_context.
+ *
+ * @code
+ * #include <cpluff.h>
+ *
+ * cp_context_t *ctx;
+ *
+ * void create_context(void) {
+ *   cp_status_t status;
+ *
+ *   ctx = cp_create_context(&status);
+ *   if (ctx == NULL) {
+ *     // ... handle initialization failure ...
+ *   }
+ * }
+ * @endcode
+ *
+ * @subsection cMainProgramLoad Loading plug-ins
+ *
+ * An extensible application is made of plug-ins that can be added and removed
+ * dynamically. The plug-ins are loaded by the main program using the services
+ * provided by the framework. The framework provides couple of alternative
+ * ways of loading plug-ins.
+ *
+ * As a lowest level operation, the main program can
+ * load individual plug-ins from known locations using
+ * ::cp_load_plugin_descriptor and ::cp_install_plugin. Here is example code
+ * that loads a set of plug-ins from file system locations listed in a file.
+ *
+ * @code
+ * #include <stdio.h>
+ * #include <cpluff.h>
+ *
+ * extern cp_context_t *ctx;
+ * static const char pluginListFile[] = "/etc/example/plugins.list";
+ *
+ * void load_plugins(void) {
+ *   char plugindir[128];
+ *   FILE *lf;
+ *
+ *   // Open plug-in list file
+ *   lf = fopen(pluginListFile, "r");
+ *   if (lf == NULL) {
+ *     // ... handle loading failure ...
+ *   }
+ *
+ *   // Load each listed plug-in
+ *   while (fgets(plugindir, 128, lf) != NULL) {
+ *     cp_plugin_info_t *plugininfo;
+ *     cp_status_t status;
+ *     int i;
+ *
+ *     // Remove possible trailing newline from plug-in location
+ *     for (i = 0; plugindir[i + 1] != '\0'; i++);
+ *     if (plugindir[i] == '\n') {
+ *       plugindir[i] = '\0';
+ *     }
+ *
+ *     // Load plug-in descriptor
+ *     plugininfo = cp_load_plugin_descriptor(ctx, plugindir, &status);
+ *     if (pinfo == NULL) {
+ *       // ... handle loading failure ...
+ *     }
+ *
+ *     // Install plug-in descriptor
+ *     status = cp_install_plugin(ctx, plugininfo);
+ *     if (status != CP_OK) {
+ *       // ... handle loading failure ...
+ *     }
+ *
+ *     // Release plug-in descriptor information
+ *     cp_release_info(ctx, plugininfo);
+ *   }
+ *
+ *   // Close plug-in list file
+ *   fclose(lf);
+ * }
+ * @endcode
+ *
+ * Alternatively, the main program can register and load plug-in collections.
+ * A plug-in collection is a file system directory which includes individual
+ * plug-ins in subdirectories, one plug-in in each subdirectory. Plug-in
+ * collections can be registered with a plug-in context using
+ * ::cp_register_pcollection. Plug-ins of the collection can then be scanned
+ * and loaded using ::cp_scan_plugins. Here is example code loading plug-ins
+ * from a plug-in collection.
+ * 
+ * @code
+ * #include <cpluff.h>
+ *
+ * extern cp_context_t *ctx;
+ * static const char pluginCollectionDir[] = "/etc/example/plugins";
+ *
+ * void load_plugins(void) {
+ *   cp_status_t status;
+ *
+ *   status = cp_register_pcollection(ctx, pluginCollectionDir);
+ *   if (status != CP_OK) {
+ *     // ... handle loading failure ...
+ *   }
+ *   status = cp_scan_plugins(ctx, 0);
+ *   if (status != CP_OK) {
+ *     // ... handle loading failure ...
+ *     // (notice that some plug-ins might have been loaded)
+ *   }
  * }
  * @endcode
  *
