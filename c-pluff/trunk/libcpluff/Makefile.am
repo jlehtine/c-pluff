@@ -7,13 +7,13 @@
 LIBS = @LIBS@
 LIBS += $(LIBS_LIBCPLUFF)
 
-EXTRA_DIST = refdoc.dox
+EXTRA_DIST = mainpage.dox mainprog.dox
 
 CPPFLAGS = @CPPFLAGS@
 CPPFLAGS += -I. -DCP_C_API=CP_EXPORT -DCP_HOST="\"$(host)\"" -DCP_DATADIR="\"$(datadir)\""
 
 DOXYGEN = doxygen
-DOXYGEN_SOURCE = cpluffdef.h $(srcdir)/cpluff.h $(srcdir)/refdoc.dox
+DOXYGEN_SOURCE = cpluffdef.h $(srcdir)/cpluff.h $(srcdir)/*.dox
 DOXYGEN_STYLE = $(top_srcdir)/doxygen.footer $(top_srcdir)/doxygen.css
 
 lib_LTLIBRARIES = libcpluff.la
