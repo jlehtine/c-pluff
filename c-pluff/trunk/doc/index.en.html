@@ -46,6 +46,25 @@
       feedback, ideas and thoughts about such platform directory to the
       <a href="mailto:johannes.lehtinen@iki.fi">author</a>.
     </p>
+    
+    <h2 id="structure">Architecture</h2>
+    <p>
+      The plug-in architecture supported by C-Pluff is presented in the
+      following figure. There is a thin main program controlling the plug-in
+      framework. The main program is responsible for initializing and setting
+      up the plug-in environment. Most of the application logic is contained in
+      plug-ins which are independent components and can be developed and
+      distributed separately. Plug-ins integrate with each other by providing
+      extension points and extensions. An extension point is a point into which
+      other plug-ins can attach extensions. An extension can be just
+      information, expressed in XML format, or the plug-in may also provide
+      program logic as part of the plug-in runtime library. The framework
+      provides services for accessing extensions and for managing plug-in
+      dependencies.
+    </p>
+    <p>
+      <img src="architecture.png" alt="Plug-in architecture" />
+    </p>
 
     <h2 id="download">Download</h2>
     <p>
