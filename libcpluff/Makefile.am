@@ -7,7 +7,7 @@
 LIBS = @LIBS@
 LIBS += $(LIBS_LIBCPLUFF)
 
-EXTRA_DIST = mainpage.dox mainprog.dox
+EXTRA_DIST = mainpage.dox architecture.dox mainprog.dox plugin.dox
 
 CPPFLAGS = @CPPFLAGS@
 CPPFLAGS += -I. -DCP_C_API=CP_EXPORT -DCP_HOST="\"$(host)\"" -DCP_DATADIR="\"$(datadir)\""
@@ -30,7 +30,7 @@ include_HEADERS = cpluff.h cpluffdef.h
 
 refdoc: $(top_srcdir)/doc/reference/c-api/index.html
 
-$(top_srcdir)/doc/reference/c-api/index.html: $(DOXYGEN_SOURCE) Doxyfile-ref $(DOXYGEN_STYLE)
+$(top_srcdir)/doc/reference/c-api/index.html: $(DOXYGEN_SOURCE) $(top_srcdir)/doc/architecture.png Doxyfile-ref $(DOXYGEN_STYLE)
 	mkdir -p doxygen-ref
 	cp -p $^ doxygen-ref
 	cd doxygen-ref && $(DOXYGEN) Doxyfile-ref
