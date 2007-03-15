@@ -36,14 +36,19 @@
  * signed plug-in packages or remote plug-in repositories but it is
  * possible to build such features on top of the current framework.
  *
- * The latest version of the framework implementation
- * and documentation is available at http://www.c-pluff.org/.
+ * Here are links to main topics.
  *
- * - <a class="el" href="modules.html">API elements</a>
- * - <a class="el" href="files.html">header files</a>
+ * - @ref architecture "plug-in architecture"
  * - @ref cMainProgram "main program"
  * - @ref cPlugin "plug-in"
  * - @ref cBuilding "building C-Pluff applications"
+ *
+ * - <a class="el" href="modules.html">API elements</a>
+ * - <a class="el" href="files.html">header files</a>
+ *
+ * The latest version of the framework implementation
+ * and documentation is available at
+ * <a href="http://www.c-pluff.org/">C-Pluff web site</a>.
  *
  * This documentation has been generated from the C-Pluff source code
  * using <a href="http://www.doxygen.org">Doxygen</a>.
