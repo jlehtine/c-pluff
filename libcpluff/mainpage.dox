@@ -38,13 +38,13 @@
  *
  * Here are links to main topics.
  *
- * - @ref architecture "plug-in architecture"
- * - @ref cMainProgram "main program"
- * - @ref cPlugin "plug-in"
- * - @ref cBuilding "building C-Pluff applications"
+ * - @ref architecture "Plug-in architecture"
+ * - @ref cMainProgram "Main program"
+ * - @ref plugin "Plug-in"
+ * - @ref cBuilding "Building C-Pluff applications"
  *
  * - <a class="el" href="modules.html">API elements</a>
- * - <a class="el" href="files.html">header files</a>
+ * - <a class="el" href="files.html">Header files</a>
  *
  * The latest version of the framework implementation
  * and documentation is available at
