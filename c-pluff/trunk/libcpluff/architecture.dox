@@ -40,4 +40,27 @@
  * dependencies.
  *
  * @image html architecture.png "C-Pluff plug-in architecture"
+ *
+ * @section architectureExtensions Extensions
+ *
+ * The idea behind extension points and extensions is that the extensibility
+ * is not limited only to few fixed plug-in types supported by the
+ * core application. Although the core plug-ins typically define the extension
+ * points for the core application logic, it is possible for any plug-in
+ * to specify additional extension points.
+ *
+ * For example, let us assume that we are developing an extensible text
+ * editor. One extension point defined by core editor plug-in could be
+ * auto-completion extension point. A plug-in providing basic Java source code
+ * support could provide an extension for auto-completing Java code.
+ * Now, while this extension could do basic auto-completion of plain Java code,
+ * it is customary that Java source code also includes embedded documentation,
+ * such as JavaDoc comments and tags, or annotations, such as XDoclet tags, as
+ * part of doc comments. Instead of trying to support all known tags and their
+ * semantics, the plug-in providing basic Java support could define another
+ * extension point for additional plug-ins that know how to perform
+ * auto-completion of different kind of tags in doc comments.
+ * This way the extensibility of the application is not limited to the
+ * extension points defined by the core application but the plug-ins can
+ * incrementally increase the extensibility of the application.
  */
