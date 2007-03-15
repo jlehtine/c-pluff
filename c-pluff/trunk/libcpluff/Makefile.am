@@ -28,26 +28,37 @@ libcpluff_la_LDFLAGS = -no-undefined -version-info $(CP_C_LIB_VERSION)
 
 include_HEADERS = cpluff.h cpluffdef.h
 
-refdoc: $(top_srcdir)/doc/reference/c-api/index.html
+doc: refdoc
 
-$(top_srcdir)/doc/reference/c-api/index.html: $(DOXYGEN_SOURCE) $(top_srcdir)/doc/architecture.png Doxyfile-ref $(DOXYGEN_STYLE)
+refdoc: doc/reference/c-api/index.html
+
+doc/reference/c-api/index.html: $(DOXYGEN_SOURCE) $(top_srcdir)/doc/img/architecture.png Doxyfile-ref $(DOXYGEN_STYLE)
+	rm -rf doxygen-ref
 	mkdir -p doxygen-ref
 	cp -p $^ doxygen-ref
 	cd doxygen-ref && $(DOXYGEN) Doxyfile-ref
-	mkdir -p $(top_srcdir)/doc/reference
-	rm -rf $(top_srcdir)/doc/reference/c-api
-	mv doxygen-ref/html $(top_srcdir)/doc/reference/c-api
+	mkdir -p doc/reference
+	rm -rf doc/reference/c-api
+	mv doxygen-ref/html doc/reference/c-api
 	rm -rf doxygen-ref
 
-impldoc: $(top_srcdir)/doc/implementation/c-api/index.html
+impldoc: doc/implementation/c-api/index.html
 
-$(top_srcdir)/doc/implementation/c-api/index.html: $(srcdir)/*.h $(srcdir)/*.c cpluffdef.h ../config.h Doxyfile-impl $(DOXYGEN_STYLE)
+doc/implementation/c-api/index.html: $(srcdir)/*.h $(srcdir)/*.c cpluffdef.h ../config.h Doxyfile-impl $(DOXYGEN_STYLE)
+	rm -rf doxygen-impl
 	mkdir -p doxygen-impl
 	cp -p $^ doxygen-impl
 	cd doxygen-impl && $(DOXYGEN) Doxyfile-impl
-	mkdir -p $(top_srcdir)/doc/implementation
-	rm -rf $(top_srcdir)/doc/implementation/c-api
-	mv doxygen-impl/html $(top_srcdir)/doc/implementation/c-api
+	mkdir -p doc/implementation
+	rm -rf doc/implementation/c-api
+	mv doxygen-impl/html doc/implementation/c-api
 	rm -rf doxygen-impl
 
-.PHONY: refdoc impldoc
+dist-hook: refdoc
+	mkdir -p $(top_distdir)/doc/reference
+	cp -rp doc/reference/c-api $(top_distdir)/doc/reference
+
+clean-local:
+	rm -rf doc
+
+.PHONY: doc refdoc impldoc
