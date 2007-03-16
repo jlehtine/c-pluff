@@ -48,10 +48,11 @@
  * the plug-in, plug-in version information and static dependencies of the
  * plug-in. Most of the elements are optional. Most of the descriptor
  * information described here is available to software via
- * @ref cp_plugin_info_t structure.
+ * @ref cp_plugin_info_t structure. The plug-in descriptor must be located
+ * in the plug-in directory as @c plugin.xml.
  *
  * The formal declaration of plug-in descriptor is available as
- * XML Schema Definition in plugin.xsd located in the top level source
+ * XML Schema Definition in @c plugin.xsd located in the top level source
  * directory. Currently there is no namespace associated with the plug-in
  * descriptor. Here is an example of a plug-in descriptor. Click element name
  * to jump into documentation for that element.
@@ -265,12 +266,12 @@
  * definition. The plug-in supplying the extension can then export the program
  * logic as a global symbol with arbitrary name and then place the name of the
  * symbol in extension data. Alternatively, the plug-in can define a virtual
- * symbol at runtime using ::cp_define_symbol. The program logic in plug-ins
- * using the extension point can then resolve the named symbol using
- * ::cp_resolve_symbol at runtime. The framework automatically creates a
- * dependency from the symbol using plug-in to the symbol supplying plug-in
- * to prevent failures in case the symbol supplying plug-in is stopped or
- * unloaded.
+ * symbol at runtime using ::cp_define_symbol. Other plug-ins that are using
+ * extensions registered at the extension point can then resolve the named
+ * symbol using ::cp_resolve_symbol at runtime. The framework automatically
+ * creates a dependency from the symbol using plug-in to the symbol supplying
+ * plug-in to prevent failures in case the symbol supplying plug-in is stopped
+ * or unloaded.
  *
  * @subsection pluginData Static plug-in data
  *
