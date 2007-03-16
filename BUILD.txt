@@ -1,12 +1,65 @@
+BUILDING C-PLUFF
+================
+
+These are minimal instructions for building the C-Pluff framework
+implementation.
+
+
+PREREQUISITES
+-------------
+
+To build C-Pluff, you need to have following prerequisites installed:
+
+  - a C library supporting POSIX dlopen
+    (for example, GNU C library)
+    or
+    GNU Libtool libltdl library and associated header files
+    (http://www.gnu.org/software/libtool/)
+
+  - Expat XML Parser library and associated header files
+    (http://expat.sourceforge.net/)
+
+
+BUILDING
+--------
+
 To build C-Pluff, follow the usual autotools procedure:
 
-  ./configure
-  make
+  Building in source directory:
+    ./configure
+    make
+
+  Building in separate build directory:
+    cd BUILD_DIR
+    SRC_DIR/configure
+    make
 
 For help on available configuration options:
 
   ./configure --help
 
+
+INSTALL
+-------
+
 To install the library and header files:
 
   make install
+
+
+KNOWN GOOD BUILD PLATFORMS
+--------------------------
+
+C-Pluff is known to compile cleanly on following combinations:
+
+  - Native Linux build
+    - GNU C library 2.3.6
+    - Expat 1.95.8
+    - GCC 4.1.2
+
+  - Cross compilation for Windows on Linux
+    - MinGW Runtime 3.9
+    - MinGW binutils 2.16.91
+    - MinGW 3.4.5
+    - Expat 1.95.8
+    - GNU Libtool libltdl 1.5.22
