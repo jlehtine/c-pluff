@@ -29,7 +29,7 @@
  * The main program is the part of executable that is located outside the
  * plug-in framework. The main program is responsible for setting up
  * the plug-in framework and for loading the desired set of
- * @ref cPlugin "plug-ins". The main program should preferably be very
+ * @ref plugin "plug-ins". The main program should preferably be very
  * thin, a mere plug-in loader, because it can not fully participate in plug-in
  * interaction. C-Pluff distribution provides a plug-in loader,
  * @ref cpluff-loader, which can be used as a generic main program for
