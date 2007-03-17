@@ -13,11 +13,12 @@ file usage.
   $ file COPYRIGHT.txt
   COPYRIGHT.txt: ASCII English text
 
-This example shows how a minimalistic file clone could be implemented as
+This example shows how a minimalistic file clone could be implemented as an
 extensible application based on C-Pluff. We will call the resulting utility
-cpfile. Notice that this is intentionally a very straightforward
-implementation. It could be made more efficient and elegant but the focus
-here is simplicity.
+cpfile. It can recognize some special files and some file types based on
+file extension. But it could be further extended to recognize files based
+on their content by deploying a suitable plug-in. But notice that the focus
+here was on creating a straightforward example rather than an efficient one.
 
 Before building/installing this example, you must build/install the
 C-Pluff framework implementation. This is done automatically if you run

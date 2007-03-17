@@ -260,7 +260,8 @@ test/plugins-source/callbackcounter/Makefile
 examples/Makefile
 examples/cpfile/Makefile
 examples/cpfile/plugins/Makefile
-examples/cpfile/plugins/core/Makefile])
+examples/cpfile/plugins/core/Makefile
+examples/cpfile/plugins/special/Makefile])
 AC_OUTPUT
 
 
