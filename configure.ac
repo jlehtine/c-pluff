@@ -256,7 +256,11 @@ po/Makefile.in
 doc/Makefile
 test/Makefile
 test/plugins-source/Makefile
-test/plugins-source/callbackcounter/Makefile])
+test/plugins-source/callbackcounter/Makefile
+examples/Makefile
+examples/cpfile/Makefile
+examples/cpfile/plugins/Makefile
+examples/cpfile/plugins/core/Makefile])
 AC_OUTPUT
 
 
