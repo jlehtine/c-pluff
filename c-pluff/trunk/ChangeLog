@@ -1,7 +1,9 @@
 C-Pluff (0.1.1) alpha
 
-  * Build reference documentation in build directory.
   * More complete documentation.
+  * Added an example of extensible application (cpfile).
+  * Fixed a bug in cpluff-loader when setting context arguments.
+  * Build reference documentation in build directory.
 
  -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
 
