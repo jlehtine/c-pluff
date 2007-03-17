@@ -3,6 +3,8 @@ C-Pluff (0.1.1) alpha
   * More complete documentation.
   * Added an example of extensible application (cpfile).
   * Fixed a bug in cpluff-loader when setting context arguments.
+  * Do not warn about unknown attributes of extension element because
+    they might be extension point specific data.
   * Build reference documentation in build directory.
 
  -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???

@@ -211,20 +211,18 @@ static const XML_Char * const *contains_str(const XML_Char * const *list,
 }
 
 /**
- * Checks that an element has non-empty values for required attributes and
- * warns if there are unknown attributes. Increments the error count for
- * each missing required attribute.
+ * Checks that an element has non-empty values for required attributes.
+ * Increments the error count for each missing attribute.
  * 
  * @param context the parsing context
  * @param elem the element being checked
  * @param atts the attribute list for the element
  * @param req_atts the required attributes (NULL terminated list, or NULL)
- * @param opt_atts the optional attributes (NULL terminated list, or NULL)
  * @return whether the required attributes are present
  */
-static int check_attributes(ploader_context_t *plcontext,
+static int check_req_attributes(ploader_context_t *plcontext,
 	const XML_Char *elem, const XML_Char * const *atts,
-	const XML_Char * const *req_atts, const XML_Char * const *opt_atts) {
+	const XML_Char * const *req_atts) {
 	const XML_Char * const *a;
 	int error = 0;
 	
@@ -246,6 +244,29 @@ static int check_attributes(ploader_context_t *plcontext,
 			error = 1;
 		}
 	}
+	
+	return !error;
+}
+
+/**
+ * Checks that an element has non-empty values for required attributes and
+ * warns if there are unknown attributes. Increments the error count for
+ * each missing required attribute.
+ * 
+ * @param context the parsing context
+ * @param elem the element being checked
+ * @param atts the attribute list for the element
+ * @param req_atts the required attributes (NULL terminated list, or NULL)
+ * @param opt_atts the optional attributes (NULL terminated list, or NULL)
+ * @return whether the required attributes are present
+ */
+static int check_attributes(ploader_context_t *plcontext,
+	const XML_Char *elem, const XML_Char * const *atts,
+	const XML_Char * const *req_atts, const XML_Char * const *opt_atts) {
+	int error = 0;
+	
+	// Check required attributes
+	error = !check_req_attributes(plcontext, elem, atts, req_atts);
 	
 	// Warn if there are unknown attributes 
 	for (; *atts != NULL; atts += 2) {
@@ -499,7 +520,7 @@ static void XMLCALL start_element_handler(
 	static const XML_Char * const req_ext_point_atts[] = { "id", NULL };
 	static const XML_Char * const opt_ext_point_atts[] = { "name", "schema", NULL };
 	static const XML_Char * const req_extension_atts[] = { "point", NULL };
-	static const XML_Char * const opt_extension_atts[] = { "id", "name", NULL };
+	//static const XML_Char * const opt_extension_atts[] = { "id", "name", NULL };
 	ploader_context_t *plcontext = userData;
 	unsigned int i;
 
@@ -614,8 +635,8 @@ static void XMLCALL start_element_handler(
 			} else if (!(strcmp(name, "extension"))) {
 				plcontext->state = PARSER_EXTENSION;
 				plcontext->depth = 0;
-				if (check_attributes(plcontext, name, atts,
-						req_extension_atts, opt_extension_atts)) {
+				if (check_req_attributes(
+					plcontext, name, atts, req_extension_atts)) {
 					cp_extension_t *extension;
 				
 					// Allocate space for extensions, if necessary 
