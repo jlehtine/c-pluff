@@ -5,7 +5,7 @@
  */
 
 #include <stdlib.h>
-#include <stdarg.h>
+#include <stdio.h>
 #include <cpluff.h>
 #include "core.h"
 
@@ -49,6 +49,48 @@ struct registered_classifier_t {
  * ----------------------------------------------------------------------*/
 
 /**
+ * A run function for the core plug-in. In this case this function acts as
+ * the application main function so there is no need for us to split the
+ * execution into small steps. Rather, we execute the whole main loop at
+ * once to make it simpler.
+ */
+static int run(void *d) {
+	plugin_data_t *data = d;
+	char **argv;
+	int argc;
+	int i;
+
+	/* Read arguments and print usage, if no arguments given */
+	argv = cp_get_context_args(data->ctx, &argc);
+	if (argc < 2) {
+		fputs("usage: cpfile <file> [<file>...]\n", stdout);
+		return 0;
+	}
+
+	/* Go through all files listed as command arguments */
+	for (i = 1; argv[i] != NULL; i++) {
+		int j;
+		int classified = 0;
+		
+		/* Print file name */
+		printf("%s: ", argv[i]);
+		
+		/* Try classifiers in order of descending priority */
+		for (j = 0; j < data->num_classifiers && !classified; j++) {
+			classified = data->classifiers[j].classifier->classify(argv[i]);
+		}
+		
+		/* Check if unknown file */
+		if (!classified) {
+			fputs("unknown file type\n", stdout);
+		}
+	}
+	
+	/* All done */
+	return 0;
+} 
+
+/**
  * Creates a new plug-in instance.
  */
 static void *create(cp_context_t *ctx) {
@@ -62,6 +104,14 @@ static void *create(cp_context_t *ctx) {
 			"Insufficient memory for plug-in data.");
 	}
 	return data;
+}
+
+/**
+ * Compares two registered classifiers according to priority.
+ */
+static int comp_classifiers(const registered_classifier_t *c1,
+	const registered_classifier_t *c2) {
+	return c2->priority - c1->priority;
 }
 
 /**
@@ -153,6 +203,17 @@ static int start(void *d) {
 	
 	/* Release extension information */
 	cp_release_info(data->ctx, cl_exts);
+	
+	/* Sort registered classifiers according to priority */
+	if (data->num_classifiers > 1) {
+		qsort(data->classifiers,
+			data->num_classifiers,
+			sizeof(registered_classifier_t),
+			comp_classifiers);
+	}
+	
+	/* Register run function to do the real work */
+	cp_run_function(data->ctx, run);
 	
 	/* Successfully started */
 	return CP_OK;
