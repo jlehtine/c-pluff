@@ -151,6 +151,9 @@ static int start(void *d) {
 		data->num_classifiers++;
 	}
 	
+	/* Release extension information */
+	cp_release_info(data->ctx, cl_exts);
+	
 	/* Successfully started */
 	return CP_OK;
 }

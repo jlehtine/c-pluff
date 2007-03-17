@@ -8,7 +8,7 @@
   id="org.c-pluff.examples.cpfile.core"
   version="0.1"
   name="cpfile core logic"
-  provider="Johannes Lehtinen">
+  provider-name="Johannes Lehtinen">
   <requires>
     <c-pluff version="0.1"/>
   </requires>
