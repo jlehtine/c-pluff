@@ -358,7 +358,7 @@ int main(int argc, char *argv[]) {
 	
 	// Set context arguments
 	ctx_argv = chk_malloc((argc - optind + 2) * sizeof(char *));
-	ctx_argv[0] = 0;
+	ctx_argv[0] = "";
 	for (i = optind; i < argc; i++) {
 		ctx_argv[i - optind + 1] = argv[i];
 	}
