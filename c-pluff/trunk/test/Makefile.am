@@ -78,6 +78,10 @@ check-local: install-plugins
 
 clean-local:
 	rm -rf tmp
+	cd plugins-source && $(MAKE) $(AM_MAKEFLAGS) clean
+
+distclean-local:
+	cd plugins-source && $(MAKE) $(AM_MAKEFLAGS) distclean
 
 dist-hook:
 	mkdir -p $(distdir)
@@ -92,12 +96,12 @@ dist-hook:
 	cd $(srcdir)/pcollections && for d in */*; do mkdir -p $(distdir)/pcollections/"$$d" || exit 1; done && cp -p --parents */*/plugin.xml $(distdir)/pcollections
 
 install-plugins: build-plugins install-libcpluff
-	cd plugins-source && $(MAKE) DESTDIR=$(tmpinstalldir) install
+	cd plugins-source && $(MAKE) $(AM_MAKEFLAGS) DESTDIR=$(tmpinstalldir) install
 
 build-plugins:
 	cd plugins-source && $(MAKE)
 
 install-libcpluff:
-	cd ../libcpluff && $(MAKE) DESTDIR=$(tmpinstalldir) install
+	cd ../libcpluff && $(MAKE) $(AM_MAKEFLAGS) DESTDIR=$(tmpinstalldir) install
 
 .PHONY: build-plugins install-plugins install-libcpluff
