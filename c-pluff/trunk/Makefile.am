@@ -23,10 +23,7 @@ examples-install: install
 dist-hook:
 	rm -f $(distdir)/ABOUT-NLS
 
-clean-local: examples-clean
-	cd examples && $(MAKE) $(AM_MAKEFLAGS) clean
-
-distclean-local:
-	cd examples && $(MAKE) $(AM_MAKEFLAGS) distclean
+clean-local:
+	test ! -f examples/Makefile || (cd examples && $(MAKE) $(AM_MAKEFLAGS) clean)
 
 .PHONY: doc examples examples-install examples-clean

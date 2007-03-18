@@ -13,7 +13,7 @@ C-Pluff (0.1.1) alpha
   * Build reference documentation in build directory.
   * Added a test for inter-plugin symbol usage.
 
- -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  Sun, 18 Mar 2007 18:41:34 +0200
+ -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  Sun, 18 Mar 2007 23:28:59 +0200
 
 C-Pluff (0.1.0) alpha
 

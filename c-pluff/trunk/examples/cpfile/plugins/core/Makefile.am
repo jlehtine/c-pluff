@@ -14,5 +14,7 @@ plugin_LTLIBRARIES = libcore.la
 plugin_DATA = plugin.xml classifiers.xsd
 plugin_HEADERS = core.h
 
+EXTRA_DIST = plugin.xml classifiers.xsd
+
 libcore_la_SOURCES = core.c core.h
 libcore_la_LDFLAGS = -module -avoid-version
