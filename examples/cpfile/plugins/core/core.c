@@ -60,33 +60,33 @@ static int run(void *d) {
 	int argc;
 	int i;
 
-	/* Read arguments and print usage, if no arguments given */
+	// Read arguments and print usage, if no arguments given
 	argv = cp_get_context_args(data->ctx, &argc);
 	if (argc < 2) {
 		fputs("usage: cpfile <file> [<file>...]\n", stdout);
 		return 0;
 	}
 
-	/* Go through all files listed as command arguments */
+	// Go through all files listed as command arguments
 	for (i = 1; argv[i] != NULL; i++) {
 		int j;
 		int classified = 0;
 		
-		/* Print file name */
+		// Print file name
 		printf("%s: ", argv[i]);
 		
-		/* Try classifiers in order of descending priority */
+		// Try classifiers in order of descending priority
 		for (j = 0; j < data->num_classifiers && !classified; j++) {
 			classified = data->classifiers[j].classifier->classify(argv[i]);
 		}
 		
-		/* Check if unknown file */
+		// Check if unknown file
 		if (!classified) {
 			fputs("unknown file type\n", stdout);
 		}
 	}
 	
-	/* All done */
+	// All done
 	return 0;
 } 
 
@@ -124,7 +124,7 @@ static int start(void *d) {
 	cp_status_t status;
 	int i;
 	
-	/* Obtain list of registered classifiers */
+	// Obtain list of registered classifiers
 	cl_exts = cp_get_extensions_info(
 		data->ctx,
 		"org.c-pluff.examples.cpfile.core.classifiers",
@@ -133,18 +133,18 @@ static int start(void *d) {
 	);
 	if (cl_exts == NULL) {
 		
-		/* An error occurred and framework logged it */
+		// An error occurred and framework logged it
 		return status;
 	}
 	
-	/* Allocate memory for classifier information, if any */
+	// Allocate memory for classifier information, if any
 	if (num_cl_exts > 0) {
 		data->classifiers = malloc(
 			num_cl_exts * sizeof(registered_classifier_t)
 		);
 		if (data->classifiers == NULL) {
 			
-			/* Memory allocation failed */
+			// Memory allocation failed
 			cp_log(data->ctx, CP_LOG_ERROR,
 				"Insufficient memory for classifier list.");
 			return CP_ERR_RESOURCE;
@@ -158,25 +158,25 @@ static int start(void *d) {
 		int pri;
 		classifier_t *cl;
 		
-		/* Get the classifier function priority */
+		// Get the classifier function priority
 		str = cp_lookup_cfg_value(
 			cl_exts[i]->configuration, "@priority"
 		);
 		if (str == NULL) {
 			
-			/* Classifier is missing mandatory priority */
+			// Classifier is missing mandatory priority
 			cp_log(data->ctx, CP_LOG_ERROR,
 				"Ignoring classifier without priority.");
 			continue;
 		}
 		pri = atoi(str);
 		
-		/* Resolve classifier data pointer */
+		// Resolve classifier data pointer
 		str = cp_lookup_cfg_value(
 			cl_exts[i]->configuration, "@classifier");
 		if (str == NULL) {
 			
-			/* Classifier symbol name is missing */
+			// Classifier symbol name is missing
 			cp_log(data->ctx, CP_LOG_ERROR,
 				"Ignoring classifier without symbol name.");
 			continue;
@@ -189,22 +189,22 @@ static int start(void *d) {
 		);
 		if (cl == NULL) {
 			
-			/* Could not resolve classifier symbol */
+			// Could not resolve classifier symbol
 			cp_log(data->ctx, CP_LOG_ERROR,
 				"Ignoring classifier which could not be resolved.");
 			continue;
 		}
 		
-		/* Add classifier to the list of registered classifiers */
+		// Add classifier to the list of registered classifiers
 		data->classifiers[data->num_classifiers].priority = pri;
 		data->classifiers[data->num_classifiers].classifier = cl;
 		data->num_classifiers++;
 	}
 	
-	/* Release extension information */
+	// Release extension information
 	cp_release_info(data->ctx, cl_exts);
 	
-	/* Sort registered classifiers according to priority */
+	// Sort registered classifiers according to priority
 	if (data->num_classifiers > 1) {
 		qsort(data->classifiers,
 			data->num_classifiers,
@@ -212,10 +212,10 @@ static int start(void *d) {
 			comp_classifiers);
 	}
 	
-	/* Register run function to do the real work */
+	// Register run function to do the real work
 	cp_run_function(data->ctx, run);
 	
-	/* Successfully started */
+	// Successfully started
 	return CP_OK;
 }
 
@@ -226,17 +226,17 @@ static void stop(void *d) {
 	plugin_data_t *data = d;
 	int i;
 	
-	/* Release classifier data, if any */
+	// Release classifier data, if any
 	if (data->classifiers != NULL) {
 		
-		/* Release classifier pointers */
+		// Release classifier pointers
 		for (i = 0; i < data->num_classifiers; i++) {
 			cp_release_symbol(
 				data->ctx, data->classifiers[i].classifier
 			);
 		}
 		
-		/* Free local data */
+		// Free local data
 		free(data->classifiers);
 		data->classifiers = NULL;
 		data->num_classifiers = 0;
