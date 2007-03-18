@@ -10,14 +10,14 @@ dnl -------------------
 dnl Version information
 define(CP_M4_VERSION_MAJOR, [0])
 define(CP_M4_VERSION_MINOR, [1])
-define(CP_M4_VERSION_REV, [0])
+define(CP_M4_VERSION_REV, [1])
 define(CP_M4_RELEASE_VERSION, CP_M4_VERSION_MAJOR.CP_M4_VERSION_MINOR.CP_M4_VERSION_REV)
 
 dnl Backwards compatibility information
 define(CP_M4_ABI_COMPATIBILITY, [0.1])
 
 dnl Library version information
-define(CP_M4_C_LIB_VERSION, [0:0:0])
+define(CP_M4_C_LIB_VERSION, [0:1:0])
 define(CP_M4_CXX_LIB_VERSION, [0:0:0])
 
 # Autoconf initialization
