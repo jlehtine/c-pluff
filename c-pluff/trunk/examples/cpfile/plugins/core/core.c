@@ -76,8 +76,11 @@ static int run(void *d) {
 		printf("%s: ", argv[i]);
 		
 		// Try classifiers in order of descending priority
-		for (j = 0; j < data->num_classifiers && !classified; j++) {
-			classified = data->classifiers[j].classifier->classify(argv[i]);
+		for (j = 0; !classified && j < data->num_classifiers; j++) {
+			classifier_t *cl
+				= data->classifiers[j].classifier;
+				
+			classified = cl->classify(cl->data, argv[i]);
 		}
 		
 		// Check if unknown file
@@ -209,7 +212,7 @@ static int start(void *d) {
 		qsort(data->classifiers,
 			data->num_classifiers,
 			sizeof(registered_classifier_t),
-			comp_classifiers);
+			(int (*)(const void *, const void *)) comp_classifiers);
 	}
 	
 	// Register run function to do the real work

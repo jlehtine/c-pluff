@@ -11,16 +11,24 @@
 #include <cpluff.h>
 #include <core.h>
 
+
 /* ------------------------------------------------------------------------
  * Internal functions
  * ----------------------------------------------------------------------*/
 
-static int classify(const char *path) {
+/**
+ * Classifies a file by using stat(2). This classifier does not need
+ * any classifier data so we use NULL as dummy data pointer. Therefore
+ * we do not need a plug-in instance either as there is no data to be
+ * initialized.
+ */
+static int classify(void *dummy, const char *path) {
 	struct stat s;
 	const char *type;
 	
 	// Stat the file
 	if (lstat(path, &s)) {
+		fflush(stdout);
 		perror("stat failed");
 		
 		// No point for other classifiers to classify this
@@ -53,4 +61,4 @@ static int classify(const char *path) {
  * Exported classifier information
  * ----------------------------------------------------------------------*/
 
-CP_EXPORT classifier_t cp_ex_cpfile_special_classifier = { classify };
+CP_EXPORT classifier_t cp_ex_cpfile_special_classifier = { NULL, classify };
