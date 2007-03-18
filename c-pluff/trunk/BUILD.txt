@@ -2,7 +2,8 @@ BUILDING C-PLUFF
 ================
 
 These are minimal instructions for building the C-Pluff framework
-implementation.
+implementation. For help on building C-Pluff based applications,
+see the examples in examples directory.
 
 
 PREREQUISITES
