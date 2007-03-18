@@ -6,7 +6,7 @@
 
 SUBDIRS = plugins
 
-EXTRA_DIST = README.txt
+EXTRA_DIST = README.txt cpfile.in
 
 cpfile: $(srcdir)/cpfile.in
 	sed -e 's:@''bindir@:$(bindir):g' -e 's:@''libdir@:$(libdir):g' < $< > $@

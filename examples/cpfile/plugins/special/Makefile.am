@@ -15,5 +15,7 @@ plugindir = $(pluginsdir)/special
 plugin_LTLIBRARIES = libspecial.la
 plugin_DATA = plugin.xml
 
+EXTRA_DIST = plugin.xml
+
 libspecial_la_SOURCES = special.c
 libspecial_la_LDFLAGS = -module -avoid-version

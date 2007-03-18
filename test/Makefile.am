@@ -78,10 +78,7 @@ check-local: install-plugins
 
 clean-local:
 	rm -rf tmp
-	cd plugins-source && $(MAKE) $(AM_MAKEFLAGS) clean
-
-distclean-local:
-	cd plugins-source && $(MAKE) $(AM_MAKEFLAGS) distclean
+	test ! -f plugins-source/Makefile || (cd plugins-source && $(MAKE) $(AM_MAKEFLAGS) clean)
 
 dist-hook:
 	mkdir -p $(distdir)

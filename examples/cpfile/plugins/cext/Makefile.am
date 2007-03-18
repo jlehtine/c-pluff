@@ -8,3 +8,5 @@ pluginsdir = $(libdir)/cpfile/plugins
 plugindir = $(pluginsdir)/cext
 
 plugin_DATA = plugin.xml
+
+EXTRA_DIST = plugin.xml
