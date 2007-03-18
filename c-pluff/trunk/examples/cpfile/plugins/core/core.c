@@ -138,7 +138,7 @@ static int start(void *d) {
 	}
 	
 	/* Allocate memory for classifier information, if any */
-	if (data->num_classifiers > 0) {
+	if (num_cl_exts > 0) {
 		data->classifiers = malloc(
 			num_cl_exts * sizeof(registered_classifier_t)
 		);
