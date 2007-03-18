@@ -4,16 +4,16 @@ C-Pluff (0.1.1) alpha
   * Added an example of extensible application (cpfile).
   * Fixed bug in cpluff-loader: Use empty string for the first argument
     instead of NULL pointer.
-  * Fixed bug in cp_get_extensions_info: Could overwrite memory when
+  * Fixed bug in cp_get_extensions_info: Overwrote memory when
     returning extensions for a specific extension point.
-  * Fixed bug in plug-in uninstallation: Could access freed memory when
+  * Fixed bug in plug-in uninstallation: Accessed freed memory when
     uninstalling a plug-in.
-  * Do not warn about unknown attributes of extension element in libcluff
+  * Do not warn about unknown attributes of an extension element
     because they might be extension point specific data.
   * Build reference documentation in build directory.
   * Added a test for inter-plugin symbol usage.
 
- -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
+ -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  Sun, 18 Mar 2007 18:41:34 +0200
 
 C-Pluff (0.1.0) alpha
 

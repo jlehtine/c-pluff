@@ -41,10 +41,12 @@
  * - @ref architecture "Plug-in architecture"
  * - @ref cMainProgram "Main program"
  * - @ref plugin "Plug-in"
- * - @ref cBuilding "Building C-Pluff applications"
  *
  * - <a class="el" href="modules.html">API elements</a>
  * - <a class="el" href="files.html">Header files</a>
+ *
+ * For a "quick start guide" in developing C-Pluff based applications,
+ * see the example in the examples directory of the source distribution.
  *
  * The latest version of the framework implementation
  * and documentation is available at
