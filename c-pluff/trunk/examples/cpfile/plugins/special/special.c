@@ -17,20 +17,35 @@
 
 static int classify(const char *path) {
 	struct stat s;
+	const char *type;
 	
-	/* Stat the file */
+	// Stat the file
 	if (lstat(path, &s)) {
 		perror("stat failed");
 		
-		/* No point for other classifiers to classify this */
+		// No point for other classifiers to classify this
 		return 1;
 	}
 	
-	/* Check if this is a special file */
-	// TODO
-	
-	/* Did not recognize so let other plug-ins try */
-	return 0;
+	// Check if this is a special file
+	if (S_ISDIR(s.st_mode)) {
+		type = "directory";
+	} else if (S_ISCHR(s.st_mode)) {
+		type = "character device";
+	} else if (S_ISBLK(s.st_mode)) {
+		type = "block device";
+	} else if (S_ISLNK(s.st_mode)) {
+		type = "symbolic link";
+	} else {
+		
+		// Did not recognize it, let other plug-ins try
+		return 0;
+	}
+		
+	// Print recognized file type
+	fputs(type, stdout);
+	putchar('\n');
+	return 1;
 }
 
 
@@ -38,4 +53,4 @@ static int classify(const char *path) {
  * Exported classifier information
  * ----------------------------------------------------------------------*/
 
-classifier_t cp_ex_cpfile_special_classifier = { classify };
+CP_EXPORT classifier_t cp_ex_cpfile_special_classifier = { classify };
