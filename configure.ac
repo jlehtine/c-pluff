@@ -257,6 +257,8 @@ doc/Makefile
 test/Makefile
 test/plugins-source/Makefile
 test/plugins-source/callbackcounter/Makefile
+test/plugins-source/symuser/Makefile
+test/plugins-source/symprovider/Makefile
 examples/Makefile
 examples/cpfile/Makefile
 examples/cpfile/plugins/Makefile

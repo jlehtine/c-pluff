@@ -41,3 +41,4 @@ plugindeploop
 extpoints
 extensions
 extcfgutils
+symbolusage
