@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<plugin id="symprovider" name="Symbol Provider">
+	<!-- 
+	
+	This dependency causes a dependency loop and makes uninitialization
+	fail, depending on the order the plug-ins are stopped. Not sure yet
+	what would be the right way to handle this kind of situations.
+	
+	<requires>
+		<import plugin="symuser"/>
+	</requires>
+	 -->
+	<runtime library="libruntime"/>
+	<extension point="symuser.strings" string-symbol="sp_string"/>
+</plugin>

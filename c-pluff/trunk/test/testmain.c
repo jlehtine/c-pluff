@@ -165,6 +165,7 @@ int main(int argc, char *argv[]) {
 	}
 	
 	// Execute the test
+	// (NOTE: This conversion is not ANSI C compatible)
 	((void (*)(void)) ptr)();
 	
 	// Free test resources
