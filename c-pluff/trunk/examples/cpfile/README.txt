@@ -28,11 +28,12 @@ Building
 --------
 
 The example application must be installed before it can be used. You
-can build and install it by running "make all" or "make install"
-in the build directory corresponding to this source directory.
-Before building/installing this example, you must build/install the
-C-Pluff framework implementation. All this is done automatically if you run
-"make examples" or "make examples-install" in the top level build directory.
+can build and install it by running "make install" in the build directory
+corresponding to this source directory. Before building/installing this
+example, you must build/install the C-Pluff framework implementation.
+All this is done automatically if you run "make examples" (build only)
+or "make examples-install" (build and install) in the top level build
+directory.
 
 
 Running
