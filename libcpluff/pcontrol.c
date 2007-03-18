@@ -93,7 +93,9 @@ static void unregister_extensions(cp_context_t *context, cp_plugin_info_t *plugi
 				lnode = nn;
 			}
 			if (list_isempty(el)) {
+				char *epid = (char *) hnode_getkey(hnode);				
 				hash_delete_free(context->env->extensions, hnode);
+				free(epid);
 				list_destroy(el);
 			}
 		}
@@ -171,13 +173,18 @@ CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *
 			list_t *el;
 			
 			if ((hnode = hash_lookup(context->env->extensions, e->ext_point_id)) == NULL) {
-				if ((el = list_create(LISTCOUNT_T_MAX)) != NULL) {
-					if (!hash_alloc_insert(context->env->extensions, e->ext_point_id, el)) {
+				char *epid;
+				if ((el = list_create(LISTCOUNT_T_MAX)) != NULL
+					&& (epid = strdup(e->ext_point_id)) != NULL) {
+					if (!hash_alloc_insert(context->env->extensions, epid, el)) {
 						list_destroy(el);
 						status = CP_ERR_RESOURCE;
 						break;
 					}
 				} else {
+					if (el != NULL) {
+						list_destroy(el);
+					}
 					status = CP_ERR_RESOURCE;
 					break;
 				}
@@ -1161,6 +1168,7 @@ static void uninstall_plugin(cp_context_t *context, hnode_t *node) {
 	// Check if already uninstalled 
 	plugin = (cp_plugin_t *) hnode_get(node);
 	if (plugin->state <= CP_PLUGIN_UNINSTALLED) {
+		// TODO: Is this possible state?
 		return;
 	}
 	

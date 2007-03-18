@@ -7,7 +7,7 @@
 <plugin
   id="org.c-pluff.examples.cpfile.core"
   version="0.1"
-  name="cpfile core logic"
+  name="Core logic for cpfile"
   provider-name="Johannes Lehtinen">
   <requires>
     <c-pluff version="0.1"/>

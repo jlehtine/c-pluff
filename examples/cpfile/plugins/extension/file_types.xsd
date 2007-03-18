@@ -8,18 +8,25 @@
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
 	<xs:element name="extension">
 		<xs:complexType>
+			<xs:sequence>
+				<xs:element maxOccurs="unbounded" ref="file-type"/>
+			</xs:sequence>
 			<xs:attribute name="point" type="xs:string" use="required"/>
 			<xs:attribute name="id" type="simpleIdentifier"/>
 			<xs:attribute name="name" type="xs:string"/>
-			
-			<!--
-			* The classifier is the name of a symbol pointing to
-			* classifier_t strucutre. Priority determines the order
-			* the file classifiers are tried.
-			-->
-			<xs:attribute name="classifier" type="xs:string" use="required"/>
-			<xs:attribute name="priority" type="xs:integer" use="required"/>
-
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="file-type">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element maxOccurs="unbounded" ref="file-extension"/>
+			</xs:sequence>
+			<xs:attribute name="description" type="xs:string" use="required"/>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="file-extension">
+		<xs:complexType>
+			<xs:attribute name="ext" type="xs:string" use="required"/>
 		</xs:complexType>
 	</xs:element>
 	<xs:simpleType name="simpleIdentifier">

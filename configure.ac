@@ -263,7 +263,8 @@ examples/Makefile
 examples/cpfile/Makefile
 examples/cpfile/plugins/Makefile
 examples/cpfile/plugins/core/Makefile
-examples/cpfile/plugins/special/Makefile])
+examples/cpfile/plugins/special/Makefile
+examples/cpfile/plugins/extension/Makefile])
 AC_OUTPUT
 
 

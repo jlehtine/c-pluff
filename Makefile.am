@@ -20,14 +20,11 @@ examples: all
 examples-install: install
 	cd examples && $(MAKE) $(AM_MAKEFLAGS) install
 
-examples-clean:
-	cd examples && $(MAKE) $(AM_MAKEFLAGS) clean
-
 dist-hook:
 	rm -f $(distdir)/ABOUT-NLS
-	rm -f $(distdir)/doc/*~
 
 clean-local: examples-clean
+	cd examples && $(MAKE) $(AM_MAKEFLAGS) clean
 
 distclean-local:
 	cd examples && $(MAKE) $(AM_MAKEFLAGS) distclean

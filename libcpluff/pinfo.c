@@ -424,22 +424,42 @@ CP_C_API cp_extension_t ** cp_get_extensions_info(cp_context_t *context, const c
 			break;
 		}
 		
-		// Get extension information structures 
-		hash_scan_begin(&scan, context->env->extensions);
-		i = 0;
-		while ((hnode = hash_scan_next(&scan)) != NULL) {
-			list_t *el = hnode_get(hnode);
-			lnode_t *lnode;
-			
-			lnode = list_first(el);
-			while (lnode != NULL) {
-				cp_extension_t *e = lnode_get(lnode);
+		// Get extension information structures
+		if (extpt_id != NULL) {
+			i = 0;
+			if ((hnode = hash_lookup(context->env->extensions, extpt_id)) != NULL) {
+				list_t *el = hnode_get(hnode);
+				lnode_t *lnode;
 				
-				assert(i < n);
-				cpi_use_info(context, e->plugin);
-				extensions[i] = e;
-				i++;
-				lnode = list_next(el, lnode);
+				lnode = list_first(el);
+				while (lnode != NULL) {
+					cp_extension_t *e = lnode_get(lnode);
+				
+					assert(i < n);
+					cpi_use_info(context, e->plugin);
+					extensions[i] = e;
+					i++;
+					lnode = list_next(el, lnode);
+				}
+			}
+			extensions[i] = NULL;
+		} else { 
+			hash_scan_begin(&scan, context->env->extensions);
+			i = 0;
+			while ((hnode = hash_scan_next(&scan)) != NULL) {
+				list_t *el = hnode_get(hnode);
+				lnode_t *lnode;
+			
+				lnode = list_first(el);
+				while (lnode != NULL) {
+					cp_extension_t *e = lnode_get(lnode);
+				
+					assert(i < n);
+					cpi_use_info(context, e->plugin);
+					extensions[i] = e;
+					i++;
+					lnode = list_next(el, lnode);
+				}
 			}
 		}
 		extensions[i] = NULL;
