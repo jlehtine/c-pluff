@@ -244,7 +244,7 @@ CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const c
 
 		if (cpi_is_logged(context, CP_LOG_DEBUG)) {
 			char owner[64];
-			cpi_debugf(context, "%s resolved symbol %s defined by plug-in %s.", cpi_context_owner(context, owner, sizeof(owner)), id, pp->plugin->identifier);
+			cpi_debugf(context, "%s resolved symbol %s defined by plug-in %s.", cpi_context_owner(context, owner, sizeof(owner)), name, id);
 		}
 	} while (0);
 
