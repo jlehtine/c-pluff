@@ -7,3 +7,10 @@
 SUBDIRS = plugins
 
 EXTRA_DIST = README.txt
+
+cpfile: $(srcdir)/cpfile.in
+	sed -e 's:@''bindir@:$(bindir):g' -e 's:@''libdir@:$(libdir):g' < $< > $@
+
+install-exec-local: cpfile
+	cp cpfile $(bindir)
+	chmod 755 $(bindir)/cpfile

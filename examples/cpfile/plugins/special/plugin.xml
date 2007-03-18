@@ -11,7 +11,16 @@
   provider-name="Johannes Lehtinen">
   <requires>
     <c-pluff version="0.1"/>
+    <!--
+    
+    This dependency would cause a dependency loop at runtime and a fatal
+    error when shutting down the framework, depending on the order the
+    plug-ins are stopped. Not sure yet how this kind of situations should
+    be handled. In this case the dependency is not needed because this
+    plug-in does not use the runtime of core plug-in.
+    
     <import plugin="org.c-pluff.examples.cpfile.core" version="0.1"/>
+    -->
   </requires>
   <runtime library="libspecial"/>
   <extension

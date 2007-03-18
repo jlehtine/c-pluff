@@ -23,3 +23,7 @@ here was on creating a straightforward example rather than an efficient one.
 Before building/installing this example, you must build/install the
 C-Pluff framework implementation. This is done automatically if you run
 "make examples" or "make examples-install" in the top level build directory.
+
+This example uses the generic plug-in loader, cpluff-loader, as the main
+program. The executable cpfile installed into the bin directory is just
+a shell script invoking the cpluff-loader.
