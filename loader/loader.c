@@ -403,6 +403,9 @@ int main(int argc, char *argv[]) {
 
 	// Destroy framework
 	cp_destroy();
+	
+	// Release context argument data
+	free(ctx_argv);
 
 	// Return from the main program
 	return 0;
