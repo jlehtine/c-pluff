@@ -6,10 +6,12 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libcpluff loader console po test
-DIST_SUBDIRS = $(SUBDIRS) doc examples
+SUBDIRS = libcpluff loader console po test doc
+DIST_SUBDIRS = $(SUBDIRS) examples
 
 EXTRA_DIST = COPYRIGHT.txt BUILD.txt ChangeLog autogen.sh doxygen.footer doxygen.css plugin.xsd
+
+doc_DATA = COPYRIGHT.txt ChangeLog
 
 doc:
 	cd libcpluff && $(MAKE) $(AM_MAKEFLAGS) $@
