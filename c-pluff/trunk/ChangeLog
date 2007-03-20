@@ -1,3 +1,10 @@
+C-Pluff (???)
+
+  * Install documentation as part of installation.
+  * Respect DESTDIR during installation.
+
+ -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
+
 C-Pluff (0.1.1) alpha
 
   * More complete documentation.
