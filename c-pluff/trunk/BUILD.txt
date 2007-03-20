@@ -3,10 +3,10 @@ BUILDING C-PLUFF
 
 These are minimal instructions for building the C-Pluff framework
 implementation. For help on building C-Pluff based applications,
-see the examples in examples directory.
+see the examples in the examples directory.
 
 
-PREREQUISITES
+Prerequisites
 -------------
 
 To build C-Pluff, you need to have following prerequisites installed:
@@ -21,7 +21,7 @@ To build C-Pluff, you need to have following prerequisites installed:
     (http://expat.sourceforge.net/)
 
 
-BUILDING
+Building
 --------
 
 To build C-Pluff, follow the usual autotools procedure:
@@ -40,23 +40,23 @@ For help on available configuration options:
   ./configure --help
 
 
-INSTALL
--------
+Installation
+------------
 
-To install the library and header files:
+To install the library, header files, utilities and documentation:
 
   make install
 
 
-KNOWN GOOD BUILD PLATFORMS
+Known good build platforms
 --------------------------
 
 C-Pluff is known to compile cleanly on following combinations:
 
   - Native Linux build
+    - GCC 4.1.2
     - GNU C library 2.3.6
     - Expat 1.95.8
-    - GCC 4.1.2
 
   - Cross compilation for Windows on Linux
     - MinGW Runtime 3.9
