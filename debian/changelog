@@ -1,0 +1,5 @@
+cpluff (0.1.1-1) unstable; urgency=low
+
+  * Initial Debian package.
+
+ -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  Mon, 19 Mar 2007 12:19:43 +0200
