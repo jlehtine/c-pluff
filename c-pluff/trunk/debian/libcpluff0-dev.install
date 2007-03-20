@@ -1,0 +1,4 @@
+usr/lib/libcpluff.a
+usr/lib/libcpluff.so
+usr/include
+usr/bin/cpluff-console

@@ -1,0 +1,51 @@
+#! /usr/bin/make -f
+
+# Debian packaging for C-Pluff
+# Copyright 2007 Johannes Lehtinen
+# This Makefile is free software; Johannes Lehtinen gives unlimited
+# permission to copy, distribute and modify it.
+
+build: build-stamp
+build-stamp:
+	dh_testdir
+	./configure --prefix=/usr
+	$(MAKE)
+	touch build-stamp
+
+install: install-stamp
+install-stamp: build
+	dh_testdir
+	dh_testroot
+	rm -rf debian/tmp
+	mkdir -p debian/tmp
+	$(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
+	cp COPYRIGHT.txt debian/copyright
+	touch install-stamp
+
+clean:
+	dh_testdir
+	dh_clean -k
+	rm -f debian/copyright
+	rm -f install-stamp
+	rm -rf debian/tmp
+	rm -f build-stamp
+	$(MAKE) distclean
+
+binary-indep:
+
+binary-arch: install
+	dh_testdir
+	dh_testroot
+	dh_installchangelogs -a ChangeLog
+	dh_installdocs -a
+	dh_install -a --sourcedir=debian/tmp
+	dh_compress -a
+	dh_fixperms -a
+	dh_makeshlibs -a
+	dh_shlibdeps -a
+	dh_gencontrol -a
+	dh_builddeb -a
+
+binary: binary-indep binary-arch
+
+.PHONY: build install clean binary binary-arch binary-indep
