@@ -1,7 +1,11 @@
+C-PLUFF COPYRIGHT INFORMATION
+=============================
+
 This is C-Pluff, a plug-in framework for C programs.
 C-Pluff author is Johannes Lehtinen <johannes.lehtinen@iki.fi>.
-Except where otherwise noted in the source code it is licensed under
-the C-Pluff license below (also known as the MIT license).
+Except where otherwise noted in the source code the C-Pluff source
+code is licensed under the C-Pluff license included below (also known
+as the MIT license, an OSI approved open source license).
 
 C-Pluff uses data structure implementations from Kazlib library.
 Kazlib author is Kaz Kylheku. In C-Pluff source code distribution the
@@ -10,7 +14,7 @@ files are licensed under the Kazlib license included below. Kazlib was
 obtained from http://users.footprints.net/~kaz/kazlib.html.
 
 
-C-PLUFF COPYRIGHT AND LICENSE
+C-Pluff copyright and license
 -----------------------------
 
 C-Pluff, a plug-in framework for C
@@ -35,7 +39,7 @@ TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
 SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 
-KAZLIB COPYRIGHT AND LICENSE
+KazLib copyright and license
 ----------------------------
 
 Hash Table Data Type
