@@ -4,7 +4,7 @@
 # This Makefile is free software; Johannes Lehtinen gives unlimited
 # permission to copy, distribute and modify it.
 
-pluginsdir = $(libdir)/cpfile/plugins
+pluginsdir = $(exampleslibdir)/cpfile/plugins
 plugindir = $(pluginsdir)/cext
 
 plugin_DATA = plugin.xml

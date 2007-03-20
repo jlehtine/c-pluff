@@ -1,3 +1,3 @@
 #! /bin/sh
 
-exec @bindir@/cpluff-loader -c @libdir@/cpfile/plugins -s org.c-pluff.examples.cpfile.core "$@"
+exec @bindir@/cpluff-loader -c @exampleslibdir@/cpfile/plugins -s org.c-pluff.examples.cpfile.core "$@"

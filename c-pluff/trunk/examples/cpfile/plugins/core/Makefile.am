@@ -7,7 +7,7 @@
 LIBS = @LIBS@
 LIBS += $(LIBS_OTHER)
 
-pluginsdir = $(libdir)/cpfile/plugins
+pluginsdir = $(exampleslibdir)/cpfile/plugins
 plugindir = $(pluginsdir)/core
 
 plugin_LTLIBRARIES = libcore.la

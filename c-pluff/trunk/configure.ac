@@ -76,12 +76,16 @@ AC_SUBST([LIBS_OTHER])
 # -------------------------------
 AC_DEFINE_UNQUOTED([CP_SHREXT], ["$shrext_cmds"], [Shared library extension])
 
-# Subst example installation paths
-# --------------------------------
-exampleprefix="\$(shell cd \$(top_builddir)/examples && pwd)"
-calcrundir="\$(exampleprefix)/calculator/run"
-AC_SUBST([exampleprefix])
-AC_SUBST([calcrundir])
+# Installation directory for examples
+# -----------------------------------
+AC_ARG_WITH([examples-libdir], AS_HELP_STRING([--with-examples-libdir=DIR], [install example plug-ins and libraries into DIR (default is LIBDIR)]))
+AC_ARG_WITH([examples-bindir], AS_HELP_STRING([--with-examples-bindir=DIR], [install example executables into DIR (default is BINDIR)]))
+exampleslibdir="$with_examples_libdir"
+examplesbindir="$with_examples_bindir"
+test -n "$exampleslibdir" || exampleslibdir='$(libdir)'
+test -n "$examplesbindir" || examplesbindir='$(bindir)'
+AC_SUBST([exampleslibdir])
+AC_SUBST([examplesbindir])
 
 # Thread support checks
 # ---------------------
