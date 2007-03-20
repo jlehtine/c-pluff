@@ -9,7 +9,7 @@ LIBS += $(LIBS_OTHER)
 
 CPPFLAGS = -I$(srcdir)/../core @CPPFLAGS@
 
-pluginsdir = $(libdir)/cpfile/plugins
+pluginsdir = $(exampleslibdir)/cpfile/plugins
 plugindir = $(pluginsdir)/extension
 
 plugin_LTLIBRARIES = libextension.la

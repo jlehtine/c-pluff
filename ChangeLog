@@ -2,6 +2,7 @@ C-Pluff (???)
 
   * Install documentation as part of installation.
   * Respect DESTDIR during installation.
+  * Allow special installation prefixes for examples.
 
  -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
 

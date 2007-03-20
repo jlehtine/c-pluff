@@ -49,16 +49,3 @@ Description: C-Pluff, a plug-in framework for C - development kit
  This package contains the C-Pluff header files, development libraries,
  development documentation and the console utility. It is needed to
  develop C-Pluff based applications.
-
-Package: cpluff-doc
-Section: doc
-Architecture: any
-Description: C-Pluff, a plug-in framework for C - documentation
- C-Pluff is a plug-in framework for C programs. It has been strongly
- inspired by the Java plug-in framework in Eclipse. C-Pluff focuses on
- providing core services for plug-in interaction and plug-in management.
- It aims to be platform neutral and supports dynamic changes to plug-in
- configuration without stopping the whole application or framework.
- .
- This package contains C-Pluff documentation and examples for developers
- of C-Pluff based applications.

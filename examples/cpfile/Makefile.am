@@ -11,8 +11,9 @@ EXTRA_DIST = README.txt cpfile.in
 all-local: cpfile
 
 cpfile: $(srcdir)/cpfile.in
-	sed -e 's:@''bindir@:$(bindir):g' -e 's:@''libdir@:$(libdir):g' < $< > $@
+	sed -e 's:@''bindir@:$(bindir):g' -e 's:@''exampleslibdir@:$(exampleslibdir):g' < $< > $@
 
 install-exec-local:
-	cp cpfile $(DESTDIR)$(bindir)
-	chmod 755 $(DESTDIR)$(bindir)/cpfile
+	mkdir -p $(DESTDIR)$(examplesbindir)
+	cp cpfile $(DESTDIR)$(examplesbindir)
+	chmod 755 $(DESTDIR)$(examplesbindir)/cpfile
