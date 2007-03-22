@@ -35,7 +35,7 @@ Description: C-Pluff, a plug-in framework for C - development kit
 Package: libcpluff0-dev
 Section: libdevel
 Architecture: any
-Depends: libcpluff0 (= ${Source-Version}), cpluff-loader, ${shlibs:Depends}
+Depends: libcpluff0 (= ${Source-Version}), cpluff-loader
 Recommends: cpluff-doc
 Provides: libcpluff-dev
 Conflicts: libcpluff-dev
