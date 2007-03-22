@@ -13,6 +13,12 @@ files derived from Kazlib are contained in kazlib subdirectory. These
 files are licensed under the Kazlib license included below. Kazlib was
 obtained from http://users.footprints.net/~kaz/kazlib.html.
 
+Please notice that the resulting binaries are linked with libraries that
+may impose additional licensing conditions for the binaries. Specifically,
+the C-Pluff Console binary, cpluff-console, may be linked with the GNU
+Readline Library meaning that you have to comply with the conditions of
+the GNU General Public License when distributing it in binary form.
+
 
 C-Pluff copyright and license
 -----------------------------
