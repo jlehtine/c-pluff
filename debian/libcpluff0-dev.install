@@ -1,5 +1,4 @@
 usr/lib/libcpluff.a
 usr/lib/libcpluff.so
 usr/include
-usr/bin/cpluff-console
 usr/share/doc/cpluff/html usr/share/doc/libcpluff0-dev
