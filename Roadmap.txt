@@ -1,0 +1,23 @@
+C-Pluff (0.1.2) alpha
+
+  * Stop plug-ins within a dependency loop in reversed startup order.
+  * Install documentation as part of installation.
+  * Install example source code as part of installation.
+  * Respect DESTDIR during installation.
+  * Allow special installation prefixes for examples
+    (--with-examples-bindir, --with-examples-libdir).
+
+ -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
+
+C-Pluff (0.2.0) alpha
+
+  * Introduce C-Pluff C++ API and C++ runtime library.
+
+ -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
+
+C-Pluff (0.3.0) beta
+
+  * Introduce plug-in package format for distribution.
+  * Introduce tools for making and installing plug-in packages.
+
+ -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
