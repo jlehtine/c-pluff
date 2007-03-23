@@ -6,28 +6,36 @@
 # permission to copy, distribute and modify it.
 
 build: debian-build-stamp
-debian-build-stamp: configure
+debian-build-stamp: debian-configure-stamp debian-timestamps-stamp
 	dh_testdir
 	cd debian/build && $(MAKE)
-	touch debian-build-stamp
+	touch $@
 
 configure: debian-configure-stamp
-debian-configure-stamp:
+debian-configure-stamp: debian-timestamps-stamp
 	dh_testdir
 	rm -rf debian/build
 	mkdir debian/build
 	cd debian/build && ../../configure --prefix=/usr
-	touch debian-configure-stamp
+	touch $@
+
+timestamps: debian-timestamps-stamp
+debian-timestamps-stamp:
+	dh_testdir
+	touch aclocal.m4
+	touch configure
+	find . -name '*.in' -exec touch '{}' \;
+	touch $@
 
 install: debian-install-stamp
-debian-install-stamp: build
+debian-install-stamp: debian-build-stamp
 	dh_testdir
 	dh_testroot
 	rm -rf debian/tmp
 	mkdir debian/tmp
 	cd debian/build && $(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
 	cp COPYRIGHT.txt debian/copyright
-	touch debian-install-stamp
+	touch $@
 
 clean:
 	dh_testdir
@@ -37,6 +45,7 @@ clean:
 	rm -rf debian/tmp
 	rm -f debian-build-stamp debian-configure-stamp
 	rm -rf debian/build
+	rm -f debian-timestamps-stamp
 
 binary-indep:
 
@@ -56,4 +65,4 @@ binary-arch: install
 
 binary: binary-indep binary-arch
 
-.PHONY: build install clean binary binary-arch binary-indep
+.PHONY: build configure timestamps install clean binary binary-arch binary-indep
