@@ -43,8 +43,11 @@
       like to have precompiled binaries for some other platform, you can ask
       for it on the users mailing list and we will see if that can be arranged.
     </p>
+    <ul>
+      <li><a href="#debian">Debian GNU/Linux (i386)</a></li>
+    </ul>
     
-    <h3>Debian GNU/Linux</h3>
+    <h3 id="debian">Debian GNU/Linux</h3>
     <p>
       Precompiled binaries are currently available for the i386 architecture.
       C-Pluff is divided into three separate packages:
@@ -63,15 +66,28 @@
     </dl>
     <p>
       To be able to install the packages, add the following source
-      specification into /etc/apt/sources.list. Then run "aptitude update"
-      and install selected packages using "aptitude install &lt;package&gt;".
+      specification into /etc/apt/sources.list.
     </p>
     <pre class="example">
 deb http://www.c-pluff.org/downloads/debian stable cpluff</pre>
     <p>
-      You can replace "stable" with "testing", "sarge" or "etch". Currently there
-      is only one set of binaries which can be used with any of the listed
-      Debian releases (not tested with unstable or experimental).
+      You can replace "stable" with "testing", "sarge" or "etch". Currently
+      there is only one set of binaries which can be used with any of the
+      listed Debian releases (not tested with unstable or experimental).
+    </p>
+    <p>
+      Then run "aptitude update" as root and install selected packages using
+      "aptitude install &lt;package&gt;" (or the interactive user interface).
+    </p>
+    <p>
+      APT checks signatures since Debian GNU/Linux 4.0 (Etch).
+      The distribution has been signed with
+      <a href="http://www.jlehtinen.net/gpg_johannes_lehtinen.asc">my
+        PGP key</a>.
+      Having established trust on the key, you may choose to trust me
+      as a software provider (yeah, right ;). You can install my key as a
+      trusted APT key by downloading the key and using the command
+      "apt-key add gpg_johannes_lehtinen.asc"..
     </p>
 
     <ul class="menu">
