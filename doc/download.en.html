@@ -54,6 +54,9 @@
       C-Pluff is divided into three separate packages:
     </p>
     <dl>
+
+      <dt>cpluff</dt>
+      <dd>the debianized source package</dd>
     
       <dt>libcpluff0</dt>
       <dd>the runtime library</dd>
@@ -70,15 +73,19 @@
       specification into /etc/apt/sources.list.
     </p>
     <pre class="example">
-deb http://www.c-pluff.org/downloads/debian stable cpluff</pre>
+deb http://www.c-pluff.org/downloads/debian stable cpluff
+deb-src http://www.c-pluff.org/downloads/debian stable cpluff</pre>
     <p>
       You can replace "stable" with "testing", "sarge" or "etch". Currently
       there is only one set of binaries which can be used with any of the
       listed Debian releases (not tested with unstable or experimental).
+      The second line is needed only if you want to download the debianized
+      source package.
     </p>
     <p>
       Then run "aptitude update" as root and install selected packages using
       "aptitude install &lt;package&gt;" (or the interactive user interface).
+      The source package is downloaded by running "apt-get source cpluff".
     </p>
     <p>
       APT checks signatures since Debian GNU/Linux 4.0 (Etch).
