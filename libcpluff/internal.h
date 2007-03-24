@@ -231,9 +231,6 @@ struct cp_plugin_t {
 	/// Context specific symbols defined by the plug-in
 	hash_t *defined_symbols;
 	
-	/// The usage count for the symbols of this plug-in
-	int syms_usage_count;
-
 	/// Used by recursive operations: has this plug-in been processed already
 	int processed;
 	

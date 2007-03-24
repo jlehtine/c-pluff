@@ -4,8 +4,7 @@
 # This Makefile is free software; Johannes Lehtinen gives unlimited
 # permission to copy, distribute and modify it.
 
-LIBS = @LIBS@
-LIBS += $(LIBS_OTHER) $(LIB_READLINE)
+LIBS = @LIB_READLINE@ @LIBS_OTHER@ @LTLIBINTL@ @LIBS@
 
 bin_PROGRAMS = cpluff-console
 

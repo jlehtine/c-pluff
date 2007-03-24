@@ -24,4 +24,50 @@
 #include <stdlib.h>
 #include <cpluff.h>
 
-CP_EXPORT const char sp_string[] = "Provided string";
+typedef struct plugin_data_t plugin_data_t;
+
+struct plugin_data_t {
+	cp_context_t *ctx;
+	char *str;
+};
+
+static void *create(cp_context_t *ctx) {
+	plugin_data_t *data = malloc(sizeof(plugin_data_t));
+
+	if (data != NULL) {
+		data->ctx = ctx;
+		data->str = NULL;
+	}
+	return data;
+}
+
+static int start(void *d) {
+	plugin_data_t *data = d;
+	
+	if ((data->str = malloc(sizeof(char) * 16)) == NULL) {
+		return CP_ERR_RESOURCE;
+	}
+	strcpy(data->str, "Provided string");
+	cp_define_symbol(data->ctx, "sp_string", data->str);
+	return CP_OK;
+}
+
+static void stop(void *d) {
+	plugin_data_t *data = d;
+	
+	if (data->str != NULL) {
+		strcpy(data->str, "Cleared string");
+		free(data->str);
+	}
+}
+
+static void destroy(void *d) {
+	free(d);	
+}
+
+CP_EXPORT cp_plugin_runtime_t sp_runtime = {
+	create,
+	start,
+	stop,
+	destroy
+};

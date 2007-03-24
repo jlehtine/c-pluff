@@ -4,8 +4,7 @@
 # This Makefile is free software; Johannes Lehtinen gives unlimited
 # permission to copy, distribute and modify it.
 
-LIBS = @LIBS@
-LIBS += $(LIBS_OTHER)
+LIBS = @LIBS_OTHER@ @LIBS@
 
 pluginsdir = $(exampleslibdir)/cpfile/plugins
 plugindir = $(pluginsdir)/core

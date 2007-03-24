@@ -853,11 +853,6 @@ CP_C_API cp_status_t cp_start_plugin(cp_context_t *context, const char *id) {
 static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 	cpi_plugin_event_t event;
 	
-	// Check if still in use by the main program
-	if (plugin->syms_usage_count) {
-		cpi_fatalf(_("Plug-in %s is being stopped while still providing symbols to the main program."), plugin->plugin->identifier);
-	}
-
 	// Destroy plug-in instance
 	event.plugin_id = plugin->plugin->identifier;
 	if (plugin->context != NULL) {

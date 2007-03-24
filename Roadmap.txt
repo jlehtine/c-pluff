@@ -1,23 +1,29 @@
 C-Pluff (0.1.2) alpha
 
-  * Stop plug-ins within a dependency loop in reversed startup order.
-  * Install documentation as part of installation.
-  * Install example source code as part of installation.
-  * Respect DESTDIR during installation.
-  * Allow special installation prefixes for examples
+  * [ ] When stopping plug-ins within a dependency loop, respect dynamic
+        dependencies when possible.
+  * [X] Removed a flawed check of whether dynamically resolved symbols are
+        in use when a plug-in is being stopped.
+  * [X] Build, install and distribute internationalization support files.
+  * [ ] Include finnish localization.
+  * [X] Link with libintl if internationalization support needs it.
+  * [X] Install documentation as part of installation.
+  * [ ] Install example source code as part of installation.
+  * [X] Respect DESTDIR during installation.
+  * [X] Allow special installation prefixes for examples
     (--with-examples-bindir, --with-examples-libdir).
 
  -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
 
 C-Pluff (0.2.0) alpha
 
-  * Introduce C-Pluff C++ API and C++ runtime library.
+  * [ ] Introduce C-Pluff C++ API and C++ runtime library.
 
  -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
 
 C-Pluff (0.3.0) beta
 
-  * Introduce plug-in package format for distribution.
-  * Introduce tools for making and installing plug-in packages.
+  * [ ] Introduce plug-in package format for distribution.
+  * [ ] Introduce tools for making and installing plug-in packages.
 
  -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???

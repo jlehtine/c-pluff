@@ -32,7 +32,7 @@ void symbolusage(void) {
 	int errors;
 	const char *str;
 	
-	ctx = init_context(CP_LOG_WARNING, &errors);
+	ctx = init_context(CP_LOG_ERROR, &errors);
 	check(cp_register_pcollection(ctx, "tmp/install/plugins") == CP_OK);
 	check(cp_scan_plugins(ctx, 0) == CP_OK);
 	
