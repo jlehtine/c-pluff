@@ -21,7 +21,9 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *-----------------------------------------------------------------------*/
 
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <cpluff.h>
 
 typedef struct plugin_data_t plugin_data_t;
@@ -52,7 +54,14 @@ static int start(void *d) {
 		symname = cp_lookup_cfg_value(exts[0]->configuration, "@string-symbol");
 		if (symname != NULL) {
 			data->str = cp_resolve_symbol(data->ctx, exts[0]->plugin->identifier, symname, NULL);
+			if (data->str == NULL) {
+				cp_log(data->ctx, CP_LOG_ERROR, "Could not resolve symbol specified by extension.");
+			}
+		} else {
+			cp_log(data->ctx, CP_LOG_ERROR, "No string-symbol attribute present in extension.");
 		} 
+	} else {
+		cp_log(data->ctx, CP_LOG_ERROR, "No extensions available.");
 	}
 	if (exts != NULL) {
 		cp_release_info(data->ctx, exts);
@@ -67,6 +76,10 @@ static void stop(void *d) {
 	plugin_data_t *data = d;
 	
 	if (data->str != NULL) {
+		if (strcmp(data->str, "Provided string")) {
+			fputs("Provided string is not available in symuser stop function.\n", stderr);
+			abort();
+		}
 		cp_release_symbol(data->ctx, data->str);
 	}
 }

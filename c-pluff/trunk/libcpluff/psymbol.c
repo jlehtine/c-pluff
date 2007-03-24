@@ -240,7 +240,6 @@ CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const c
 		// Increase usage counts
 		symbol_info->usage_count++;
 		provider_info->usage_count++;
-		pp->syms_usage_count++;
 
 		if (cpi_is_logged(context, CP_LOG_DEBUG)) {
 			char owner[64];
@@ -302,8 +301,6 @@ CP_C_API void cp_release_symbol(cp_context_t *context, const void *ptr) {
 		symbol_info->usage_count--;
 		assert(provider_info->usage_count > 0);
 		provider_info->usage_count--;
-		assert(provider_info->plugin->syms_usage_count > 0);
-		provider_info->plugin->syms_usage_count--;
 	
 		// Check if the symbol is not being used anymore
 		if (symbol_info->usage_count == 0) {

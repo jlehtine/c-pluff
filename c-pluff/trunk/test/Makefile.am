@@ -17,8 +17,7 @@ EXTRA_DIST = tests.txt
 CPPFLAGS = @CPPFLAGS@
 CPPFLAGS += -DCP_HOST="\"$(host)\""
 
-LIBS = @LIBS@
-LIBS += $(LIBS_OTHER)
+LIBS = @LIBS_OTHER@ @LIBS@
 
 check_PROGRAMS = testsuite
 

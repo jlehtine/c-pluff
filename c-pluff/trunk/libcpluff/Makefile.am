@@ -4,8 +4,7 @@
 # This Makefile is free software; Johannes Lehtinen gives unlimited
 # permission to copy, distribute and modify it.
 
-LIBS = @LIBS@
-LIBS += $(LIBS_LIBCPLUFF)
+LIBS = @LIBS_LIBCPLUFF@ @LTLIBINTL@ @LIBS@
 
 EXTRA_DIST = mainpage.dox architecture.dox mainprog.dox plugin.dox
 

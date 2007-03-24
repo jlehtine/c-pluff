@@ -6,7 +6,7 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libcpluff loader console po test doc
+SUBDIRS = libcpluff loader console po test doc po
 DIST_SUBDIRS = $(SUBDIRS) examples
 
 EXTRA_DIST = COPYRIGHT.txt BUILD.txt ChangeLog.txt Roadmap.txt autogen.sh doxygen.footer doxygen.css plugin.xsd
