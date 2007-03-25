@@ -131,6 +131,7 @@ CP_C_API cp_status_t cp_register_logger(cp_context_t *context, cp_logger_func_t 
 		cpi_error(context, N_("Logger could not be registered due to insufficient memory."));		
 	} else if (cpi_is_logged(context, CP_LOG_DEBUG)) {
 		char owner[64];
+		/* TRANSLATORS: %s is the context owner */
 		cpi_debugf(context, N_("%s registered a logger."), cpi_context_owner(context, owner, sizeof(owner)));
 	}
 	cpi_unlock_context(context);
@@ -167,6 +168,7 @@ CP_C_API void cp_unregister_logger(cp_context_t *context, cp_logger_func_t logge
 	}
 	if (cpi_is_logged(context, CP_LOG_DEBUG)) {
 		char owner[64];
+		/* TRANSLATORS: %s is the context owner */
 		cpi_debugf(context, N_("%s unregistered a logger."), cpi_context_owner(context, owner, sizeof(owner)));
 	}
 	cpi_unlock_context(context);

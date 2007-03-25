@@ -267,7 +267,7 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 CP_C_API void cp_destroy_context(cp_context_t *context) {
 	CHECK_NOT_NULL(context);
 	if (context->plugin != NULL) {
-		cpi_fatalf(_("Only the client program can destroy a plug-in context."));
+		cpi_fatalf(_("Only the main program can destroy a plug-in context."));
 	}
 
 	// Check invocation
@@ -355,9 +355,9 @@ CP_C_API cp_status_t cp_register_pcollection(cp_context_t *context, const char *
 
 	// Report error or success
 	if (status != CP_OK) {
-		cpi_errorf(context, N_("Could not register plug-in collection directory %s due to insufficient memory."), dir);
+		cpi_errorf(context, N_("The plug-in collection in path %s could not be registered due to insufficient memory."), dir);
 	} else {
-		cpi_debugf(context, N_("Plug-in collection directory %s was registered."), dir);
+		cpi_debugf(context, N_("The plug-in collection in path %s was registered."), dir);
 	}
 	cpi_unlock_context(context);
 
@@ -390,7 +390,7 @@ CP_C_API void cp_unregister_pcollection(cp_context_t *context, const char *dir) 
 		lnode_destroy(node);
 		free(d);
 	}
-	cpi_debugf(context, N_("Plug-in collection directory %s was unregistered."), dir);
+	cpi_debugf(context, N_("The plug-in collection in path %s was unregistered."), dir);
 	cpi_unlock_context(context);
 }
 
@@ -399,7 +399,7 @@ CP_C_API void cp_unregister_pcollections(cp_context_t *context) {
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	list_process(context->env->plugin_dirs, NULL, cpi_process_free_ptr);
-	cpi_debug(context, N_("All plug-in collection directories were unregistered."));
+	cpi_debug(context, N_("All plug-in collections were unregistered."));
 	cpi_unlock_context(context);
 }
 
@@ -413,7 +413,7 @@ CP_C_API void cp_set_context_args(cp_context_t *ctx, char **argv) {
 	CHECK_NOT_NULL(argv);
 	for (argc = 0; argv[argc] != NULL; argc++);
 	if (argc < 1) {
-		cpi_fatalf(_("Argument count must be at least 1 in call to %s."), __func__);
+		cpi_fatalf(_("At least one startup argument must be given in call to function %s."), __func__);
 	}
 	cpi_lock_context(ctx);
 	ctx->env->argc = argc;
@@ -444,25 +444,25 @@ CP_HIDDEN void cpi_check_invocation(cp_context_t *ctx, int funcmask, const char 
 	assert(cpi_is_context_locked(ctx));
 	if ((funcmask & CPI_CF_LOGGER)
 		&&ctx->env->in_logger_invocation) {
-		cpi_fatalf(_("%s was called from within a logger invocation."), func);
+		cpi_fatalf(_("Function %s was called from within a logger invocation."), func);
 	}
 	if ((funcmask & CPI_CF_LISTENER)
 		&& ctx->env->in_event_listener_invocation) {
-		cpi_fatalf(_("%s was called from within an event listener invocation."), func);
+		cpi_fatalf(_("Function %s was called from within an event listener invocation."), func);
 	}
 	if ((funcmask & CPI_CF_START)
 		&& ctx->env->in_start_func_invocation) {
-		cpi_fatalf(_("%s was called from within a start function invocation."), func);
+		cpi_fatalf(_("Function %s was called from within a plug-in start function invocation."), func);
 	}
 	if ((funcmask & CPI_CF_STOP)
 		&& ctx->env->in_stop_func_invocation) {
-		cpi_fatalf(_("%s was called from within a stop function invocation."), func);
+		cpi_fatalf(_("Function %s was called from within a plug-in stop function invocation."), func);
 	}
 	if (ctx->env->in_create_func_invocation) {
-		cpi_fatalf(_("%s was called from within a create function invocation."), func);
+		cpi_fatalf(_("Function %s was called from within a plug-in create function invocation."), func);
 	}
 	if (ctx->env->in_destroy_func_invocation) {
-		cpi_fatalf(_("%s was called from within a destroy function invocation."), func);
+		cpi_fatalf(_("Function %s was called from within a plug-in destroy function invocation."), func);
 	}
 }
 
@@ -510,9 +510,13 @@ CP_HIDDEN void cpi_signal_context(cp_context_t *context) {
 
 CP_HIDDEN char *cpi_context_owner(cp_context_t *ctx, char *name, size_t size) {
 	if (ctx->plugin != NULL) {
-		snprintf(name, size, "Plug-in %s", ctx->plugin->plugin->identifier);
+		/* TRANSLATORS: The context owner (when it is a plug-in) used in some strings.
+		   Search for "context owner" to find these strings. */
+		snprintf(name, size, _("Plug-in %s"), ctx->plugin->plugin->identifier);
 	} else {
-		strncpy(name, "The client program", size);
+		/* TRANSLATORS: The context owner (when it is the main program) used in some strings.
+		   Search for "context owner" to find these strings. */
+		strncpy(name, _("The main program"), size);
 	}
 	assert(size >= 4);
 	strcpy(name + size - 4, "...");

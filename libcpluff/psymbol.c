@@ -243,6 +243,7 @@ CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const c
 
 		if (cpi_is_logged(context, CP_LOG_DEBUG)) {
 			char owner[64];
+			/* TRANSLATORS: First %s is the context owner */
 			cpi_debugf(context, "%s resolved symbol %s defined by plug-in %s.", cpi_context_owner(context, owner, sizeof(owner)), name, id);
 		}
 	} while (0);
@@ -290,7 +291,7 @@ CP_C_API void cp_release_symbol(cp_context_t *context, const void *ptr) {
 
 		// Look up the symbol
 		if ((node = hash_lookup(context->resolved_symbols, ptr)) == NULL) {
-			cpi_errorf(context, N_("Could not release an unknown symbol %p."), ptr);
+			cpi_errorf(context, N_("Could not release unknown symbol at address %p."), ptr);
 			break;
 		}
 		symbol_info = hnode_get(node);
@@ -308,7 +309,8 @@ CP_C_API void cp_release_symbol(cp_context_t *context, const void *ptr) {
 			free(symbol_info);
 			if (cpi_is_logged(context, CP_LOG_DEBUG)) {
 				char owner[64];
-				cpi_debugf(context, _("%s released the pointer %p defined by plug-in %s."), cpi_context_owner(context, owner, sizeof(owner)), ptr, provider_info->plugin->plugin->identifier);
+				/* TRANSLATORS: First %s is the context owner */
+				cpi_debugf(context, _("%s released the symbol at address %p defined by plug-in %s."), cpi_context_owner(context, owner, sizeof(owner)), ptr, provider_info->plugin->plugin->identifier);
 			}
 		}
 	

@@ -311,13 +311,13 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		if (plugin->plugin->runtime_funcs_symbol != NULL) {
 			plugin->runtime_funcs = (cp_plugin_runtime_t *) DLSYM(plugin->runtime_lib, plugin->plugin->runtime_funcs_symbol);
 			if (plugin->runtime_funcs == NULL) {
-				cpi_errorf(context, N_("Plug-in %s symbol %s containing runtime function information could not be resolved."), plugin->plugin->identifier, plugin->plugin->runtime_funcs_symbol);
+				cpi_errorf(context, N_("Plug-in %s symbol %s containing plug-in runtime information could not be resolved."), plugin->plugin->identifier, plugin->plugin->runtime_funcs_symbol);
 				status = CP_ERR_RUNTIME;
 				break;
 			}
 			if (plugin->runtime_funcs->create == NULL
 				|| plugin->runtime_funcs->destroy == NULL) {
-				cpi_errorf(context, N_("Plug-in %s runtime has a null constructor or destructor."), plugin->plugin->identifier);
+				cpi_errorf(context, N_("Plug-in %s is missing a constructor or destructor function."), plugin->plugin->identifier);
 				status = CP_ERR_RUNTIME;
 				break;
 			}
@@ -709,7 +709,7 @@ static void warn_dependency_loop(cp_context_t *context, cp_plugin_t *plugin, lis
 	
 	// Take the message base
 	if (dynamic) {
-		msgbase = N_("Detected a dynamic plug-in dependency loop: %s");
+		msgbase = N_("Detected a runtime plug-in dependency loop: %s");
 	} else {
 		msgbase = N_("Detected a static plug-in dependency loop: %s");
 	}

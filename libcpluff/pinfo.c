@@ -99,7 +99,7 @@ CP_HIDDEN cp_status_t cpi_register_info(cp_context_t *context, void *res, cpi_de
 	
 	// Report success
 	if (status == CP_OK) {
-		cpi_debugf(context, _("Information object %p was registered."), res);
+		cpi_debugf(context, _("An information object at address %p was registered."), res);
 	}		
 	
 	// Release resources on failure
@@ -121,9 +121,9 @@ CP_HIDDEN void cpi_use_info(cp_context_t *context, void *res) {
 	if ((node = hash_lookup(context->env->infos, res)) != NULL) {
 		info_resource_t *ir = hnode_get(node);
 		ir->usage_count++;
-		cpi_debugf(context, _("Information object %p reference count increased to %d."), res, ir->usage_count);
+		cpi_debugf(context, _("Reference count of the information object at address  %p increased to %d."), res, ir->usage_count);
 	} else {
-		cpi_fatalf(_("Could not increase reference count on unknown information object %p."), res);
+		cpi_fatalf(_("Reference count of an unknown information object at address %p could not be increased."), res);
 	}
 }
 
@@ -139,13 +139,13 @@ CP_HIDDEN void cpi_release_info(cp_context_t *context, void *info) {
 		if (--ir->usage_count == 0) {
 			hash_delete_free(context->env->infos, node);
 			ir->dealloc_func(context, info);
-			cpi_debugf(context, _("Information object %p was unregistered."), info);
+			cpi_debugf(context, _("The information object at address %p was unregistered."), info);
 			free(ir);
 		} else {
-			cpi_debugf(context, _("Information object %p reference count decreased to %d."), info, ir->usage_count);
+			cpi_debugf(context, _("Reference count of the information object at address %p decreased to %d."), info, ir->usage_count);
 		}
 	} else {
-		cpi_fatalf(_("Could not release unknown information object %p."), info);
+		cpi_fatalf(_("Could not release an unknown information object at address %p."), info);
 	}
 }
 
@@ -166,7 +166,7 @@ CP_HIDDEN void cpi_release_infos(cp_context_t *context) {
 	while ((node = hash_scan_next(&scan)) != NULL) {
 		info_resource_t *ir = hnode_get(node);			
 		cpi_lock_context(context);
-		cpi_errorf(context, _("Unreleased information object %p with reference count %d when destroying the associated context. Not releasing the object."), ir->resource, ir->usage_count);
+		cpi_errorf(context, _("An unreleased information object was encountered at address %p with reference count %d when destroying the associated plug-in context. Not releasing the object."), ir->resource, ir->usage_count);
 		cpi_unlock_context(context);
 		hash_scan_delfree(context->env->infos, node);
 		free(ir);
@@ -571,6 +571,7 @@ CP_C_API cp_status_t cp_register_plistener(cp_context_t *context, cp_plugin_list
 		cpi_error(context, _("A plug-in listener could not be registered due to insufficient memory."));
 	} else if (cpi_is_logged(context, CP_LOG_DEBUG)) {
 		char owner[64];
+		/* TRANSLATORS: %s is the context owner */
 		cpi_debugf(context, N_("%s registered a plug-in listener."), cpi_context_owner(context, owner, sizeof(owner)));
 	}
 	cpi_unlock_context(context);
@@ -592,6 +593,7 @@ CP_C_API void cp_unregister_plistener(cp_context_t *context, cp_plugin_listener_
 	}
 	if (cpi_is_logged(context, CP_LOG_DEBUG)) {
 		char owner[64];
+		/* TRANSLATORS: %s is the context owner */
 		cpi_debugf(context, N_("%s unregistered a plug-in listener."), cpi_context_owner(context, owner, sizeof(owner)));
 	}
 	cpi_unlock_context(context);
@@ -615,12 +617,12 @@ CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t
 				if (event->old_state < CP_PLUGIN_INSTALLED) {
 					str = N_("Plug-in %s has been installed.");
 				} else {
-					str = N_("Plug-in %s runtime has been unloaded.");
+					str = N_("Plug-in %s runtime library has been unloaded.");
 				}
 				break;
 			case CP_PLUGIN_RESOLVED:
 				if (event->old_state < CP_PLUGIN_RESOLVED) {
-					str = N_("Plug-in %s runtime has been loaded.");
+					str = N_("Plug-in %s runtime library has been loaded.");
 				} else {
 					str = N_("Plug-in %s has been stopped.");
 				}
