@@ -46,7 +46,7 @@ CP_HIDDEN char *cmdline_input(const char *prompt) {
 			do {
 				c = getchar();
 			} while (c != '\n');
-			fputs(_("ERROR: Command line too long.\n"), stderr);
+			fputs(_("ERROR: Command line is too long.\n"), stderr);
 		} else {
 			success = 1;
 		}

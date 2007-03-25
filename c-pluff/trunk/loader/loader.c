@@ -309,7 +309,7 @@ int main(int argc, char *argv[]) {
 				
 			// Unrecognized option
 			default:
-				error(_("Unrecognized option or argument. Try -h for help."));
+				error(_("Unrecognized option or argument. Try option -h for help."));
 		}
 	}
 
@@ -319,14 +319,15 @@ int main(int argc, char *argv[]) {
 		/* TRANSLATORS: This is a version string displayed on startup. */
 		fprintf(stderr, _("C-Pluff Loader, version %s\n"), PACKAGE_VERSION);
 		
-		/* TRANSLATORS: This is a version string displayed on startup. */
+		/* TRANSLATORS: This is a version string displayed on startup.
+		   The first %s is version and the second %s is platform type. */
 		fprintf(stderr, _("C-Pluff Library, version %s for %s\n"),
 			cp_get_version(), cp_get_host_type());
 	}
 	
 	// Check arguments
 	if (lst_plugin_dirs.first == NULL && lst_plugin_collections.first == NULL) {
-		error(_("No plug-ins to load. Try -h for help."));
+		error(_("No plug-ins to load. Try option -h for help."));
 	}
 	
 	// Initialize the framework
