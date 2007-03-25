@@ -1,0 +1,1118 @@
+# Finnish translations for C-Pluff package.
+# Copyright (C) 2007 Johannes Lehtinen
+# This file is distributed under the same license as the C-Pluff package.
+# Johannes Lehtinen <johannes.lehtinen@iki.fi>, 2007.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: C-Pluff 0.1.1\n"
+"Report-Msgid-Bugs-To: johannes.lehtinen@iki.fi\n"
+"POT-Creation-Date: 2007-03-24 06:03+0200\n"
+"PO-Revision-Date: 2007-03-24 06:07+0200\n"
+"Last-Translator: Johannes Lehtinen <johannes.lehtinen@iki.fi>\n"
+"Language-Team: Finnish <translation-team-fi@lists.sourceforge.net>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+
+#: console/cmdinput_basic.c:49
+msgid "ERROR: Command line too long.\n"
+msgstr "VIRHE: Komentorivi on liian pitkä.\n"
+
+#: console/console.c:77
+msgid "displays command help"
+msgstr "näyttää mahdolliset komennot"
+
+#: console/console.c:78
+msgid "sets the display log level"
+msgstr "asettaa näytettävien lokiviestien vakavuustason"
+
+#: console/console.c:79
+msgid "registers a plug-in collection"
+msgstr "rekisteröi liitännäiskokoelman"
+
+#: console/console.c:80
+msgid "unregisters a plug-in collection"
+msgstr "poistaa liitännäiskokoelman rekisteröinnin"
+
+#: console/console.c:81
+msgid "unregisters all plug-in collections"
+msgstr "poistaa kaikkien liitännäiskokoelmien rekisteröinnin"
+
+#: console/console.c:82
+msgid "loads and installs a plug-in from the specified path"
+msgstr "lataa ja asentaa annetusta polusta löytyvän liitännäisen"
+
+#: console/console.c:83
+msgid "scans plug-ins in the registered plug-in collections"
+msgstr "etsii liitännäisiä rekisteröidyistä liitännäiskokoelmista"
+
+#: console/console.c:84
+msgid "sets context startup arguments"
+msgstr "asettaa ympäristön käynnistysparametrit"
+
+#: console/console.c:85
+msgid "starts a plug-in"
+msgstr "käynnistää liitännäisen"
+
+#: console/console.c:86
+msgid "runs one plug-in function"
+msgstr "ajaa yhden liitännäistehtävän"
+
+#: console/console.c:87
+msgid "runs plug-in functions until no further work to be done"
+msgstr "ajaa liitännäistehtäviä kunnes kaikki tehtävät on suoritettu"
+
+#: console/console.c:88
+msgid "stops a plug-in"
+msgstr "pysäyttää liitännäisen"
+
+#: console/console.c:89
+msgid "stops all plug-ins"
+msgstr "pysäyttää kaikki liitännäiset"
+
+#: console/console.c:90
+msgid "uninstalls a plug-in"
+msgstr "poistaa liitännäisen muistista"
+
+#: console/console.c:91
+msgid "uninstalls all plug-ins"
+msgstr "poistaa kaikki liitännäiset muistista"
+
+#: console/console.c:92
+msgid "lists the installed plug-ins"
+msgstr "listaa asennetut liitännäiset"
+
+#: console/console.c:93
+msgid "lists the installed extension points"
+msgstr "listaa asennetut laajennuskohteet"
+
+#: console/console.c:94
+msgid "lists the installed extensions"
+msgstr "listaa asennetut laajennokset"
+
+#: console/console.c:95
+msgid "shows static plug-in information"
+msgstr "näyttää staattista tietoa liitännäisestä"
+
+#: console/console.c:96 console/console.c:97
+msgid "quits the program"
+msgstr "lopettaa ohjelman"
+
+#: console/console.c:103
+msgid "enables upgrades of installed plug-ins"
+msgstr "sallii asennettujen liitännäisten päivittämisen"
+
+#: console/console.c:104
+msgid "stops all plug-ins on first upgrade"
+msgstr "pysäyttää kaikki liitännäiset päivityksen yhteydessä"
+
+#: console/console.c:105
+msgid "stops all plug-ins on first install or upgrade"
+msgstr "pysäyttää kaikki liitännäiset asennuksen tai päivityksen yhteydessä"
+
+#: console/console.c:106
+msgid "restarts the currently active plug-ins after the scan"
+msgstr "käynnistää aktiiviset liitännäiset uudelleen virkistyksen jälkeen"
+
+#: console/console.c:112
+msgid "detailed debug messages"
+msgstr "yksityiskohtaiset vianpaikannusviestit"
+
+#: console/console.c:113
+msgid "informational messages"
+msgstr "informatiiviset viestit"
+
+#: console/console.c:114
+msgid "warnings about possible problems"
+msgstr "mahdollisista ongelmista varoittavat viestit"
+
+#: console/console.c:115
+msgid "error messages"
+msgstr "virheilmoitukset"
+
+#: console/console.c:116
+msgid "disable logging"
+msgstr "estä lokiviestit"
+
+#: console/console.c:153
+msgid "Command has too many arguments.\n"
+msgstr "Komennolla on liikaa parametreja.\n"
+
+#: console/console.c:176
+msgid "The following commands are available:\n"
+msgstr "Seuraavat komennot ovat käytettävissä:\n"
+
+#. TRANSLATORS: A tag for debug level log entries.
+#: console/console.c:187 loader/loader.c:212
+msgid "DEBUG"
+msgstr "DEBUG"
+
+#. TRANSLATORS: A tag for info level log entries.
+#: console/console.c:191 loader/loader.c:217
+msgid "INFO"
+msgstr "INFO"
+
+#. TRANSLATORS: A tag for warning level log entries.
+#: console/console.c:195 loader/loader.c:222
+msgid "WARNING"
+msgstr "VAROITUS"
+
+#. TRANSLATORS: A tag for error level log entries.
+#: console/console.c:199 loader/loader.c:227
+msgid "ERROR"
+msgstr "VIRHE"
+
+#. TRANSLATORS: A tag for unknown severity level.
+#: console/console.c:203 loader/loader.c:232
+msgid "UNKNOWN"
+msgstr "TUNTEMATON"
+
+#: console/console.c:206
+msgid "console"
+msgstr "konsoli"
+
+#: console/console.c:211
+#, c-format
+msgid "Usage: %s <level>\n"
+msgstr "Käyttö: %s <taso>\n"
+
+#: console/console.c:221
+#, c-format
+msgid "Unknown log level %s.\n"
+msgstr "Tuntematon lokiviestien taso %s.\n"
+
+#: console/console.c:222
+msgid "Available log levels are:\n"
+msgstr "Mahdolliset lokiviestien tasot ovat:\n"
+
+#. TRANSLATORS: The first %s is the log level name and the second the localized log level description.
+#: console/console.c:233 console/console.c:864
+#, c-format
+msgid "Using display log level %s (%s).\n"
+msgstr "Näytetään lokiviestit tasolla %s (%s).\n"
+
+#: console/console.c:241
+msgid "success"
+msgstr "onnistui"
+
+#: console/console.c:243
+msgid "insufficient system resources"
+msgstr "riittämättömät järjestelmäresurssit"
+
+#: console/console.c:245
+msgid "unknown object specified"
+msgstr "annettu tuntematon objekti"
+
+#: console/console.c:247
+msgid "I/O error"
+msgstr "luku- tai kirjoitusvirhe"
+
+#: console/console.c:249
+msgid "malformed plug-in descriptor"
+msgstr "viallinen liitännäiskuvaus"
+
+#: console/console.c:251
+msgid "plug-in or symbol conflicts with existing one"
+msgstr "liitännäinen tai symboli on ristiriidassa olemassaolevien liitännäisten tai symbolien kanssa"
+
+#: console/console.c:253
+msgid "unsatisfiable dependencies"
+msgstr "riippuvuuksia ei pystytä täyttämään"
+
+#: console/console.c:255
+msgid "error in plug-in runtime"
+msgstr "virhe liitännäisen suorituksessa"
+
+#: console/console.c:257
+msgid "unknown error code"
+msgstr "tuntematon virhekoodi"
+
+#: console/console.c:262
+#, c-format
+msgid "%s failed with error code %d (%s).\n"
+msgstr "%s epäonnistui palauttaen virhekoodin %d (%s).\n"
+
+#: console/console.c:272 console/console.c:282 console/console.c:303
+#, c-format
+msgid "Usage: %s <path>\n"
+msgstr "Käyttö: %s <polku>\n"
+
+#: console/console.c:276
+#, c-format
+msgid "Registered plug-in collection at %s.\n"
+msgstr "Rekisteröitiin liitännäiskokoelma polussa %s.\n"
+
+#: console/console.c:285
+#, c-format
+msgid "Unregistered plug-in collection at %s.\n"
+msgstr "Poistettiin polussa %s olevan liitännäiskokoelman rekisteröinti.\n"
+
+#: console/console.c:291 console/console.c:373 console/console.c:666
+#: console/console.c:690 console/console.c:766 console/console.c:779
+#: console/console.c:800 console/console.c:821
+#, c-format
+msgid "Usage: %s\n"
+msgstr "Käyttö: %s\n"
+
+#: console/console.c:294
+msgid "Unregistered all plug-in collections.\n"
+msgstr "Poistettiin kaikkien liitännäiskokoelmien rekisteröinnit.\n"
+
+#: console/console.c:310
+#, c-format
+msgid "Installed plug-in %s.\n"
+msgstr "Asennettiin liitännäinen %s.\n"
+
+#: console/console.c:331
+#, c-format
+msgid "Unknown flag %s.\n"
+msgstr "Tuntematon lippu %s.\n"
+
+#: console/console.c:332
+#, c-format
+msgid "Usage: %s [<flag>...]\n"
+msgstr "Käyttö: %s [<lippu>...]\n"
+
+#: console/console.c:333
+msgid "Available flags are:\n"
+msgstr "Käytettävissä olevat liput ovat:\n"
+
+#: console/console.c:345
+msgid "Plug-ins loaded.\n"
+msgstr "Liitännäiset ladattiin.\n"
+
+#: console/console.c:351
+msgid "uninstalled"
+msgstr "poistettu"
+
+#: console/console.c:353
+msgid "installed"
+msgstr "asennettu"
+
+#: console/console.c:355
+msgid "resolved"
+msgstr "valmiudessa"
+
+#: console/console.c:357
+msgid "starting"
+msgstr "käynnistymässä"
+
+#: console/console.c:359
+msgid "stopping"
+msgstr "pysähtymässä"
+
+#: console/console.c:361
+msgid "active"
+msgstr "aktiivinen"
+
+#: console/console.c:363
+msgid "unknown"
+msgstr "tuntematon"
+
+#: console/console.c:378
+msgid "Installed plug-ins:\n"
+msgstr "Asennetut liitännäiset:\n"
+
+#: console/console.c:380 console/console.c:673 console/console.c:697
+msgid "IDENTIFIER"
+msgstr "TUNNISTE"
+
+#: console/console.c:381
+msgid "VERSION"
+msgstr "VERSIO"
+
+#: console/console.c:382
+msgid "STATE"
+msgstr "TILA"
+
+#: console/console.c:383 console/console.c:674 console/console.c:698
+msgid "NAME"
+msgstr "NIMI"
+
+#: console/console.c:407 console/console.c:525 console/console.c:744
+msgid "Insufficient memory.\n"
+msgstr "Muistia ei ole tarpeeksi.\n"
+
+#: console/console.c:596 console/console.c:755 console/console.c:790
+#: console/console.c:811
+#, c-format
+msgid "Usage: %s <plugin>\n"
+msgstr "Käyttö: %s <liitännäinen>\n"
+
+#: console/console.c:671
+msgid "Installed extension points:\n"
+msgstr "Asennetut laajennuskohteet:\n"
+
+#: console/console.c:695
+msgid "Installed extensions:\n"
+msgstr "Asennetut laajennokset:\n"
+
+#: console/console.c:702
+msgid ".<anonymous>"
+msgstr ".<nimetön>"
+
+#: console/console.c:742
+#, c-format
+msgid "Usage: %s [<arg>...]\n"
+msgstr "Käyttö: %s [<param>...]\n"
+
+#: console/console.c:747
+msgid "Context startup arguments have been set.\n"
+msgstr "Ympäristön käynnistysparametrit on asetettu.\n"
+
+#: console/console.c:759
+#, c-format
+msgid "Started plug-in %s.\n"
+msgstr "Käynnistettiin liitännäinen %s.\n"
+
+#: console/console.c:770
+msgid "Ran plug-ins for one step. There are pending run functions.\n"
+msgstr "Suoritettiin yksi liitännäistehtävä. Lisää tehtäviä on odottamassa.\n"
+
+#: console/console.c:772
+msgid "Ran plug-ins for one step. No more pending run functions.\n"
+msgstr "Suoritettiin yksi liitännäistehtävä. Ei ole enempää tehtäviä.\n"
+
+#: console/console.c:782
+msgid "Ran plug-ins. No more pending run functions.\n"
+msgstr "Suoritettiin kaikki liitännäistehtävät.\n"
+
+#: console/console.c:794
+#, c-format
+msgid "Stopped plug-in %s.\n"
+msgstr "Pysäytettiin liitännäinen %s.\n"
+
+#: console/console.c:803
+msgid "Stopped all plug-ins.\n"
+msgstr "Pysäytettiin kaikki liitännäiset.\n"
+
+#: console/console.c:815
+#, c-format
+msgid "Uninstalled plug-in %s.\n"
+msgstr "Poistettiin liitännäinen %s muistista.\n"
+
+#: console/console.c:824
+msgid "Uninstalled all plug-ins.\n"
+msgstr "Poistettiin kaikki liitännäiset muistista.\n"
+
+#. TRANSLATORS: This is a version string displayed on startup.
+#: console/console.c:843
+#, c-format
+msgid "C-Pluff Console, version %s\n"
+msgstr "C-Pluff -konsoli, versio %s\n"
+
+#. TRANSLATORS: This is a version string displayed on startup.
+#: console/console.c:846 loader/loader.c:323
+#, c-format
+msgid "C-Pluff Library, version %s for %s\n"
+msgstr "C-Pluff -kirjasto, versio %s alustalle %s\n"
+
+#: console/console.c:867
+msgid "Type \"help\" for help on available commands.\n"
+msgstr "Kirjoita \"help\" saadaksesi tietoja mahdollisista komennoista.\n"
+
+#. TRANSLATORS: This is the input prompt for cpluff-console.
+#: console/console.c:871
+msgid "C-Pluff Console > "
+msgstr "C-Pluff -konsoli > "
+
+#: console/console.c:899
+#, c-format
+msgid "Unknown command %s.\n"
+msgstr "Tuntematon komento %s.\n"
+
+#: libcpluff/context.c:270
+msgid "Only the client program can destroy a plug-in context."
+msgstr "Vain pääohjelma voi tuhota liitännäisympäristön."
+
+#: libcpluff/context.c:358
+#, c-format
+msgid ""
+"Could not register plug-in collection directory %s due to insufficient "
+"memory."
+msgstr "Liitännäiskokoelmaa polussa %s ei pystytty rekisteröimään "
+"riittämättömän muistin takia."
+
+#: libcpluff/context.c:360
+#, c-format
+msgid "Plug-in collection directory %s was registered."
+msgstr "Liitännäiskokoelma polussa %s rekisteröitiin."
+
+#: libcpluff/context.c:393
+#, c-format
+msgid "Plug-in collection directory %s was unregistered."
+msgstr "Polussa %s olevan liitännäiskokoelman rekisteröinti poistettiin."
+
+#: libcpluff/context.c:402
+msgid "All plug-in collection directories were unregistered."
+msgstr "Kaikkien liitännäiskokoelmien rekisteröinnit poistettiin."
+
+#: libcpluff/context.c:416
+#, c-format
+msgid "Argument count must be at least 1 in call to %s."
+msgstr "Käynnistysparametreja pitää olla vähintään yksi kutsuttaessa funktiota %s."
+
+#: libcpluff/context.c:447
+#, c-format
+msgid "%s was called from within a logger invocation."
+msgstr "Funktiota %s kutsuttiin lokitietojen käsittelijän kautta."
+
+#: libcpluff/context.c:451
+#, c-format
+msgid "%s was called from within an event listener invocation."
+msgstr "Funktiota %s kutsuttiin tapahtumakuuntelijan kautta."
+
+#: libcpluff/context.c:455
+#, c-format
+msgid "%s was called from within a start function invocation."
+msgstr "Funktiota %s kutsuttiin käynnistysfunktion kautta."
+
+#: libcpluff/context.c:459
+#, c-format
+msgid "%s was called from within a stop function invocation."
+msgstr "Funktiota %s kutsuttiin pysäytysfunktion kautta."
+
+#: libcpluff/context.c:462
+#, c-format
+msgid "%s was called from within a create function invocation."
+msgstr "Funktiota %s kutsuttiin liitännäisen luontifunktion kautta."
+
+#: libcpluff/context.c:465
+#, c-format
+msgid "%s was called from within a destroy function invocation."
+msgstr "Funktiota %s kutsuttiin liitännäisen tuhoamisfunktion kautta."
+
+#: libcpluff/cpluff.c:161
+#, c-format
+msgid "C-Pluff: FATAL ERROR: %s\n"
+msgstr "C-Pluff: LOPULLINEN VIRHE: %s\n"
+
+#: libcpluff/cpluff.c:169
+#, c-format
+msgid "Argument %s has illegal NULL value in call to %s."
+msgstr "Parametrilla %s on virheellinen NULL-arvo kutsuttaessa funktiota %s."
+
+#: libcpluff/logging.c:131
+msgid "Logger could not be registered due to insufficient memory."
+msgstr "Lokitietojen käsittelijää ei pystytty rekisteröimään riittämättömän "
+"muistin takia."
+
+#: libcpluff/logging.c:134
+#, c-format
+msgid "%s registered a logger."
+msgstr "%s rekisteröi lokitietojen käsittelijän."
+
+#: libcpluff/logging.c:170
+#, c-format
+msgid "%s unregistered a logger."
+msgstr "%s poisti lokitietojen käsittelijän rekisteröinnin."
+
+#: libcpluff/logging.c:181
+msgid "Encountered a recursive logging request within a logger invocation."
+msgstr "Kohdattiin rekursiivinen lokimerkintä lokitietojen käsittelijässä."
+
+#: libcpluff/logging.c:239
+#, c-format
+msgid "Illegal severity value in call to %s."
+msgstr "Laiton vakavuustaso kutsuttaessa funktiota %s."
+
+#: libcpluff/pcontrol.c:121
+#, c-format
+msgid ""
+"Plug-in %s could not be installed because a plug-in with the same identifier "
+"is already installed."
+msgstr "Liitännäistä %s ei voitu asentaa, koska saman tunnisteen omaava "
+"liitännäinen on jo asennettu."
+
+#: libcpluff/pcontrol.c:161
+#, c-format
+msgid ""
+"Plug-in %s could not be installed because extension point %s conflicts with "
+"an already installed extension point."
+msgstr "Liitännäistä %s ei voitu asentaa, koska laajennuskohde %s on "
+"ristiriidassa olemassaolevan laajennuskohteen kanssa."
+
+#: libcpluff/pcontrol.c:229
+#, c-format
+msgid "Plug-in %s could not be installed due to insufficient system resources."
+msgstr "Liitännäistä %s ei voitu asentaa riittämättömien "
+"järjestelmäresurssien takia."
+
+#: libcpluff/pcontrol.c:281
+#, c-format
+msgid ""
+"Plug-in %s could not be resolved due to version incompatibility with C-Pluff."
+msgstr "Liitännäistä %s ei pystytty valmistelemaan, koska se ei ole "
+"yhteensopiva käytetyn C-Pluff -version kanssa."
+
+#: libcpluff/pcontrol.c:292
+#, c-format
+msgid "Plug-in %s runtime could not be loaded due to insufficient memory."
+msgstr "Liitännäisen %s ohjelmakoodia ei pystytty lataamaan riittämättömän "
+"muistin takia."
+
+#: libcpluff/pcontrol.c:305
+#, c-format
+msgid "Plug-in %s runtime library %s could not be opened."
+msgstr "Liitännäisen %s ohjelmakoodikirjastoa %s ei pystytty avaamaan."
+
+#: libcpluff/pcontrol.c:314
+#, c-format
+msgid ""
+"Plug-in %s symbol %s containing runtime function information could not be "
+"resolved."
+msgstr "Liitännäisen %s ohjelmakoodin tiedot sisältävää symbolia %s ei "
+"pystytty selvittämään."
+
+#: libcpluff/pcontrol.c:320
+#, c-format
+msgid "Plug-in %s runtime has a null constructor or destructor."
+msgstr "Liitännäiseltä %s puuttuu luonti- tai tuhoamisfunktio."
+
+#: libcpluff/pcontrol.c:367
+#, c-format
+msgid ""
+"Plug-in %s could not be resolved due to version incompatibility with plug-in "
+"%s."
+msgstr "Liitännäistä %s ei pystytty valmistelemaan, koska se ei ole"
+"yhteensopiva käytetyn liitännäisen %s version kanssa."
+
+#: libcpluff/pcontrol.c:377
+#, c-format
+msgid ""
+"Plug-in %s could not be resolved because it depends on plug-in %s which is "
+"not installed."
+msgstr "Liitännäistä %s ei pystytty valmistelemaan, koska se on riippuvainen "
+"liitännäisestä %s, jota ei ole asennettu."
+
+#: libcpluff/pcontrol.c:443
+#, c-format
+msgid ""
+"Plug-in %s could not be resolved because it depends on plug-in %s which "
+"could not be resolved."
+msgstr "Liitännäistä %s ei pystytty valmistelemaan, koska se on riippuvainen "
+"liitännäisestä %s, jota ei pystytty valmistelemaan."
+
+#: libcpluff/pcontrol.c:485
+#, c-format
+msgid "Plug-in %s could not be resolved because of insufficient memory."
+msgstr "Liitännäistä %s ei pystytty valmistelemaan riittämättömän muistin "
+"takia."
+
+#: libcpluff/pcontrol.c:689 libcpluff/pcontrol.c:780 libcpluff/pcontrol.c:816
+#, c-format
+msgid "Plug-in %s could not be started due to insufficient memory."
+msgstr "Liitännäistä %s ei pystytty käynnistämään riittämättömän muistin "
+"takia."
+
+#: libcpluff/pcontrol.c:694
+#, c-format
+msgid "Plug-in %s failed to start due to plug-in runtime error."
+msgstr "Liitännäisen %s käynnistäminen epäonnistui liitännäisessä tapahtuneen "
+"virheen takia."
+
+#: libcpluff/pcontrol.c:712
+#, c-format
+msgid "Detected a dynamic plug-in dependency loop: %s"
+msgstr "Havaittiin ajonaikainen liitännäisten riippuvuussilmukka: %s"
+
+#: libcpluff/pcontrol.c:714
+#, c-format
+msgid "Detected a static plug-in dependency loop: %s"
+msgstr "Havaittiin staattinen liitännäisten riippuvuussilmukka: %s"
+
+#: libcpluff/pcontrol.c:838
+#, c-format
+msgid "Unknown plug-in %s could not be started."
+msgstr "Tuntematonta liitännäistä %s ei voitu käynnistää."
+
+#: libcpluff/pcontrol.c:993
+#, c-format
+msgid "Unknown plug-in %s could not be stopped."
+msgstr "Tuntematonta liitännäistä %s ei voitu pysäyttää."
+
+#: libcpluff/pcontrol.c:1204
+#, c-format
+msgid "Unknown plug-in %s could not be uninstalled."
+msgstr "Tuntematonta liitännäistä %s ei voitu poistaa muistista."
+
+#: libcpluff/pinfo.c:102
+#, c-format
+msgid "Information object %p was registered."
+msgstr "Informaatio-objekti %p rekisteröitiin."
+
+#: libcpluff/pinfo.c:124
+#, c-format
+msgid "Information object %p reference count increased to %d."
+msgstr "Informaatio-objektin %p viittausmäärä kasvoi ja on nyt %d."
+
+#: libcpluff/pinfo.c:126
+#, c-format
+msgid "Could not increase reference count on unknown information object %p."
+msgstr "Ei voitu kasvattaa tuntemattoman informaatio-objektin %p "
+"viittausmäärää."
+
+#: libcpluff/pinfo.c:142
+#, c-format
+msgid "Information object %p was unregistered."
+msgstr "Informaatio-objektin %p rekisteröinti poistettiin."
+
+#: libcpluff/pinfo.c:145
+#, c-format
+msgid "Information object %p reference count decreased to %d."
+msgstr "Informaatio-objektin %p viittausmäärä lasku ja on nyt %d."
+
+#: libcpluff/pinfo.c:148
+#, c-format
+msgid "Could not release unknown information object %p."
+msgstr "Ei voitu vapauttaa tuntematonta informaatio-objektia %p."
+
+#: libcpluff/pinfo.c:169
+#, c-format
+msgid ""
+"Unreleased information object %p with reference count %d when destroying the "
+"associated context. Not releasing the object."
+msgstr ""
+"Vapauttamatta jääneen informaatio-objektin %p viittausmäärä on %d "
+"tuhottaessa liitännäisympäristöä. Ei vapauteta informaatio-objektia."
+
+#: libcpluff/pinfo.c:186
+msgid ""
+"The plug-in identifier argument to cp_get_plugin_info must not be NULL when "
+"the main program calls it."
+msgstr ""
+"Liitännäistunnisteparametri ei saa olla NULL pääohjelman kutsuessa funktiota "
+"cp_get_plugin_info."
+
+#: libcpluff/pinfo.c:197
+#, c-format
+msgid "Could not return information about unknown plug-in %s."
+msgstr "Ei voitu palauttaa tietoa tuntemattomasta liitännäisestä %s."
+
+#: libcpluff/pinfo.c:267
+msgid "Plug-in information could not be returned due to insufficient memory."
+msgstr "Liitännäisen tietoja ei voitu palauttaa riittämättömän muistin takia."
+
+#: libcpluff/pinfo.c:358
+msgid ""
+"Extension point information could not be returned due to insufficient memory."
+msgstr ""
+"Laajennuskohteen tietoja ei voitu palauttaa riittämättömän muistin takia."
+
+#: libcpluff/pinfo.c:474
+msgid "Extension information could not be returned due to insufficient memory."
+msgstr "Laajennoksen tietoja ei voitu palauttaa riittämättömän muistin takia."
+
+#: libcpluff/pinfo.c:571
+msgid "A plug-in listener could not be registered due to insufficient memory."
+msgstr "Liitännäistapahtumien kuuntelijaa ei voitu rekisteröidä "
+"riittämättömän muistin takia."
+
+#: libcpluff/pinfo.c:574
+#, c-format
+msgid "%s registered a plug-in listener."
+msgstr "%s rekisteröi liitännäistapahtumien kuuntelijan."
+
+#: libcpluff/pinfo.c:595
+#, c-format
+msgid "%s unregistered a plug-in listener."
+msgstr "%s poisti liitännäistapahtumien kuuntelijan rekisteröinnin"
+
+#: libcpluff/pinfo.c:612
+#, c-format
+msgid "Plug-in %s has been uninstalled."
+msgstr "Liitännäinen %s on poistettu muistista."
+
+#: libcpluff/pinfo.c:616
+#, c-format
+msgid "Plug-in %s has been installed."
+msgstr "Liitännäinen %s on asennettu."
+
+#: libcpluff/pinfo.c:618
+#, c-format
+msgid "Plug-in %s runtime has been unloaded."
+msgstr "Liitännäisen %s ohjelmakoodi on poistettu muistista."
+
+#: libcpluff/pinfo.c:623
+#, c-format
+msgid "Plug-in %s runtime has been loaded."
+msgstr "Liitännäisen %s ohjelmakoodi on ladattu."
+
+#: libcpluff/pinfo.c:625
+#, c-format
+msgid "Plug-in %s has been stopped."
+msgstr "Liitännäinen %s on pysähtynyt."
+
+#: libcpluff/pinfo.c:629
+#, c-format
+msgid "Plug-in %s is starting."
+msgstr "Liitännäinen %s on käynnistymässä."
+
+#: libcpluff/pinfo.c:632
+#, c-format
+msgid "Plug-in %s is stopping."
+msgstr "Liitännäinen %s on pysähtymässä."
+
+#: libcpluff/pinfo.c:635
+#, c-format
+msgid "Plug-in %s has been started."
+msgstr "Liitännäinen %s on käynnistetty."
+
+#: libcpluff/ploader.c:155
+#, c-format
+msgid "Suspicious plug-in descriptor content in %s, line %d, column %d (%s)."
+msgstr "Epäilyttävää liitännäiskuvauksen sisältöä tiedostossa %s rivillä %d "
+"sarakkeessa %d (%s)."
+
+#: libcpluff/ploader.c:162
+#, c-format
+msgid "Invalid plug-in descriptor content in %s, line %d, column %d (%s)."
+msgstr "Laitonta liitännäiskuvauksen sisältöä tiedostossa %s rivillä %d "
+"sarakkeessa %d (%s)."
+
+#: libcpluff/ploader.c:182
+#, c-format
+msgid ""
+"Insufficient system resources to parse plug-in descriptor content in %s, "
+"line %d, column %d."
+msgstr ""
+"Järjestelmäresurssit eivät riitä tulkittaessa liitännäiskuvausta "
+"tiedostossa %s rivillä %d sarakkeessa %d."
+
+#: libcpluff/ploader.c:236
+#, c-format
+msgid "required attribute %s for element %s has an empty value"
+msgstr "elementin %2$s vaaditulla attribuutilla %1$s on tyhjä arvo"
+
+#: libcpluff/ploader.c:242
+#, c-format
+msgid "required attribute %s missing for element %s"
+msgstr "elementin %2$s vaadittu attribuutti %1$s puuttuu"
+
+#: libcpluff/ploader.c:276
+#, c-format
+msgid "ignoring unknown attribute %s for element %s"
+msgstr "jätetään huomioimatta elementin %2$s tuntematon attribuutti %1$s"
+
+#: libcpluff/ploader.c:369
+#, c-format
+msgid "ignoring unexpected element %s and its contents"
+msgstr "jätetään huomioimatta tuntematon elementti %s sisältöineen"
+
+#: libcpluff/ploader.c:752
+#, c-format
+msgid "unknown boolean value: %s"
+msgstr "tuntematon totuusarvo: %s"
+
+#: libcpluff/ploader.c:962
+#, c-format
+msgid "unexpected closing tag for %s"
+msgstr "elementti %s sulkeutuu odottamattomasti"
+
+#: libcpluff/ploader.c:1078
+#, c-format
+msgid "XML parsing error in %s, line %d, column %d (%s)."
+msgstr "XML-tulkintavirhe tiedostossa %s rivillä %d sarakkeessa %d (%s)"
+
+#: libcpluff/ploader.c:1123
+#, c-format
+msgid "Plug-in descriptor in %s is invalid."
+msgstr "Liitännäiskuvaus tiedostossa %s on viallinen."
+
+#: libcpluff/ploader.c:1127
+#, c-format
+msgid "An I/O error occurred while loading a plug-in descriptor from %s."
+msgstr "Luku- tai kirjoitusvirhe tapahtui ladattaessa liitännäiskuvausta "
+"tiedostosta %s."
+
+#: libcpluff/ploader.c:1131
+#, c-format
+msgid "Insufficient system resources to load a plug-in descriptor from %s."
+msgstr "Järjestelmäresurssit eivät riitä liitännäiskuvauksen lataamiseksi "
+"tiedostosta %s."
+
+#: libcpluff/ploader.c:1135
+#, c-format
+msgid "Failed to load a plug-in descriptor from %s."
+msgstr "Liitännäiskuvauksen lataaminen tiedostosta %s epäonnistui."
+
+#: libcpluff/pscan.c:60
+msgid "Plug-in scan is starting."
+msgstr "Liitännäisten etsintä alkaa."
+
+#: libcpluff/pscan.c:108
+#, c-format
+msgid ""
+"Could not check possible plug-in location %s%c%s due to insufficient system "
+"resources."
+msgstr ""
+"Mahdollisen liitännäissijainnin %s%c%s tarkistaminen ei onnistunut "
+"riittämättömien järjestelmäresurssien takia."
+
+#: libcpluff/pscan.c:140
+#, c-format
+msgid ""
+"Plug-in %s version %s could not be loaded due to insufficient system "
+"resources."
+msgstr ""
+"Liitännäisen %s versiota %s ei voitu ladata riittämättömien "
+"järjestelmäresurssien takia."
+
+#: libcpluff/pscan.c:152
+#, c-format
+msgid "Could not read plug-in directory %s: %s"
+msgstr "Liitännäishakemistoa %s ei voitu lukea: %s"
+
+#: libcpluff/pscan.c:158
+#, c-format
+msgid "Could not open plug-in directory %s: %s"
+msgstr "Liitännäishakemistoa %s ei voitu avata: %s"
+
+#: libcpluff/pscan.c:272
+msgid "Plug-in scan has completed successfully."
+msgstr "Liitännäisten etsiminen on päättynyt onnistuneesti."
+
+#: libcpluff/pscan.c:275
+msgid "Could not scan plug-ins due to insufficient system resources."
+msgstr "Liitännäisiä ei voitu etsiä riittämättömien järjestelmäresurssien takia."
+
+#: libcpluff/pscan.c:278
+msgid "Could not scan plug-ins."
+msgstr "Liitännäisiä ei voitu etsiä."
+
+#: libcpluff/psymbol.c:79
+msgid "Only plug-ins can define context specific symbols."
+msgstr "Vain liitännäiset voivat asettaa ympäristökohtaisia symboleja."
+
+#: libcpluff/psymbol.c:115
+#, c-format
+msgid "Plug-in %s could not define symbol %s due to insufficient memory."
+msgstr "Liitännäinen %s ei voinut asettaa symbolia %s riittämättömän muistin "
+"takia."
+
+#: libcpluff/psymbol.c:118
+#, c-format
+msgid "Plug-in %s tried to redefine symbol %s."
+msgstr "Liitännäinen %s yritti uudelleenmäärittää symbolin %s."
+
+#: libcpluff/psymbol.c:163
+#, c-format
+msgid "Symbol %s in unknown plug-in %s could not be resolved."
+msgstr "Symbolia %s tuntemattomassa liitännäisessä %s ei voitu selvittää."
+
+#: libcpluff/psymbol.c:171
+#, c-format
+msgid ""
+"Symbol %s in plug-in %s could not be resolved because the plug-in could not "
+"be started."
+msgstr ""
+"Symbolia %s liitännäisessä %s ei voitu selvittää, koska liitännäistä ei "
+"pystytty käynnistämään."
+
+#: libcpluff/psymbol.c:186
+#, c-format
+msgid ""
+"Symbol %s in plug-in %s could not be resolved because it is not defined or "
+"exported."
+msgstr ""
+"Symbolia %s liitännäisessä %s ei voitu selvittää, koska sitä ei ole asetettu "
+"tai julkaistu."
+
+#: libcpluff/psymbol.c:266
+#, c-format
+msgid ""
+"Symbol %s in plug-in %s could not be resolved due to insufficient memory."
+msgstr ""
+"Symbolia %s liitännäisessä %s ei voitu selvittää riittämättömän muistin "
+"takia."
+
+#: libcpluff/psymbol.c:293
+#, c-format
+msgid "Could not release an unknown symbol %p."
+msgstr "Ei voitu vapauttaa tuntematonta symbolia osoitteessa %p."
+
+#: libcpluff/psymbol.c:311
+#, c-format
+msgid "%s released the pointer %p defined by plug-in %s."
+msgstr "Liitännäinen %s vapautti liitännäisen %3$s määrittelemän symbolin osoitteessa %2$p."
+
+#: libcpluff/psymbol.c:323
+#, c-format
+msgid "A dynamic dependency from plug-in %s to plug-in %s was removed."
+msgstr "Liitännäisen %s dynaaminen riippuvuus liitännäiseen %s poistettiin."
+
+#: libcpluff/serial.c:60
+msgid "Only plug-ins can register run functions."
+msgstr "Vain liitännäiset voivat rekisteröidä suoritettavia tehtäviä."
+
+#: libcpluff/serial.c:64
+msgid "Only starting or active plug-ins can register run functions."
+msgstr "Vain käynnistyvät tai aktiiviset liitännäiset voivat rekisteröidä "
+"suoritettavia tehtäviä."
+
+#: libcpluff/serial.c:111
+msgid "Could not register a run function due to insufficient memory."
+msgstr "Suoritettavaa tehtävää ei voitu rekisteröidä riittämättömän muistin "
+"takia."
+
+#: libcpluff/thread_posix.c:114
+#, c-format
+msgid "Could not lock a mutex due to error %d."
+msgstr "Mutexin lukitseminen epäonnistui virheen %d takia."
+
+#: libcpluff/thread_posix.c:122
+#, c-format
+msgid "Could not unlock a mutex due to error %d."
+msgstr "Mutexin vapauttaminen epäonnistui virheen %d takia."
+
+#: libcpluff/thread_posix.c:134 libcpluff/thread_posix.c:186
+#, c-format
+msgid "Could not wait for a condition variable due to error %d."
+msgstr "Ehtomuuttujan odottaminen epäonnistui virheen %d takia."
+
+#: libcpluff/thread_posix.c:159 libcpluff/thread_posix.c:181
+#, c-format
+msgid "Could not signal a condition variable due to error %d."
+msgstr "Ehtomuuttujan signalointi epäonnistui virheen %d takia."
+
+#: libcpluff/thread_posix.c:163 libcpluff/thread_windows.c:205
+msgid "Unauthorized attempt at unlocking a mutex."
+msgstr "Laiton yritys vapauttaa mutexia."
+
+#: libcpluff/thread_posix.c:194 libcpluff/thread_windows.c:239
+msgid "Unauthorized attempt at waiting on a mutex."
+msgstr "Laiton yritys odottaa mutexia."
+
+#: libcpluff/thread_posix.c:210
+#, c-format
+msgid "Could not broadcast a condition variable due to error %d."
+msgstr "Ehtomuuttujan yleislähetys epäonnistui virheen %d takia."
+
+#: libcpluff/thread_posix.c:214 libcpluff/thread_windows.c:253
+msgid "Unauthorized attempt at signaling a mutex."
+msgstr "Laiton yritys signaloida mutexia."
+
+#: libcpluff/thread_windows.c:122
+msgid "unknown error"
+msgstr "tuntematon virhe"
+
+#: libcpluff/thread_windows.c:134
+#, c-format
+msgid "Could not lock a mutex due to error %ld: %s"
+msgstr "Mutexin lukitseminen epäonnistui johtuen virheestä %ld: %s"
+
+#: libcpluff/thread_windows.c:143
+#, c-format
+msgid "Could not release a mutex due to error %ld: %s"
+msgstr "Mutexin vapauttaminen epäonnistui johtuen virheestä %ld: %s"
+
+#: libcpluff/thread_windows.c:152
+#, c-format
+msgid "Could not wait for an event due to error %ld: %s"
+msgstr "Tapahtuman odottaminen epäonnistui johtuen virheestä %ld: %s"
+
+#: libcpluff/thread_windows.c:161
+#, c-format
+msgid "Could not set an event due to error %ld: %s"
+msgstr "Tapahtuman asettaminen epäonnistui johtuen virheestä %ld: %s"
+
+#: libcpluff/thread_windows.c:170
+#, c-format
+msgid "Could not reset an event due to error %ld: %s"
+msgstr "Tapahtuman nollaus epäonnistui johtuen virheestä %ld: %s"
+
+#. TRANSLATORS: A formatting string for loader error messages.
+#: loader/loader.c:121
+#, c-format
+msgid "C-Pluff Loader: ERROR: %s\n"
+msgstr "C-Pluff -latain: VIRHE: %s\n"
+
+#: loader/loader.c:152
+msgid "Memory allocation failed."
+msgstr "Muistin varaaminen epäonnistui."
+
+#. TRANSLATORS: This is a version string displayed on startup.
+#: loader/loader.c:192 loader/loader.c:320
+#, c-format
+msgid "C-Pluff Loader, version %s\n"
+msgstr "C-Pluff -latain, versio %s\n"
+
+#: loader/loader.c:194
+msgid ""
+"usage: cpluff-loader <option>... [--] <arguments passed to plug-ins>\n"
+"options:\n"
+"  -h       print this help text\n"
+"  -c DIR   add plug-in collection in directory DIR\n"
+"  -p DIR   add plug-in in directory DIR\n"
+"  -s PID   start plug-in PID\n"
+"  -v       be more verbose (repeat for increased verbosity)\n"
+"  -q       be quiet\n"
+"  -V       print C-Pluff version number and exit\n"
+msgstr ""
+"käyttö: cpluff-loader <valitsin>... [--] <parametrit liitännäisille>\n"
+"valitsimet:\n"
+"  -h       tulosta tämä ohje\n"
+"  -c DIR   lisää liitännäiskokoelma hakemistosta DIR\n"
+"  -p DIR   lisää liitännäinen hakemistosta DIR\n"
+"  -s PID   käynnistä liitännäinen PID\n"
+"  -v       näytä enemmän tietoja (toista lisätäksesi näytettäviä tietoja)\n"
+"  -q       näytä vähemmän tietoja\n"
+"  -V       tulosta C-Pluff -versionumero ja lopeta\n"
+
+#. TRANSLATORS: A formatting string for log messages caused by plug-in activity.
+#: loader/loader.c:239
+#, c-format
+msgid "C-Pluff: %s: [%s] %s\n"
+msgstr "C-Pluff: %s: [%s] %s\n"
+
+#. TRANSLATORS: A formatting string for log messages caused by loader activity.
+#: loader/loader.c:242
+#, c-format
+msgid "C-Pluff: %s: [loader] %s\n"
+msgstr "C-Pluff: %s: [latain] %s\n"
+
+#: loader/loader.c:291 loader/loader.c:299
+msgid "Quiet and verbose modes are mutually exclusive."
+msgstr "Samaan aikaan ei voi näyttää sekä enemmän että vähemmän tietoja."
+
+#: loader/loader.c:312
+msgid "Unrecognized option or argument. Try -h for help."
+msgstr "Tuntematon valitsin. Kokeile valitsinta -h saadaksesi ohjeita."
+
+#: loader/loader.c:329
+msgid "No plug-ins to load. Try -h for help."
+msgstr "Ei ladattavia liitännäisiä. Kokeile valitsinta -h saadaksesi ohjeita."
+
+#: loader/loader.c:334
+msgid "The C-Pluff initialization failed."
+msgstr "C-Pluffin alustaminen epäonnistui."
+
+#: loader/loader.c:339
+msgid "Could not create a plug-in context."
+msgstr "Liitännäisympäristön luonti epäonnistui."
+
+#: loader/loader.c:372
+#, c-format
+msgid "Could not load plug-in from path %s."
+msgstr "Liitännäistä polusta %s ei voitu ladata."
+
+#: loader/loader.c:375
+#, c-format
+msgid "Could not install plug-in %s."
+msgstr "Liitännäistä %s ei voitu asentaa."
+
+#: loader/loader.c:384
+#, c-format
+msgid "Could not register plug-in collection at path %s."
+msgstr "Liitännäiskokoelmaa polussa %s ei voitu rekisteröidä."
+
+#: loader/loader.c:389
+msgid "Could not install plug-ins from plug-in collections."
+msgstr "Liitännäisiä liitännäiskokoelmista ei voitu asentaa."
+
+#: loader/loader.c:396
+#, c-format
+msgid "Failed to start plug-in %s."
+msgstr "Liitännäisen %s käynnistäminen epäonnistui."
