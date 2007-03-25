@@ -936,7 +936,7 @@ msgstr "Ei voitu vapauttaa tuntematonta symbolia osoitteessa %p."
 #: libcpluff/psymbol.c:311
 #, c-format
 msgid "%s released the pointer %p defined by plug-in %s."
-msgstr "Liitännäinen %s vapautti liitännäisen %3$s määrittelemän symbolin osoitteessa %2$p."
+msgstr "Liitännäinen %1$s vapautti liitännäisen %3$s määrittelemän symbolin osoitteessa %2$p."
 
 #: libcpluff/psymbol.c:323
 #, c-format
