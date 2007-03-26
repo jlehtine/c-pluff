@@ -819,7 +819,7 @@ static void cmd_stop_plugin(int argc, char *argv[]) {
 
 static void cmd_stop_plugins(int argc, char *argv[]) {
 	if (argc != 1) {
-		/* Translators: Usage instructions for stopping all plug-ins */
+		/* TRANSLATORS: Usage instructions for stopping all plug-ins */
 		printf(_("Usage: %s\n"), argv[0]);
 	} else {
 		cp_stop_plugins(context);
