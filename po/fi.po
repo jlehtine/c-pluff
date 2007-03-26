@@ -7,14 +7,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: C-Pluff 0.1.1\n"
 "Report-Msgid-Bugs-To: johannes.lehtinen@iki.fi\n"
-"POT-Creation-Date: 2007-03-25 09:51+0300\n"
-"PO-Revision-Date: 2007-03-24 06:07+0200\n"
+"POT-Creation-Date: 2007-03-26 08:35+0300\n"
+"PO-Revision-Date: 2007-03-26 08:40+0300\n"
 "Last-Translator: Johannes Lehtinen <johannes.lehtinen@iki.fi>\n"
 "Language-Team: Finnish <translation-team-fi@lists.sourceforge.net>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
+"Plural-Forms: nplurals=2; plural=(n != 1);"
 
 #: console/cmdinput_basic.c:49
 msgid "ERROR: Command line is too long.\n"
@@ -211,7 +211,7 @@ msgstr "annettu tuntematon objekti"
 
 #: console/console.c:255
 msgid "an input or output error"
-msgstr ""
+msgstr "luku- tai kirjoitusvirhe"
 
 #: console/console.c:257
 msgid "a malformed plug-in descriptor"
@@ -595,7 +595,8 @@ msgstr ""
 
 #: libcpluff/pcontrol.c:292
 #, c-format
-msgid "Plug-in %s runtime could not be loaded due to insufficient memory."
+msgid ""
+"Plug-in %s runtime library could not be loaded due to insufficient memory."
 msgstr ""
 "Liitännäisen %s ohjelmakoodia ei pystytty lataamaan riittämättömän muistin "
 "takia."
@@ -616,7 +617,7 @@ msgstr ""
 
 #: libcpluff/pcontrol.c:320
 #, c-format
-msgid "Plug-in %s is missing a constructor or destructor."
+msgid "Plug-in %s is missing a constructor or destructor function."
 msgstr "Liitännäiseltä %s puuttuu luonti- tai tuhoamisfunktio."
 
 #: libcpluff/pcontrol.c:367
@@ -866,7 +867,7 @@ msgstr "jätetään huomioimatta elementin %2$s tuntematon attribuutti %1$s"
 #: libcpluff/ploader.c:369
 #, c-format
 msgid "ignoring unexpected element %s and its contents"
-msgstr "jätetään huomioimatta tuntematon elementti %s sisältöineen"
+msgstr "jätetään huomioimatta odottamaton elementti %s sisältöineen"
 
 #: libcpluff/ploader.c:752
 #, c-format
@@ -1008,8 +1009,7 @@ msgstr "Ei voitu vapauttaa tuntematonta symbolia osoitteessa %p."
 #, c-format
 msgid "%s released the symbol at address %p defined by plug-in %s."
 msgstr ""
-"%1$s vapautti liitännäisen %3$s määrittelemän symbolin "
-"osoitteessa %2$p."
+"%1$s vapautti liitännäisen %3$s määrittelemän symbolin osoitteessa %2$p."
 
 #: libcpluff/psymbol.c:325
 #, c-format
@@ -1034,39 +1034,40 @@ msgstr ""
 #: libcpluff/thread_posix.c:114
 #, c-format
 msgid "Could not lock a mutex due to error %d."
-msgstr "Mutexin lukitseminen epäonnistui virheen %d takia."
+msgstr "Mutexia ei voitu lukita virheen %d takia."
 
 #: libcpluff/thread_posix.c:122
 #, c-format
 msgid "Could not unlock a mutex due to error %d."
-msgstr "Mutexin vapauttaminen epäonnistui virheen %d takia."
+msgstr "Mutexia ei voitu vapauttaa virheen %d takia."
 
 #: libcpluff/thread_posix.c:134 libcpluff/thread_posix.c:186
 #, c-format
 msgid "Could not wait for a condition variable due to error %d."
-msgstr "Ehtomuuttujan odottaminen epäonnistui virheen %d takia."
+msgstr "Ehtomuuttujaa ei voitu odottaa virheen %d takia."
 
 #: libcpluff/thread_posix.c:159 libcpluff/thread_posix.c:181
 #, c-format
 msgid "Could not signal a condition variable due to error %d."
-msgstr "Ehtomuuttujan signalointi epäonnistui virheen %d takia."
+msgstr "Ehtomuuttujaa ei voitu signaloida virheen %d takia."
 
 #: libcpluff/thread_posix.c:163 libcpluff/thread_windows.c:205
-msgid "Unauthorized attempt at unlocking a mutex."
-msgstr "Laiton yritys vapauttaa mutexia."
+msgid "Internal C-Pluff error: Unauthorized attempt at unlocking a mutex."
+msgstr "Sisäinen virhe C-Pluffissa: Laiton yritys vapauttaa mutexia."
 
 #: libcpluff/thread_posix.c:194 libcpluff/thread_windows.c:239
-msgid "Unauthorized attempt at waiting on a mutex."
-msgstr "Laiton yritys odottaa mutexia."
+msgid "Internal C-Pluff error: Unauthorized attempt at waiting on a mutex."
+msgstr "Sisäinen virhe C-Pluffissa: Laiton yritys odottaa mutexia."
 
 #: libcpluff/thread_posix.c:210
 #, c-format
 msgid "Could not broadcast a condition variable due to error %d."
-msgstr "Ehtomuuttujan yleislähetys epäonnistui virheen %d takia."
+msgstr ""
+"Ehtomuuttujan signalointi yleislähetyksenä epäonnistui virheen %d takia."
 
 #: libcpluff/thread_posix.c:214 libcpluff/thread_windows.c:253
-msgid "Unauthorized attempt at signaling a mutex."
-msgstr "Laiton yritys signaloida mutexia."
+msgid "Internal C-Pluff error: Unauthorized attempt at signaling a mutex."
+msgstr "Sisäinen virhe C-Pluffissa: Laiton yritys signaloida mutexia."
 
 #: libcpluff/thread_windows.c:122
 msgid "unknown error"
@@ -1164,32 +1165,38 @@ msgid "The C-Pluff initialization failed."
 msgstr "C-Pluffin alustaminen epäonnistui."
 
 #: loader/loader.c:340
-msgid "Could not create a plug-in context."
+msgid "Plug-in context creation failed."
 msgstr "Liitännäisympäristön luonti epäonnistui."
 
 #: loader/loader.c:373
 #, c-format
-msgid "Could not load plug-in from path %s."
-msgstr "Liitännäistä polusta %s ei voitu ladata."
+msgid "Failed to load a plug-in from path %s."
+msgstr "Liitännäisen lataaminen polusta %s epäonnistui."
 
 #: loader/loader.c:376
 #, c-format
-msgid "Could not install plug-in %s."
-msgstr "Liitännäistä %s ei voitu asentaa."
+msgid "Failed to install plug-in %s."
+msgstr "Liitännäisen %s asentaminen epäonnistui."
 
 #: loader/loader.c:385
 #, c-format
-msgid "Could not register plug-in collection at path %s."
-msgstr "Liitännäiskokoelmaa polussa %s ei voitu rekisteröidä."
+msgid "Failed to register a plug-in collection at path %s."
+msgstr "Polussa %s olevan liitännäiskokoelman rekisteröinti epäonnistui."
 
 #: loader/loader.c:390
-msgid "Could not install plug-ins from plug-in collections."
-msgstr "Liitännäisiä liitännäiskokoelmista ei voitu asentaa."
+msgid "Failed to load and install plug-ins from plug-in collections."
+msgstr "Liitännäisten lataaminen ja asentaminen liitännäiskokoelmista epäonnistui."
 
 #: loader/loader.c:397
 #, c-format
 msgid "Failed to start plug-in %s."
 msgstr "Liitännäisen %s käynnistäminen epäonnistui."
+
+#~ msgid "Could not create a plug-in context."
+#~ msgstr "Liitännäisympäristön luonti epäonnistui."
+
+#~ msgid "Could not install plug-in %s."
+#~ msgstr "Liitännäistä %s ei voitu asentaa."
 
 #~ msgid "I/O error"
 #~ msgstr "luku- tai kirjoitusvirhe"

@@ -289,7 +289,7 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		lname_len = strlen(plugin->plugin->runtime_lib_name);
 		rlpath_len = ppath_len + lname_len + strlen(CP_SHREXT) + 2;
 		if ((rlpath = malloc(rlpath_len * sizeof(char))) == NULL) {
-			cpi_errorf(context, N_("Plug-in %s runtime could not be loaded due to insufficient memory."), plugin->plugin->identifier);
+			cpi_errorf(context, N_("Plug-in %s runtime library could not be loaded due to insufficient memory."), plugin->plugin->identifier);
 			status = CP_ERR_RESOURCE;
 			break;
 		}

@@ -337,7 +337,7 @@ int main(int argc, char *argv[]) {
 	
 	// Create the context
 	if ((context = cp_create_context(NULL)) == NULL) {
-		error(_("Could not create a plug-in context."));
+		error(_("Plug-in context creation failed."));
 	}
 	
 	// Register logger
@@ -370,10 +370,10 @@ int main(int argc, char *argv[]) {
 	for (entry = lst_plugin_dirs.first; entry != NULL; entry = entry->next) {
 		cp_plugin_info_t *pi = cp_load_plugin_descriptor(context, entry->str, NULL);
 		if (pi == NULL) {
-			errorf(_("Could not load plug-in from path %s."), entry->str);
+			errorf(_("Failed to load a plug-in from path %s."), entry->str);
 		}
 		if (cp_install_plugin(context, pi) != CP_OK) {
-			errorf(_("Could not install plug-in %s."), pi->identifier);
+			errorf(_("Failed to install plug-in %s."), pi->identifier);
 		}
 		cp_release_info(context, pi);
 	}
@@ -382,12 +382,12 @@ int main(int argc, char *argv[]) {
 	// Load plug-in collections
 	for (entry = lst_plugin_collections.first; entry != NULL; entry = entry->next) {
 		if (cp_register_pcollection(context, entry->str) != CP_OK) {
-			errorf(_("Could not register plug-in collection at path %s."), entry->str); 
+			errorf(_("Failed to register a plug-in collection at path %s."), entry->str); 
 		}
 	}
 	if (lst_plugin_collections.first != NULL
 		&& cp_scan_plugins(context, 0) != CP_OK) {
-		error(_("Could not install plug-ins from plug-in collections."));
+		error(_("Failed to load and install plug-ins from plug-in collections."));
 	}
 	str_list_clear(&lst_plugin_collections);
 	
