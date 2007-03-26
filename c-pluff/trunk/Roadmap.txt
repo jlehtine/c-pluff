@@ -5,13 +5,14 @@ C-Pluff (0.1.2) alpha
   * [X] Removed a flawed check of whether dynamically resolved symbols are
         in use when a plug-in is being stopped.
   * [X] Build, install and distribute internationalization support files.
-  * [ ] Include finnish localization.
   * [X] Link with libintl if internationalization support needs it.
+  * [X] Unified message structure and wording.
+  * [X] Include finnish translation (to test internationalization).
   * [X] Install documentation as part of installation.
   * [ ] Install example source code as part of installation.
   * [X] Respect DESTDIR during installation.
   * [X] Allow special installation prefixes for examples
-    (--with-examples-bindir, --with-examples-libdir).
+        (--with-examples-bindir, --with-examples-libdir).
 
  -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
 

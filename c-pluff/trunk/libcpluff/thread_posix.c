@@ -160,7 +160,7 @@ CP_HIDDEN void cpi_unlock_mutex(cpi_mutex_t *mutex) {
 			}
 		}
 	} else {
-		cpi_fatalf(_("Unauthorized attempt at unlocking a mutex."));
+		cpi_fatalf(_("Internal C-Pluff error: Unauthorized attempt at unlocking a mutex."));
 	}
 	unlock_mutex(&(mutex->os_mutex));
 }
@@ -191,7 +191,7 @@ CP_HIDDEN void cpi_wait_mutex(cpi_mutex_t *mutex) {
 		mutex->lock_count = lc;
 		
 	} else {
-		cpi_fatalf(_("Unauthorized attempt at waiting on a mutex."));
+		cpi_fatalf(_("Internal C-Pluff error: Unauthorized attempt at waiting on a mutex."));
 	}
 	unlock_mutex(&(mutex->os_mutex));
 }
@@ -211,7 +211,7 @@ CP_HIDDEN void cpi_signal_mutex(cpi_mutex_t *mutex) {
 		}
 		
 	} else {
-		cpi_fatalf(_("Unauthorized attempt at signaling a mutex."));
+		cpi_fatalf(_("Internal C-Pluff error: Unauthorized attempt at signaling a mutex."));
 	}
 	unlock_mutex(&(mutex->os_mutex));
 }
