@@ -1,0 +1,112 @@
+INSTALLING C-PLUFF EXAMPLES
+===========================
+
+This directory includes examples of extensible applications based on
+C-Pluff. You can build the examples as part of the C-Pluff source tree at
+the same time as building the C-Pluff implementation or as a stand-alone
+build using an already installed C-Pluff instance.
+
+These are generic build and installation instructions. For more
+information on an individual example, see README.txt in the corresponding
+subdirectory.
+
+
+Building as part of the C-Pluff source tree
+-------------------------------------------
+
+This build method can be used if you are building the C-Pluff
+implementation and the examples at the same time. This examples directory
+should then be a subdirectory of the top level C-Pluff source directory.
+If this is not the case, skip to the next section.
+
+First, configure C-Pluff normally using the configure script in the
+top level source directory.
+
+  Building in the source directory:
+    ./configure
+
+  Building in a separate build directory:
+    cd BUILD_DIR
+    SOURCE_DIR/configure
+
+Notice that example applications will be installed into the same prefix
+as the C-Pluff implementation.
+
+To build example applications, you have to first build the C-Pluff
+implementation. To build both just make the target examples in the top
+level build directory.
+
+  make examples
+
+Or you can run make separately in the examples directory having first
+built the C-Pluff implementation.
+
+Before you can run the example applications, you have to install them.
+Again, you have to first install the C-Pluff implementation and then the
+examples. To install both just make the target examples-install in the top
+level build directory.
+
+  make examples-install
+
+Or you can make the install target separately in the examples directory
+having first installed the C-Pluff implementation.
+
+
+Building in stand-alone mode
+----------------------------
+
+This build method more correctly reflects the way real independent
+applications would be built. It is used when you already have an installed
+C-Pluff instance and you wish to configure, build and install the example
+applications separately.
+
+If you don't have write access to the example source directory (because
+it is part of the installed C-Pluff documentation), make a personal copy
+of the source directory.
+
+  cp -r INSTALLED_SOURCE MY_SOURCE
+
+To use this build method, you must have some GNU tools installed because
+the C-Pluff source distribution does not ship intermediate build system
+files for examples. You will need these tools anyway if you are about to
+develop applications using a build system similar to these examples. The
+version numbers in parentheses are known working versions.
+
+  - GNU Autoconf (2.61)
+  - GNU Automake (1.10)
+  - GNU libtool (1.5.22)
+
+To bootstrap the build system, run the autogen.sh script in the source
+directory. It will invoke the above mentioned GNU tools to generate
+intermediate build system files. Alternatively, if you want to get more
+familiar with the process, you can browse through the script and execute
+the necessary commands manually.
+
+Now you should have a build system in place and you can configure and
+build the examples using the standard autotools procedure.
+
+  Building in the source directory:
+    ./configure
+    make
+
+  Building in a separate build directory:
+    cd BUILD_DIR
+    SOURCE_DIR/configure
+    make
+
+When configuring, you can use the --prefix option to choose another
+installation prefix for the examples (the default is /usr/local).
+
+If C-Pluff has been installed into a location that is not included in the
+standard include or library path then you have to specify some additional
+environment variables to the configure script. Assuming that C-Pluff was
+installed into /usr/local (the default), you would have to set following
+environment variables before calling configure.
+
+  CPPFLAGS="-I/usr/local/include"
+  LDFLAGS="-L/usr/local/lib"
+  PATH="/usr/local/bin:$PATH"
+
+Finally, install the example applications.
+
+  make install

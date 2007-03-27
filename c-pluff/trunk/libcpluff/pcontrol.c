@@ -239,6 +239,18 @@ CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *
  * @param plugin the plug-in to unresolve
  */
 static void unresolve_plugin_runtime(cp_plugin_t *plugin) {
+
+	// Destroy the plug-in instance, if necessary
+	if (plugin->context != NULL) {
+		plugin->context->env->in_destroy_func_invocation++;
+		plugin->runtime_funcs->destroy(plugin->plugin_data);
+		plugin->context->env->in_destroy_func_invocation--;
+		plugin->plugin_data = NULL;
+		cpi_free_context(plugin->context);
+		plugin->context = NULL;
+	}
+
+	// Close plug-in runtime library	
 	plugin->runtime_funcs = NULL;
 	if (plugin->runtime_lib != NULL) {
 		DLCLOSE(plugin->runtime_lib);
@@ -601,19 +613,19 @@ static int start_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		
 		// Set up plug-in instance
 		if (plugin->runtime_funcs != NULL) {
-		
-			// Create context
-			if ((plugin->context = cpi_new_context(plugin, context->env, &status)) == NULL) {
-				break;
-			}
-		
-			// Create a plug-in instance
-			context->env->in_create_func_invocation++;
-			plugin->plugin_data = plugin->runtime_funcs->create(plugin->context);
-			context->env->in_create_func_invocation--;
-			if (plugin->plugin_data == NULL) {
-				status = CP_ERR_RUNTIME;
-				break;
+
+			// Create plug-in instance if necessary
+			if (plugin->context == NULL) {
+				if ((plugin->context = cpi_new_context(plugin, context->env, &status)) == NULL) {
+					break;
+				}
+				context->env->in_create_func_invocation++;
+				plugin->plugin_data = plugin->runtime_funcs->create(plugin->context);
+				context->env->in_create_func_invocation--;
+				if (plugin->plugin_data == NULL) {
+					status = CP_ERR_RUNTIME;
+					break;
+				}
 			}
 			
 			// Start plug-in
@@ -742,10 +754,10 @@ static void warn_dependency_loop(cp_context_t *context, cp_plugin_t *plugin, lis
 			node = list_prev(importing, node);
 		}
 		strcat(msg, ".");
-		cpi_warnf(context, msgbase, msg);
+		cpi_infof(context, msgbase, msg);
 		free(msg);
 	} else {
-		cpi_warnf(context, msgbase, plugin->plugin->identifier);
+		cpi_infof(context, msgbase, plugin->plugin->identifier);
 	}
 }
 
@@ -913,16 +925,6 @@ static void stop_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			hash_destroy(plugin->defined_symbols);
 			plugin->defined_symbols = NULL;
 		}
-		
-		// Destroy the plug-in object
-		context->env->in_destroy_func_invocation++;
-		plugin->runtime_funcs->destroy(plugin->plugin_data);
-		context->env->in_destroy_func_invocation--;
-		plugin->plugin_data = NULL;
-
-		// Free plug-in context
-		cpi_free_context(plugin->context);
-		plugin->context = NULL;
 		
 	}
 	

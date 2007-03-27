@@ -75,6 +75,7 @@ static int start(void *d) {
 static void stop(void *d) {
 	plugin_data_t *data = d;
 	
+	// Check that the provided string is still available
 	if (data->str != NULL) {
 		if (strcmp(data->str, "Provided string")) {
 			fputs("Provided string is not available in symuser stop function.\n", stderr);

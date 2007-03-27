@@ -7,14 +7,14 @@ msgid ""
 msgstr ""
 "Project-Id-Version: C-Pluff 0.1.1\n"
 "Report-Msgid-Bugs-To: johannes.lehtinen@iki.fi\n"
-"POT-Creation-Date: 2007-03-26 08:35+0300\n"
+"POT-Creation-Date: 2007-03-27 10:08+0300\n"
 "PO-Revision-Date: 2007-03-26 08:40+0300\n"
 "Last-Translator: Johannes Lehtinen <johannes.lehtinen@iki.fi>\n"
 "Language-Team: Finnish <translation-team-fi@lists.sourceforge.net>\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);"
+"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 
 #: console/cmdinput_basic.c:49
 msgid "ERROR: Command line is too long.\n"
@@ -264,6 +264,7 @@ msgstr "Poistettiin polussa %s olevan liitännäiskokoelman rekisteröinti.\n"
 #. TRANSLATORS: Usage instructions for listing extensions
 #. TRANSLATORS: Usage instructions for running one plug-in run function
 #. TRANSLATORS: Usage instructions for running plug-in run functions until all work is done
+#. TRANSLATORS: Usage instructions for stopping all plug-ins
 #. TRANSLATORS: Usage instructions for uninstalling all plug-ins
 #: console/console.c:302 console/console.c:387 console/console.c:682
 #: console/console.c:707 console/console.c:786 console/console.c:800
@@ -585,7 +586,7 @@ msgid "Plug-in %s could not be installed due to insufficient system resources."
 msgstr ""
 "Liitännäistä %s ei voitu asentaa riittämättömien järjestelmäresurssien takia."
 
-#: libcpluff/pcontrol.c:281
+#: libcpluff/pcontrol.c:293
 #, c-format
 msgid ""
 "Plug-in %s could not be resolved due to version incompatibility with C-Pluff."
@@ -593,7 +594,7 @@ msgstr ""
 "Liitännäistä %s ei pystytty valmistelemaan, koska se ei ole yhteensopiva "
 "käytetyn C-Pluff -version kanssa."
 
-#: libcpluff/pcontrol.c:292
+#: libcpluff/pcontrol.c:304
 #, c-format
 msgid ""
 "Plug-in %s runtime library could not be loaded due to insufficient memory."
@@ -601,12 +602,12 @@ msgstr ""
 "Liitännäisen %s ohjelmakoodia ei pystytty lataamaan riittämättömän muistin "
 "takia."
 
-#: libcpluff/pcontrol.c:305
+#: libcpluff/pcontrol.c:317
 #, c-format
 msgid "Plug-in %s runtime library %s could not be opened."
 msgstr "Liitännäisen %s ohjelmakoodikirjastoa %s ei pystytty avaamaan."
 
-#: libcpluff/pcontrol.c:314
+#: libcpluff/pcontrol.c:326
 #, c-format
 msgid ""
 "Plug-in %s symbol %s containing plug-in runtime information could not be "
@@ -615,12 +616,12 @@ msgstr ""
 "Liitännäisen %s ajonaikaiset tiedot sisältävää symbolia %s ei pystytty "
 "selvittämään."
 
-#: libcpluff/pcontrol.c:320
+#: libcpluff/pcontrol.c:332
 #, c-format
 msgid "Plug-in %s is missing a constructor or destructor function."
 msgstr "Liitännäiseltä %s puuttuu luonti- tai tuhoamisfunktio."
 
-#: libcpluff/pcontrol.c:367
+#: libcpluff/pcontrol.c:379
 #, c-format
 msgid ""
 "Plug-in %s could not be resolved due to version incompatibility with plug-in "
@@ -629,7 +630,7 @@ msgstr ""
 "Liitännäistä %s ei pystytty valmistelemaan, koska se ei ole yhteensopiva "
 "käytetyn liitännäisen %s version kanssa."
 
-#: libcpluff/pcontrol.c:377
+#: libcpluff/pcontrol.c:389
 #, c-format
 msgid ""
 "Plug-in %s could not be resolved because it depends on plug-in %s which is "
@@ -638,7 +639,7 @@ msgstr ""
 "Liitännäistä %s ei pystytty valmistelemaan, koska se on riippuvainen "
 "liitännäisestä %s, jota ei ole asennettu."
 
-#: libcpluff/pcontrol.c:443
+#: libcpluff/pcontrol.c:455
 #, c-format
 msgid ""
 "Plug-in %s could not be resolved because it depends on plug-in %s which "
@@ -647,46 +648,46 @@ msgstr ""
 "Liitännäistä %s ei pystytty valmistelemaan, koska se on riippuvainen "
 "liitännäisestä %s, jota ei pystytty valmistelemaan."
 
-#: libcpluff/pcontrol.c:485
+#: libcpluff/pcontrol.c:497
 #, c-format
 msgid "Plug-in %s could not be resolved because of insufficient memory."
 msgstr ""
 "Liitännäistä %s ei pystytty valmistelemaan riittämättömän muistin takia."
 
-#: libcpluff/pcontrol.c:689 libcpluff/pcontrol.c:780 libcpluff/pcontrol.c:816
+#: libcpluff/pcontrol.c:701 libcpluff/pcontrol.c:792 libcpluff/pcontrol.c:828
 #, c-format
 msgid "Plug-in %s could not be started due to insufficient memory."
 msgstr ""
 "Liitännäistä %s ei pystytty käynnistämään riittämättömän muistin takia."
 
-#: libcpluff/pcontrol.c:694
+#: libcpluff/pcontrol.c:706
 #, c-format
 msgid "Plug-in %s failed to start due to plug-in runtime error."
 msgstr ""
 "Liitännäisen %s käynnistäminen epäonnistui liitännäisessä tapahtuneen "
 "ajonaikaisen virheen takia."
 
-#: libcpluff/pcontrol.c:712
+#: libcpluff/pcontrol.c:724
 #, c-format
 msgid "Detected a runtime plug-in dependency loop: %s"
 msgstr "Havaittiin ajonaikainen liitännäisten riippuvuussilmukka: %s"
 
-#: libcpluff/pcontrol.c:714
+#: libcpluff/pcontrol.c:726
 #, c-format
 msgid "Detected a static plug-in dependency loop: %s"
 msgstr "Havaittiin staattinen liitännäisten riippuvuussilmukka: %s"
 
-#: libcpluff/pcontrol.c:838
+#: libcpluff/pcontrol.c:850
 #, c-format
 msgid "Unknown plug-in %s could not be started."
 msgstr "Tuntematonta liitännäistä %s ei voitu käynnistää."
 
-#: libcpluff/pcontrol.c:993
+#: libcpluff/pcontrol.c:995
 #, c-format
 msgid "Unknown plug-in %s could not be stopped."
 msgstr "Tuntematonta liitännäistä %s ei voitu pysäyttää."
 
-#: libcpluff/pcontrol.c:1204
+#: libcpluff/pcontrol.c:1206
 #, c-format
 msgid "Unknown plug-in %s could not be uninstalled."
 msgstr "Tuntematonta liitännäistä %s ei voitu poistaa muistista."
@@ -1185,7 +1186,8 @@ msgstr "Polussa %s olevan liitännäiskokoelman rekisteröinti epäonnistui."
 
 #: loader/loader.c:390
 msgid "Failed to load and install plug-ins from plug-in collections."
-msgstr "Liitännäisten lataaminen ja asentaminen liitännäiskokoelmista epäonnistui."
+msgstr ""
+"Liitännäisten lataaminen ja asentaminen liitännäiskokoelmista epäonnistui."
 
 #: loader/loader.c:397
 #, c-format

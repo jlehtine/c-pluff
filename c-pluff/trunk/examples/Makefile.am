@@ -5,3 +5,9 @@
 # permission to copy, distribute and modify it.
 
 SUBDIRS = cpfile
+
+examples: all
+
+examples-install: install
+
+.PHONY: examples examples-install
