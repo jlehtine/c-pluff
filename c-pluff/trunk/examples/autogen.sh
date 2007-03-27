@@ -16,7 +16,7 @@ fi
 # Generate files in examples directory
 cd "$basedir"
 test -d auxliary || mkdir auxliary
-test -e auxliary/ltmain.sh || libtoolize
+libtoolize --automake -f
 aclocal
 autoconf
 automake -a
