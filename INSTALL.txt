@@ -1,8 +1,8 @@
-BUILDING C-PLUFF
-================
+INSTALLING C-PLUFF
+==================
 
-These are minimal instructions for building the C-Pluff framework
-implementation. For help on building C-Pluff based applications,
+These are minimal instructions for building and installing the C-Pluff
+framework implementation. For help on building C-Pluff based applications,
 see the examples in the examples directory.
 
 
@@ -26,16 +26,22 @@ Building
 
 To build C-Pluff, follow the usual autotools procedure:
 
-  Building in source directory:
+  Building in the source directory:
     ./configure
     make
 
-  Building in separate build directory:
+  Building in a separate build directory:
     cd BUILD_DIR
-    SRC_DIR/configure
+    SOURCE_DIR/configure
     make
 
-For help on available configuration options:
+You can specify the installation prefix (for example, /usr or /usr/local)
+when running the configure script.
+
+  SOURCE_DIR/configure --prefix=/usr
+  
+The default installation prefix is /usr/local. More help on available
+configuration options is available using the --help option.
 
   ./configure --help
 
@@ -43,9 +49,18 @@ For help on available configuration options:
 Installation
 ------------
 
-To install the library, header files, utilities and documentation:
+You can install the library, header files, utilities, documentation and
+examples by doing:
 
   make install
+
+If installing to system directories you have to do this as root.
+
+Additionally, you can specify a directory to be used in place of the
+root directory during installation. This is typically used to create
+binary packages.
+
+  make DESTDIR=/tmp/installation install
 
 
 Known good build platforms

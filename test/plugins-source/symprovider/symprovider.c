@@ -52,22 +52,19 @@ static int start(void *d) {
 	return CP_OK;
 }
 
-static void stop(void *d) {
+static void destroy(void *d) {
 	plugin_data_t *data = d;
 	
 	if (data->str != NULL) {
 		strcpy(data->str, "Cleared string");
 		free(data->str);
 	}
-}
-
-static void destroy(void *d) {
 	free(d);	
 }
 
 CP_EXPORT cp_plugin_runtime_t sp_runtime = {
 	create,
 	start,
-	stop,
+	NULL,
 	destroy
 };

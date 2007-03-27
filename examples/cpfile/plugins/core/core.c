@@ -223,7 +223,7 @@ static int start(void *d) {
 }
 
 /**
- * Stops the plug-in and releases runtime resources.
+ * Releases resources from other plug-ins.
  */
 static void stop(void *d) {
 	plugin_data_t *data = d;

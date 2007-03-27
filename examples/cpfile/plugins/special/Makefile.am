@@ -4,17 +4,17 @@
 # This Makefile is free software; Johannes Lehtinen gives unlimited
 # permission to copy, distribute and modify it.
 
-LIBS = @LIBS_OTHER@ @LIBS@
+LIBS = @LIBS@
 
 CPPFLAGS = -I$(srcdir)/../core @CPPFLAGS@
 
-pluginsdir = $(exampleslibdir)/cpfile/plugins
+EXTRA_DIST = plugin.xml
+
+pluginsdir = $(libdir)/cpfile/plugins
 plugindir = $(pluginsdir)/special
 
 plugin_LTLIBRARIES = libspecial.la
 plugin_DATA = plugin.xml
-
-EXTRA_DIST = plugin.xml
 
 libspecial_la_SOURCES = special.c
 libspecial_la_LDFLAGS = -module -avoid-version

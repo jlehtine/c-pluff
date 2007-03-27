@@ -24,7 +24,7 @@ check_PROGRAMS = testsuite
 testsuite_SOURCES = psymbolusage.c extcfg.c pdependencies.c pcallbacks.c pscanning.c pinstallation.c ploading.c loggers.c collections.c initdestroy.c fatalerror.c cpinfo.c testmain.c test.h
 testsuite_LDFLAGS = -dlopen self
 
-tmpinstalldir := $(shell mkdir -p tmp/install && cd tmp/install && pwd)
+tmpinstalldir = $(CURDIR)/tmp/install
 
 check-local: install-plugins
 	@numf=0; numt=0; \

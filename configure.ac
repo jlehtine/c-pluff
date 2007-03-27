@@ -10,7 +10,7 @@ dnl -------------------
 dnl Version information
 define(CP_M4_VERSION_MAJOR, [0])
 define(CP_M4_VERSION_MINOR, [1])
-define(CP_M4_VERSION_REV, [1])
+define(CP_M4_VERSION_REV, [1.dev])
 define(CP_M4_RELEASE_VERSION, CP_M4_VERSION_MAJOR.CP_M4_VERSION_MINOR.CP_M4_VERSION_REV)
 
 dnl Backwards compatibility information
@@ -56,11 +56,14 @@ if test -z "$CC"; then
   AC_MSG_ERROR([C compiler was not found (required)])
 fi
 AC_PROG_CC_C_O
-AC_PROG_CXX
 AC_C_CONST
 AC_LIBTOOL_DLOPEN
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
+
+# Other programs
+# --------------
+AC_PROG_LN_S
 
 # For config.h
 CPPFLAGS="$CPPFLAGS -I\$(top_builddir)"
@@ -75,17 +78,6 @@ AC_SUBST([LIBS_OTHER])
 # Define shared library extension
 # -------------------------------
 AC_DEFINE_UNQUOTED([CP_SHREXT], ["$shrext_cmds"], [Shared library extension])
-
-# Installation directory for examples
-# -----------------------------------
-AC_ARG_WITH([examples-libdir], AS_HELP_STRING([--with-examples-libdir=DIR], [install example plug-ins and libraries into DIR (default is LIBDIR)]))
-AC_ARG_WITH([examples-bindir], AS_HELP_STRING([--with-examples-bindir=DIR], [install example executables into DIR (default is BINDIR)]))
-exampleslibdir="$with_examples_libdir"
-examplesbindir="$with_examples_bindir"
-test -n "$exampleslibdir" || exampleslibdir='$(libdir)'
-test -n "$examplesbindir" || examplesbindir='$(bindir)'
-AC_SUBST([exampleslibdir])
-AC_SUBST([examplesbindir])
 
 # Thread support checks
 # ---------------------
@@ -247,6 +239,11 @@ AC_MSG_RESULT(['$cp_fnamesep'])
 AC_DEFINE_UNQUOTED([CP_FNAMESEP_CHAR], ['$cp_fnamesep'], [File name separator character])
 AC_DEFINE_UNQUOTED([CP_FNAMESEP_STR], ["$cp_fnamesep"], [File name separator string])
 
+# Substitute C-Pluff loader for examples
+# --------------------------------------
+CPLUFF_LOADER="$bindir/cpluff-loader"
+AC_SUBST(CPLUFF_LOADER)
+
 # Output Makefiles
 # ----------------
 AC_CONFIG_FILES([Makefile
@@ -258,6 +255,7 @@ loader/Makefile
 console/Makefile
 po/Makefile.in
 doc/Makefile
+doc/img/Makefile
 test/Makefile
 test/plugins-source/Makefile
 test/plugins-source/callbackcounter/Makefile
@@ -265,6 +263,7 @@ test/plugins-source/symuser/Makefile
 test/plugins-source/symprovider/Makefile
 examples/Makefile
 examples/cpfile/Makefile
+examples/cpfile/cpfile
 examples/cpfile/plugins/Makefile
 examples/cpfile/plugins/core/Makefile
 examples/cpfile/plugins/special/Makefile

@@ -4,7 +4,7 @@
 # This Makefile is free software; Johannes Lehtinen gives unlimited
 # permission to copy, distribute and modify it.
 
-SUBDIRS = plugins
+EXTRA_DIST = architecture.svg architecture.png pageborder.png
 
-EXTRA_DIST = README.txt cpfile.in
-bin_SCRIPTS = cpfile
+htmlimgdir=$(docdir)/html/img
+htmlimg_DATA = architecture.png pageborder.png

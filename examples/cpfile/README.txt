@@ -4,9 +4,9 @@ C-PLUFF FILE COMMAND EXAMPLE
 Overview
 --------
 
-On Linux, the file(1) utility can be used to determine file type and to
-get information about contents of a file. Here are couple of examples of
-file usage.
+On UNIX systems the file(1) utility can be used to determine file type and
+to get information about contents of a file. Here are couple of examples
+of file usage in a Linux environment.
 
   $ file /sbin/init
   /sbin/init: ELF 32-bit LSB executable, Intel 80386, version 1 (SYSV),
@@ -16,52 +16,64 @@ file usage.
   $ file COPYRIGHT.txt
   COPYRIGHT.txt: ASCII English text
 
-This example shows how a minimalistic file clone could be implemented as an
-extensible application based on C-Pluff. We will call the resulting utility
-cpfile. It can recognize some special files and some file types based on
-file extension. But it could be further extended to recognize files based
-on their content by deploying a suitable plug-in. But notice that the focus
-here was on creating a straightforward example rather than an efficient one.
+This example shows how a simplistic file clone could be implemented as an
+extensible application based on C-Pluff. We will call the resulting
+utility cpfile. It can recognize some special files and some file types
+based on file extension. But it could be further extended to recognize
+files based on their content by deploying a suitable plug-in. Notice that
+the focus here was on creating a straightforward example rather than an
+efficient one.
 
 
-Building
---------
-
-The example application must be installed before it can be used. You
-can build and install it by running "make install" in the build directory
-corresponding to this source directory. Before building/installing this
-example, you must build/install the C-Pluff framework implementation.
-All this is done automatically if you run "make examples" (build only)
-or "make examples-install" (build and install) in the top level build
-directory.
-
-
-Running
--------
+Architecture
+------------
 
 This example uses the generic plug-in loader, cpluff-loader, as the main
 program. The executable cpfile installed into the bin directory is just
-a shell script invoking the cpluff-loader.
+a shell script invoking the cpluff-loader. All program logic is included
+in plug-ins.
 
-The included plug-ins provide following features:
+The included plug-ins are:
 
   org.c-pluff.examples.cpfile.core
-    The core application logic and an extension point for file classifiers.
+
+    This plug-in is the one initially started via cpluff-loader. It
+    contains the core application logic and provides an extension point
+    for file classifiers. The plug-in itself does not include any file
+    classifiers. Instead it uses file classifiers registered as
+    extensions by other plug-ins and then tries them one at a time in
+    order of decreasing priority until a matching classification is
+    found or no more classifiers are left.
 
   org.c-pluff.examples.cpfile.special
-    A classifier for special files (directories, symbolic links, etc).
+
+    This plug-in provides a file classifier which uses lstat(2) on the
+    file to be classified to see if it is a special file such as a
+    directory or a symbolic link. It also checks for the existence of
+    the file.
 
   org.c-pluff.examples.cpfile.extension
-    A classifier using file name extension to determine file type.
-    This plug-in provides an extension point for registering file
-    types and corresponding file name extensions.
+
+    This plug-in provides a file classifier which checks the file name
+    for known extensions. The plug-in provides an extension point for
+    file extensions. The file extensions registered as extensions are
+    then matched against the file name. The plug-in itself includes an
+    extension for text files.
 
   org.c-pluff.examples.cpfile.cext
-    File types and extensions for some C program source files.
 
-You can experiment with different configurations by adding and removing
-plug-ins into cpfile/plugins directory in the library directory. The core
-plug-in must be always included for the application to work as intended.
+    This plug-in does not include a runtime library at all. Instead, it
+    just registers some file types and file extensions related to
+    C program source files.
+
+Having build and installed the example, you can experiment with different
+plug-in configurations by adding and removing plug-ins into cpfile/plugins
+directory in the library directory. The core plug-in must be always
+included for the application to work as intended.
+
+You can create a new plug-in for the example by creating a new
+subdirectory in the plugins source directory and adding it to SUBDIRS
+variable in Makefile.am in the plugins source directory.
 
 
 Example runs

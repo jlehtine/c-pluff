@@ -712,6 +712,24 @@ struct cp_cfg_element_t {
  * to create and control plug-in instances. The symbol pointing
  * to the runtime information instance is named by the @a funcs
  * attribute of the @a runtime element in a plug-in descriptor.
+ * 
+ * The following graph displays how these functions are used to control the
+ * state of the plug-in instance. 
+ * 
+ * @dot
+ * digraph lifecycle {
+ *   rankdir=LR;
+ *   node [shape=ellipse, fontname=Helvetica, fontsize=10];
+ *   edge [fontname=Helvetica, fontsize=10];
+ *   none [label="no instance"];
+ *   inactive [label="inactive"];
+ *   active [label="active"];
+ *   none -> inactive [label="create", URL="\ref create"];
+ *   inactive -> active [label="start", URL="\ref start"];
+ *   active -> inactive [label="stop", URL="\ref stop"];
+ *   inactive -> none [label="destroy", URL="\ref destroy"];
+ * }
+ * @enddot
  */
 struct cp_plugin_runtime_t {
 
@@ -723,8 +741,11 @@ struct cp_plugin_runtime_t {
 	 * be used to access plug-in instance specific data. For example,
 	 * the context reference must be stored as part of plug-in instance
 	 * data if the plug-in runtime needs it. On failure, the function
-	 * must return NULL. C-pluff API functions must not be called
-	 * from within a create function invocation.
+	 * must return NULL.
+	 * 
+	 * C-pluff API functions must not be called from within a create
+	 * function invocation and symbols from imported plug-ins must not be
+	 * used because they may not available yet.
 	 * 
 	 * @param ctx the plug-in context of the new plug-in instance
 	 * @return an opaque pointer to plug-in instance data or NULL on failure
@@ -745,6 +766,8 @@ struct cp_plugin_runtime_t {
 	 * The start function implementation should set up plug-in and return
 	 * promptly. If there is further work to be done then a plug-in can
 	 * start a thread or register a run function using ::cp_run_function.
+	 * Symbols from imported plug-ins are guaranteed to be available for
+	 * the start function.
 	 * 
 	 * @param data an opaque pointer to plug-in instance data
 	 * @return non-zero on success, or zero on failure
@@ -762,6 +785,15 @@ struct cp_plugin_runtime_t {
 	 * be NULL if the plug-in runtime does not have a stop function.
 	 * It is guaranteed that no run functions registered by the plug-in are
 	 * called simultaneously or after the call to the stop function.
+	 * 
+	 * The stop function should release any external resources hold by
+	 * the plug-in. Dynamically resolved symbols are automatically released
+	 * and dynamically defined symbols and registered run functions are
+	 * automatically unregistered after the call to stop function.
+	 * Resolved external symbols are still available for the stop function
+	 * and symbols provided by the plug-in should remain available
+	 * after the call to stop function (although functionality might be
+	 * limited). Final cleanup can be safely done in the destroy function.
 	 *
 	 * @param data an opaque pointer to plug-in instance data
 	 */
@@ -771,8 +803,11 @@ struct cp_plugin_runtime_t {
  	 * A destroy function called to destroy a plug-in instance.
  	 * This function should release any plug-in instance data.
  	 * The plug-in is stopped before this function is called.
- 	 * C-Pluff API functions must not be called
-	 * from within a destroy function invocation.
+ 	 * C-Pluff API functions must not be called from within a destroy
+ 	 * function invocation and symbols from imported plug-ins must not be
+ 	 * used because they may not be available anymore. Correspondingly,
+ 	 * it is guaranteed that the symbols provided by the plug-in are not
+ 	 * used by other plug-ins when destroy function has been called.
 	 *
 	 * @param data an opaque pointer to plug-in instance data
 	 */
