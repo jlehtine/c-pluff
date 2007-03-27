@@ -6,6 +6,8 @@
 
 SUBDIRS = cpfile
 
+EXTRA_DIST = autogen.sh configure.ac
+
 examples: all
 
 examples-install: install
