@@ -8,8 +8,10 @@ SUBDIRS = img
 
 EXTRA_DIST = index.en.html copyright.en.html cpluff_style.css common_style.css
 
-htmldocdir=$(docdir)/html
+htmldocdir = $(docdir)/html
 htmldoc_DATA = index.en.html copyright.en.html cpluff_style.css common_style.css
+
+examplesdir = $(docdir)/examples
 
 install-data-local:
 	umask 022 && \
@@ -26,13 +28,13 @@ install-data-local:
 	find '$(DESTDIR)$(htmldocdir)/reference' \
 		\( \-type d -exec chmod 755 '{}' \; \) \
 		-or -exec chmod 644 '{}' \; && \
-	rm -rf '$(DESTDIR)$(docdir)/examples' && \
+	rm -rf '$(DESTDIR)$(examplesdir)' && \
 	for d in \
 		cpfile/plugins/cext \
 		cpfile/plugins/core \
 		cpfile/plugins/extension \
 		cpfile/plugins/special; do \
-		$(MKDIR_P) "$(DESTDIR)$(docdir)/examples/$$d"; \
+		$(MKDIR_P) "$(DESTDIR)$(examplesdir)/$$d"; \
 	done && \
 	cd '$(srcdir)/..' && \
 	find examples -type f \( -name 'autogen.sh' \
@@ -45,7 +47,10 @@ install-data-local:
 		-or -name '*.c' \
 		-or -name '*.h' \) \
 		-exec $(INSTALL_DATA) '{}' '$(DESTDIR)$(docdir)/{}' \; && \
-	chmod 755 '$(DESTDIR)$(docdir)/examples/autogen.sh' && \
+	chmod 755 '$(DESTDIR)$(examplesdir)/autogen.sh' && \
 	cd '$(DESTDIR)$(htmldocdir)' && \
 	rm -f index.html && \
 	$(LN_S) index.en.html index.html
+
+uninstall-local:
+	rm -rf '$(DESTDIR)$(docdir)'
