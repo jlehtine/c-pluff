@@ -17,7 +17,7 @@ doc:
 	cd libcpluff && $(MAKE) $(AM_MAKEFLAGS) $@
 
 examples: all
-	cd examples && $(MAKE) $(AM_MAKEFLAGS) all LIBS='$(CURDIR)/libcpluff/libcpluff.la $(LIBS)'
+	cd examples && $(MAKE) $(AM_MAKEFLAGS) all LIBS='$(CURDIR)/libcpluff/libcpluff.la'
 
 examples-install: install
 	cd examples && $(MAKE) $(AM_MAKEFLAGS) install

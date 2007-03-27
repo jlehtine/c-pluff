@@ -15,16 +15,10 @@ fi
 
 # Generate files in top level directory
 cd "$basedir"
+autopoint
+rm -f ABOUT-NLS
 test -d auxliary || mkdir auxliary
-test -d m4 || mkdir m4
-test -e po/Makefile.in.in || gettextize
-if ! test -e auxliary/config.rpath; then
-    d="`type -p gettextize`"
-    d="`dirname "$d"`"
-    d="`dirname "$d"`"
-    ln -s "$d"/share/gettext/config.rpath auxliary/config.rpath
-fi
-test -e auxliary/ltmain.sh || libtoolize
+libtoolize --automake -f
 aclocal -I m4
 autoconf
 autoheader
