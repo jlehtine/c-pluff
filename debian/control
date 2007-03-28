@@ -3,7 +3,7 @@ Section: devel
 Priority: optional
 Maintainer: Johannes Lehtinen <johannes.lehtinen@iki.fi>
 Standards-Version: 3.7.2
-Build-Depends: debhelper (>= 4.2.32), libexpat1-dev
+Build-Depends: debhelper (>= 4.2.32), libexpat1-dev, libreadline5-dev
 
 Package: libcpluff0
 Section: libs
@@ -29,13 +29,13 @@ Description: C-Pluff, a plug-in framework for C - development kit
  It aims to be platform neutral and supports dynamic changes to plug-in
  configuration without stopping the whole application or framework.
  .
- This package contains the C-Pluff loader, a generic plug-in loader
+ This package contains the C-Pluff Loader, a generic plug-in loader
  to be used with extensible applications based on C-Pluff.
 
 Package: libcpluff0-dev
 Section: libdevel
 Architecture: any
-Depends: libcpluff0 (= ${Source-Version}), cpluff-loader
+Depends: libcpluff0 (= ${Source-Version}), cpluff-loader, ${shlibs:Depends}
 Provides: libcpluff-dev
 Conflicts: libcpluff-dev
 Description: C-Pluff, a plug-in framework for C - development kit
@@ -45,6 +45,8 @@ Description: C-Pluff, a plug-in framework for C - development kit
  It aims to be platform neutral and supports dynamic changes to plug-in
  configuration without stopping the whole application or framework.
  .
- This package contains the C-Pluff header files, development libraries
- and development documentation. It is needed to develop C-Pluff based
- applications.
+ This package provides all the resources needed for developing extensible
+ applications based on C-Pluff. It includes the header files, development
+ libraries, development documentation, example source code and the C-Pluff
+ Console utility. The package also pulls in the C-Pluff Loader from a
+ separate package.

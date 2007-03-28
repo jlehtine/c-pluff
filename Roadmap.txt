@@ -1,27 +1,3 @@
-C-Pluff (0.1.2) alpha
-
-  * [X] Removed a flawed check of whether dynamically resolved symbols are
-        in use when a plug-in is being stopped.
-  * [X] Fixed a bug in libcpluff: When stopping plug-in dependency chains,
-        first call stop function of every plug-in in the chain and then call
-        destroy functions. This makes it possible to do safe two-phase cleanup.
-        Previously the destroy function of a plug-in was called immediately
-        after the stop function of the corresponding plug-in.
-  * [X] Make plug-in dependency loop log message an informational message
-        and not a warning.
-  * [X] Minor documentation changes and corrections.
-  * [X] Build, install and distribute internationalization support files.
-  * [X] Link with libintl if internationalization support needs it.
-  * [X] Unified message string structure and wording.
-  * [X] Include finnish translation (to test internationalization).
-  * [X] Fixed some installation/packaging problems.
-  * [X] Install documentation as part of installation.
-  * [X] Install example source code as part of installation.
-  * [X] Include optional stand-alone build system for example code.
-  * [X] Respect DESTDIR during installation.
-
- -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
-
 C-Pluff (0.2.0) alpha
 
   * [ ] Introduce C-Pluff C++ API and C++ runtime library.

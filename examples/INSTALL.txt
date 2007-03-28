@@ -78,9 +78,12 @@ version numbers in parentheses are known working versions.
 
 To bootstrap the build system, run the autogen.sh script in the source
 directory. It will invoke the above mentioned GNU tools to generate
-intermediate build system files. Alternatively, if you want to get more
-familiar with the process, you can browse through the script and execute
-the necessary commands manually.
+intermediate build system files.
+
+  ./autogen.sh
+
+Alternatively, if you want to get more familiar with the process, you can
+browse through the script and execute the necessary commands manually.
 
 Now you should have a build system in place and you can configure and
 build the examples using the standard autotools procedure.
@@ -105,7 +108,7 @@ environment variables before calling configure.
 
   CPPFLAGS="-I/usr/local/include"
   LDFLAGS="-L/usr/local/lib"
-  PATH="/usr/local/bin:$PATH"
+  CPLUFF_LOADER="/usr/local/bin/cpluff-loader"
 
 Finally, install the example applications.
 
