@@ -88,7 +88,7 @@
  *
  * <div class="fragment">
  * <pre class="fragment">
- * &lt;<a class="code" href="pluginDescPlugin">plugin</a> id=<span class="charliteral">"org.c-pluff.useless"</span>/&gt;</pre>
+ * &lt;<a class="code" href="#pluginDescPlugin">plugin</a> id=<span class="charliteral">"org.c-pluff.useless"</span>/&gt;</pre>
  * </div>
  *
  * @subsubsection pluginDescPlugin plugin
