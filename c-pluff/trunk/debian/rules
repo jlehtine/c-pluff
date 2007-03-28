@@ -34,13 +34,11 @@ debian-install-stamp: debian-build-stamp
 	rm -rf debian/tmp
 	mkdir debian/tmp
 	cd debian/build && $(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
-	cp COPYRIGHT.txt debian/copyright
 	touch $@
 
 clean:
 	dh_testdir
 	dh_clean -k
-	rm -f debian/copyright
 	rm -f debian-install-stamp
 	rm -rf debian/tmp
 	rm -f debian-build-stamp debian-configure-stamp
@@ -52,12 +50,12 @@ binary-indep:
 binary-arch: install
 	dh_testdir
 	dh_testroot
-	dh_installchangelogs -a ChangeLog
+	dh_installchangelogs -a ChangeLog.txt
 	dh_installdocs -a
 	dh_install -a --sourcedir=debian/tmp
 	dh_makeshlibs -a
 	dh_installdeb -a
-	dh_compress -a
+	dh_compress -a -Xhtml -Xexamples
 	dh_fixperms -a
 	dh_shlibdeps -a
 	dh_gencontrol -a
