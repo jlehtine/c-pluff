@@ -1,0 +1,5 @@
+#! /bin/sh
+
+prefix="@prefix@"
+exec_prefix="@exec_prefix@"
+exec "@CPLUFF_LOADER@" -c "@libdir@/cpfile/plugins" -s org.c-pluff.examples.cpfile.core "$@"
