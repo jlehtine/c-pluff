@@ -80,24 +80,32 @@ clean-local:
 	test ! -f plugins-source/Makefile || (cd plugins-source && $(MAKE) $(AM_MAKEFLAGS) clean)
 
 dist-hook:
-	mkdir -p $(distdir)
-	cp -p $(srcdir)/test-* $(distdir)
-	mkdir -p $(distdir)/expected
-	cp -p $(srcdir)/expected/*.txt $(distdir)/expected
-	rm -rf $(distdir)/plugins
-	mkdir -p $(distdir)/plugins
-	cd $(srcdir)/plugins && for d in *; do mkdir $(distdir)/plugins/"$$d" || exit 1; done && cp -p --parents */plugin.xml $(distdir)/plugins
-	rm -rf $(distdir)/pcollections
-	mkdir -p $(distdir)/pcollections
-	cd $(srcdir)/pcollections && for d in */*; do mkdir -p $(distdir)/pcollections/"$$d" || exit 1; done && cp -p --parents */*/plugin.xml $(distdir)/pcollections
+	$(MKDIR_P) '$(distdir)'
+	cp -p '$(srcdir)'/test-* '$(distdir)'
+	$(MKDIR_P) '$(distdir)/expected'
+	cp -p '$(srcdir)'/expected/*.txt '$(distdir)'/expected
+	$(MKDIR_P) '$(distdir)'/plugins
+	cd '$(srcdir)'/plugins && \
+		for d in *; do \
+			( mkdir '$(distdir)'/plugins/"$$d" && \
+				cp -p "$$d/plugin.xml" '$(distdir)'/plugins/"$$d" ) \
+			|| exit 1; \
+		done
+	$(MKDIR_P) '$(distdir)'/pcollections
+	cd '$(srcdir)'/pcollections && \
+		for d in */*; do \
+			( $(MKDIR_P) '$(distdir)'/pcollections/"$$d" && \
+				cp -p "$$d/plugin.xml" '$(distdir)'/pcollections/"$$d" ) \
+			|| exit 1; \
+		done
 
 install-plugins: build-plugins install-libcpluff
-	cd plugins-source && $(MAKE) $(AM_MAKEFLAGS) DESTDIR=$(tmpinstalldir) install
+	cd plugins-source && $(MAKE) $(AM_MAKEFLAGS) DESTDIR='$(tmpinstalldir)' install
 
 build-plugins:
 	cd plugins-source && $(MAKE)
 
 install-libcpluff:
-	cd ../libcpluff && $(MAKE) $(AM_MAKEFLAGS) DESTDIR=$(tmpinstalldir) install
+	cd ../libcpluff && $(MAKE) $(AM_MAKEFLAGS) DESTDIR='$(tmpinstalldir)' install
 
 .PHONY: build-plugins install-plugins install-libcpluff
