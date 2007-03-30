@@ -9,4 +9,3 @@ LIBS = @LIBS_OTHER@ @LTLIBINTL@ @LIBS@
 bin_PROGRAMS = cpluff-loader
 
 cpluff_loader_SOURCES = loader.c
-cpluff_loader_CPPFLAGS = -DCP_DATADIR="\"$(datadir)\""

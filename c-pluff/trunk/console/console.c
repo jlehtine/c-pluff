@@ -855,10 +855,19 @@ int main(int argc, char *argv[]) {
 	int i;
 	cp_status_t status;
 
-	// Gettext initialization 
+	// Set locale
 #ifdef HAVE_GETTEXT
 	setlocale(LC_ALL, "");
-	bindtextdomain(PACKAGE, CP_DATADIR CP_FNAMESEP_STR "locale");
+#endif
+
+	// Initialize C-Pluff library 
+	if ((status = cp_init()) != CP_OK) {
+		api_failed("cp_init", status);
+		exit(1);
+	}
+	
+	// Set gettext domain 
+#ifdef HAVE_GETTEXT
 	textdomain(PACKAGE);
 #endif
 
@@ -872,12 +881,6 @@ int main(int argc, char *argv[]) {
 		_("C-Pluff Library, version %s for %s\n"),
 		cp_get_version(), cp_get_host_type());
 
-	// Initialize C-Pluff library 
-	if ((status = cp_init()) != CP_OK) {
-		api_failed("cp_init", status);
-		exit(1);
-	}
-	
 	// Create a plug-in context
 	context = cp_create_context(&status);
 	if (context == NULL) {

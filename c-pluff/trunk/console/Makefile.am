@@ -14,4 +14,3 @@ cpluff_console_SOURCES += cmdinput_readline.c
 else
 cpluff_console_SOURCES += cmdinput_basic.c
 endif
-cpluff_console_CPPFLAGS = -DCP_DATADIR="\"$(datadir)\"" -DCP_PKGDATADIR="\"$(pkgdatadir)\""
