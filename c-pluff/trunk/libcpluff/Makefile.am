@@ -4,16 +4,16 @@
 # This Makefile is free software; Johannes Lehtinen gives unlimited
 # permission to copy, distribute and modify it.
 
-LIBS = @LIBS_LIBCPLUFF@ @LTLIBINTL@ @LIBS@
+SUBDIRS = docsrc
 
-EXTRA_DIST = mainpage.dox architecture.dox mainprog.dox plugin.dox
+LIBS = @LIBS_LIBCPLUFF@ @LTLIBINTL@ @LIBS@
 
 CPPFLAGS = @CPPFLAGS@
 CPPFLAGS += -I. -DCP_C_API=CP_EXPORT -DCP_HOST="\"$(host)\"" -DCP_DATADIR="\"$(datadir)\""
 
 DOXYGEN = doxygen
-DOXYGEN_SOURCE = cpluffdef.h $(srcdir)/cpluff.h $(srcdir)/*.dox
-DOXYGEN_STYLE = $(top_srcdir)/doxygen.footer $(top_srcdir)/doxygen.css
+DOXYGEN_SOURCE = cpluffdef.h $(srcdir)/cpluff.h $(srcdir)/docsrc/*.dox
+DOXYGEN_STYLE = $(top_srcdir)/docsrc/doxygen.footer $(top_srcdir)/docsrc/doxygen.css
 
 lib_LTLIBRARIES = libcpluff.la
 libcpluff_la_SOURCES = psymbol.c pscan.c ploader.c pinfo.c pcontrol.c serial.c logging.c context.c cpluff.c util.c ../kazlib/list.c ../kazlib/list.h ../kazlib/hash.c ../kazlib/hash.h internal.h thread.h util.h defines.h
@@ -31,7 +31,7 @@ doc: refdoc
 
 refdoc: doc/reference/c-api/index.html
 
-doc/reference/c-api/index.html: $(DOXYGEN_SOURCE) $(top_srcdir)/doc/img/architecture.png Doxyfile-ref $(DOXYGEN_STYLE)
+doc/reference/c-api/index.html: $(DOXYGEN_SOURCE) $(top_srcdir)/doc/img/architecture.png docsrc/Doxyfile-ref $(DOXYGEN_STYLE)
 	rm -rf doxygen-ref
 	mkdir -p doxygen-ref
 	cp -p $^ doxygen-ref
@@ -43,7 +43,7 @@ doc/reference/c-api/index.html: $(DOXYGEN_SOURCE) $(top_srcdir)/doc/img/architec
 
 impldoc: doc/implementation/c-api/index.html
 
-doc/implementation/c-api/index.html: $(srcdir)/*.h $(srcdir)/*.c cpluffdef.h ../config.h Doxyfile-impl $(DOXYGEN_STYLE)
+doc/implementation/c-api/index.html: $(srcdir)/*.h $(srcdir)/*.c cpluffdef.h ../config.h docsrc/Doxyfile-impl $(DOXYGEN_STYLE)
 	rm -rf doxygen-impl
 	mkdir -p doxygen-impl
 	cp -p $^ doxygen-impl

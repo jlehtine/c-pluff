@@ -249,13 +249,15 @@ AC_SUBST(CPLUFF_LOADER)
 AC_CONFIG_FILES([Makefile
 libcpluff/Makefile
 libcpluff/cpluffdef.h
-libcpluff/Doxyfile-ref
-libcpluff/Doxyfile-impl
+libcpluff/docsrc/Makefile
+libcpluff/docsrc/Doxyfile-ref
+libcpluff/docsrc/Doxyfile-impl
 loader/Makefile
 console/Makefile
 po/Makefile.in
 doc/Makefile
 doc/img/Makefile
+docsrc/Makefile
 test/Makefile
 test/plugins-source/Makefile
 test/plugins-source/callbackcounter/Makefile
