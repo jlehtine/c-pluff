@@ -31,6 +31,12 @@ ul.menu {
 ul.menu li {
   display: inline;
 }
+ul.menu li:before {
+  content: "[";
+}
+ul.menu li:after {
+  content: "]";
+}
 pre.example {
   border-style: solid;
   border-width: 1px;
