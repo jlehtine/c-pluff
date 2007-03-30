@@ -253,11 +253,19 @@ int main(int argc, char *argv[]) {
 	cp_context_t *context;
 	char **ctx_argv;
 	str_list_entry_t *entry;
-	
-	// Gettext initialization 
+
+	// Set locale
 #ifdef HAVE_GETTEXT
 	setlocale(LC_ALL, "");
-	bindtextdomain(PACKAGE, CP_DATADIR CP_FNAMESEP_STR "locale");
+#endif
+	
+	// Initialize the framework
+	if (cp_init() != CP_OK) {
+		error(_("The C-Pluff initialization failed."));
+	}
+	
+	// Set gettext domain 
+#ifdef HAVE_GETTEXT
 	textdomain(PACKAGE);
 #endif
 
@@ -328,11 +336,6 @@ int main(int argc, char *argv[]) {
 	// Check arguments
 	if (lst_plugin_dirs.first == NULL && lst_plugin_collections.first == NULL) {
 		error(_("No plug-ins to load. Try option -h for help."));
-	}
-	
-	// Initialize the framework
-	if (cp_init() != CP_OK) {
-		error(_("The C-Pluff initialization failed."));
 	}
 	
 	// Create the context
