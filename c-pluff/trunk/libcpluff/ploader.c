@@ -38,6 +38,13 @@
 #include "util.h"
 #include "internal.h"
 
+// Use XMLCALL if available
+#ifdef XMLCALL
+#define CP_XMLCALL XMLCALL
+#else
+#define CP_XMLCALL
+#endif
+
 
 /* ------------------------------------------------------------------------
  * Constants
@@ -451,7 +458,7 @@ static void init_cfg_element(ploader_context_t *plcontext, cp_cfg_element_t *ce,
  * @param str the string data
  * @param len the string length
  */
-static void XMLCALL character_data_handler(
+static void CP_XMLCALL character_data_handler(
 	void *userData, const XML_Char *str, int len) {
 	ploader_context_t *plcontext = userData;
 	
@@ -505,7 +512,7 @@ static void XMLCALL character_data_handler(
  * @param name the element name
  * @param atts the element attributes
  */
-static void XMLCALL start_element_handler(
+static void CP_XMLCALL start_element_handler(
 	void *userData, const XML_Char *name, const XML_Char **atts) {
 	static const XML_Char * const req_plugin_atts[] = { "id", NULL };
 	static const XML_Char * const opt_plugin_atts[] = { "name", "version", "provider-name", NULL };
@@ -813,7 +820,7 @@ static void XMLCALL start_element_handler(
  * @param context the parsing context
  * @param name the element name
  */
-static void XMLCALL end_element_handler(
+static void CP_XMLCALL end_element_handler(
 	void *userData, const XML_Char *name) {
 	ploader_context_t *plcontext = userData;
 	
