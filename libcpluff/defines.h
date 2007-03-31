@@ -54,7 +54,7 @@
 
 
 // Additional defines for function attributes (under GCC). 
-#if __GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 5)
+#if (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ >= 5)) && ! defined(printf)
 #define CP_GCC_PRINTF(format_idx, arg_idx) \
 	__attribute__((format (printf, format_idx, arg_idx)))
 #define CP_GCC_CONST __attribute__((const))
