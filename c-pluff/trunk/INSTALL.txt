@@ -14,11 +14,16 @@ To build C-Pluff, you need to have following prerequisites installed:
   - a C library supporting POSIX dlopen
     (for example, GNU C library)
     or
-    GNU Libtool libltdl library and associated header files
+    GNU Libtool libltdl library
     (http://www.gnu.org/software/libtool/)
 
-  - Expat XML Parser library and associated header files
+  - Expat XML Parser library for C
     (http://expat.sourceforge.net/)
+
+Following components are optional and are used if they are installed:
+
+  - GNU Readline Library
+    (http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html)
 
 
 Building
