@@ -1,17 +1,14 @@
-C-PLUFF COPYRIGHT INFORMATION
-=============================
+This is a debianized package of C-Pluff, a plug-in framework for C
+programs. More information and original sources are available at:
 
-This is C-Pluff, a plug-in framework for C programs.
-C-Pluff author is Johannes Lehtinen <johannes.lehtinen@iki.fi>.
-Except where otherwise noted in the source code the C-Pluff source
-code is licensed under the C-Pluff license included below (also known
-as the MIT license, an OSI approved open source license).
+  http://www.c-pluff.org/
+  
+C-Pluff copyright and license are included below.
 
-C-Pluff uses data structure implementations from Kazlib library.
-Kazlib author is Kaz Kylheku. In C-Pluff source code distribution the
-files derived from Kazlib are contained in kazlib subdirectory. These
-files are licensed under the Kazlib license included below. Kazlib was
-obtained from http://users.footprints.net/~kaz/kazlib.html.
+C-Pluff includes data structure implementations from the Kazlib library.
+Kazlib copyright and license are included below. Kazlib was obtained from:
+
+  http://users.footprints.net/~kaz/kazlib.html
 
 
 C-Pluff copyright and license
