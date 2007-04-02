@@ -22,7 +22,10 @@ To build C-Pluff, you need to have following prerequisites installed:
 
 Following components are optional and are used if they are installed:
 
-  - GNU Readline Library
+  - GNU gettext libintl library for localization
+    (http://www.gnu.org/software/gettext/gettext.html)
+
+  - GNU Readline Library for enhanced command line
     (http://cnswww.cns.cwru.edu/php/chet/readline/rltop.html)
 
 
