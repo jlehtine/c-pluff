@@ -188,6 +188,7 @@ static void lock_mutex_holding(cpi_mutex_t *mutex) {
 CP_HIDDEN void cpi_lock_mutex(cpi_mutex_t *mutex) {
 	assert(mutex != NULL);
 	lock_mutex(mutex->os_mutex);
+	lock_mutex_holding(mutex);
 	unlock_mutex(mutex->os_mutex);
 }
 
