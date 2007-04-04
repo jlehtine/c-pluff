@@ -11,6 +11,15 @@ Section: devel
 Architecture: all
 Depends: expat-mingw, libltdl-mingw, gettext-runtime-mingw
 Description: C-Pluff, a plug-in framework for C - MinGW cross-compilation
- This package contains the C-Pluff cross-compiled using MinGW. It can be
- used to cross-compile programs depending on C-Pluff. It also provides
+ This package contains C-Pluff binaries cross-compiled using MinGW. It can
+ be used to cross-compile programs depending on C-Pluff. It also provides
  runtime binaries that can be installed to the host platform.
+
+Package: cpluff-examples-mingw
+Section: devel
+Architecture: all
+Depends: cpluff-mingw
+Description: C-Pluff example binaries - MinGW cross-compilation
+ This package contains C-Pluff example binaries cross-compiled using
+ MinGW. It provides runtime binaries that can be installed to the host
+ platform.

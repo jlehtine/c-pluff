@@ -42,6 +42,10 @@ fi
 AC_CHECK_HEADER([cpluff.h],, AC_MSG_ERROR([C-Pluff header files not found]))
 AC_CHECK_LIB([cpluff], [cp_init],, AC_MSG_ERROR([C-Pluff libraries not found]))
 
+# Check for stat/lstat functions
+# ------------------------------
+AC_CHECK_FUNCS([stat lstat])
+
 # Output Makefiles
 # ----------------
 AC_CONFIG_FILES([Makefile

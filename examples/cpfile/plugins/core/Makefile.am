@@ -16,4 +16,4 @@ plugin_DATA = plugin.xml classifiers.xsd
 plugin_HEADERS = core.h
 
 libcore_la_SOURCES = core.c core.h
-libcore_la_LDFLAGS = -module -avoid-version
+libcore_la_LDFLAGS = -no-undefined -module -avoid-version

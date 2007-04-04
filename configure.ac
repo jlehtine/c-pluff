@@ -210,6 +210,10 @@ AM_CONDITIONAL([HAVE_READLINE], test "$have_readline" = yes)
 # -----------------------------------------------
 LIBS_OTHER="\$(top_builddir)/libcpluff/libcpluff.la $LIBS_OTHER"
 
+# Check for stat/lstat functions
+# ------------------------------
+AC_CHECK_FUNCS([stat lstat])
+
 # Debugging support
 # -----------------
 AC_ARG_ENABLE([debug],
@@ -225,7 +229,7 @@ if test "$enable_gcc_warnings" = yes; then
 fi
 
 # File name separator character
-# ------------------------
+# -----------------------------
 AC_MSG_CHECKING([which file name separator to use])
 case "$host" in
   *-*-mingw32* | *-*-windows*)

@@ -17,4 +17,4 @@ plugin_LTLIBRARIES = libspecial.la
 plugin_DATA = plugin.xml
 
 libspecial_la_SOURCES = special.c
-libspecial_la_LDFLAGS = -module -avoid-version
+libspecial_la_LDFLAGS = -no-undefined -module -avoid-version

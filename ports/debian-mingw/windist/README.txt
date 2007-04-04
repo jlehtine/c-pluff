@@ -17,6 +17,7 @@ Install the following packages.
     - expat-mingw
     - libltdl-mingw
     - gettext-runtime-mingw
+  - cpluff-examples-mingw
 
 Precompiled binaries are available by pointing APT to
 
@@ -37,10 +38,12 @@ This will create the following files:
   cpluff-VER-only.zip
   cpluff-VER-deps.zip
   cpluff-VER.zip
+  cpluff-VER-examples.zip
 
 Where VER is the used version of C-Pluff.
 
 The first archive, cpluff-VER-only.zip, includes only the endemic C-Pluff
 components and the second archive, cpluff-VER-deps.zip, includes the
 required third party dependencies. The third archive, cpluff-VER.zip,
-is a union of the two other archives.
+is a union of the two other archives. Fourth archive,
+cpluff-VER-examples.zip, includes the example application binaries.

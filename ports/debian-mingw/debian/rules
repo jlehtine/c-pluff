@@ -18,7 +18,7 @@ debian-configure-stamp:
 	dh_testdir
 	rm -rf debian/build
 	mkdir debian/build
-	cd debian/build && ../../configure --host=$(HOST) --prefix=/usr/$(HOST) --without-readline
+	cd debian/build && ../../configure --host=$(HOST) --prefix=/usr/$(HOST) --disable-static --without-readline
 	touch $@
 
 install: debian-install-stamp
@@ -27,7 +27,8 @@ debian-install-stamp: debian-build-stamp
 	dh_testroot
 	rm -rf debian/tmp
 	mkdir debian/tmp
-	cd debian/build && $(MAKE) DESTDIR=$(CURDIR)/debian/tmp install
+	cd debian/build && $(MAKE) DESTDIR=$(CURDIR)/debian/tmp examples-install
+	rm debian/tmp/usr/$(HOST)/bin/cpfile
 	touch $@
 
 clean:
