@@ -1,3 +1,11 @@
+C-Pluff (0.1.3) alpha
+
+  * [X] Added Windows packaging using cross-compilation on Debian.
+  * [X] Small improvements to installation documentation and packaging.
+  * [X] Support Expat 1.95.1 and GnuWin32 version of libintl.
+  * [X] Tools: Delegate binding of gettext domain to the library.
+  * [X] Moved documentation sources out from C source directories.
+
 C-Pluff (0.2.0) alpha
 
   * [ ] Introduce C-Pluff C++ API and C++ runtime library.
