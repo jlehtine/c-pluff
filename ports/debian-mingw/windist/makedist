@@ -1,0 +1,168 @@
+#! /bin/sh
+
+# Windows packaging for C-Pluff
+# Copyright 2007 Johannes Lehtinen
+# This Makefile is free software; Johannes Lehtinen gives unlimited
+# permission to copy, distribute and modify it.
+
+# Trap errors
+trap '{ echo "makedist: An error occurred in line $LINENO." 1>&2; exit 1 }' ERR
+
+# Some constants
+PREFIX=/usr/i586-mingw32msvc
+
+# Subprocedure for converting text to DOS format
+texttodos () {
+  perl -p -e 's/\012/\015\012/;'
+}
+
+# Subprocedure for copying the files of a specific package
+copypkgfiles () {
+  local pkg="$1"
+  local target="$2"
+  local prefix="$3"
+  local f
+  dpkg -L "$pkg" | while read f; do
+    case "$f" in
+      "$prefix"/*)
+        local tf="`echo "$f" | sed -e "s|^$prefix||"`"
+        if [ -d "$f" ]; then
+          mkdir "$target/$tf"
+        else
+          cp -a "$f" "$target/$tf"
+        fi
+        ;;
+      *)
+        # Ignore
+        ;;
+    esac
+  done
+}
+
+# Check base directory
+basedir="`dirname "$0"`"
+test -f "$basedir/COPYRIGHT/libexpat.txt" || {
+  echo 'makedist: Could not find additional distribution files.' 1>&2
+  exit 1
+}
+
+# Check if version specified
+version="$1"
+
+# Check for required packages
+for p in cpluff-mingw expat-mingw libltdl-mingw gettext-runtime-mingw; do
+  echo -n "Checking for package $p: "
+  if dpkg -s $p | grep -q -E '^Status: install ok installed'; then
+    echo "installed"
+  else
+    echo "not installed"
+    echo "makedist: Missing a required package $p." 1>&2
+    exit 1
+  fi
+done
+
+# Check for C-Pluff version
+echo -n 'Checking for C-Pluff version: '
+if [ -n "$version" ]; then
+  echo "$version (specified)"
+else
+  version="`gzip -dc < /usr/share/doc/cpluff-mingw/changelog.gz | grep -E '^C-Pluff \([^)]+\)' | head -1 | sed -e 's/^C-Pluff (\([^)]*\)).*$/\1/'`"
+  if [ -n "$version" ]; then
+    echo "$version (detected)"
+  else
+    echo "unknown"
+    echo 'makedist: Could not detect C-Pluff version. Please specify version.' 1>&2
+    exit 1
+  fi
+fi
+
+# Create a temporary directory for building the Windows distribution
+tmpdir="`mktemp -t -d`"
+targetdir="$tmpdir/cpluff-$version"
+mkdir "$targetdir"
+
+
+# Create the endemic archive cpluff-VER-only.zip
+# ----------------------------------------------
+
+echo "Creating the endemic archive cpluff-$version-only.zip..."
+
+# Copy endemic files
+copypkgfiles cpluff-mingw "$targetdir" "$PREFIX"
+
+# Convert all text files to DOS format
+find "$targetdir/share/doc" "$targetdir/include" -type f \
+  \( ! -path "$targetdir/share/doc/cpluff/html/*" -or -name '*.html' \) \
+  -print \
+  | while read f; do
+  texttodos < "$f" > "$f.DOS-format"
+  touch --reference="$f" "$f.DOS-format"
+  mv "$f.DOS-format" "$f"
+done
+
+# Replace source copyright info with binary copyright info
+rm "$targetdir/share/doc/cpluff/COPYRIGHT.txt"
+mkdir "$targetdir/COPYRIGHT"
+( echo "This a binary distribution of C-Pluff for Windows."
+  tail -n +2 /usr/share/doc/cpluff-mingw/copyright ) \
+  | texttodos > "$targetdir/COPYRIGHT/C-Pluff.txt"
+
+# Rename win32-bin directory to bin
+mv "$targetdir/win32-bin" "$targetdir/bin"
+
+# Create the endemic archive
+pkgdir="`pwd`"
+rm -f "cpluff-$version-only.zip"
+(cd "$tmpdir" && zip -q -r "$pkgdir/cpluff-$version-only.zip" "cpluff-$version" )
+
+# Cleanup target directory
+rm -rf "$targetdir"
+
+
+# Create the third party dependencies archive cpluff-VER-deps.zip
+# ---------------------------------------------------------------
+
+echo "Creating the dependencies archive cpluff-$version-deps.zip..."
+
+# Copy third party dependencies
+mkdir "$targetdir"
+mkdir "$targetdir/bin"
+mkdir "$targetdir/COPYRIGHT"
+for dll in libexpat-1.dll libltdl-3.dll libintl-8.dll; do
+  dllbase="`echo "$dll" | sed -e 's/-.*$//'`"
+  cp -a "$PREFIX/win32-bin/$dll" "$targetdir/bin"
+  texttodos \
+    < "$basedir/COPYRIGHT/$dllbase.txt" \
+    > "$targetdir/COPYRIGHT/$dllbase.txt"
+done
+texttodos \
+  < /usr/share/common-licenses/LGPL \
+  > "$targetdir/COPYRIGHT/LGPL.txt"
+
+# Create the dependencies archive
+pkgdir="`pwd`"
+rm -f "cpluff-$version-deps.zip"
+(cd "$tmpdir" && zip -q -r "$pkgdir/cpluff-$version-deps.zip" "cpluff-$version" )
+
+# Cleanup target directory
+rm -rf "$targetdir"
+
+
+# Create the combined archive cpluff-VER.zip
+# ------------------------------------------
+
+echo "Creating the combined archive cpluff-$version.zip..."
+
+# Unpack both archives
+pkgdir="`pwd`"
+(cd "$tmpdir" \
+  && unzip -q "$pkgdir/cpluff-$version-only.zip" \
+  && unzip -q "$pkgdir/cpluff-$version-deps.zip" )
+
+# Create the combined archive
+rm -f "cpluff-$version.zip"
+(cd "$tmpdir" && zip -q -r "$pkgdir/cpluff-$version.zip" "cpluff-$version" )
+
+
+# Remove the temporary directory
+rm -rf "$tmpdir"
