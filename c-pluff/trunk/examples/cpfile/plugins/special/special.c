@@ -11,6 +11,10 @@
 #include <cpluff.h>
 #include <core.h>
 
+#if defined(HAVE_STAT) && !defined(HAVE_LSTAT)
+#define lstat stat
+#endif
+
 
 /* ------------------------------------------------------------------------
  * Internal functions
@@ -23,6 +27,7 @@
  * initialized.
  */
 static int classify(void *dummy, const char *path) {
+#if defined(HAVE_LSTAT) || defined(HAVE_STAT)
 	struct stat s;
 	const char *type;
 	
@@ -54,6 +59,9 @@ static int classify(void *dummy, const char *path) {
 	fputs(type, stdout);
 	putchar('\n');
 	return 1;
+#else
+	return 0;
+#endif
 }
 
 

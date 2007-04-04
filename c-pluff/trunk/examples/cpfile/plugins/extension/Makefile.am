@@ -17,4 +17,4 @@ plugin_LTLIBRARIES = libextension.la
 plugin_DATA = plugin.xml file_types.xsd
 
 libextension_la_SOURCES = extension.c
-libextension_la_LDFLAGS = -module -avoid-version
+libextension_la_LDFLAGS = -no-undefined -module -avoid-version

@@ -163,6 +163,36 @@ pkgdir="`pwd`"
 rm -f "cpluff-$version.zip"
 (cd "$tmpdir" && zip -q -r "$pkgdir/cpluff-$version.zip" "cpluff-$version" )
 
+# Cleanup target directory
+rm -rf "$targetdir"
+
+
+# Create the example archive cpluff-VER-examples.zip
+# --------------------------------------------------
+
+echo "Creating the examples archive cpluff-$version-examples.zip..."
+
+# Create target directory
+mkdir "$targetdir"
+
+# Copy files
+copypkgfiles cpluff-examples-mingw "$targetdir" "$PREFIX"
+
+# Rename win32-bin directory to bin
+mv "$targetdir/win32-bin" "$targetdir/bin"
+
+# Convert all text files to DOS format
+find "$targetdir" -type f \( -name '*.bat' -or -name '*.xml' -or \
+  -name '*.xsd' -or -name '*.h' \) -print \
+  | while read f; do
+    texttodos < "$f" > "$f.dos"
+    mv "$f.dos" "$f"
+  done
+
+# Create the examples archive
+rm -f "cpluff-$version-examples.zip"
+(cd "$tmpdir" && zip -q -r "$pkgdir/cpluff-$version-examples.zip" "cpluff-$version" )
+
 
 # Remove the temporary directory
 rm -rf "$tmpdir"
