@@ -20,7 +20,7 @@ examples: all
 	cd examples && $(MAKE) $(AM_MAKEFLAGS) all LIBS='$(CURDIR)/libcpluff/libcpluff.la'
 
 examples-install: install
-	cd examples && $(MAKE) $(AM_MAKEFLAGS) install
+	cd examples && $(MAKE) $(AM_MAKEFLAGS) install LIBS='$(CURDIR)/libcpluff/libcpluff.la'
 
 dist-hook:
 	rm -f '$(distdir)/ABOUT-NLS'
