@@ -11,8 +11,10 @@
 #include <cpluff.h>
 #include <core.h>
 
-#if defined(HAVE_STAT) && !defined(HAVE_LSTAT)
-#define lstat stat
+#if defined(HAVE_LSTAT)
+#define STAT lstat
+#elsif defined(HAVE_STAT)
+#define STAT stat
 #endif
 
 
@@ -27,12 +29,12 @@
  * initialized.
  */
 static int classify(void *dummy, const char *path) {
-#if defined(HAVE_LSTAT) || defined(HAVE_STAT)
+#ifdef STAT
 	struct stat s;
 	const char *type;
 	
 	// Stat the file
-	if (lstat(path, &s)) {
+	if (STAT(path, &s)) {
 		fflush(stdout);
 		perror("stat failed");
 		
