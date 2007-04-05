@@ -1,9 +1,14 @@
 INSTALLING C-PLUFF
 ==================
 
-These are minimal instructions for building and installing the C-Pluff
-framework implementation. For help on building C-Pluff based applications,
-see the examples in the examples directory.
+These are instructions for building and installing the C-Pluff framework
+implementation using the source code distribution. Precompiled binaries
+are available for some platforms at the download page
+
+  http://www.c-pluff.org/download
+
+For help on building C-Pluff based applications, see the examples in the
+examples directory.
 
 
 Prerequisites
@@ -46,7 +51,7 @@ To build C-Pluff, follow the usual autotools procedure:
 You can specify the installation prefix (for example, /usr or /usr/local)
 when running the configure script.
 
-  SOURCE_DIR/configure --prefix=/usr
+  ./configure --prefix=/usr
   
 The default installation prefix is /usr/local. More help on available
 configuration options is available using the --help option.
@@ -58,7 +63,7 @@ Installation
 ------------
 
 You can install the library, header files, utilities, documentation and
-examples by doing:
+examples by making target install:
 
   make install
 
@@ -85,5 +90,6 @@ C-Pluff is known to compile cleanly on following combinations:
     - MinGW Runtime 3.9
     - MinGW binutils 2.16.91
     - MinGW 3.4.5
-    - Expat 1.95.8
+    - Expat 2.0.0 (or 1.95.8 or 1.95.1)
     - GNU Libtool libltdl 1.5.22
+    - GNU Gettext 0.16.1 (or 0.14.4)

@@ -6,4 +6,4 @@
 
 SUBDIRS = cpfile
 
-EXTRA_DIST = autogen.sh configure.ac INSTALL.txt
+EXTRA_DIST = autogen.sh configure.ac INSTALL.txt COPYRIGHT.txt
