@@ -30,6 +30,9 @@
 #include <string.h>
 #include <stdarg.h>
 #include <assert.h>
+#ifdef DLOPEN_LIBTOOL
+#include <ltdl.h>
+#endif
 #include "cpluff.h"
 #include "defines.h"
 #include "util.h"
@@ -113,6 +116,12 @@ CP_C_API cp_status_t cp_init(void) {
 				break;
 			}
 #endif
+#ifdef DLOPEN_LIBTOOL
+			if (lt_dlinit()) {
+				status = CP_ERR_RESOURCE;
+				break;
+			}
+#endif
 		}
 		initialized++;
 	} while (0);
@@ -135,6 +144,9 @@ CP_C_API void cp_destroy(void) {
 		assert(!framework_locked);
 #endif
 		cpi_destroy_all_contexts();
+#ifdef DLOPEN_LIBTOOL
+		lt_dlexit();
+#endif
 		reset();
 	}
 }
