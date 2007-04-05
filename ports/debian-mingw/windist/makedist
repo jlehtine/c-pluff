@@ -45,6 +45,8 @@ test -f "$basedir/COPYRIGHT/libexpat.txt" || {
   echo 'makedist: Could not find additional distribution files.' 1>&2
   exit 1
 }
+pkgdir="`cd "$basedir"/.. && pwd`"
+test -n "$pkgdir"
 
 # Check if version specified
 version="$1"
@@ -111,8 +113,7 @@ mkdir "$targetdir/COPYRIGHT"
 mv "$targetdir/win32-bin" "$targetdir/bin"
 
 # Create the endemic archive
-pkgdir="`pwd`"
-rm -f "cpluff-$version-only.zip"
+rm -f "$pkgdir/cpluff-$version-only.zip"
 (cd "$tmpdir" && zip -q -r "$pkgdir/cpluff-$version-only.zip" "cpluff-$version" )
 
 # Cleanup target directory
@@ -140,8 +141,7 @@ texttodos \
   > "$targetdir/COPYRIGHT/LGPL.txt"
 
 # Create the dependencies archive
-pkgdir="`pwd`"
-rm -f "cpluff-$version-deps.zip"
+rm -f "$pkgdir/cpluff-$version-deps.zip"
 (cd "$tmpdir" && zip -q -r "$pkgdir/cpluff-$version-deps.zip" "cpluff-$version" )
 
 # Cleanup target directory
@@ -154,13 +154,12 @@ rm -rf "$targetdir"
 echo "Creating the combined archive cpluff-$version.zip..."
 
 # Unpack both archives
-pkgdir="`pwd`"
 (cd "$tmpdir" \
   && unzip -q "$pkgdir/cpluff-$version-only.zip" \
   && unzip -q "$pkgdir/cpluff-$version-deps.zip" )
 
 # Create the combined archive
-rm -f "cpluff-$version.zip"
+rm -f "$pkgdir/cpluff-$version.zip"
 (cd "$tmpdir" && zip -q -r "$pkgdir/cpluff-$version.zip" "cpluff-$version" )
 
 # Cleanup target directory
@@ -190,7 +189,7 @@ find "$targetdir" -type f \( -name '*.bat' -or -name '*.xml' -or \
   done
 
 # Create the examples archive
-rm -f "cpluff-$version-examples.zip"
+rm -f "$pkgdir/cpluff-$version-examples.zip"
 (cd "$tmpdir" && zip -q -r "$pkgdir/cpluff-$version-examples.zip" "cpluff-$version" )
 
 
