@@ -1,7 +1,8 @@
 C-Pluff (0.1.3) alpha
 
-  * [X] Fixed bug in Windows multi-threading support. Mutex was not
+  * [X] Fixed a bug in Windows multi-threading support. Mutex was not
         actually locked in cpi_lock_mutex.
+  * [X] Fixed a bug in libltdl support. Library was not being initialized.
   * [X] Made cpfile example application compatible with Windows.
   * [X] Added Windows packaging using cross-compilation on Debian.
   * [X] Small improvements to installation documentation and packaging.

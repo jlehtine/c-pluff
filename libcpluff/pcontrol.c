@@ -314,7 +314,11 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		// Open the plug-in runtime library 
 		plugin->runtime_lib = DLOPEN(rlpath);
 		if (plugin->runtime_lib == NULL) {
-			cpi_errorf(context, N_("Plug-in %s runtime library %s could not be opened."), plugin->plugin->identifier, plugin->plugin->runtime_lib_name);
+			char *error = DLERROR();
+			if (error == NULL) {
+				error = _("Unspecified error.");
+			}
+			cpi_errorf(context, N_("Plug-in %s runtime library %s could not be opened: %s"), plugin->plugin->identifier, rlpath, error);
 			status = CP_ERR_RUNTIME;
 			break;
 		}
@@ -323,7 +327,11 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		if (plugin->plugin->runtime_funcs_symbol != NULL) {
 			plugin->runtime_funcs = (cp_plugin_runtime_t *) DLSYM(plugin->runtime_lib, plugin->plugin->runtime_funcs_symbol);
 			if (plugin->runtime_funcs == NULL) {
-				cpi_errorf(context, N_("Plug-in %s symbol %s containing plug-in runtime information could not be resolved."), plugin->plugin->identifier, plugin->plugin->runtime_funcs_symbol);
+				char *error = DLERROR();
+				if (error == NULL) {
+					error = _("Unspecified error.");
+				}
+				cpi_errorf(context, N_("Plug-in %s symbol %s containing plug-in runtime information could not be resolved: %s"), plugin->plugin->identifier, plugin->plugin->runtime_funcs_symbol, error);
 				status = CP_ERR_RUNTIME;
 				break;
 			}

@@ -183,7 +183,11 @@ CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const c
 			symbol = DLSYM(pp->runtime_lib, name);
 		}
 		if (symbol == NULL) {
-			cpi_warnf(context, N_("Symbol %s in plug-in %s could not be resolved because it is not defined or exported."), name, id);
+			char *error = DLERROR();
+			if (error == NULL) {
+				error = _("Unspecified error.");
+			}
+			cpi_warnf(context, N_("Symbol %s in plug-in %s could not be resolved: %s"), name, id, error);
 			status = CP_ERR_UNKNOWN;
 			break;
 		}

@@ -88,11 +88,13 @@ extern "C" {
 #define DLOPEN(name) dlopen((name), RTLD_LAZY | RTLD_GLOBAL)
 #define DLSYM(handle, symbol) dlsym((handle), (symbol))
 #define DLCLOSE(handle) dlclose(handle)
+#define DLERROR() dlerror()
 #elif defined(DLOPEN_LIBTOOL)
 #define DLHANDLE lt_dlhandle
 #define DLOPEN(name) lt_dlopen(name)
 #define DLSYM(handle, symbol) lt_dlsym((handle), (symbol))
 #define DLCLOSE(handle) lt_dlclose(handle)
+#define DLERROR() lt_dlerror()
 #endif
 
 
