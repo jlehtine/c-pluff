@@ -183,7 +183,7 @@ CP_C_API void * cp_resolve_symbol(cp_context_t *context, const char *id, const c
 			symbol = DLSYM(pp->runtime_lib, name);
 		}
 		if (symbol == NULL) {
-			char *error = DLERROR();
+			const char *error = DLERROR();
 			if (error == NULL) {
 				error = _("Unspecified error.");
 			}
