@@ -314,7 +314,7 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		// Open the plug-in runtime library 
 		plugin->runtime_lib = DLOPEN(rlpath);
 		if (plugin->runtime_lib == NULL) {
-			char *error = DLERROR();
+			const char *error = DLERROR();
 			if (error == NULL) {
 				error = _("Unspecified error.");
 			}
@@ -327,7 +327,7 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		if (plugin->plugin->runtime_funcs_symbol != NULL) {
 			plugin->runtime_funcs = (cp_plugin_runtime_t *) DLSYM(plugin->runtime_lib, plugin->plugin->runtime_funcs_symbol);
 			if (plugin->runtime_funcs == NULL) {
-				char *error = DLERROR();
+				const char *error = DLERROR();
 				if (error == NULL) {
 					error = _("Unspecified error.");
 				}
