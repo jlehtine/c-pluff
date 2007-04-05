@@ -7,13 +7,12 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <unistd.h>
 #include <cpluff.h>
 #include <core.h>
 
 #if defined(HAVE_LSTAT)
 #define STAT lstat
-#elsif defined(HAVE_STAT)
+#elif defined(HAVE_STAT)
 #define STAT stat
 #endif
 
@@ -43,14 +42,20 @@ static int classify(void *dummy, const char *path) {
 	}
 	
 	// Check if this is a special file
-	if (S_ISDIR(s.st_mode)) {
+	if (s.st_mode & S_IFDIR) {
 		type = "directory";
-	} else if (S_ISCHR(s.st_mode)) {
+#ifdef S_IFCHR
+	} else if (s.st_mode & S_IFCHR) {
 		type = "character device";
-	} else if (S_ISBLK(s.st_mode)) {
+#endif
+#ifdef S_IFBLK
+	} else if (s.st_mode & S_IFBLK) {
 		type = "block device";
-	} else if (S_ISLNK(s.st_mode)) {
+#endif
+#ifdef S_IFLNK
+	} else if (s.st_mode & S_IFLNK) {
 		type = "symbolic link";
+#endif
 	} else {
 		
 		// Did not recognize it, let other plug-ins try
