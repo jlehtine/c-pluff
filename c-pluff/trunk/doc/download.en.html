@@ -31,6 +31,7 @@
       cross-compilation).
     </p>
     <ul class="downloads">
+      <li><a href="downloads/cpluff-0.1.3.tar.gz">cpluff-0.1.3.tar.gz</a> (736 KiB, Apr 6 2007, <a href="downloads/cpluff-0.1.3.tar.gz.asc">PGP signature</a>)</li>
       <li><a href="downloads/cpluff-0.1.2.tar.gz">cpluff-0.1.2.tar.gz</a> (720 KiB, Mar 28 2007, <a href="downloads/cpluff-0.1.2.tar.gz.asc">PGP signature</a>)</li>
       <li><a href="downloads/cpluff-0.1.1.tar.gz">cpluff-0.1.1.tar.gz</a> (680 KiB, Mar 18 2007, <a href="downloads/cpluff-0.1.1.tar.gz.asc">PGP signature</a>)</li>
       <li><a href="downloads/cpluff-0.1.0.tar.gz">cpluff-0.1.0.tar.gz</a> (600 KiB, Mar 8 2007, <a href="downloads/cpluff-0.1.0.tar.gz.asc">PGP signature</a>)</li>
@@ -48,6 +49,8 @@
     </p>
     <ul>
       <li><a href="#debian">Debian GNU/Linux (i386)</a></li>
+      <li><a href="#debian-mingw">MinGW cross-compilation on Debian GNU/Linux</a></li>
+      <li><a href="#windows">Microsoft Windows (i386)</a></li>
     </ul>
     
     <h3 id="debian">Debian GNU/Linux</h3>
@@ -101,6 +104,79 @@ deb-src http://www.c-pluff.org/downloads/debian stable cpluff</pre>
       trusted APT key by downloading it and using the command
       "apt-key add gpg_johannes_lehtinen.asc".
     </p>
+
+    <h3 id="debian-mingw">MinGW cross-compilation on Debian GNU/Linux</h3>
+    <p>
+      Precompiled binaries are available also for MinGW cross-compilation
+      environment on Debian GNU/Linux. Binaries (and sources) for third
+      party dependencies are also provided. These can be used on Debian
+      GNU/Linux to cross-compile C-Pluff based applications for Windows.
+      The Windows binary distribution (see below) is based on these binaries.
+    </p>
+    <dl>
+
+      <dt>cpluff-mingw</dt>
+      <dd>C-Pluff runtime library, binaries and other material</dd>
+    
+      <dt>cpluff-examples-mingw</dt>
+      <dd>C-Pluff example application binaries</dd>
+      
+      <dt>expat-mingw</dt>
+      <dd>Expat XML parser library runtime library and headers</dd>
+      
+      <dt>libltdl-mingw</dt>
+      <dd>GNU Libtool libltdl runtime library and headers</dd>
+      
+      <dt>gettext-runtime-mingw</dt>
+      <dd>GNU Gettext runtime binaries and headers</dd>
+
+    </dl>
+    <p>
+      To be able to install the packages, add the following source
+      specification into /etc/apt/sources.list. Notice, although these packages
+      are placed in the i386 section, they are actually architecture
+      independent as they target the host platform, i586-mingw32msvc.
+    </p>
+    <pre class="example">
+deb http://www.c-pluff.org/downloads/debian stable cpluff 3rdparty
+deb-src http://www.c-pluff.org/downloads/debian stable cpluff 3rdparty</pre>
+
+    <h3 id="windows">Microsoft Windows</h3>
+    <p>
+      These precompiled binaries are for Microsoft Windows. Download one or
+      more zip files and extract them to the same location. The following
+      describes the ZIP file naming conventions.
+    </p>
+    <dl>
+    
+      <dt>cpluff-VERSION.zip</dt>
+      <dd>C-Pluff runtime library, binaries and other material together
+        with third party binary dependencies (this is a union of the following
+        two packages, so you only need this one or the next two packages)</dd>
+      
+      <dt>cpluff-VERSION-only.zip</dt>
+      <dd>C-Pluff runtime library, binaries and other material</dd>
+      
+      <dt>cpluff-VERSION-deps.zip</dt>
+      <dd>third party binary dependencies</dd>
+      
+      <dt>cpluff-VERSION-examples.zip</dt>
+      <dd>C-Pluff example application binaries</dd>
+    
+    </dl>
+    <p>
+      Download selected packages here.
+    </p>
+    <ul class="downloads">
+      <li>C-Pluff 0.1.3 (Apr 6 2007)
+        <ul>
+          <li><a href="downloads/windows/cpluff-0.1.3.zip">cpluff-0.1.3.zip</a> (1768 KiB, <a href="downloads/windows/cpluff-0.1.3.zip.asc">PGP signature</a>)</li>
+          <li><a href="downloads/windows/cpluff-0.1.3-only.zip">cpluff-0.1.3-only.zip</a> (700 KiB, <a href="downloads/windows/cpluff-0.1.3-only.zip.asc">PGP signature</a>)</li>
+          <li><a href="downloads/windows/cpluff-0.1.3-deps.zip">cpluff-0.1.3-deps.zip</a> (1076 KiB, <a href="downloads/windows/cpluff-0.1.3-deps.zip.asc">PGP signature</a>)</li>
+          <li><a href="downloads/windows/cpluff-0.1.3-examples.zip">cpluff-0.1.3-examples.zip</a> (336 KiB, <a href="downloads/windows/cpluff-0.1.3-examples.zip.asc">PGP signature</a>)</li>
+        </ul>
+      </li>
+    </ul>
 
     <ul class="menu">
       <li><a href="/">C-Pluff</a></li>
