@@ -109,6 +109,9 @@ mkdir "$targetdir/COPYRIGHT"
   tail -n +2 /usr/share/doc/cpluff-mingw/copyright ) \
   | texttodos > "$targetdir/COPYRIGHT/C-Pluff.txt"
 
+# Include Windows specific README.txt
+texttodos < "$basedir/README.dist.txt" > "$targetdir/README.txt"
+
 # Rename win32-bin directory to bin
 mv "$targetdir/win32-bin" "$targetdir/bin"
 
