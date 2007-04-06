@@ -6,7 +6,7 @@
 
 LIBS = @LIBS@
 
-EXTRA_DIST = plugin.xml classifiers.xsd
+EXTRA_DIST = plugin.xml classifiers.xsd Makefile.nmake
 
 pluginsdir = $(libdir)/cpfile/plugins
 plugindir = $(pluginsdir)/core

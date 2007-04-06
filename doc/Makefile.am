@@ -49,6 +49,8 @@ install-examples-source:
 		-or -name 'configure.ac' \
 		-or -name 'Makefile.am' \
 		-or -name 'cpfile.in' \
+		-or -name '*.nmake' \
+		-or -name '*.bat' \
 		-or -name '*.txt' \
 		-or -name '*.xml' \
 		-or -name '*.xsd' \

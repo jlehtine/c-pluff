@@ -6,4 +6,4 @@
 
 SUBDIRS = cpfile
 
-EXTRA_DIST = autogen.sh configure.ac INSTALL.txt COPYRIGHT.txt
+EXTRA_DIST = autogen.sh configure.ac INSTALL.txt COPYRIGHT.txt nmakedir.bat common.nmake Makefile.nmake

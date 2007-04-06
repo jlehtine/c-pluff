@@ -11,6 +11,11 @@ build: debian-build-stamp
 debian-build-stamp: debian-configure-stamp
 	dh_testdir
 	cd debian/build && $(MAKE)
+	cd debian/build/libcpluff && $(HOST)-dlltool -z libcpluff.def `find . -name '*.o' -print`
+	cd debian/build/examples/cpfile/plugins && \
+	for p in core special extension; do \
+		$(HOST)-dlltool -z $$p/lib$$p.def `find $$p -name '*.o' -print`; \
+	done
 	touch $@
 
 configure: debian-configure-stamp
@@ -29,6 +34,12 @@ debian-install-stamp: debian-build-stamp
 	mkdir debian/tmp
 	cd debian/build && $(MAKE) DESTDIR=$(CURDIR)/debian/tmp examples-install
 	rm debian/tmp/usr/$(HOST)/bin/cpfile
+	cp -a examples/cpfile/cpfile.bat debian/tmp/usr/$(HOST)/bin
+	mv debian/tmp/usr/$(HOST)/lib/cpfile debian/tmp/usr/$(HOST)/bin
+	cp debian/build/libcpluff/libcpluff.def debian/tmp/usr/$(HOST)/lib
+	for p in core special extension; do \
+		cp debian/build/examples/cpfile/plugins/$$p/lib$$p.def debian/tmp/usr/$(HOST)/bin/cpfile/plugins/$$p; \
+	done
 	touch $@
 
 clean:

@@ -6,5 +6,5 @@
 
 SUBDIRS = plugins
 
-EXTRA_DIST = README.txt cpfile.in
+EXTRA_DIST = README.txt cpfile.in cpfile.bat Makefile.nmake
 bin_SCRIPTS = cpfile

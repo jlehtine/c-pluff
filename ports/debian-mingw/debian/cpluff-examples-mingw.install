@@ -1,2 +1,1 @@
-usr/i586-mingw32msvc/lib/cpfile
-../cpfile.bat usr/i586-mingw32msvc/win32-bin
+usr/i586-mingw32msvc/bin/cpfile* usr/i586-mingw32msvc/win32-bin

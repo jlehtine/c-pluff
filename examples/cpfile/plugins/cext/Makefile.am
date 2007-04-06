@@ -4,7 +4,7 @@
 # This Makefile is free software; Johannes Lehtinen gives unlimited
 # permission to copy, distribute and modify it.
 
-EXTRA_DIST = plugin.xml
+EXTRA_DIST = plugin.xml Makefile.nmake
 
 pluginsdir = $(libdir)/cpfile/plugins
 plugindir = $(pluginsdir)/cext
