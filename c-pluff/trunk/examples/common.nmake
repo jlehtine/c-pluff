@@ -9,21 +9,20 @@
 
 # Each Makefile.nmake sets $(TOP) as path to top level examples directory
 
-# $(prefix) is the top installation directory for C-Pluff examples
-#prefix = $(TOP)\..\..\..\..
-prefix = $(TOP)\..\cpluff-0.1.2
-
-# $(bindir) is the installation directory for C-Pluff example binaries
-bindir = $(prefix)\bin
-
 # $(cpprefix) is the top directory of C-Pluff installation
-cpprefix = $(prefix)
+cpprefix = $(TOP)\..\..\..\..
 
 # $(cpincdir) is the include directory of C-Pluff installation
 cpincdir = $(cpprefix)\include
 
 # $(cplibdir) is the library directory of C-Pluff installation
 cplibdir = $(cpprefix)\lib
+
+# $(prefix) is the top installation directory for C-Pluff examples
+prefix = $(cpprefix)
+
+# $(bindir) is the installation directory for C-Pluff example binaries
+bindir = $(prefix)\bin
 
 # Define compiler and flags
 CC = cl
