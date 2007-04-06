@@ -42,18 +42,18 @@ static int classify(void *dummy, const char *path) {
 	}
 	
 	// Check if this is a special file
-	if (s.st_mode & S_IFDIR) {
+	if ((s.st_mode & S_IFMT) == S_IFDIR) {
 		type = "directory";
 #ifdef S_IFCHR
-	} else if (s.st_mode & S_IFCHR) {
+	} else if ((s.st_mode & S_IFMT) == S_IFCHR) {
 		type = "character device";
 #endif
 #ifdef S_IFBLK
-	} else if (s.st_mode & S_IFBLK) {
+	} else if ((s.st_mode & S_IFMT) == S_IFBLK) {
 		type = "block device";
 #endif
 #ifdef S_IFLNK
-	} else if (s.st_mode & S_IFLNK) {
+	} else if ((s.st_mode & S_IFMT) == S_IFLNK) {
 		type = "symbolic link";
 #endif
 	} else {
