@@ -4,4 +4,6 @@
 # This Makefile is free software; Johannes Lehtinen gives unlimited
 # permission to copy, distribute and modify it.
 
-SUBDIRS = core special extension cext Makefile.nmake
+SUBDIRS = core special extension cext
+
+EXTRA_DIST = Makefile.nmake
