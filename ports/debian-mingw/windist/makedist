@@ -13,7 +13,7 @@ PREFIX=/usr/i586-mingw32msvc
 
 # Subprocedure for converting text to DOS format
 texttodos () {
-  perl -p -e 's/\012/\015\012/;'
+  perl -p -e 's/([^\015])\012/\1\015\012/;' -e 's/^\012/\015\012/g;'
 }
 
 # Subprocedure for copying the files of a specific package
