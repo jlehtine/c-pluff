@@ -1,0 +1,5 @@
+usr/i586-mingw32msvc/include
+usr/i586-mingw32msvc/lib/lib*
+usr/i586-mingw32msvc/bin/*.exe usr/i586-mingw32msvc/win32-bin
+usr/i586-mingw32msvc/bin/*.dll usr/i586-mingw32msvc/win32-bin
+usr/i586-mingw32msvc/share
