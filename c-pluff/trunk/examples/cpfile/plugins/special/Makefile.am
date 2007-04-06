@@ -8,7 +8,7 @@ LIBS = @LIBS@
 
 CPPFLAGS = -I$(srcdir)/../core @CPPFLAGS@
 
-EXTRA_DIST = plugin.xml
+EXTRA_DIST = plugin.xml Makefile.nmake
 
 pluginsdir = $(libdir)/cpfile/plugins
 plugindir = $(pluginsdir)/special

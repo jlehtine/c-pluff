@@ -9,6 +9,28 @@
 
 set -e
 
+# Check arguments
+stop=
+while getopts 'scbi' opt; do
+    case "$opt" in
+        s)
+            stop=source
+            ;;
+        c)
+            stop=configure
+            ;;
+        b)
+            stop=build
+            ;;
+        i)
+            stop=install
+            ;;
+        *)
+            # Ignore unknown options
+            ;;
+    esac
+done
+
 basedir="`dirname "$0"`"
 srcdir="$basedir/../.."
 tmpdir="`mktemp -t -d`"
@@ -21,6 +43,29 @@ test -f "$basedir/debian/cpluff-mingw.install"
 cp -a "$srcdir" "$tmpdir/cpluff"
 rm -rf "$tmpdir/cpluff/debian"
 cp -a "$basedir/debian" "$tmpdir/cpluff"
+
+# Check if only partial operation requested
+case "$stop" in
+    source)
+        echo "Source is in $tmpdir/cpluff"
+        exit 0
+        ;;
+    configure)
+        (cd "$tmpdir/cpluff" && fakeroot ./debian/rules configure)
+        echo "Configured source is in $tmpdir/cpluff"
+        exit 0
+        ;;
+    build)
+        (cd "$tmpdir/cpluff" && fakeroot ./debian/rules build)
+        echo "Built source is in $tmpdir/cpluff"
+        exit 0
+        ;;
+    install)
+        (cd "$tmpdir/cpluff" && fakeroot ./debian/rules install)
+        echo "Installed source is on $tmpdir/cpluff"
+        exit 0
+        ;;
+esac
 
 # Build the binary packages
 (cd "$tmpdir/cpluff" && fakeroot ./debian/rules binary)
