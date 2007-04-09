@@ -48,14 +48,18 @@
       for it on the users mailing list and we will see if that can be arranged.
     </p>
     <ul>
-      <li><a href="#debian">Debian GNU/Linux (i386)</a></li>
+      <li><a href="#debian">Debian GNU/Linux</a></li>
       <li><a href="#debian-mingw">MinGW cross-compilation on Debian GNU/Linux</a></li>
-      <li><a href="#windows">Microsoft Windows (i386)</a></li>
+      <li><a href="#windows">Microsoft Windows</a></li>
     </ul>
     
     <h3 id="debian">Debian GNU/Linux</h3>
     <p>
-      Precompiled binaries are currently available for the i386 architecture.
+      Precompiled binaries are currently available for the i386 architecture
+      and the stable release, Debian GNU/Linux 4.0 (Etch), and the old
+      stable release, Debian GNU/Linux 3.1 (Sarge). Binaries for
+      other architectures and releases can be built using the debianized
+      source package.
       C-Pluff is divided into three separate binary packages and the
       debianized source package:
     </p>
@@ -83,16 +87,22 @@
 deb http://www.c-pluff.org/downloads/debian stable cpluff
 deb-src http://www.c-pluff.org/downloads/debian stable cpluff</pre>
     <p>
-      You can replace "stable" with "testing", "sarge" or "etch". Currently
-      there is only one set of binaries which can be used with any of the
-      listed Debian releases (not tested with unstable or experimental).
-      The second line is needed only if you want to download the debianized
-      source package.
+      You can replace "stable" with "oldstable", "sarge" or "etch". Currently
+      there is only one set of binaries which can be used with either Debian
+      release. The second line is needed only if you want to download the
+      debianized source package.
     </p>
     <p>
       Then run "aptitude update" as root and install selected packages using
       "aptitude install &lt;package&gt;" (or the interactive user interface).
       The source package is downloaded by running "apt-get source cpluff".
+    </p>
+    <p>
+      To build Debian packages for other releases or architectures,
+      download the source package, switch to the source directory and
+      execute "fakeroot ./debian/rules binary". You must have fakeroot and
+      the build dependencies installed (try dpkg-checkbuilddeps from package
+      dpkg-dev).
     </p>
     <p>
       APT checks signatures since Debian GNU/Linux 4.0 (Etch).
