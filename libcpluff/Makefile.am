@@ -16,7 +16,7 @@ DOXYGEN_SOURCE = cpluffdef.h $(srcdir)/cpluff.h $(srcdir)/docsrc/*.dox
 DOXYGEN_STYLE = $(top_srcdir)/docsrc/doxygen.footer $(top_srcdir)/docsrc/doxygen.css
 
 lib_LTLIBRARIES = libcpluff.la
-libcpluff_la_SOURCES = psymbol.c pscan.c ploader.c pinfo.c pcontrol.c serial.c logging.c context.c cpluff.c util.c ../kazlib/list.c ../kazlib/list.h ../kazlib/hash.c ../kazlib/hash.h internal.h thread.h util.h defines.h
+libcpluff_la_SOURCES = psymbol.c pscan.c ploader.c pinfo.c pcontrol.c serial.c logging.c context.c cpluff.c util.c ../kazlib/list.c ../kazlib/list.h ../kazlib/hash.c ../kazlib/hash.h internal.h shared.h thread.h util.h defines.h
 if POSIX_THREADS
 libcpluff_la_SOURCES += thread_posix.c
 endif
@@ -59,5 +59,15 @@ dist-hook: refdoc
 
 clean-local:
 	rm -rf doc
+
+check-local:
+	rc=0; \
+		find '$(srcdir)' -name '*.c' -print | while read f; do \
+			if grep -q -E 'cpi_(debug|warn|error)f?\(.*[^N]_\(' "$$f"; then \
+				echo "invalid use of cpi_(debug|warn|error)f? macros in $$f."; \
+				rc=1; \
+			fi; \
+		done; \
+		exit $$rc
 
 .PHONY: doc refdoc impldoc
