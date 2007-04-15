@@ -46,6 +46,7 @@
 #ifdef CP_THREADS
 #include "thread.h"
 #endif
+#include "shared.h"
 
 
 #ifdef __cplusplus
@@ -378,7 +379,7 @@ CP_HIDDEN void cpi_logf(cp_context_t *ctx, cp_log_severity_t severity, const cha
  */
 #define cpi_is_logged(context, severity) (assert(cpi_is_context_locked(context)), (severity) >= (context)->env->log_min_severity)
 
-// Convenience macros for logging
+// Convenience macros for efficient logging
 #define cpi_log_cond(ctx, level, msg) do { if (cpi_is_logged((ctx), (level))) cpi_log((ctx), (level), (msg)); } while (0)
 #define cpi_logf_cond(ctx, level, msg, ...) do { if (cpi_is_logged((ctx), (level))) cpi_logf((ctx), (level), (msg), __VA_ARGS__); } while (0)
 #define cpi_error(ctx, msg) cpi_log_cond((ctx), CP_LOG_ERROR, (msg))
@@ -417,14 +418,6 @@ CP_HIDDEN void cpi_unregister_plisteners(list_t *listeners, cp_plugin_t *plugin)
  * @return the pointer passed in as @a name
  */
 CP_HIDDEN char *cpi_context_owner(cp_context_t *ctx, char *name, size_t size) CP_GCC_NONNULL(1);
-
-/**
- * Reports a fatal error. This method does not return.
- * 
- * @param msg the formatted error message
- * @param ... parameters
- */
-CP_HIDDEN void cpi_fatalf(const char *msg, ...) CP_GCC_NORETURN CP_GCC_PRINTF(1, 2) CP_GCC_NONNULL(1);
 
 /**
  * Reports a fatal NULL argument to an API function.

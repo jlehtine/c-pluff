@@ -155,7 +155,7 @@ CP_C_API void cp_set_fatal_error_handler(cp_fatal_error_func_t error_handler) {
 	fatal_error_handler = error_handler;
 }
 
-CP_HIDDEN void cpi_fatalf(const char *msg, ...) {
+CP_C_API void cpi_fatalf(const char *msg, ...) {
 	va_list params;
 	char fmsg[256];
 		
