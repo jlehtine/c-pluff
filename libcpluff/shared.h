@@ -28,6 +28,7 @@
 #ifndef SHARED_H_
 #define SHARED_H_
 
+#include "cpluff.h"
 #include "defines.h"
 
 #ifdef __cplusplus
