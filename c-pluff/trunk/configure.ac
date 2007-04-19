@@ -57,6 +57,7 @@ if test -z "$CC"; then
 fi
 AC_PROG_CC_C_O
 AC_C_CONST
+AC_PROG_CXX
 AC_LIBTOOL_DLOPEN
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
@@ -256,6 +257,8 @@ libcpluff/cpluffdef.h
 libcpluff/docsrc/Makefile
 libcpluff/docsrc/Doxyfile-ref
 libcpluff/docsrc/Doxyfile-impl
+libcpluffxx/Makefile
+libcpluffxx/docsrc/Doxyfile-ref
 loader/Makefile
 console/Makefile
 po/Makefile.in
