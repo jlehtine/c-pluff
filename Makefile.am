@@ -6,15 +6,16 @@
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = libcpluff loader console po test docsrc doc
+SUBDIRS = libcpluff libcpluffxx loader console po test docsrc doc
 DIST_SUBDIRS = $(SUBDIRS) examples
+DOC_SUBDIRS = libcpluff libcpluffxx
 
 EXTRA_DIST = COPYRIGHT.txt INSTALL.txt ChangeLog.txt Roadmap.txt autogen.sh plugin.xsd
 
 doc_DATA = COPYRIGHT.txt ChangeLog.txt Roadmap.txt
 
 doc:
-	cd libcpluff && $(MAKE) $(AM_MAKEFLAGS) $@
+	for d in $(DOC_SUBDIRS); do ( cd "$$d" && $(MAKE) $(AM_MAKEFLAGS) $@ ) || exit 1; done
 
 examples: all
 	cd examples && $(MAKE) $(AM_MAKEFLAGS) all LIBS='$(CURDIR)/libcpluff/libcpluff.la'
@@ -28,7 +29,7 @@ dist-hook:
 distcheck-hook: distcheck-potfiles distcheck-examples
 
 distcheck-potfiles:
-	files="`cd '$(srcdir)' && find console libcpluff loader -type f -name '*.[ch]' -exec grep -q '_(' '{}' \; -print`"; \
+	files="`cd '$(srcdir)' && find console libcpluff loader -type f \( -name '*.h' -or -name '*.c' -or -name '*.cc' \) -exec grep -q '_(' '{}' \; -print`"; \
 		rc=0; \
 		for f in $$files; do \
 			if ! grep -q "$$f" '$(srcdir)/po/POTFILES.in'; then \
