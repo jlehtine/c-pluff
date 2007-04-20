@@ -14,7 +14,8 @@ DOXYGEN_SOURCE = ../libcpluff/cpluffdef.h $(srcdir)/cpluffxx.h
 DOXYGEN_STYLE = $(top_srcdir)/docsrc/doxygen.footer $(top_srcdir)/docsrc/doxygen.css
 
 lib_LTLIBRARIES = libcpluffxx.la
-libcpluffxx_la_SOURCES = CPPluginContainerImpl.cc \
+libcpluffxx_la_SOURCES = CPPluginImportImpl.cc \
+	CPPluginDescriptorImpl.cc CPPluginContainerImpl.cc \
 	CPPluginContextImpl.cc CPFramework.cc CPFrameworkImpl.cc \
 	CPReferenceCountedImpl.cc CPAPIErrorImpl.cc internal.h
 libcpluffxx_la_LDFLAGS = -no-undefined -version-info $(CP_CXX_LIB_VERSION)

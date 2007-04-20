@@ -37,6 +37,7 @@
 
 #include <vector>
 #include <map>
+#include <cstddef>
 
 /**
  * @defgroup cxxDefines Defines
@@ -154,8 +155,8 @@ class CPPlugin;
 class CPPluginContext;
 class CPPluginContainer;
 class CPPluginImport;
-class CPExtensionPoint;
-class CPExtension;
+class CPExtensionPointDescriptor;
+class CPExtensionDescriptor;
 class CPConfigurationElement;
 
 /**
@@ -382,6 +383,186 @@ protected:
 };
 
 /**
+ * A generic convenience container for a reference to a reference counted
+ * object. This class can be used to ensure that the reference counted object
+ * is automatically released when it is not needed anymore. To ensure this,
+ * do not maintain direct pointers or references to the reference counted
+ * object but instead use instances of this class with automatic storage
+ * duration and access the object via them. This class is not thread-safe with
+ * regards to other threads accessing the same object instance.
+ * 
+ * Here is a simple example of the use of this class.
+ * 
+ * @code
+ * #include <iostream>
+ * #include <cpluffxx.h>
+ * 
+ * using namespace std;
+ * using namespace org::cpluff;
+ * 
+ * CPRef<CPPluginDescriptor> installPlugin(CPContext& ctx, const char* path) {
+ *   CPRef<CPPluginDescriptor> pd = ctx.loadPluginDescriptor(path);
+ *   ctx.installPlugin(*pd);
+ *   return pd;
+ *
+ *   // The descriptor is automatically released here unless the caller stores
+ *   // the returned copy of CPRef for further processing.
+ * }
+ * 
+ * void installPlugins(CPContext& ctx, vector<const char*>& paths) {
+ *   vector<const char*>::iterator iter;
+ *   for (iter = paths.begin(); iter != paths.end(); iter++) {
+ *     CPRef<CPPluginDescriptor> pd = installPlugin(ctx, *iter);
+ *     cout << "Installed plug-in " << (*pd).getName() << newline;
+ * 
+ *     // The descriptor received from installPlugin is released here
+ *     // automatically when local reference container is destructed.
+ *   }
+ * }
+ * @endcode
+ */
+template <class T> class CPRef {
+public:
+
+	/**
+	 * Constructs a new empty container. It can be initialized by assigning
+	 * an initialized container or a reference counted object to it.
+	 */
+	inline CPRef(): object(NULL) {}
+
+	/**
+	 * Constructs and initializes a contained reference from supplied object
+	 * reference.
+	 * 
+	 * @oaram o reference to a reference counted object
+	 */
+	inline CPRef(T& o): object(&o) {}
+
+	/**
+	 * Constructs and initializes a contained reference from supplied object
+	 * pointer.
+	 * 
+	 * @param o pointer to a reference counted object
+	 */
+	inline CPRef(T* o): object(o) {}
+
+	/**
+	 * Constructs and initializes a contained reference from another contained
+	 * reference. Increments the reference count of the contained object, if
+	 * any.
+	 * 
+	 * @param r contained reference to be copied
+	 */
+	inline CPRef(const CPRef& r): object(r.object) {
+		if (object != NULL) {
+			static_cast<CPReferenceCounted*>(object)->use();
+		}
+	}
+
+	/**
+	 * Destructs a contained reference. Decrements the reference count of the
+	 * contained object, if any.
+	 */
+	inline ~CPRef() {
+		if (object != NULL) {
+			static_cast<CPReferenceCounted*>(object)->release();
+		}
+	}
+
+	/**
+	 * Returns the contained reference.
+	 * 
+	 * @return the contained reference
+	 */
+	inline T& operator*() const {
+		return *object;
+	}
+
+	/**
+	 * Assigns the reference in the specified container to this container.
+	 * Decrements the reference count of the previously contained object,
+	 * if any, and increments the reference count of the new object,
+	 * if any.
+	 * 
+	 * @param r contained reference to be assigned
+	 */
+	inline CPRef& operator=(const CPRef& r) {
+		if (r.object != NULL) {
+			static_cast<CPReferenceCounted*>(r.object)->use();
+		}
+		if (object != NULL) {
+			static_cast<CPReferenceCounted*>(object)->release();
+		}
+		object = r.object;
+	}
+
+	/**
+	 * Assigns the specified reference to this container.
+	 * Decrements the reference count of the previously contained object,
+	 * if any. The specified reference must not be contained in any CPRef
+	 * object.
+	 *
+	 * @param o the reference to be assigned
+	 */ 
+	inline CPRef& operator=(T& o) {
+		if (object != NULL) {
+			static_cast<CPReferenceCounted*>(object)->release();
+		}
+		object = &o;
+	}
+	
+	/**
+	 * Assigns the specified pointer to this container.
+	 * Decrements the reference count of the previously contained object,
+	 * if any. The specified pointer must not be contained in any CPRef
+	 * object.
+	 *
+	 * @param o the pointer to be assigned
+	 */ 
+	inline CPRef& operator=(T* o) {
+		if (object != NULL) {
+			static_cast<CPReferenceCounted*>(object)->release();
+		}
+		object = o;
+	}
+
+protected:
+
+	/** A pointer to the encapsuled reference counted object */
+	T* object;
+};
+
+/**
+ * A generic collection of objects of type T. This interface is used instead
+ * of STL classes to hide implementation details. This class is not intended
+ * to be subclassed by the client program.
+ */
+template <class T> class CPCollection {
+public:
+
+	/**
+	 * Returns the number of objects in this collection.
+	 * 
+	 * @return the number of objects in this collection
+	 */
+	CP_CXX_API int virtual size() const throw () = 0;
+	
+	/**
+	 * Returns whether this collection is empty or not.
+	 * 
+	 * @return whether this collection is empty or not
+	 */
+	CP_CXX_API bool isEmpty() const throw () = 0;
+	
+	/**
+	 * Returns an iterator over the contained objects.
+	 * 
+	 * @return an iterator over the contained objects
+	 */
+	//CP_CXX_API Iterator<T> iterator() 
+};
+
+/**
  * Describes a plug-in to the framework and to other components.
  * This information can be loaded from a plug-in descriptor file using
  * CPPluginContext::loadPluginDescriptor. Corresponding information about
@@ -487,7 +668,7 @@ public:
 	 * 
 	 * @return plug-in imports as a vector
 	 */
-	CP_CXX_API virtual const std::vector<CPPluginImport>& getImports() const throw () = 0;
+	CP_CXX_API virtual const std::vector<const CPPluginImport*>& getImports() const throw () = 0;
 
     /**
      * Returns the base name of the plug-in runtime library or NULL
@@ -516,14 +697,14 @@ public:
 	 * 
 	 * @return extension points provided by this plug-in
 	 */
-	CP_CXX_API virtual const std::vector<CPExtensionPoint>& getExtensionPoints() const throw () = 0;
+	CP_CXX_API virtual const std::vector<const CPExtensionPointDescriptor*>& getExtensionPoints() const throw () = 0;
 	
 	/**
 	 * Returns the extensions provided by this plug-in.
 	 * 
 	 * @return extensions provided by this plug-in
 	 */
-	CP_CXX_API virtual const std::vector<CPExtension>& getExtensions() const throw () = 0;
+	CP_CXX_API virtual const std::vector<const CPExtensionDescriptor*>& getExtensions() const throw () = 0;
 
 };
 
@@ -816,7 +997,7 @@ public:
 	 * @return the newly created plugin container
 	 * @throw CPAPIError if an error occurs
 	 */
-	CP_CXX_API virtual CPPluginContainer& createPluginContainer() throw (CPAPIError) = 0;
+	CP_CXX_API virtual CPPluginContainer& createPluginContainer() = 0;
 
 protected:
 
@@ -852,7 +1033,7 @@ public:
 	 * @param minSeverity the minimum severity of messages passed to logger
 	 * @throw CPAPIError if insufficient memory
 	 */
-	CP_CXX_API virtual void registerLogger(CPLogger& logger, CPLogger::Severity minSeverity) throw (CPAPIError) = 0;
+	CP_CXX_API virtual void registerLogger(CPLogger& logger, CPLogger::Severity minSeverity) = 0;
 
 	/**
 	 * Removes a logger registration.
@@ -868,7 +1049,7 @@ public:
 	 * @param severity the severity of the event
 	 * @param msg the log message (possibly localized)
 	 */
-	CP_CXX_API virtual void log(CPLogger::Severity severity, const char* msg) throw () = 0;
+	CP_CXX_API virtual void log(CPLogger::Severity severity, const char* msg) = 0;
 
 	/**
 	 * Returns whether a message of the specified severity would get logged.
@@ -909,7 +1090,7 @@ public:
 	 * @param dir the directory
 	 * @throw CPAPIError if insufficient memory
 	 */
-	CP_CXX_API virtual void registerPluginCollection(const char* dir) throw (CPAPIError) = 0;
+	CP_CXX_API virtual void registerPluginCollection(const char* dir) = 0;
 
 	/**
 	 * Unregisters a plug-in collection previously registered with this
@@ -928,6 +1109,21 @@ public:
 	 * @sa registerPluginCollection
 	 */
 	CP_CXX_API virtual void unregisterPluginCollections() throw () = 0;	
+
+	/**
+	 * Loads a plug-in descriptor from the specified plug-in installation
+	 * path and returns information about the plug-in. The plug-in descriptor
+	 * is validated during loading. Possible loading errors are logged via this
+	 * plug-in container. The plug-in is not installed to the container.
+	 * The caller must release the returned information by calling
+	 * CPPluginDescriptor::release when it does not need the information
+	 * anymore, typically after installing the plug-in.
+	 * 
+	 * @param path the installation path of the plug-in
+	 * @return reference to the information structure
+	 * @throw CPAPIError if loading fails or the plug-in descriptor is malformed
+	 */
+	CP_CXX_API virtual CPPluginDescriptor& loadPluginDescriptor(const char* path) = 0;
 
 protected:
 

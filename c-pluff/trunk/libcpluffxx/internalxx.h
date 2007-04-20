@@ -63,6 +63,7 @@ CP_HIDDEN void checkStatus(cp_status_t status) throw (CPAPIError);
 
 class CPPluginContextImpl;
 class CPPluginContainerImpl;
+class CPPluginImportImpl;
 
 class CPAPIErrorImpl : public CPAPIError {
 public:
@@ -114,22 +115,99 @@ protected:
 	/**
 	 * Destructs a reference counted object.
 	 */
-	CP_HIDDEN ~CPReferenceCountedImpl() throw ();
-
-private:
+	CP_HIDDEN virtual ~CPReferenceCountedImpl() throw ();
 
 	/**
-	 * @internal
-	 * The current reference count.
-	 */
-	int referenceCount;
-
-	/**
-	 * @internal
 	 * The associated plug-in context.
 	 */
 	CPPluginContextImpl& context;
 	
+private:
+
+	/**
+	 * The current reference count.
+	 */
+	int referenceCount;
+
+};
+
+class CPPluginDescriptorImpl:
+public CPPluginDescriptor, public CPReferenceCountedImpl {
+public:
+
+	/**
+	 * Constructs a new plug-in descriptor from the specified C API
+	 * plug-in descriptor.
+	 * 
+	 * @param context the associated plug-in context
+	 * @param pinfo the C API plug-in descriptor
+	 */
+	CP_HIDDEN CPPluginDescriptorImpl(CPPluginContextImpl& context, cp_plugin_info_t *pinfo);
+	
+	CP_HIDDEN const char* getIdentifier() const throw ();
+
+	CP_HIDDEN const char* getName() const throw ();
+
+	CP_HIDDEN const char* getVersion() const throw();
+
+	CP_HIDDEN const char* getProviderName() const throw ();
+	
+	CP_HIDDEN const char* getPath() const throw ();
+	
+	CP_HIDDEN const char* getABIBackwardsCompatibility() const throw ();
+
+	CP_HIDDEN const char* getAPIBackwardsCompatibility() const throw ();
+	
+	CP_HIDDEN const char* getRequiredCPluffVersion() const throw ();
+
+	CP_HIDDEN const std::vector<const CPPluginImport*>& getImports() const throw ();
+
+	CP_HIDDEN const char* getRuntimeLibraryName() const throw ();
+
+	CP_HIDDEN const char* getRuntimeFunctionsSymbol() const throw ();
+
+	CP_HIDDEN const std::vector<const CPExtensionPointDescriptor*>& getExtensionPoints() const throw ();
+	
+	CP_HIDDEN const std::vector<const CPExtensionDescriptor*>& getExtensions() const throw ();
+
+private:
+
+	/** The associated C API plug-in descriptor */
+	cp_plugin_info_t *pinfo;
+
+	/** The plug-in imports */
+	std::vector<const CPPluginImport*> imports;
+	
+	/** The extension points */
+	std::vector<const CPExtensionPointDescriptor*> extensionPoints;
+	
+	/** The extensions */
+	std::vector<const CPExtensionDescriptor*> extensions;
+
+	CP_HIDDEN ~CPPluginDescriptorImpl() throw ();
+
+};
+
+class CPPluginImportImpl: public CPPluginImport {
+public:
+
+	/**
+	 * Constructs a new plug-in import from a C API plug-in import.
+	 * 
+	 * @param pimport the C API plug-in import
+	 */
+	CP_HIDDEN CPPluginImportImpl(cp_plugin_import_t* pimport);
+
+	CP_HIDDEN const char* getPluginIdentifier() const throw ();
+
+	CP_HIDDEN const char* getVersion() const throw ();
+
+	CP_HIDDEN bool isOptional() const throw ();
+
+private:
+
+	/** The associated C API plug-in import */
+	cp_plugin_import_t *pimport;
 };
 
 class CPFrameworkImpl : public CPFramework {
@@ -172,11 +250,12 @@ class CPPluginContextImpl : public virtual CPPluginContext {
 public:
 
 	/**
-	 * Constructs a new plug-in context.
+	 * Constructs a new plug-in context associated with the specified C API
+	 * plug-in context handle.
 	 * 
-	 * @throw CPAPIError if an error occurs
+	 * @param context the C API plug-in context handle
 	 */
-	CP_HIDDEN CPPluginContextImpl();
+	CP_HIDDEN CPPluginContextImpl(cp_context_t *context);
 
 	CP_HIDDEN void registerLogger(CPLogger& logger, CPLogger::Severity minSeverity) throw (CPAPIError);
 
@@ -185,6 +264,15 @@ public:
 	CP_HIDDEN void log(CPLogger::Severity severity, const char* msg) throw ();
 
 	CP_HIDDEN bool isLogged(CPLogger::Severity severity) throw ();
+
+	/**
+	 * Returns the associated C API plug-in context handle.
+	 * 
+	 * @return the associated C API plug-in context handle
+	 */
+	CP_HIDDEN inline cp_context_t* getCContext() throw () {
+		return context;
+	}
 
 	/**
 	 * Emits a new formatted log message if the associated severity is being
@@ -202,7 +290,11 @@ protected:
 	 */
 	cp_context_t* context;
 
-protected:
+	/**
+	 * Constructs a new unassociated plug-in context. The subclass constructor
+	 * must set @ref context.
+	 */
+	CP_HIDDEN CPPluginContextImpl();
 
 	/**
 	 * Destructs a plug-in context. All resources associated with this
@@ -243,10 +335,14 @@ private:
 class CPPluginContainerImpl : public CPPluginContainer, public CPPluginContextImpl {
 public:
 
+	/**
+	 * Constructs a new plug-in container associated with the specified
+	 * framework object.
+	 * 
+	 * @param framework the associated framework object
+	 */
 	CP_HIDDEN CPPluginContainerImpl(CPFrameworkImpl& framework);
 	
-	CP_HIDDEN ~CPPluginContainerImpl() throw ();
-
 	CP_HIDDEN void destroy() throw ();
 
 	CP_HIDDEN void registerPluginCollection(const char* dir) throw (CPAPIError);
@@ -255,7 +351,11 @@ public:
 
 	CP_HIDDEN void unregisterPluginCollections() throw ();
 
+	CP_HIDDEN CPPluginDescriptor& loadPluginDescriptor(const char* path);
+
 private:
+
+	CP_HIDDEN ~CPPluginContainerImpl() throw ();
 
 	/**
 	 * The associated framework object
