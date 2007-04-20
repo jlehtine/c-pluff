@@ -7,11 +7,12 @@ namespace org {
 namespace cpluff {
 
 
-CP_HIDDEN CPPluginContextImpl::CPPluginContextImpl()
-: minLoggerSeverity(static_cast<CPLogger::Severity>(CPLogger::ERROR + 1)) {
-	cp_status_t status;
-	context = cp_create_context(&status);
-	util::checkStatus(status);
+CP_HIDDEN CPPluginContextImpl::CPPluginContextImpl(cp_context_t *context)
+: context(context),
+  minLoggerSeverity(static_cast<CPLogger::Severity>(CPLogger::ERROR + 1)) {}
+
+CP_HIDDEN CPPluginContextImpl::CPPluginContextImpl() {
+	CPPluginContextImpl(NULL);
 }
 
 CP_HIDDEN CPPluginContextImpl::~CPPluginContextImpl() throw () {

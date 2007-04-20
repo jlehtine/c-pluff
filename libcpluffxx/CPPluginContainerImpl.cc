@@ -12,6 +12,7 @@ CP_HIDDEN CPPluginContainerImpl::CPPluginContainerImpl(CPFrameworkImpl& framewor
 	cp_status_t status;
 	context = cp_create_context(&status);
 	util::checkStatus(status);
+	this->context = context;
 }
 
 CP_HIDDEN CPPluginContainerImpl::~CPPluginContainerImpl() throw () {
@@ -21,6 +22,12 @@ CP_HIDDEN CPPluginContainerImpl::~CPPluginContainerImpl() throw () {
 CP_HIDDEN void CPPluginContainerImpl::destroy() throw () {
 	framework.unregisterPluginContainer(*this);
 	delete this;
+}
+
+CP_HIDDEN CPPluginDescriptor& CPPluginContainerImpl::loadPluginDescriptor(const char* path) {
+	cp_status_t status;
+	cp_plugin_info_t *pinfo = cp_load_plugin_descriptor(context, path, &status);
+	util::checkStatus(status);
 }
 
 }}
