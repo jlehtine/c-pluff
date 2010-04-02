@@ -43,3 +43,10 @@ pre.example {
   padding: 0.5ex;
   background-color: #e0e0e0;
 }
+#ohlohdata {
+    float: right;
+    border-style: solid;
+    border-width: 1px;
+    border-color: black;
+    margin: 0 0 1em 1em;
+}
