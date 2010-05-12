@@ -4,6 +4,7 @@ dnl Copyright 2007 Johannes Lehtinen
 dnl This configure.ac script is free software; Johannes Lehtinen gives
 dnl unlimited permission to copy, distribute and modify it.
 
+
 dnl Version information
 dnl -------------------
 
@@ -20,6 +21,7 @@ dnl Library version information
 define(CP_M4_C_LIB_VERSION, [0:3:0])
 define(CP_M4_CXX_LIB_VERSION, [0:0:0])
 
+
 # Autoconf initialization
 # -----------------------
 AC_INIT([C-Pluff], CP_M4_RELEASE_VERSION, [johannes.lehtinen@iki.fi], [cpluff])
@@ -29,6 +31,7 @@ permission to copy, distribute and modify it.])
 AC_CONFIG_SRCDIR([libcpluff/cpluff.h])
 AC_CONFIG_AUX_DIR([auxliary])
 AC_CONFIG_HEADERS([config.h])
+
 
 # Version information
 # -------------------
@@ -42,11 +45,13 @@ AC_SUBST([CP_VERSION_MINOR])
 AC_SUBST([CP_C_LIB_VERSION])
 AC_SUBST([CP_CXX_LIB_VERSION])
 
+
 # Automake initialization
 # -----------------------
 AM_INIT_AUTOMAKE([foreign])
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.16.1])
+
 
 # C/C++ compiler settings
 # -------------------
@@ -62,9 +67,28 @@ AC_LIBTOOL_DLOPEN
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
 
+
 # Other programs
 # --------------
 AC_PROG_LN_S
+
+
+# Whether to compile C-Pluff C++ interface
+# ----------------------------------------
+
+AC_ARG_ENABLE([cpluffxx], AS_HELP_STRING([--enable-cpluffxx], [enable C++ API (work in progress)]))
+DIR_LIBCPLUFFXX=
+case "$enable_cpluffxx" in
+  yes)
+    DIR_LIBCPLUFFXX=libcpluffxx
+    AC_MSG_NOTICE([WARNING! C-Pluff C++ API is work in progress and not yet usable.])
+    ;;
+esac
+AC_SUBST([DIR_LIBCPLUFFXX])
+
+
+# Include and library paths
+# -------------------------
 
 # For config.h
 CPPFLAGS="$CPPFLAGS -I\$(top_builddir)"
@@ -72,13 +96,18 @@ CPPFLAGS="$CPPFLAGS -I\$(top_builddir)"
 # For cpluff.h and cpluffdef.h
 CPPFLAGS="$CPPFLAGS -I\$(top_builddir)/libcpluff -I\$(top_srcdir)/libcpluff"
 
+# For cpluffxx.h
+CPPFLAGS="$CPPFLAGS -I\$(top_srcdir)/libcpluffxx"
+
 # Substitute variables for libcpluff and non-libcpluff components
 AC_SUBST([LIBS_LIBCPLUFF])
 AC_SUBST([LIBS_OTHER])
 
+
 # Define shared library extension
 # -------------------------------
 AC_DEFINE_UNQUOTED([CP_SHREXT], ["$shrext_cmds"], [Shared library extension])
+
 
 # Thread support checks
 # ---------------------
@@ -151,6 +180,7 @@ fi
 AM_CONDITIONAL([POSIX_THREADS], test "$cp_threads" = Posix)
 AM_CONDITIONAL([WINDOWS_THREADS], test "$cp_threads" = Windows)
 
+
 # Check for the dlopen mechanism (Posix dlopen or GNU Libtool libltdl)
 # --------------------------------------------------------------------
 AC_ARG_WITH([dlopen],
@@ -185,10 +215,12 @@ case "$dlmechanism" in
     ;;
 esac
 
+
 # Check for Expat XML parsing library
 # -----------------------------------
 AC_CHECK_HEADER([expat.h],, AC_MSG_ERROR([Expat header file is required]))
 AC_CHECK_LIB([expat], [XML_ParseBuffer], [LIBS_LIBCPLUFF="-lexpat $LIBS_LIBCPLUFF"], AC_MSG_ERROR([Expat library is required]))
+
 
 # Check for the GNU Readline Library
 # ----------------------------------
@@ -207,13 +239,16 @@ fi
 AC_SUBST([LIB_READLINE])
 AM_CONDITIONAL([HAVE_READLINE], test "$have_readline" = yes)
 
+
 # Link non-library parts with the C-Pluff library
 # -----------------------------------------------
 LIBS_OTHER="\$(top_builddir)/libcpluff/libcpluff.la $LIBS_OTHER"
 
+
 # Check for stat/lstat functions
 # ------------------------------
 AC_CHECK_FUNCS([stat lstat])
+
 
 # Debugging support
 # -----------------
@@ -228,6 +263,7 @@ AC_ARG_ENABLE([gcc-warnings],
 if test "$enable_gcc_warnings" = yes; then
   CFLAGS="$CFLAGS -Wall -pedantic -std=gnu99"
 fi
+
 
 # File name separator character
 # -----------------------------
@@ -244,10 +280,12 @@ AC_MSG_RESULT(['$cp_fnamesep'])
 AC_DEFINE_UNQUOTED([CP_FNAMESEP_CHAR], ['$cp_fnamesep'], [File name separator character])
 AC_DEFINE_UNQUOTED([CP_FNAMESEP_STR], ["$cp_fnamesep"], [File name separator string])
 
+
 # Substitute C-Pluff loader for examples
 # --------------------------------------
 CPLUFF_LOADER="$bindir/cpluff-loader"
 AC_SUBST(CPLUFF_LOADER)
+
 
 # Output Makefiles
 # ----------------
@@ -258,6 +296,7 @@ libcpluff/docsrc/Makefile
 libcpluff/docsrc/Doxyfile-ref
 libcpluff/docsrc/Doxyfile-impl
 libcpluffxx/Makefile
+libcpluffxx/cpluffxx/Makefile
 libcpluffxx/docsrc/Doxyfile-ref
 loader/Makefile
 console/Makefile
@@ -286,6 +325,12 @@ AC_OUTPUT
 AC_MSG_NOTICE([-----------------------------------------------------------])
 AC_MSG_NOTICE([C-Pluff configuration])
 AC_MSG_NOTICE([  release version:                $PACKAGE_VERSION])
+if test -n "$enable_cpluffxx"; then
+  val=yes
+else
+  val="no (work in progress)"
+fi
+AC_MSG_NOTICE([  C++ API:                        $val])
 if test -n "$cp_threads"; then
   val="yes ($cp_threads)"
 else
@@ -306,8 +351,10 @@ AC_MSG_NOTICE([  assertion checks for debugging: $val])
 AC_MSG_NOTICE([  file name separator character:  '$cp_fnamesep'])
 AC_MSG_NOTICE([  compiler and linker settings:])
 AC_MSG_NOTICE([    CC='$CC'])
+AC_MSG_NOTICE([    CXX='$CXX'])
 AC_MSG_NOTICE([    CPPFLAGS='$CPPFLAGS'])
 AC_MSG_NOTICE([    CFLAGS='$CFLAGS'])
+AC_MSG_NOTICE([    CXXFLAGS='$CXXFLAGS'])
 AC_MSG_NOTICE([    LDFLAGS='$LDFLAGS'])
 AC_MSG_NOTICE([    LIBS='$LIBS'])
 AC_MSG_NOTICE([    LIBS_LIBCPLUFF='$LIBS_LIBCPLUFF'])

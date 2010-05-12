@@ -7,6 +7,13 @@ C-Pluff (0.2.0) alpha
 
  -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
 
+C-Pluff (0.2.1) alpha
+
+  * [ ] Include an alternative implementation of std::tr1::shared_ptr.
+  * [ ] Port the C++ API for Windows and MSVC.
+
+ -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  ???
+
 C-Pluff (0.3.0) beta
 
   * [ ] Add support for localized plug-in configuration data.
