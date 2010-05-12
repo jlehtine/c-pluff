@@ -1,14 +1,13 @@
 #include <set>
 #include "internalxx.h"
 
-namespace org {
 namespace cpluff {
 
 
 CP_HIDDEN CPFrameworkImpl::CPFrameworkImpl() {
 	
 	// Initialize the framework
-	util::checkStatus(cp_init());
+	check_cp_status(cp_init());
 }
 
 CP_HIDDEN CPFrameworkImpl::~CPFrameworkImpl() throw () {
@@ -26,7 +25,7 @@ CP_HIDDEN void CPFrameworkImpl::destroy() throw () {
 	delete this;
 }
 
-CP_HIDDEN CPPluginContainer& CPFrameworkImpl::createPluginContainer() throw (CPAPIError) {
+CP_HIDDEN CPPluginContainer& CPFrameworkImpl::createPluginContainer() throw (cp_api_error) {
 	CPPluginContainerImpl& container = *(new CPPluginContainerImpl(*this));
 	// TODO: synchronization
 	containers.insert(&container);
@@ -39,4 +38,4 @@ CP_HIDDEN void CPFrameworkImpl::unregisterPluginContainer(CPPluginContainerImpl&
 }
 
 
-}}
+}
