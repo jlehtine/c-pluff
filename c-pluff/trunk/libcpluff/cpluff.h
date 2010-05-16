@@ -307,6 +307,9 @@ typedef struct cp_cfg_element_t cp_cfg_element_t;
 /** A type for cp_plugin_runtime_t structure. */
 typedef struct cp_plugin_runtime_t cp_plugin_runtime_t;
 
+/** A type for cp_plugin_loader_t structure. */
+typedef struct cp_plugin_loader_t cp_plugin_loader_t;
+
 /** A type for cp_status_t enumeration. */
 typedef enum cp_status_t cp_status_t;
 
@@ -740,10 +743,10 @@ struct cp_plugin_runtime_t {
 	 * passed on to other control functions. This data pointer should
 	 * be used to access plug-in instance specific data. For example,
 	 * the context reference must be stored as part of plug-in instance
-	 * data if the plug-in runtime needs it. On failure, the function
+	 * data if the plug-in runtime needs it. On failure, this function
 	 * must return NULL.
 	 * 
-	 * C-pluff API functions must not be called from within a create
+	 * C-Pluff API functions must not be called from within a create
 	 * function invocation and symbols from imported plug-ins must not be
 	 * used because they may not available yet.
 	 * 
@@ -813,6 +816,80 @@ struct cp_plugin_runtime_t {
 	 */
 	void (*destroy)(void *data);
 
+};
+
+/**
+ * @ingroup cStructs
+ * A plug-in loader instance. A plug-in loader is responsible for
+ * loading plug-in information from a plug-in collection and providing it
+ * to the framework. The loader exposes its services to the
+ * framework via an instance of this structure which is obtained from a
+ * loader-specific constructor function.
+ *
+ * @ref cFuncsInit "Library initialization" and
+ * @ref cFuncsContext "plug-in context management"
+ * functions must not be called from within the service functions stored
+ * in this structure.
+ *
+ * The framework itself provides a plug-in loader capable of loading plugins
+ * from a local plug-in collection (a directory containing plugins).
+ * However, applications may provide custom plug-in loaders, for example to
+ * load plug-ins from remote plug-in collections.
+ */
+struct cp_plugin_loader_t {
+
+	/**
+	 * An opaque data pointer for this plug-in loader instance. This data
+	 * pointer is passed on to service functions specified by this
+	 * structure. The loader-specific constructor initializes it to
+	 * instance-specific data such as configuration of the plug-in collection.
+	 */
+	void *data;
+
+	/**
+	 * A function called to load plug-in information from the configured
+	 * plug-in collection. Loads and returns plug-in descriptors for
+	 * compatible plug-ins found in the plug-in collection. This function
+	 * is called when ::cp_scan_plugins is called. The data returned by this
+	 * function is released by calling the @a release_plugins function when
+	 * it is not needed anymore. This function returns NULL on failure.
+	 *
+	 * The runtime code and data of the returned plug-ins does not need to
+	 * be locally available. The @a resolve_files function is explicitly
+	 * called when the runtime code and data is needed. The plug-in
+	 * path must be initialized into a location that will hold the plug-in
+	 * code and data after the plugin has been resolved.
+	 *
+	 * @param data plug-in loader data
+	 * @param ctx the plug-in context that should be used for error reporting
+	 * @return pointer to a NULL-terminated array of plug-in information pointers, or NULL on failure
+	 */
+	cp_plugin_info_t **(*load_plugins)(void *data, cp_context_t *ctx);
+	
+	/**
+	 * A function called to ensure that the plug-in runtime code and data
+	 * is locally available. Makes the runtime code and data of the specified
+	 * plug-in available at the plug-in path. The specified plug-in has been
+	 * obtained from a call to @a load_plugins. Does nothing if the plug-in
+	 * runtime data is already locally available.
+	 *
+	 * @param data plug-in loader data
+	 * @param ctx the plug-in context that should be used for error reporting
+	 * @param plugin plug-in information for the plug-in being resolved
+	 * @return non-zero on success or zero on failure
+	 */
+	int (*resolve_files)(void *data, cp_context_t *ctx, cp_plugin_info_t *plugin);
+
+	/**
+	 * A function called to release plug-in information returned by the
+	 * @a load_plugins function. This function is called when the plug-in
+	 * information is not needed anymore.
+	 *
+	 * @param data plug-in loader data
+	 * @param plugins pointer to a NULL-terminated array of plug-in	information pointers obtained from a call to load_plugins
+	 */    	
+	void (*release_plugins)(void *data, cp_plugin_info_t **plugins);
+	
 };
 
 /*@}*/
@@ -956,13 +1033,16 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *status);
 CP_C_API void cp_destroy_context(cp_context_t *ctx) CP_GCC_NONNULL(1);
 
 /**
- * Registers a plug-in collection with a plug-in context. A plug-in collection
+ * Registers a local plug-in collection with a plug-in context. A local plug-in collection
  * is a directory that has plug-ins as its immediate subdirectories. The
  * plug-in context will scan the directory when ::cp_scan_plugins is called.
  * Returns @ref CP_OK if the directory has already been registered. A plug-in
  * collection can be unregistered using ::cp_unregister_pcollection or
  * ::cp_unregister_pcollections.
- * 
+ *
+ * This is equivalent to having registered a local plug-in loader and
+ * registering a plug-in directory with it.
+ *
  * @param ctx the plug-in context
  * @param dir the directory
  * @return @ref CP_OK (zero) on success or @ref CP_ERR_RESOURCE if insufficient memory
@@ -975,6 +1055,9 @@ CP_C_API cp_status_t cp_register_pcollection(cp_context_t *ctx, const char *dir)
  * affected. Does nothing if the directory has not been registered.
  * Plug-in collections can be registered using ::cp_register_pcollection.
  * 
+ * This is equivalent to having registered a local plug-in loader and
+ * unregistering a plug-in directory with it.
+ *
  * @param ctx the plug-in context
  * @param dir the previously registered directory
  */
@@ -985,9 +1068,47 @@ CP_C_API void cp_unregister_pcollection(cp_context_t *ctx, const char *dir) CP_G
  * Plug-ins already loaded are not affected. Plug-in collections can
  * be registered using ::cp_register_pcollection.
  * 
+ * This is equivalent to having registered a local plug-in loader and
+ * unregistering all plug-in directories with it.
+ *
  * @param ctx the plug-in context
  */
 CP_C_API void cp_unregister_pcollections(cp_context_t *ctx) CP_GCC_NONNULL(1);
+
+/**
+ * Registers a plug-in loader that will be used to load plug-ins into this
+ * context when ::cp_scan_plugins is called. Several plug-in loaders can be
+ * registered for a context. Returns @ref CP_OK if the same loader instance
+ * has already been registered with the context. A loader can be unregistered
+ * using ::cp_unregister_ploader or ::cp_unregister_ploaders. An alternative
+ * to explicitly registering a plug-in loader is to register a local plug-in
+ * collection
+ *
+ * @param ctx the plug-in context
+ * @param loader the plug-in loader
+ * @return @ref CP_OK (zero) on success or @ref CP_ERR_RESOURCE if insufficient memory
+ */
+CP_C_API cp_status_t cp_register_ploader(cp_context_t *ctx, cp_plugin_loader_t *loader) CP_GCC_NONNULL(1, 2);
+
+/**
+ * Unregisters a previously registered plug-in loader from a plug-in context.
+ * All plug-ins loaded by the loader are uninstalled. Does nothing if the
+ * specified loader has not been registered. Plug-in loaders can be registered
+ * using ::cp_register_ploader.
+ *
+ * @param ctx the plug-in context
+ * @param loader the plug-in loader
+ */
+CP_C_API void cp_unregister_ploader(cp_context_t *ctx, cp_plugin_loader_t *loader) CP_GCC_NONNULL(1, 2);
+
+/**
+ * Unregisters all registered plug-in loaders from a plug-in context.
+ * All plug-ins loaded by the unregistered loaders are uninstalled. Plug-in
+ * loaders can be registered using ::cp_register_ploader.
+ *
+ * @param ctx the plug-in context
+ */
+CP_C_API void cp_unregister_ploaders(cp_context_t *ctx) CP_GCC_NONNULL(1);
 
 /*@}*/
 
@@ -1064,7 +1185,7 @@ CP_C_API int cp_is_logged(cp_context_t *ctx, cp_log_severity_t severity) CP_GCC_
  * specified plug-in context. The plug-in is not installed to the context.
  * If operation fails or the descriptor
  * is invalid then NULL is returned. The caller must release the returned
- * information by calling ::cp_release_plugin_info when it does not
+ * information by calling ::cp_release_info when it does not
  * need the information anymore, typically after installing the plug-in.
  * The returned plug-in information must not be modified.
  * 
@@ -1085,7 +1206,7 @@ CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const c
  * also fails if the plug-in tries to install an extension point which
  * conflicts with an already installed extension point.
  * The plug-in information must not be modified but it is safe to call
- * ::cp_release_plugin_info after the plug-in has been installed.
+ * ::cp_release_info after the plug-in has been installed.
  *
  * @param ctx the plug-in context
  * @param pi plug-in information structure
