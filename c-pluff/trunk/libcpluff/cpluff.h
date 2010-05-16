@@ -864,13 +864,13 @@ struct cp_plugin_loader_t {
 	 * @param ctx the plug-in context that should be used for error reporting
 	 * @return pointer to a NULL-terminated array of plug-in information pointers, or NULL on failure
 	 */
-	cp_plugin_info_t **(*load_plugins)(void *data, cp_context_t *ctx);
+	cp_plugin_info_t **(*scan_plugins)(void *data, cp_context_t *ctx);
 	
 	/**
 	 * A function called to ensure that the plug-in runtime code and data
 	 * is locally available. Makes the runtime code and data of the specified
 	 * plug-in available at the plug-in path. The specified plug-in has been
-	 * obtained from a call to @a load_plugins. Does nothing if the plug-in
+	 * obtained from a call to @a scan_plugins. Does nothing if the plug-in
 	 * runtime data is already locally available.
 	 *
 	 * @param data plug-in loader data
@@ -882,11 +882,11 @@ struct cp_plugin_loader_t {
 
 	/**
 	 * A function called to release plug-in information returned by the
-	 * @a load_plugins function. This function is called when the plug-in
+	 * @a scan_plugins function. This function is called when the plug-in
 	 * information is not needed anymore.
 	 *
 	 * @param data plug-in loader data
-	 * @param plugins pointer to a NULL-terminated array of plug-in	information pointers obtained from a call to load_plugins
+	 * @param plugins pointer to a NULL-terminated array of plug-in	information pointers obtained from a call to scan_plugins
 	 */    	
 	void (*release_plugins)(void *data, cp_plugin_info_t **plugins);
 	
@@ -1607,6 +1607,71 @@ CP_C_API void *cp_resolve_symbol(cp_context_t *ctx, const char *id, const char *
  * @param ptr the pointer associated with the symbol
  */
 CP_C_API void cp_release_symbol(cp_context_t *ctx, const void *ptr) CP_GCC_NONNULL(1, 2);
+
+/*@}*/
+
+
+/**
+ * @defgroup cFuncsLoaders Plug-in loaders
+ * @ingroup cFuncs
+ *
+ * These functions are used to construct standard plug-in loaders. Currently
+ * there is a single plug-in loader for loading plug-ins from local plug-in
+ * collections. 
+ */
+/*@{*/
+
+/**
+ * Creates and returns a new instance of a local plug-in loader. The resources
+ * used by the returned instance can be released by calling
+ * ::cp_destroy_local_ploader when the loader is not needed anymore.
+ * Remaining local plug-in loaders are automatically destroyed when the
+ * plug-in framework is destroyed. The created plug-in loader can be
+ * registered with a plug-in context using ::cp_register_ploader.
+ *
+ * @param status pointer to the location where status code is to be stored, or NULL
+ * @return the new plug-in loader instance, or NULL on failure
+ */
+CP_C_API cp_plugin_loader_t *cp_create_local_ploader(cp_status_t *status);
+
+/**
+ * Releases the resources allocated by a previously created local plug-in
+ * loader. The specified loader must have been obtained by a call to
+ * ::cp_create_local_ploader. The loader to be destroyed must not be
+ * registered with any plug-in context.
+ *
+ * @param the plug-in loader to be destroyed
+ */
+CP_C_API void cp_destroy_local_ploader(cp_plugin_loader_t *loader) CP_GCC_NONNULL(1);
+
+/**
+ * Registers a new directory to be scanned by the specified local
+ * plug-in loader. Returns @ref CP_OK if the directory has already been
+ * registered.
+ *
+ * @param loader the plug-in loader obtained from ::cp_create_local_ploader
+ * @param dir the directory to register
+ * @return @ref CP_OK (zero) on success or @ref CP_ERR_RESOURCE if insufficient memory
+ */
+CP_C_API cp_status_t cp_lpl_register_dir(cp_plugin_loader_t *loader, const char *dir) CP_GCC_NONNULL(1, 2);
+
+/**
+ * Unregisters a directory from the specified local plug-in loader. Does
+ * nothing if the specified directory has not been registered. This does not
+ * affect the status of already loaded plug-ins.
+ *
+ * @param loader the plug-in loader obtained from ::cp_create_local_ploader
+ * @param dir the directory to unregister
+ */
+CP_C_API void cp_lpl_unregister_dir(cp_plugin_loader_t *loader, const char *dir) CP_GCC_NONNULL(1, 2);
+
+/**
+ * Unregisters all registered directories from the specified local plug-in
+ * loader. This does not affect the status of already loaded plug-ins.
+ *
+ * @param loader the plug-in 
+ */
+CP_C_API void cp_lpl_unregister_dirs(cp_plugin_loader_t *loader) CP_GCC_NONNULL(1);
 
 /*@}*/
 
