@@ -305,7 +305,14 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			break;
 		}
 		
-		// TODO Call plug-in loader resolving function
+		// Resolve files if plug-in loader specified
+		if (plugin->loader != NULL && plugin->loader->resolve_files != NULL) {
+			if (!plugin->loader->resolve_files(plugin->loader->data, context, plugin->plugin)) {
+				cpi_errorf(context, N_("Plug-in %s files could not be resolved with plug-in loader %p."), plugin->plugin->identifier, plugin->loader);
+				status = CP_ERR_IO;
+				break;
+			}
+		}
 
 		// Construct a path to plug-in runtime library.
 		ppath_len = strlen(plugin->plugin->plugin_path);
