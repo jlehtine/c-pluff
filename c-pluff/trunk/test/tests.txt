@@ -17,6 +17,8 @@ unregcollections
 scanunregcollection
 oneploader
 twoploaders
+oneploadertwodirs
+ploaderunregdir
 errorlogger
 warninglogger
 infologger
