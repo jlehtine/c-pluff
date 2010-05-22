@@ -102,17 +102,13 @@ static void unregister_extensions(cp_context_t *context, cp_plugin_info_t *plugi
 	}
 }
 
-CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
+CP_HIDDEN cp_status_t cpi_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin, cp_plugin_loader_t *loader) {
 	cp_plugin_t *rp = NULL;
 	cp_status_t status = CP_OK;
 	cpi_plugin_event_t event;
 	int i;
 
-	CHECK_NOT_NULL(context);
-	CHECK_NOT_NULL(plugin);
-	
-	cpi_lock_context(context);
-	cpi_check_invocation(context, CPI_CF_ANY, __func__);
+	assert(cpi_is_context_locked(context));
 	do {
 		
 		// Check that there is no conflicting plug-in already loaded 
@@ -137,6 +133,7 @@ CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *
 		memset(rp, 0, sizeof(cp_plugin_t));
 		rp->context = NULL;
 		rp->plugin = plugin;
+		rp->loader = loader;
 		rp->state = CP_PLUGIN_INSTALLED;
 		rp->imported = NULL;
 		rp->runtime_lib = NULL;
@@ -210,8 +207,6 @@ CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *
 		event.new_state = rp->state;
 		cpi_deliver_event(context, &event);
 
-		// TODO Update loaders_to_plugins and plugins_to_loaders
-	
 	} while (0);
 
 	// Release resources on failure
@@ -230,6 +225,19 @@ CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *
 		cpi_errorf(context,
 			N_("Plug-in %s could not be installed due to insufficient system resources."), plugin->identifier);
 	}
+
+	return status;
+}
+
+CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin) {
+	cp_status_t status;
+
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(plugin);
+	
+	cpi_lock_context(context);
+	cpi_check_invocation(context, CPI_CF_ANY, __func__);
+	status = cpi_install_plugin(context, plugin, NULL);
 	cpi_unlock_context(context);
 
 	return status;
@@ -300,7 +308,6 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 		// TODO Call plug-in loader resolving function
 
 		// Construct a path to plug-in runtime library.
-		/// @todo Add platform specific prefix (for example, "lib")
 		ppath_len = strlen(plugin->plugin->plugin_path);
 		lname_len = strlen(plugin->plugin->runtime_lib_name);
 		rlpath_len = ppath_len + lname_len + strlen(CP_SHREXT) + 2;
@@ -1196,6 +1203,18 @@ static void uninstall_plugin(cp_context_t *context, hnode_t *node) {
 
 	// Unregister the plug-in 
 	hash_delete_free(context->env->plugins, node);
+	
+	// If the plug-in was loaded using loaders, remove it from loader maps
+	if (plugin->loader != NULL) {
+		hash_t *loader_plugins;
+		
+		node = hash_lookup(context->env->loaders_to_plugins, plugin->loader);
+		assert(node != NULL);
+		loader_plugins = hnode_get(node);
+		node = hash_lookup(loader_plugins, plugin->plugin->identifier);
+		assert(node != NULL);
+		hash_delete_free(loader_plugins, node);
+	}
 
 	// Free the plug-in data structures
 	free_registered_plugin(context, plugin);
@@ -1218,8 +1237,6 @@ CP_C_API cp_status_t cp_uninstall_plugin(cp_context_t *context, const char *id) 
 		cpi_warnf(context, N_("Unknown plug-in %s could not be uninstalled."), id);
 		status = CP_ERR_UNKNOWN;
 	}
-	
-	// TODO Update loaders_to_plugins and plugins_to_loaders
 	
 	cpi_unlock_context(context);
 
