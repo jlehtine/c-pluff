@@ -135,18 +135,15 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 			
 				// Check if equal or later version of the plug-in is already known 
 				if ((hnode = hash_lookup(avail_plugins, plugin->identifier)) != NULL) {
-					cp_plugin_info_t *plugin2 = hnode_get(hnode);
+					available_plugin_t *ap = hnode_get(hnode);
+					cp_plugin_info_t *plugin2 = ap->info;
 					if (cpi_vercmp(plugin->version, plugin2->version) > 0) {
 						hnode_t *hnode2;
 						cp_plugin_loader_t *loader2;
 						
 						// Release plug-in with smaller version number
 						hash_delete_free(avail_plugins, hnode);
-						hnode2 = hash_lookup(context->env->plugins_to_loaders, plugin2);
-						loader2 = hnode_get(hnode2);
-						hash_delete_free(context->env->plugins_to_loaders, hnode2);
-						hnode2 = hash_lookup(context->env->loaders_to_plugins, loader2);
-						hash_delete_free(context->env->loaders_to_plugins, hnode2);
+						free(ap);
 						cp_release_info(context, plugin2);
 						hnode = NULL;
 					}
@@ -219,14 +216,40 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 			
 			// Install the plug-in, if to be installed 
 			if (ip == NULL) {
+				int hok = 0;
+				hash_t *loader_plugins;
+			
+				// First stop all plug-ins if so specified
 				if ((flags & CP_SP_STOP_ALL_ON_INSTALL) && !plugins_stopped) {
 					plugins_stopped = 1;
 					cp_stop_plugins(context);
 				}
-				if ((s = cp_install_plugin(context, plugin)) != CP_OK) {
-					status = s;
+				
+				// Add plug-in to loader map
+				loader_plugins = hnode_get(hash_lookup(context->env->loaders_to_plugins, loader));
+				assert(loader_plugins != NULL);
+				if ((hok = hash_alloc_insert(loader_plugins, plugin->identifier, NULL))) {
+					
+					// Install new plug-in
+					s = cpi_install_plugin(context, plugin, loader);
+				}
+				
+				// Release resources and set status code on failure
+				if (!hok || s != CP_OK) {
+					if (hok) {
+						hash_delete_free(
+							loader_plugins,
+							hash_lookup(loader_plugins, plugin->identifier)
+						);
+					}
+					if (hok) {
+						status = s;
+					} else {
+						status = CP_ERR_RESOURCE;
+					}
 					break;
 				}
+				
 			}
 			
 			// Remove the plug-in from the hash

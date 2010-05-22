@@ -166,9 +166,6 @@ struct cp_plugin_env_t {
 	/// Maps registered plug-in loaders to the lists of plug-in identifiers
 	hash_t *loaders_to_plugins;
 	
-	/// Maps installed plug-in identifiers to the loader used to load the plug-in
-	hash_t *plugins_to_loaders;
-	
 	/// Map of in-use reference counted information objects
 	hash_t *infos;
 
@@ -221,6 +218,9 @@ struct cp_plugin_t {
 	
 	/// Plug-in information 
 	cp_plugin_info_t *plugin;
+	
+	/// Plug-in loader, or NULL if none
+	cp_plugin_loader_t *loader;
 	
 	/// The current state of the plug-in 
 	cp_plugin_state_t state;
@@ -487,6 +487,16 @@ CP_HIDDEN void cpi_deliver_event(cp_context_t *context, const cpi_plugin_event_t
 
 
 // Plug-in management
+
+/**
+ * Installs the specified plug-in.
+ *
+ * @param context the plug-in context
+ * @param plugin the plug-in information structure
+ * @param loader the associated plug-in loader or NULL for none
+ * @return @ref CP_OK (zero) on success or an error code on failure
+ */
+CP_HIDDEN cp_status_t cpi_install_plugin(cp_context_t *context, cp_plugin_info_t *plugin, cp_plugin_loader_t *loader) CP_GCC_NONNULL(1, 2);
 
 /**
  * Frees any resources allocated for a plug-in description.
