@@ -176,7 +176,15 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 			}
 			
 			// Release loaded plug-in information
-			loader->release_plugins(loader->data, context, loaded_plugins);
+			if (loader->release_plugins != NULL) {
+				loader->release_plugins(loader->data, context, loaded_plugins);
+			} else {
+				int i;
+				for (i = 0; loaded_plugins[i] != NULL; i++) {
+					cp_release_info(context, loaded_plugins[i]);
+				}
+				free(loaded_plugins);				
+			}
 		}
 		
 		// Install/upgrade plug-ins 

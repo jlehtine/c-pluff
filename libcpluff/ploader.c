@@ -53,7 +53,6 @@ static list_t *local_ploaders = NULL;
  * ----------------------------------------------------------------------*/
 
 static cp_plugin_info_t **lpl_scan_plugins(void *data, cp_context_t *ctx);
-static void lpl_release_plugins(void *data, cp_context_t *ctx, cp_plugin_info_t **plugins);
 
 CP_C_API cp_plugin_loader_t *cp_create_local_ploader(cp_status_t *error) {
 	cp_plugin_loader_t *loader = NULL;
@@ -73,7 +72,7 @@ CP_C_API cp_plugin_loader_t *cp_create_local_ploader(cp_status_t *error) {
 		loader->data = list_create(LISTCOUNT_T_MAX);
 		loader->scan_plugins = lpl_scan_plugins;
 		loader->resolve_files = NULL;
-		loader->release_plugins = lpl_release_plugins;
+		loader->release_plugins = NULL;
 		if (loader->data == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
@@ -351,12 +350,4 @@ static cp_plugin_info_t **lpl_scan_plugins(void *data, cp_context_t *ctx) {
 	}
 	
 	return plugins;
-}
-
-static void lpl_release_plugins(void *data, cp_context_t *ctx, cp_plugin_info_t **plugins) {
-	int i;
-	for (i = 0; plugins[i] != NULL; i++) {
-		cp_release_info(ctx, plugins[i]);
-	}
-	free(plugins);
 }
