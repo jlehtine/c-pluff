@@ -163,10 +163,10 @@ struct cp_plugin_env_t {
     /// The implicit local plug-in loader, or NULL if none
     cp_plugin_loader_t *local_loader;
 
-	/// Maps registered plug-in loaders to the lists of installed plug-ins
+	/// Maps registered plug-in loaders to the lists of plug-in identifiers
 	hash_t *loaders_to_plugins;
 	
-	/// Maps installed plug-ins to the loader used to load the plug-in
+	/// Maps installed plug-in identifiers to the loader used to load the plug-in
 	hash_t *plugins_to_loaders;
 	
 	/// Map of in-use reference counted information objects

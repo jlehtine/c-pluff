@@ -202,7 +202,8 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 		env->log_min_severity = CP_LOG_NONE;
 		env->local_loader = NULL;
 		env->loaders_to_plugins = hash_create(LISTCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
-		env->plugins_to_loaders = hash_create(LISTCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
+		env->plugins_to_loaders = hash_create(LISTCOUNT_T_MAX,
+			(int (*)(const void *, const void *)) strcmp, NULL);
 		env->infos = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
 		env->plugins = hash_create(HASHCOUNT_T_MAX,
 			(int (*)(const void *, const void *)) strcmp, NULL);
@@ -354,7 +355,7 @@ static cp_status_t init_local_ploader(cp_context_t *context) {
 	// Create new local plug-in loader, if one does not exist
 	if (context->env->local_loader == NULL) {
 		context->env->local_loader = cp_create_local_ploader(&status);
-		cp_register_ploader(context, context->env->local_loader);
+		status = cp_register_ploader(context, context->env->local_loader);
 	}
 	
 	return status;
@@ -424,7 +425,7 @@ CP_C_API void cp_unregister_pcollections(cp_context_t *context) {
 // Plug-in loaders
 
 CP_C_API cp_status_t cp_register_ploader(cp_context_t *ctx, cp_plugin_loader_t *loader) {
-	cp_status_t status;
+	cp_status_t status = CP_OK;
 	list_t *loader_plugins = NULL;
 	
 	CHECK_NOT_NULL(ctx);
@@ -452,9 +453,11 @@ CP_C_API cp_status_t cp_register_ploader(cp_context_t *ctx, cp_plugin_loader_t *
 	cpi_unlock_context(ctx);
 	
 	// Release resources
-	if (loader_plugins != NULL) {
-		assert(list_isempty(loader_plugins));
-		list_destroy(loader_plugins);
+	if (status != CP_OK) {
+		if (loader_plugins != NULL) {
+			assert(list_isempty(loader_plugins));
+			list_destroy(loader_plugins);
+		}
 	}
 	
 	return status;

@@ -34,6 +34,21 @@
 
 
 /* ------------------------------------------------------------------------
+ * Data structures
+ * ----------------------------------------------------------------------*/
+
+typedef struct available_plugin_t available_plugin_t;
+
+struct available_plugin_t {
+
+	cp_plugin_info_t *info;
+	
+	cp_plugin_loader_t *loader;
+
+};
+
+
+/* ------------------------------------------------------------------------
  * Function definitions
  * ----------------------------------------------------------------------*/
 
@@ -118,7 +133,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 			for (i = 0; loaded_plugins[i] != NULL; i++) {
 				cp_plugin_info_t *plugin = loaded_plugins[i];
 			
-				// Insert plug-in to the list of available plug-ins, if no later version exists 
+				// Check if equal or later version of the plug-in is already known 
 				if ((hnode = hash_lookup(avail_plugins, plugin->identifier)) != NULL) {
 					cp_plugin_info_t *plugin2 = hnode_get(hnode);
 					if (cpi_vercmp(plugin->version, plugin2->version) > 0) {
@@ -136,32 +151,31 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 						hnode = NULL;
 					}
 				}
+				
+				// If no equal or later version found, use the plug-in
 				if (hnode == NULL) {
-					int h1ok = 0, h2ok = 0, h3ok = 0;
+					available_plugin_t *ap = NULL;
+					int hok = 0;
 					
-					// Insert plug-in to the list and hashes
-					if ((h1ok = hash_alloc_insert(avail_plugins, plugin->identifier, plugin))) {
-						if ((h2ok = hash_alloc_insert(context->env->loaders_to_plugins, loader, plugin))) {
-							if ((h3ok = hash_alloc_insert(context->env->plugins_to_loaders, plugin, loader))) {
-								cpi_use_info(context, plugin);
-							}
-						}
+					if ((ap = malloc(sizeof(available_plugin_t))) != NULL) {
+						memset(ap, 0, sizeof(available_plugin_t));
+						ap->info = plugin;
+						ap->loader = loader;
+						hok = hash_alloc_insert(avail_plugins, plugin->identifier, ap);
+						cpi_use_info(context, plugin);
 					}
 					
-					// Log error and release allocated resources on error
-					if (!h3ok) {
+					// Report error and release resources on error
+					if (!hok) {
 						cpi_errorf(context, N_("Plug-in %s version %s could not be loaded due to insufficient system resources."), plugin->identifier, plugin->version);
+						if (ap != NULL) {
+							free(ap);
+						}
 						status = CP_ERR_RESOURCE;
-						if (h1ok) {
-							hnode = hash_lookup(avail_plugins, plugin->identifier);
-							hash_delete_free(avail_plugins, hnode);
-						}
-						if (h2ok) {
-							hnode = hash_lookup(context->env->loaders_to_plugins, loader);
-							hash_delete_free(context->env->loaders_to_plugins, hnode);
-						}
 					}
+				
 				}
+					
 			}
 			
 			// Release loaded plug-in information
@@ -171,12 +185,16 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 		// Install/upgrade plug-ins 
 		hash_scan_begin(&hscan, avail_plugins);
 		while ((hnode = hash_scan_next(&hscan)) != NULL) {
+			available_plugin_t *ap;
 			cp_plugin_info_t *plugin;
+			cp_plugin_loader_t *loader;
 			cp_plugin_t *ip = NULL;
 			hnode_t *hn2;
 			int s;
 			
-			plugin = hnode_get(hnode);
+			ap = hnode_get(hnode);
+			plugin = ap->info;
+			loader = ap->loader;
 			hn2 = hash_lookup(context->env->plugins, plugin->identifier);
 			if (hn2 != NULL) {
 				ip = hnode_get(hn2);
@@ -212,6 +230,7 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 			}
 			
 			// Remove the plug-in from the hash
+			free(ap);
 			hash_scan_delfree(avail_plugins, hnode);
 			cp_release_info(context, plugin);
 		}
