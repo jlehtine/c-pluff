@@ -67,10 +67,19 @@ static void free_plugin_env(cp_plugin_env_t *env) {
 		list_destroy(env->loggers);
 		env->loggers = NULL;
 	}
-	if (env->plugin_dirs != NULL) {
-		list_process(env->plugin_dirs, NULL, cpi_process_free_ptr);
-		list_destroy(env->plugin_dirs);
-		env->plugin_dirs = NULL;
+	if (env->local_loader != NULL) {
+		cp_destroy_local_ploader(env->local_loader);
+		env->local_loader = NULL;
+	}
+	if (env->loaders_to_plugins != NULL) {
+		assert(hash_isempty(env->loaders_to_plugins));
+		hash_destroy(env->loaders_to_plugins);
+		env->loaders_to_plugins = NULL;
+	}
+	if (env->plugins_to_loaders != NULL) {
+		assert(hash_isempty(env->plugins_to_loaders));
+		hash_destroy(env->plugins_to_loaders);
+		env->plugins_to_loaders = NULL;
 	}
 	if (env->infos != NULL) {
 		assert(hash_isempty(env->infos));
@@ -191,7 +200,9 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 		env->plugin_listeners = list_create(LISTCOUNT_T_MAX);
 		env->loggers = list_create(LISTCOUNT_T_MAX);
 		env->log_min_severity = CP_LOG_NONE;
-		env->plugin_dirs = list_create(LISTCOUNT_T_MAX);
+		env->local_loader = NULL;
+		env->loaders_to_plugins = hash_create(LISTCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
+		env->plugins_to_loaders = hash_create(LISTCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
 		env->infos = hash_create(HASHCOUNT_T_MAX, cpi_comp_ptr, cpi_hashfunc_ptr);
 		env->plugins = hash_create(HASHCOUNT_T_MAX,
 			(int (*)(const void *, const void *)) strcmp, NULL);
@@ -207,7 +218,8 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 #ifdef CP_THREADS
 			|| env->mutex == NULL
 #endif
-			|| env->plugin_dirs == NULL
+			|| env->loaders_to_plugins == NULL
+			|| env->plugins_to_loaders == NULL
 			|| env->infos == NULL
 			|| env->plugins == NULL
 			|| env->started_plugins == NULL
@@ -295,6 +307,14 @@ CP_C_API void cp_destroy_context(cp_context_t *context) {
 
 	// Unload all plug-ins 
 	cp_uninstall_plugins(context);
+	
+	// Unregister all plug-in loaders
+	cp_unregister_ploaders(context);
+	
+	// Unregister implicit local plug-in loader, if any
+	if (context->env->local_loader != NULL) {
+		cp_unregister_ploader(context, context->env->local_loader);
+	}
 
 	// Release remaining information objects
 	cpi_release_infos(context);
@@ -320,7 +340,25 @@ CP_HIDDEN void cpi_destroy_all_contexts(void) {
 }
 
 
-// Plug-in directories 
+// Plug-in directories
+
+/*
+ * Initializes the implicit local plug-in loader of the specified context.
+ * Does nothing if the loader has already been initialized.
+ */
+static cp_status_t init_local_ploader(cp_context_t *context) {
+	cp_status_t status = CP_OK;
+
+	assert(cpi_is_context_locked(context));
+	
+	// Create new local plug-in loader, if one does not exist
+	if (context->env->local_loader == NULL) {
+		context->env->local_loader = cp_create_local_ploader(&status);
+		cp_register_ploader(context, context->env->local_loader);
+	}
+	
+	return status;
+}
 
 CP_C_API cp_status_t cp_register_pcollection(cp_context_t *context, const char *dir) {
 	char *d = NULL;
@@ -334,23 +372,14 @@ CP_C_API cp_status_t cp_register_pcollection(cp_context_t *context, const char *
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
 	do {
 	
-		// Check if directory has already been registered 
-		if (list_find(context->env->plugin_dirs, dir, (int (*)(const void *, const void *)) strcmp) != NULL) {
+		// Initialize plug-in loader
+		if ((status = init_local_ploader(context)) != CP_OK) {
 			break;
 		}
-	
-		// Allocate resources 
-		d = malloc(sizeof(char) * (strlen(dir) + 1));
-		node = lnode_create(d);
-		if (d == NULL || node == NULL) {
-			status = CP_ERR_RESOURCE;
-			break;
-		}
-	
-		// Register directory 
-		strcpy(d, dir);
-		list_append(context->env->plugin_dirs, node);
 		
+		// Register directory
+		status = cp_lpl_register_dir(context->env->local_loader, dir);
+	
 	} while (0);
 
 	// Report error or success
@@ -361,16 +390,6 @@ CP_C_API cp_status_t cp_register_pcollection(cp_context_t *context, const char *
 	}
 	cpi_unlock_context(context);
 
-	// Release resources on failure 
-	if (status != CP_OK) {	
-		if (d != NULL) {
-			free(d);
-		}
-		if (node != NULL) {
-			lnode_destroy(node);
-		}
-	}
-	
 	return status;
 }
 
@@ -383,12 +402,8 @@ CP_C_API void cp_unregister_pcollection(cp_context_t *context, const char *dir) 
 	
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
-	node = list_find(context->env->plugin_dirs, dir, (int (*)(const void *, const void *)) strcmp);
-	if (node != NULL) {
-		d = lnode_get(node);
-		list_delete(context->env->plugin_dirs, node);
-		lnode_destroy(node);
-		free(d);
+	if (context->env->local_loader != NULL) {
+		cp_lpl_unregister_dir(context->env->local_loader, dir);
 	}
 	cpi_debugf(context, N_("The plug-in collection in path %s was unregistered."), dir);
 	cpi_unlock_context(context);
@@ -398,9 +413,106 @@ CP_C_API void cp_unregister_pcollections(cp_context_t *context) {
 	CHECK_NOT_NULL(context);
 	cpi_lock_context(context);
 	cpi_check_invocation(context, CPI_CF_ANY, __func__);
-	list_process(context->env->plugin_dirs, NULL, cpi_process_free_ptr);
+	if (context->env->local_loader != NULL) {
+		cp_lpl_unregister_dirs(context->env->local_loader);
+	}
 	cpi_debug(context, N_("All plug-in collections were unregistered."));
 	cpi_unlock_context(context);
+}
+
+
+// Plug-in loaders
+
+CP_C_API cp_status_t cp_register_ploader(cp_context_t *ctx, cp_plugin_loader_t *loader) {
+	cp_status_t status;
+	list_t *loader_plugins = NULL;
+	
+	CHECK_NOT_NULL(ctx);
+	CHECK_NOT_NULL(loader);
+	
+	cpi_lock_context(ctx);
+	cpi_check_invocation(ctx, CPI_CF_ANY, __func__);
+	do {
+		if ((loader_plugins = list_create(LISTCOUNT_T_MAX)) == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+		if (!hash_alloc_insert(ctx->env->loaders_to_plugins, loader, loader_plugins)) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+	} while (0);
+	
+	// Report error or success
+	if (status != CP_OK) {
+		cpi_errorf(ctx, N_("The plug-in loader %p could not be registered due to insufficient memory."), loader);
+	} else {
+		cpi_debugf(ctx, N_("The plug-in loader %p was registered."), loader);
+	}
+	cpi_unlock_context(ctx);
+	
+	// Release resources
+	if (loader_plugins != NULL) {
+		assert(list_isempty(loader_plugins));
+		list_destroy(loader_plugins);
+	}
+	
+	return status;
+}
+
+CP_C_API void cp_unregister_ploader(cp_context_t *ctx, cp_plugin_loader_t *loader) {
+	hnode_t *hnode;
+	
+	CHECK_NOT_NULL(ctx);
+	CHECK_NOT_NULL(loader);
+
+	cpi_lock_context(ctx);
+	cpi_check_invocation(ctx, CPI_CF_ANY, __func__);
+	hnode = hash_lookup(ctx->env->loaders_to_plugins, loader);
+	if (hnode != NULL) {
+		lnode_t *lnode;
+		list_t *loader_plugins = hnode_get(hnode);
+
+		// Uninstall all plug-ins loaded by the loader
+		while ((lnode = list_last(loader_plugins)) != NULL) {
+			cp_status_t status;
+			
+			status = cp_uninstall_plugin(ctx, lnode_get(lnode));
+			assert(status == CP_OK);
+		}
+		assert(list_isempty(loader_plugins));
+		list_destroy(loader_plugins);
+		hash_delete_free(ctx->env->loaders_to_plugins, hnode);
+		cpi_debugf(ctx, N_("The plug-in loader %p was unregistered."), loader);
+	}
+	cpi_unlock_context(ctx);
+}
+
+CP_C_API void cp_unregister_ploaders(cp_context_t *ctx) {
+	int found;
+
+	CHECK_NOT_NULL(ctx);
+	
+	cpi_lock_context(ctx);
+	cpi_check_invocation(ctx, CPI_CF_ANY, __func__);
+	do {
+		hscan_t hscan;
+		hnode_t *hnode;
+		
+		hash_scan_begin(&hscan, ctx->env->loaders_to_plugins);
+		do {
+			hnode = hash_scan_next(&hscan);
+		} while (hnode != NULL && hnode_getkey(hnode) == ctx->env->local_loader);
+		if (hnode != NULL) {
+			cp_plugin_loader_t *loader = (cp_plugin_loader_t *) hnode_getkey(hnode);
+			cp_unregister_ploader(ctx, loader);
+			found = 1;
+		} else {
+			found = 0;
+		}
+	} while (found);
+	cpi_unlock_context(ctx);
+	
 }
 
 

@@ -820,8 +820,8 @@ struct cp_plugin_runtime_t {
 
 /**
  * @ingroup cStructs
- * A plug-in loader instance. A plug-in loader is responsible for
- * loading plug-in information from a plug-in collection and providing it
+ * A plug-in loader instance. Plug-in loaders are responsible for
+ * loading plug-in information from plug-in collections and providing it
  * to the framework. The loader exposes its services to the
  * framework via an instance of this structure which is obtained from a
  * loader-specific constructor function.
@@ -849,19 +849,23 @@ struct cp_plugin_loader_t {
 	/**
 	 * A function called to load plug-in information from the configured
 	 * plug-in collection. Loads and returns plug-in descriptors for
-	 * compatible plug-ins found in the plug-in collection. This function
-	 * is called when ::cp_scan_plugins is called. The data returned by this
-	 * function is released by calling the @a release_plugins function when
-	 * it is not needed anymore. This function returns NULL on failure.
+	 * compatible plug-ins found in the plug-in collection. The returned
+	 * plug-in information must be loaded using ::cp_load_plugin_descriptor.
+	 * This function is called when ::cp_scan_plugins is called. The data
+	 * returned by this function is released by calling the
+	 * @a release_plugins function when the array is not needed anymore.
+	 * This function returns NULL on failure.
 	 *
 	 * The runtime code and data of the returned plug-ins does not need to
 	 * be locally available. The @a resolve_files function is explicitly
 	 * called when the runtime code and data is needed. The plug-in
 	 * path must be initialized into a location that will hold the plug-in
-	 * code and data after the plugin has been resolved.
+	 * code and data after the plug-in has been resolved. In practice this
+	 * means that the plug-in descriptor must be loaded from a path that will
+	 * hold plug-in and data after the plug-in has been resolved.
 	 *
 	 * @param data plug-in loader data
-	 * @param ctx the plug-in context that should be used for error reporting
+	 * @param ctx the associatd plug-in context
 	 * @return pointer to a NULL-terminated array of plug-in information pointers, or NULL on failure
 	 */
 	cp_plugin_info_t **(*scan_plugins)(void *data, cp_context_t *ctx);
@@ -871,10 +875,11 @@ struct cp_plugin_loader_t {
 	 * is locally available. Makes the runtime code and data of the specified
 	 * plug-in available at the plug-in path. The specified plug-in has been
 	 * obtained from a call to @a scan_plugins. Does nothing if the plug-in
-	 * runtime data is already locally available.
+	 * runtime data is already locally available. This function may be NULL
+	 * if plug-ing runtime data is always available after successful scan.
 	 *
 	 * @param data plug-in loader data
-	 * @param ctx the plug-in context that should be used for error reporting
+	 * @param ctx the associated plug-in context
 	 * @param plugin plug-in information for the plug-in being resolved
 	 * @return non-zero on success or zero on failure
 	 */
@@ -882,14 +887,18 @@ struct cp_plugin_loader_t {
 
 	/**
 	 * A function called to release plug-in information returned by the
-	 * @a scan_plugins function. This function is called when the plug-in
-	 * information is not needed anymore.
+	 * @a scan_plugins function. This function must call ::cp_release_info
+	 * on each plug-in information structure and deallocate the pointer array.
+	 * If this function is NULL, the framework will release plug-in
+	 * information structures and deallocate the pointer array using
+	 * @a free.
 	 *
 	 * @param data plug-in loader data
+	 * @param ctx the associated plug-in context
 	 * @param plugins pointer to a NULL-terminated array of plug-in	information pointers obtained from a call to scan_plugins
 	 */    	
-	void (*release_plugins)(void *data, cp_plugin_info_t **plugins);
-	
+	void (*release_plugins)(void *data, cp_context_t *ctx, cp_plugin_info_t **plugins);
+
 };
 
 /*@}*/

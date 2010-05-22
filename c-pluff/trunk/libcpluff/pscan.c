@@ -25,15 +25,8 @@
  * Plug-in scanning functionality
  */
 
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <assert.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <dirent.h>
-#include <errno.h>
+#include <stdlib.h>
 #include "cpluff.h"
 #include "defines.h"
 #include "util.h"
@@ -63,106 +56,6 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 		hscan_t hscan;
 		hnode_t *hnode;
 	
-		// Create a hash for available plug-ins 
-		if ((avail_plugins = hash_create(HASHCOUNT_T_MAX, (int (*)(const void *, const void *)) strcmp, NULL)) == NULL) {
-			status = CP_ERR_RESOURCE;
-			break;
-		}
-	
-		// Scan plug-in directories for available plug-ins 
-		lnode = list_first(context->env->plugin_dirs);
-		while (lnode != NULL) {
-			const char *dir_path;
-			DIR *dir;
-			
-			dir_path = lnode_get(lnode);
-			dir = opendir(dir_path);
-			if (dir != NULL) {
-				int dir_path_len;
-				struct dirent *de;
-				
-				dir_path_len = strlen(dir_path);
-				if (dir_path[dir_path_len - 1] == CP_FNAMESEP_CHAR) {
-					dir_path_len--;
-				}
-				errno = 0;
-				while ((de = readdir(dir)) != NULL) {
-					if (de->d_name[0] != '\0' && de->d_name[0] != '.') {
-						int pdir_path_len = dir_path_len + 1 + strlen(de->d_name) + 1;
-						cp_plugin_info_t *plugin;
-						cp_status_t s;
-						hnode_t *hnode;
-
-						// Allocate memory for plug-in descriptor path 
-						if (pdir_path_size <= pdir_path_len) {
-							char *new_pdir_path;
-						
-							if (pdir_path_size == 0) {
-								pdir_path_size = 128;
-							}
-							while (pdir_path_size <= pdir_path_len) {
-								pdir_path_size *= 2;
-							}
-							new_pdir_path = realloc(pdir_path, pdir_path_size * sizeof(char));
-							if (new_pdir_path == NULL) {
-								cpi_errorf(context, N_("Could not check possible plug-in location %s%c%s due to insufficient system resources."), dir_path, CP_FNAMESEP_CHAR, de->d_name);
-								status = CP_ERR_RESOURCE;
-								// continue loading plug-ins from other directories 
-								continue;
-							}
-							pdir_path = new_pdir_path;
-						}
-					
-						// Construct plug-in descriptor path 
-						strcpy(pdir_path, dir_path);
-						pdir_path[dir_path_len] = CP_FNAMESEP_CHAR;
-						strcpy(pdir_path + dir_path_len + 1, de->d_name);
-							
-						// Try to load a plug-in 
-						plugin = cp_load_plugin_descriptor(context, pdir_path, &s);
-						if (plugin == NULL) {
-							status = s;
-							// continue loading plug-ins from other directories 
-							continue;
-						}
-					
-						// Insert plug-in to the list of available plug-ins 
-						if ((hnode = hash_lookup(avail_plugins, plugin->identifier)) != NULL) {
-							cp_plugin_info_t *plugin2 = hnode_get(hnode);
-							if (cpi_vercmp(plugin->version, plugin2->version) > 0) {
-								hash_delete_free(avail_plugins, hnode);
-								cp_release_info(context, plugin2);
-								hnode = NULL;
-							}
-						}
-						if (hnode == NULL) {
-							if (!hash_alloc_insert(avail_plugins, plugin->identifier, plugin)) {
-								cpi_errorf(context, N_("Plug-in %s version %s could not be loaded due to insufficient system resources."), plugin->identifier, plugin->version);
-								cp_release_info(context, plugin);
-								status = CP_ERR_RESOURCE;
-								// continue loading plug-ins from other directories 
-								continue;
-							}
-						}
-						
-					}
-					errno = 0;
-				}
-				if (errno) {
-					cpi_errorf(context, N_("Could not read plug-in directory %s: %s"), dir_path, strerror(errno));
-					status = CP_ERR_IO;
-					// continue loading plug-ins from other directories 
-				}
-				closedir(dir);
-			} else {
-				cpi_errorf(context, N_("Could not open plug-in directory %s: %s"), dir_path, strerror(errno));
-				status = CP_ERR_IO;
-				// continue loading plug-ins from other directories 
-			}
-			
-			lnode = list_next(context->env->plugin_dirs, lnode);
-		}
-		
 		// Copy the list of started plug-ins, if necessary 
 		if ((flags & CP_SP_RESTART_ACTIVE)
 			&& (flags & (CP_SP_UPGRADE | CP_SP_STOP_ALL_ON_INSTALL))) {
@@ -198,6 +91,81 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 			}
 			cpi_release_info(context, plugins);
 			plugins = NULL;
+		}
+		
+		// Create a hash for available plug-ins 
+		if ((avail_plugins = hash_create(HASHCOUNT_T_MAX, (int (*)(const void *, const void *)) strcmp, NULL)) == NULL) {
+			status = CP_ERR_RESOURCE;
+			break;
+		}
+	
+		// Scan plug-in loaders for available plug-ins 
+		hash_scan_begin(&hscan, context->env->loaders_to_plugins);
+		while ((hnode = hash_scan_next(&hscan)) != NULL) {
+			cp_plugin_loader_t *loader = (cp_plugin_loader_t *) hnode_getkey(hnode);
+			cp_plugin_info_t **loaded_plugins;
+			int i;
+			
+			// Scan plug-ins using the loader
+			cpi_debugf(context, N_("Scanning plug-ins using loader %p"), loader);
+			loaded_plugins = loader->scan_plugins(loader->data, context);
+			if (loaded_plugins == NULL) {
+				cpi_errorf(context, N_("Plug-in loader %p failed to scan for plug-ins"), loader);
+				continue;
+			}
+
+			// Go through the loaded plug-ins
+			for (i = 0; loaded_plugins[i] != NULL; i++) {
+				cp_plugin_info_t *plugin = loaded_plugins[i];
+			
+				// Insert plug-in to the list of available plug-ins, if no later version exists 
+				if ((hnode = hash_lookup(avail_plugins, plugin->identifier)) != NULL) {
+					cp_plugin_info_t *plugin2 = hnode_get(hnode);
+					if (cpi_vercmp(plugin->version, plugin2->version) > 0) {
+						hnode_t *hnode2;
+						cp_plugin_loader_t *loader2;
+						
+						// Release plug-in with smaller version number
+						hash_delete_free(avail_plugins, hnode);
+						hnode2 = hash_lookup(context->env->plugins_to_loaders, plugin2);
+						loader2 = hnode_get(hnode2);
+						hash_delete_free(context->env->plugins_to_loaders, hnode2);
+						hnode2 = hash_lookup(context->env->loaders_to_plugins, loader2);
+						hash_delete_free(context->env->loaders_to_plugins, hnode2);
+						cp_release_info(context, plugin2);
+						hnode = NULL;
+					}
+				}
+				if (hnode == NULL) {
+					int h1ok = 0, h2ok = 0, h3ok = 0;
+					
+					// Insert plug-in to the list and hashes
+					if ((h1ok = hash_alloc_insert(avail_plugins, plugin->identifier, plugin))) {
+						if ((h2ok = hash_alloc_insert(context->env->loaders_to_plugins, loader, plugin))) {
+							if ((h3ok = hash_alloc_insert(context->env->plugins_to_loaders, plugin, loader))) {
+								cpi_use_info(context, plugin);
+							}
+						}
+					}
+					
+					// Log error and release allocated resources on error
+					if (!h3ok) {
+						cpi_errorf(context, N_("Plug-in %s version %s could not be loaded due to insufficient system resources."), plugin->identifier, plugin->version);
+						status = CP_ERR_RESOURCE;
+						if (h1ok) {
+							hnode = hash_lookup(avail_plugins, plugin->identifier);
+							hash_delete_free(avail_plugins, hnode);
+						}
+						if (h2ok) {
+							hnode = hash_lookup(context->env->loaders_to_plugins, loader);
+							hash_delete_free(context->env->loaders_to_plugins, hnode);
+						}
+					}
+				}
+			}
+			
+			// Release loaded plug-in information
+			loader->release_plugins(loader->data, context, loaded_plugins);
 		}
 		
 		// Install/upgrade plug-ins 
@@ -272,10 +240,10 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 			cpi_debug(context, N_("Plug-in scan has completed successfully."));
 			break;
 		case CP_ERR_RESOURCE:
-			cpi_error(context, N_("Could not scan plug-ins due to insufficient system resources."));
+			cpi_error(context, N_("Could not scan all plug-ins due to insufficient system resources."));
 			break;
 		default:
-			cpi_error(context, N_("Could not scan plug-ins."));
+			cpi_error(context, N_("Could not scan all plug-ins."));
 			break;
 	}
 	cpi_unlock_context(context);

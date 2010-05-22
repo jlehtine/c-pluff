@@ -160,10 +160,16 @@ struct cp_plugin_env_t {
 	/// Minimum logger selection severity
 	int log_min_severity;
 
-	/// List of registered plug-in directories 
-	list_t *plugin_dirs;
+    /// The implicit local plug-in loader, or NULL if none
+    cp_plugin_loader_t *local_loader;
 
-	/// Map of in-use reference counter information object
+	/// Maps registered plug-in loaders to the lists of installed plug-ins
+	hash_t *loaders_to_plugins;
+	
+	/// Maps installed plug-ins to the loader used to load the plug-in
+	hash_t *plugins_to_loaders;
+	
+	/// Map of in-use reference counted information objects
 	hash_t *infos;
 
 	/// Maps plug-in identifiers to plug-in state structures 
@@ -190,17 +196,20 @@ struct cp_plugin_env_t {
 	/// Whether currently in event listener invocation
 	int in_event_listener_invocation;
 	
-	// Whether currently in start function invocation
+	/// Whether currently in start function invocation
 	int in_start_func_invocation;
 	
-	// Whether currently in stop function invocation
+	/// Whether currently in stop function invocation
 	int in_stop_func_invocation;
 	
-	// Whether currently in create function invocation
+	/// Whether currently in create function invocation
 	int in_create_func_invocation;
 	
-	// Whether currently in destroy function invocation
+	/// Whether currently in destroy function invocation
 	int in_destroy_func_invocation;
+	
+	/// Whether currently in plug-in loader function invocation
+	int in_plugin_loader_invocation;
 	
 };
 
