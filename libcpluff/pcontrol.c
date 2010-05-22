@@ -210,6 +210,8 @@ CP_C_API cp_status_t cp_install_plugin(cp_context_t *context, cp_plugin_info_t *
 		event.new_state = rp->state;
 		cpi_deliver_event(context, &event);
 
+		// TODO Update loaders_to_plugins and plugins_to_loaders
+	
 	} while (0);
 
 	// Release resources on failure
@@ -294,6 +296,8 @@ static int resolve_plugin_runtime(cp_context_t *context, cp_plugin_t *plugin) {
 			status = CP_ERR_DEPENDENCY;
 			break;
 		}
+		
+		// TODO Call plug-in loader resolving function
 
 		// Construct a path to plug-in runtime library.
 		/// @todo Add platform specific prefix (for example, "lib")
@@ -1214,6 +1218,9 @@ CP_C_API cp_status_t cp_uninstall_plugin(cp_context_t *context, const char *id) 
 		cpi_warnf(context, N_("Unknown plug-in %s could not be uninstalled."), id);
 		status = CP_ERR_UNKNOWN;
 	}
+	
+	// TODO Update loaders_to_plugins and plugins_to_loaders
+	
 	cpi_unlock_context(context);
 
 	return status;
