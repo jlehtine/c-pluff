@@ -21,7 +21,7 @@ LIBS = @LIBS_OTHER@ @LIBS@
 
 check_PROGRAMS = testsuite
 
-testsuite_SOURCES = psymbolusage.c extcfg.c pdependencies.c pcallbacks.c pscanning.c pinstallation.c ploading.c loggers.c collections.c initdestroy.c fatalerror.c cpinfo.c testmain.c test.h
+testsuite_SOURCES = psymbolusage.c extcfg.c pdependencies.c pcallbacks.c pscanning.c pinstallation.c ploading.c loggers.c collections.c ploaders.c initdestroy.c fatalerror.c cpinfo.c testmain.c test.h
 testsuite_LDFLAGS = -dlopen self
 
 tmpinstalldir = $(CURDIR)/tmp/install
