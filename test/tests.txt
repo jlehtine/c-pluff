@@ -19,6 +19,8 @@ oneploader
 twoploaders
 oneploadertwodirs
 ploaderunregdir
+ploaderunregdirs
+unregploader
 errorlogger
 warninglogger
 infologger
