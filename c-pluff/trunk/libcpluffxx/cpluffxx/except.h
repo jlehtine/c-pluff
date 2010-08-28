@@ -47,7 +47,7 @@ public:
 		RESOURCE = 1,
 
 		/** The specified object is unknown to the framework */
-		NKNOWN,
+		UNKNOWN,
 
 		/** An I/O error occurred */
 		IO,
