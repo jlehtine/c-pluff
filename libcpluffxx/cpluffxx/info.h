@@ -30,6 +30,11 @@
 
 #include <cstring>
 #include <vector>
+#ifdef INCLUDE_TR1_MEMORY
+#include <tr1/memory>
+#else /* INCLUDE_TR1_MEMORY */
+#include <memory>
+#endif /* INCLUDE_TR1_MEMORY */
 #include <cpluff.h>
 
 namespace cpluff {
@@ -54,27 +59,6 @@ public:
 	}
 };
 
-class shared_ptr_counter;
-
-/**
- * A reference counted pointer. This is a simplified version of the
- * Boost shared_ptr also included in C++ Standards Committee Library
- * Extensions TR1. The object pointed to by an rc_ptr instance is released when
- * the instance and all its copies are destructed. This class is not intended
- * to be used by the client program except as part of the C-Pluff API.
- */
-template <class T> class shared_ptr {
-public:
-	template <class Y> shared_ptr(Y* p);
-	template <class Y, class D> shared_ptr(Y* p, D d);
-	shared_ptr(const shared_ptr& r);
-	~shared_ptr();
-	T& operator*();
-	T* operator->();
-protected:
-	shared_ptr_counter* counter;
-};
-
 /**
  * Describes plugins dependency to other plug-ins. Import information can be
  * obtained using plugin_info::getImports. This class is not intended to be
@@ -91,8 +75,8 @@ public:
 	 * @param pdescriptor the associated plug-in descriptor
 	 * @param pimport the associated C API plug-in import structure 
 	 */
-	CP_HIDDEN inline plugin_import(shared_ptr<const cp_plugin_info_t> pinfo, const cp_plugin_import_t* pimport):
-	pinfo(pinfo), pimport(pimport) {}
+	CP_HIDDEN inline plugin_import(::std::tr1::shared_ptr<const cp_plugin_info_t> pinfo, const cp_plugin_import_t* pimport):
+	/*pinfo(pinfo), pimport(pimport)*/ {}
 
 	/**
 	 * Returns the identifier of the imported plug-in. This corresponds to the

@@ -25,6 +25,10 @@
  * Implements internal utility functions for the C-Pluff C++ implementation.
  */
 
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+
 #include "internalxx.h"
 
 namespace cpluff {

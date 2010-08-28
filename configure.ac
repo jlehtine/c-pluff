@@ -62,6 +62,15 @@ if test -z "$CC"; then
 fi
 AC_PROG_CC_C_O
 AC_C_CONST
+case "$ac_cv_c_const" in
+  no)
+    DEFINE_EMPTY_CONST=1
+    ;;
+  *)
+    DEFINE_EMPTY_CONST=0
+    ;;
+esac
+AC_SUBST([DEFINE_EMPTY_CONST])
 AC_PROG_CXX
 AC_LIBTOOL_DLOPEN
 AC_LIBTOOL_WIN32_DLL
@@ -250,6 +259,37 @@ LIBS_OTHER="\$(top_builddir)/libcpluff/libcpluff.la $LIBS_OTHER"
 AC_CHECK_FUNCS([stat lstat])
 
 
+# Execute C++ related tests if C++ interface enabled
+if test "$enable_cpluffxx" = yes; then
+AC_LANG_PUSH([C++])
+
+
+# Check for std:tr1::shared_ptr
+# -----------------------------
+AC_MSG_CHECKING([for std::tr1::shared_ptr])
+AC_COMPILE_IFELSE(
+[#include <memory>
+class test;
+std::tr1::shared_ptr<test> shared_test;
+],
+[AC_MSG_RESULT([yes (memory)])],
+  [AC_COMPILE_IFELSE(
+[#include <tr1/memory>
+class test;
+std::tr1::shared_ptr<test> shared_test;
+],
+  [AC_MSG_RESULT([yes (tr1/memory)])
+cp_include_tr1_memory=yes],
+  [AC_MSG_RESULT([no])
+AC_MSG_ERROR([std::tr1::shared_ptr is required])])])
+if test "$cp_include_tr1_memory" = yes; then
+  AC_DEFINE([INCLUDE_TR1_MEMORY], [], [Define to include tr1/memory instead of memory.])
+fi
+
+fi # End of C++ related tests
+AC_LANG_POP([C++])
+
+
 # Debugging support
 # -----------------
 AC_ARG_ENABLE([debug],
@@ -262,6 +302,7 @@ AC_ARG_ENABLE([gcc-warnings],
     [enable default set of GCC compiler warnings]))
 if test "$enable_gcc_warnings" = yes; then
   CFLAGS="$CFLAGS -Wall -pedantic -std=gnu99"
+  CXXFLAGS="$CXXFLAGS -Wall -pedantic -std=c++0x"
 fi
 
 
