@@ -57,6 +57,15 @@ if test -z "$CC"; then
 fi
 AC_PROG_CC_C_O
 AC_C_CONST
+case "$ac_cv_c_const" in
+  no)
+    DEFINE_EMPTY_CONST=1
+    ;;
+  *)
+    DEFINE_EMPTY_CONST=0
+    ;;
+esac
+AC_SUBST([DEFINE_EMPTY_CONST])
 AC_LIBTOOL_DLOPEN
 AC_LIBTOOL_WIN32_DLL
 AC_PROG_LIBTOOL
@@ -226,6 +235,7 @@ AC_ARG_ENABLE([gcc-warnings],
     [enable default set of GCC compiler warnings]))
 if test "$enable_gcc_warnings" = yes; then
   CFLAGS="$CFLAGS -Wall -pedantic -std=gnu99"
+  CXXFLAGS="$CXXFLAGS -Wall -pedantic -std=c++0x"
 fi
 
 # File name separator character
