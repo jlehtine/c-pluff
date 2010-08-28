@@ -122,10 +122,10 @@ CP_C_API cp_status_t cp_scan_plugins(cp_context_t *context, int flags) {
 			int i;
 			
 			// Scan plug-ins using the loader
-			cpi_debugf(context, N_("Scanning plug-ins using loader %p"), loader);
+			cpi_debugf(context, N_("Scanning plug-ins using loader %p."), loader);
 			loaded_plugins = loader->scan_plugins(loader->data, context);
 			if (loaded_plugins == NULL) {
-				cpi_errorf(context, N_("Plug-in loader %p failed to scan for plug-ins"), loader);
+				cpi_errorf(context, N_("Plug-in loader %p failed to scan for plug-ins."), loader);
 				continue;
 			}
 
