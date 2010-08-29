@@ -32,10 +32,11 @@
 
 namespace cpluff {
 
-/**
- * Type to be used for reference counted pointers.
- */
-typedef @CP_CXX_SHARED_PTR@ shared_ptr;
+// Contains shared_ptr typedef used in C++ API
+template <class T>
+struct shared_ptr {
+	typedef @CP_CXX_SHARED_PTR@<T> type;
+};
 
 }
 
