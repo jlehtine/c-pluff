@@ -293,7 +293,7 @@ public:
 	 * @param ext the associated C API extension
 	 */
 	CP_CXX_API inline extension_info(const cp_extension_t* ext):
-	cfg_root(ext->configuration), ext(ext) {}
+	ext(ext), cfg_root(ext->configuration) {}
 
 	/**
 	 * Returns the unique identifier of the extension point this extension is

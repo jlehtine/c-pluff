@@ -24,6 +24,20 @@ check_PROGRAMS = testsuite
 testsuite_SOURCES = psymbolusage.c extcfg.c pdependencies.c pcallbacks.c pscanning.c pinstallation.c ploading.c loggers.c collections.c ploaders.c initdestroy.c fatalerror.c cpinfo.c testmain.c test.h
 testsuite_LDFLAGS = -dlopen self
 
+testsuite_cxx_SOURCES = cpinfo_cxx.cc testmain.c test.h
+testsuite_cxx_LDADD = @LIBS_OTHER_XX@
+testsuite_cxx_LDFLAGS = -dlopen self
+
+# Enable C++ tests if C++ API enabled
+if CPLUFFXX
+TEST_CPLUFFXX = yes
+BUILD_LIBCPLUFFXX = build-libcpluffxx
+check_PROGRAMS += testsuite_cxx
+else
+TEST_CPLUFFXX = no
+BUILD_LIBCPLUFFXX =
+endif
+
 tmpinstalldir = $(CURDIR)/tmp/install
 
 check-local: install-plugins
@@ -60,6 +74,11 @@ check-local: install-plugins
 		while read test; do \
 			run_test "$$test"; \
 		done < '$(srcdir)/tests.txt'; \
+		if test '$(TEST_CPLUFFXX)' = yes; then \
+			while read test; do \
+				run_test "$$test"; \
+			done < '$(srcdir)/tests_cxx.txt'; \
+		fi; \
 	else \
 		for test in $(SELECTED_TESTS); do \
 			run_test "$$test"; \
@@ -108,4 +127,7 @@ build-plugins:
 install-libcpluff:
 	cd ../libcpluff && $(MAKE) $(AM_MAKEFLAGS) DESTDIR='$(tmpinstalldir)' install
 
-.PHONY: build-plugins install-plugins install-libcpluff
+install-libcpluffxx:
+	cd ../libcpluffxx && $(MAKE) $(AM_MAKEFLAGS) DESTDIR='$(tmpinstalldir)' install
+
+.PHONY: build-plugins install-plugins install-libcpluff install-libcpluffxx

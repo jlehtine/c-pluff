@@ -14,11 +14,11 @@ static void invoke_fatal_error_handler(const char *msg) {
 	current_fatal_error_handler->fatal_error(msg);
 }
 
-CP_CXX_API const char* framework::get_version() throw () {
+CP_CXX_API const char* framework::version() throw () {
 	return cp_get_version();
 }
 
-CP_CXX_API const char* framework::get_host_type() throw () {
+CP_CXX_API const char* framework::host_type() throw () {
 	return cp_get_host_type();
 }
 
