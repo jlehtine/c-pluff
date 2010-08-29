@@ -136,7 +136,7 @@ public:
 	 * @return reference to a new created plug-in container
 	 * @throw api_error if there are not enough system resources
 	 */
-	static plugin_container &new_plugin_container() throw (api_error);
+	static plugin_container* new_plugin_container() throw (api_error);
 
 private:
 
@@ -176,7 +176,7 @@ public:
 	 * @throw cpluff::api_error if insufficient memory
 	 * @sa cpluff::unregister_logger
 	 */
-	virtual void register_logger(logger& logger, logger::severity minseverity) throw (api_error) = 0;
+	virtual void register_logger(logger* logger, logger::severity minseverity) throw (api_error) = 0;
 
 	/**
 	 * Removes a logger registration.
@@ -184,7 +184,7 @@ public:
 	 * @param logger the logger object to be unregistered
 	 * @sa cpluff::register_logger
 	 */
-	virtual void unregister_logger(logger& logger) throw () = 0;
+	virtual void unregister_logger(logger* logger) throw () = 0;
 
 	/**
 	 * Emits a new log message.

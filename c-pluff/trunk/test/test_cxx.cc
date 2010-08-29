@@ -21,8 +21,73 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *-----------------------------------------------------------------------*/
 
+#include <cstdio>
 #include "test_cxx.h"
 
-CP_HIDDEN cpluff::plugin_container &init_container_cxx(cpluff::logger::severity min_disp_sev, int *error_counter) {
+class full_logger : public cpluff::logger {
+public:
+
+	full_logger(int *error_counter): error_counter(error_counter) {}
+
+	~full_logger() {}
+
+	void log(severity sev, const char* msg, const char* apid) {
+		const char *sevstr;
+		switch (sev) {
+			case DEBUG:
+				sevstr = "DEBUG";
+				break;
+			case INFO:
+				sevstr = "INFO";
+				break;
+			case WARNING:
+				sevstr = "WARNING";
+				break;
+			case ERROR:
+				sevstr = "ERROR";
+				break;
+			default:
+				check((sevstr = "UNKNOWN", 0));
+				break;
+		}
+		if (apid != NULL) {
+			fprintf(stderr, "testsuite: %s: [%s] %s\n", sevstr, apid, msg);
+		} else {
+			fprintf(stderr, "testsuite: %s: [testsuite] %s\n", sevstr, msg);
+		}
+		if (sev >= ERROR && error_counter != NULL) {
+			(*error_counter)++;
+		}
+	}
+
+private:
+	int *error_counter;
+};
+
+class counting_logger : public cpluff::logger {
+public:
+	counting_logger(int *error_counter): error_counter(error_counter) {}
+
+	void log(severity sev, const char* msg, const char* apid) {
+		(*error_counter)++;
+	}
+
+private:
+	int *error_counter;
+};
+
+CP_HIDDEN cpluff::plugin_container *init_container_cxx(cpluff::logger::severity min_disp_sev, int *error_counter) {
 	cpluff::framework::init();
+	cpluff::plugin_container *pc = cpluff::framework::new_plugin_container();
+	if (error_counter != NULL) {
+		*error_counter = 0;
+	}
+	if (error_counter != NULL || min_disp_sev <= cpluff::logger::ERROR) {
+		if (min_disp_sev <= cpluff::logger::ERROR) {
+			pc->register_logger(new full_logger(error_counter), min_disp_sev);
+		} else {
+			pc->register_logger(new counting_logger(error_counter), cpluff::logger::ERROR);
+		}
+	}
+	return pc;
 }

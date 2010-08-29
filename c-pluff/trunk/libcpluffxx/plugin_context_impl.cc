@@ -50,15 +50,15 @@ CP_HIDDEN plugin_context_impl::~plugin_context_impl() throw () {
 	cp_destroy_context(context);
 }
 
-CP_HIDDEN void plugin_context_impl::register_logger(logger &logger, logger::severity minseverity) throw (api_error) {
+CP_HIDDEN void plugin_context_impl::register_logger(logger* logger, logger::severity minseverity) throw (api_error) {
 	// TODO synchronization
-	loggers[&logger] = minseverity;
+	loggers[logger] = minseverity;
 	update_min_logger_severity();
 }
 
-CP_HIDDEN void plugin_context_impl::unregister_logger(logger &logger) throw () {
+CP_HIDDEN void plugin_context_impl::unregister_logger(logger* logger) throw () {
 	// TODO synchronization
-	loggers.erase(&logger);
+	loggers.erase(logger);
 	update_min_logger_severity();
 }
 
