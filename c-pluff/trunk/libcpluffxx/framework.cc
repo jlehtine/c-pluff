@@ -22,7 +22,7 @@ CP_CXX_API const char* framework::host_type() throw () {
 	return cp_get_host_type();
 }
 
-CP_CXX_API void framework::set_fatal_error_handler(fatal_error_handler &feh) throw () {
+CP_CXX_API void framework::fatal_error_handler(fatal_error_handler &feh) throw () {
 	current_fatal_error_handler = &feh;
 	cp_set_fatal_error_handler(invoke_fatal_error_handler);
 }

@@ -52,7 +52,7 @@ public:
 
 extern "C" void fatalerrorhandled_cxx(void) {
 	test_error_handler eh;
-	cpluff::framework::set_fatal_error_handler(eh);
+	cpluff::framework::fatal_error_handler(eh);
 	cause_fatal_error();
 	free_test_resources();
 	exit(1);
@@ -60,7 +60,7 @@ extern "C" void fatalerrorhandled_cxx(void) {
 
 extern "C" void fatalerrorreset_cxx(void) {
 	test_error_handler eh;
-	cpluff::framework::set_fatal_error_handler(eh);
+	cpluff::framework::fatal_error_handler(eh);
 	cpluff::framework::reset_fatal_error_handler();
 	cause_fatal_error();
 }
