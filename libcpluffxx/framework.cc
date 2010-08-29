@@ -40,5 +40,9 @@ void framework::destroy() {
 	cp_destroy();
 }
 
+plugin_container* framework::new_plugin_container() throw (api_error) {
+	return new plugin_container_impl();
+}
+
 
 }

@@ -103,7 +103,8 @@ public:
 	 */
 	virtual void log(severity sev, const char* msg, const char* apid) = 0;
 	
-	virtual ~logger() = 0;
+protected:
+	~logger() {};
 };
 
 /**

@@ -79,9 +79,9 @@ public:
 	 */
 	CP_HIDDEN plugin_context_impl(cp_context_t *context);
 
-	CP_HIDDEN void register_logger(logger& logger, logger::severity minseverity) throw (api_error);
+	CP_HIDDEN void register_logger(logger* logger, logger::severity minseverity) throw (api_error);
 
-	CP_HIDDEN void unregister_logger(logger& logger) throw ();
+	CP_HIDDEN void unregister_logger(logger* logger) throw ();
 
 	CP_HIDDEN void log(logger::severity severity, const char* msg) throw ();
 
