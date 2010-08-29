@@ -105,8 +105,8 @@ CPPFLAGS="$CPPFLAGS -I\$(top_builddir)"
 # For cpluff.h and cpluffdef.h
 CPPFLAGS="$CPPFLAGS -I\$(top_builddir)/libcpluff -I\$(top_srcdir)/libcpluff"
 
-# For cpluffxx.h
-CPPFLAGS="$CPPFLAGS -I\$(top_srcdir)/libcpluffxx"
+# For cpluffxx.h and friends
+CPPFLAGS="$CPPFLAGS -I\$(top_builddir)/libcpluffxx -I\$(top_srcdir)/libcpluffxx"
 
 # Substitute variables for libcpluff and non-libcpluff components
 AC_SUBST([LIBS_LIBCPLUFF])
@@ -143,8 +143,8 @@ if test "$enable_threads" != no; then
   # Check for Posix thread support
   if test -z "$cp_threads" && \
     ( test -z "$enable_threads" || test "$enable_threads" = Posix ); then
-    AC_MSG_CHECKING([for Posix threads])
-    AC_LINK_IFELSE(
+    AC_CACHE_CHECK([for Posix threads], [cp_cv_sys_pthread],
+      [AC_LINK_IFELSE(
 [#include <pthread.h>
 
 int main(int argc, char *argv[]) {
@@ -153,23 +153,27 @@ int main(int argc, char *argv[]) {
 	pthread_mutex_init(&mutex, NULL);
 	return 0;
 }
-], [AC_MSG_RESULT([yes])
-cp_threads=Posix], AC_MSG_RESULT([no]))
+], [cp_cv_sys_pthread=yes], [cp_cv_sys_pthread=no])])
+    if test "$cp_cv_sys_pthread" = yes; then
+      cp_threads=Posix
+    fi
   fi
   
   # Check for Windows thread suppport
   if test -z "$cp_threads" && \
     ( test -z "$enable_threads" || test "$enable_threads" = Windows ); then
-    AC_MSG_CHECKING([for Windows threads])
-    AC_LINK_IFELSE(
+    AC_CACHE_CHECK([for Windows threads], [cp_cv_sys_wthread],
+      [AC_LINK_IFELSE(
 [#include <windows.h>
 
 int main(int argc, char *argv[]) {
   CreateMutex(NULL, FALSE, NULL);
   return 0;
 }
-], [AC_MSG_RESULT([yes])
-cp_threads=Windows], AC_MSG_RESULT([no]))
+], [cp_cv_sys_wthread=yes], [cp_cv_sys_wthread=no])])
+    if test "$cp_cv_sys_wthread" = yes; then
+      cp_threads=Windows
+    fi
   fi
   
   # Check if we got the desired thread support
@@ -264,30 +268,62 @@ if test "$enable_cpluffxx" = yes; then
 AC_LANG_PUSH([C++])
 
 
-# Check for std:tr1::shared_ptr
-# -----------------------------
-AC_MSG_CHECKING([for std::tr1::shared_ptr])
-AC_COMPILE_IFELSE(
+# Check for shared_ptr
+# --------------------
+AC_CACHE_CHECK([for std::tr1::shared_ptr in <memory>], [cp_cv_type_shared_ptr_in_memory],
+  [AC_COMPILE_IFELSE(
 [#include <memory>
 class test;
 std::tr1::shared_ptr<test> shared_test;
-],
-[AC_MSG_RESULT([yes (memory)])],
-  [AC_COMPILE_IFELSE(
+], [cp_cv_type_shared_ptr_in_memory=yes], [cp_cv_type_shared_ptr_in_memory=no])])
+if test "$cp_cv_type_shared_ptr_in_memory" = yes; then
+  CP_CXX_SHARED_PTR="::std::tr1::shared_ptr"
+  CP_CXX_SHARED_PTR_INCLUDE="<memory>"
+else
+  AC_CACHE_CHECK([for std::tr1:shared_ptr in <tr1/memory>], [cp_cv_type_shared_ptr_in_tr1_memory],
+    [AC_COMPILE_IFELSE(
 [#include <tr1/memory>
 class test;
 std::tr1::shared_ptr<test> shared_test;
-],
-  [AC_MSG_RESULT([yes (tr1/memory)])
-cp_include_tr1_memory=yes],
-  [AC_MSG_RESULT([no])
-AC_MSG_ERROR([std::tr1::shared_ptr is required])])])
-if test "$cp_include_tr1_memory" = yes; then
-  AC_DEFINE([INCLUDE_TR1_MEMORY], [], [Define to include tr1/memory instead of memory.])
+], [cp_cv_type_shared_ptr_in_tr1_memory=yes], [cp_cv_type_shared_ptr_in_tr1_memory=no])])
+  if test "$cp_cv_type_shared_ptr_in_tr1_memory" = yes; then
+    CP_CXX_SHARED_PTR="::std::tr1::shared_ptr"
+    CP_CXX_SHARED_PTR_INCLUDE="<tr1/memory>"
+  else
+    AC_CACHE_CHECK([for GCC std::shared_ptr in <memory>], [cp_cv_type_gcc_shared_ptr_in_memory],
+      [stored_CXXFLAGS="$CXXFLAGS"
+      CXXFLAGS="$CXXFLAGS -std=c++0x"
+      AC_COMPILE_IFELSE(
+[#include <memory>
+class test;
+std::shared_ptr<test> shared_test;
+], [cp_cv_type_gcc_shared_ptr_in_memory=yes], [cp_cv_type_gcc_shared_ptr_in_memory=no])
+      CXXFLAGS="$stored_CXXFLAGS"])
+    if test "$cp_cv_type_gcc_shared_ptr_in_memory" = yes; then
+      CP_CXX_SHARED_PTR="::std::shared_ptr"
+      CP_CXX_SHARED_PTR_INCLUDE="<memory>"
+      CXXFLAGS="$CXXFLAGS -std=c++0x"
+    else
+      AC_CACHE_CHECK([for boost::shared_ptr in <boost/shared_ptr.hpp>], [cp_cv_type_boost_shared_ptr],
+        [AC_COMPILE_IFELSE([
+#include <boost/shared_ptr.hpp>
+class test;
+boost::shared_ptr<test> shared_test;
+], [cp_cv_type_boost_shared_ptr=yes], [cp_cv_type_boost_shared_ptr=no])])
+      if test "$cp_cv_type_boost_shared_ptr" = yes; then
+        CP_CXX_SHARED_PTR="::boost::shared_ptr"
+        CP_CXX_SHARED_PTR_INCLUDE="<boost/shared_ptr.hpp>"
+      else
+        AC_MSG_ERROR([Could not find compatible shared_ptr implementation.])
+      fi
+    fi    
+  fi
 fi
+AC_SUBST([CP_CXX_SHARED_PTR])
+AC_SUBST([CP_CXX_SHARED_PTR_INCLUDE])
 
-fi # End of C++ related tests
 AC_LANG_POP([C++])
+fi # End of C++ related tests
 
 
 # Debugging support
@@ -338,6 +374,7 @@ libcpluff/docsrc/Doxyfile-ref
 libcpluff/docsrc/Doxyfile-impl
 libcpluffxx/Makefile
 libcpluffxx/cpluffxx/Makefile
+libcpluffxx/cpluffxx/sharedptr.h
 libcpluffxx/docsrc/Doxyfile-ref
 loader/Makefile
 console/Makefile
