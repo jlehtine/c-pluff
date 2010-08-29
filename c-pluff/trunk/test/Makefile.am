@@ -43,12 +43,13 @@ tmpinstalldir = $(CURDIR)/tmp/install
 check-local: install-plugins
 	@numf=0; numt=0; \
 	run_test () { \
-		local test="$$1"; \
+		local testsuite="$$1"; \
+		local test="$$2"; \
 		if test -x "$(srcdir)/test-$$test"; then \
 			srcdir='$(srcdir)' TEST_WRAPPER='$(TEST_WRAPPER)' "$(srcdir)/test-$$test"; \
 			rc=$$?; \
 		else \
-			eval srcdir='$(srcdir)' libtool --mode=execute $(TEST_WRAPPER) ./testsuite "\$$test"; \
+			eval srcdir='$(srcdir)' libtool --mode=execute $(TEST_WRAPPER) "\$$testsuite" "\$$test"; \
 			rc=$$?; \
 		fi; \
 		case $$rc in \
@@ -72,11 +73,11 @@ check-local: install-plugins
 	echo '===================================================================='; \
 	if test '$(SELECTED_TESTS)' = all; then \
 		while read test; do \
-			run_test "$$test"; \
+			run_test ./testsuite "$$test"; \
 		done < '$(srcdir)/tests.txt'; \
 		if test '$(TEST_CPLUFFXX)' = yes; then \
 			while read test; do \
-				run_test "$$test"; \
+				run_test ./testsuite_cxx "$$test"; \
 			done < '$(srcdir)/tests_cxx.txt'; \
 		fi; \
 	else \

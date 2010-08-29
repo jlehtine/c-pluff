@@ -75,7 +75,7 @@ public:
 	 * @param reason the error code
 	 * @param message the error message
 	 */
-	CP_CXX_API inline api_error(code reason, const char* message):
+	inline api_error(code reason, const char* message):
 	error_code(reason), error_message(message) {};
 
 	/**
@@ -83,7 +83,7 @@ public:
 	 * 
 	 * @return an error code describing the type of error
 	 */ 
-	CP_CXX_API inline code reason() const {
+	inline code reason() const {
 		return error_code;
 	}
 
@@ -94,7 +94,7 @@ public:
 	 * 
 	 * @return a possibly localized error message intended for display purposes
 	 */ 
-	CP_CXX_API inline const char* message() const {
+	inline const char* message() const {
 		return error_message;
 	}
 

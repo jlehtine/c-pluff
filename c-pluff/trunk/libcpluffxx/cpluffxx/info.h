@@ -30,6 +30,7 @@
 
 #include <cstring>
 #include <vector>
+#include <map>
 #include <cpluff.h>
 #include <cpluffxx/sharedptr.h>
 
@@ -50,7 +51,7 @@ public:
 	 * @param s2 the second string to compare
 	 * @return whether the first string comes before the second string
 	 */
-	CP_CXX_API inline bool operator()(const char* const& s1, const char* const& s2) {
+	inline bool operator()(const char* const& s1, const char* const& s2) {
 		return strcmp(s1, s2) < 0;
 	}
 };
@@ -71,7 +72,7 @@ public:
 	 * @param pdescriptor the associated plug-in descriptor
 	 * @param pimport the associated C API plug-in import structure 
 	 */
-	CP_CXX_API inline plugin_import(const cp_plugin_import_t* pimport):
+	inline plugin_import(const cp_plugin_import_t* pimport):
 	pimport(pimport) {}
 
 	/**
@@ -80,7 +81,7 @@ public:
 	 * 
 	 * @return the identifier of the imported plug-in
 	 */
-	CP_CXX_API inline const char* plugin_id() const {
+	inline const char* plugin_id() const {
 		return pimport->plugin_id;
 	};
 	
@@ -94,7 +95,7 @@ public:
 	 * 
 	 * @return an optional version requirement or NULL
 	 */
-	CP_CXX_API inline const char* version() const {
+	inline const char* version() const {
 		return pimport->version;
 	};
 
@@ -109,7 +110,7 @@ public:
 	 * 
 	 * @return whether this import is optional
 	 */
-	CP_CXX_API inline bool optional() const {
+	inline bool optional() const {
 		return pimport->optional;
 	};
 
@@ -135,7 +136,7 @@ public:
 	 * 
 	 * @param extpt the associated C API extension point structure
 	 */
-	CP_CXX_API inline ext_point_info(const cp_ext_point_t* extpt):
+	inline ext_point_info(const cp_ext_point_t* extpt):
 	extpt(extpt) {}
 
 	/**
@@ -145,7 +146,7 @@ public:
 	 * 
 	 * @return the local identifier of the extension point
 	 */
-	CP_CXX_API inline const char* local_id() const {
+	inline const char* local_id() const {
 		return extpt->local_id;
 	}
 	
@@ -156,7 +157,7 @@ public:
 	 * 
 	 * @return the unique identifier of the extension point
 	 */
-	CP_CXX_API inline const char* identifier() const {
+	inline const char* identifier() const {
 		return extpt->identifier;
 	}
 	
@@ -168,7 +169,7 @@ public:
 	 * 
 	 * @return an optional extension point name or NULL
 	 */
-	CP_CXX_API inline const char* name() const {
+	inline const char* name() const {
 		return extpt->name;
 	}
 	
@@ -180,7 +181,7 @@ public:
 	 * 
 	 * @return an optional path to the extension schema defition or NULL
 	 */
-	CP_CXX_API inline const char* schema_path() const {
+	inline const char* schema_path() const {
 		return extpt->schema_path;
 	}
 	
@@ -208,7 +209,7 @@ public:
 	 * 
 	 * @param cfge the associated C API configuration element
 	 */
-	CP_CXX_API inline cfg_element(const cp_cfg_element_t* cfge) {
+	inline cfg_element(const cp_cfg_element_t* cfge) {
 	 	cfg_element(NULL, cfge);
 	 }
 
@@ -220,7 +221,7 @@ public:
 	 * @param parent the parent element or NULL if none
 	 * @param cfge the associated C API configuration element
 	 */
-	CP_CXX_API cfg_element(cfg_element* parent, const cp_cfg_element_t* cfge);
+	cfg_element(cfg_element* parent, const cp_cfg_element_t* cfge);
 
 	/**
 	 * Returns the name of the configuration element. This corresponds to the
@@ -228,7 +229,7 @@ public:
 	 * 
 	 * @return the name of the configuration element
 	 */
-	CP_CXX_API inline const char* name() const {
+	inline const char* name() const {
 		return cfge->name;
 	}
 
@@ -238,7 +239,7 @@ public:
 	 * 
 	 * @return the attribute map for this element
 	 */
-	CP_CXX_API inline const std::map<const char*, const char*, less_str>& attributes() const {
+	inline const std::map<const char*, const char*, less_str>& attributes() const {
 		return attr_map;
 	}
 
@@ -248,7 +249,7 @@ public:
 	 * 
 	 * @return a pointer to the parent element or NULL if root
 	 */
-	CP_CXX_API inline const cfg_element* parent() const {
+	inline const cfg_element* parent() const {
 		return cfg_parent;
 	}
 	
@@ -257,7 +258,7 @@ public:
 	 * 
 	 * @return the children of this configuration element as a vector
 	 */
-	CP_CXX_API inline const std::vector<const cfg_element*>& children() const {
+	inline const std::vector<const cfg_element*>& children() const {
 		return cfg_children;
 	}
 
@@ -292,7 +293,7 @@ public:
 	 * 
 	 * @param ext the associated C API extension
 	 */
-	CP_CXX_API inline extension_info(const cp_extension_t* ext):
+	inline extension_info(const cp_extension_t* ext):
 	ext(ext), cfg_root(ext->configuration) {}
 
 	/**
@@ -302,7 +303,7 @@ public:
 	 * 
 	 * @return the unique identifier of the associated extension point
 	 */
-	CP_CXX_API inline const char* ext_point_id() const {
+	inline const char* ext_point_id() const {
 		return ext->ext_point_id;
 	}
 	
@@ -314,7 +315,7 @@ public:
 	 * 
 	 * @returns an optional local identifier of the extension or NULL
 	 */
-	CP_CXX_API inline const char* local_id() const {
+	inline const char* local_id() const {
 		return ext->local_id;
 	}
 	
@@ -326,7 +327,7 @@ public:
      * 
      * @return an optional unique identifier of the extension or NULL
      */
-    CP_CXX_API inline const char* identifier() const {
+    inline const char* identifier() const {
     	return ext->identifier;
     }
 
@@ -338,7 +339,7 @@ public:
 	 * 
 	 * @return an optional extension name or NULL
 	 */
-	CP_CXX_API inline const char* name() const {
+	inline const char* name() const {
 		return ext->name;
 	}
 
@@ -350,7 +351,7 @@ public:
 	 * 
 	 * @return extension configuration starting with the extension element
 	 */
-	CP_CXX_API inline const cfg_element& configuration() const {
+	inline const cfg_element& configuration() const {
 		return cfg_root;
 	}
 
@@ -383,7 +384,7 @@ public:
 	 * @param context the associated C API plug-in context handle
 	 * @param pinfo the associated C API plug-in descriptor
 	 */
-	CP_CXX_API plugin_info(cp_context_t* context, cp_plugin_info_t* pinfo);
+	plugin_info(cp_context_t* context, cp_plugin_info_t* pinfo);
 	
 	/**
 	 * Returns the unique identifier of the plugin. A recommended way
@@ -394,7 +395,7 @@ public:
 	 * 
 	 * @return the unique identifier of the plug-in
 	 */	
-	CP_CXX_API inline const char* identifier() const {
+	inline const char* identifier() const {
 		return pinfo->identifier;
 	}
 
@@ -404,7 +405,7 @@ public:
 	 * 
 	 * @return an optional plug-in name or NULL
 	 */
-	CP_CXX_API inline const char* name() const {
+	inline const char* name() const {
 		return pinfo->name;
 	}
 
@@ -414,7 +415,7 @@ public:
 	 * 
 	 * @return an optional plug-in version string or NULL
 	 */
-	CP_CXX_API inline const char* version() const {
+	inline const char* version() const {
 		return pinfo->version;
 	}
 	
@@ -424,7 +425,7 @@ public:
 	 * 
 	 * @return an optional provider name or NULL
 	 */
-	CP_CXX_API inline const char* provider_name() const {
+	inline const char* provider_name() const {
 		return pinfo->provider_name;
 	}
 	
@@ -433,7 +434,7 @@ public:
 	 * 
 	 * @return the plug-in directory path or NULL
 	 */
-	CP_CXX_API inline const char* plugin_path() const {
+	inline const char* plugin_path() const {
 		return pinfo->plugin_path;
 	}
 	
@@ -452,7 +453,7 @@ public:
 	 * 
 	 * @return ABI compatibility information or NULL
 	 */	
-	CP_CXX_API inline const char* abi_bw_compatibility() const {
+	inline const char* abi_bw_compatibility() const {
 		return pinfo->abi_bw_compatibility;
 	}
 
@@ -470,7 +471,7 @@ public:
 	 * 
 	 * @return API compatibility information or NULL 
 	 */
-	CP_CXX_API inline const char* api_bw_compatibility() const {
+	inline const char* api_bw_compatibility() const {
 		return pinfo->api_bw_compatibility;
 	}
 	
@@ -484,7 +485,7 @@ public:
 	 * 
 	 * @return C-Pluff version requirement or NULL
 	 */
-	CP_CXX_API inline const char* req_cpluff_version() const {
+	inline const char* req_cpluff_version() const {
 		return pinfo->req_cpluff_version;
 	}
 
@@ -493,7 +494,7 @@ public:
 	 * 
 	 * @return plug-in imports as a vector
 	 */
-	CP_CXX_API inline const std::vector<plugin_import>& imports() const {
+	inline const std::vector<plugin_import>& imports() const {
 		return imports_vec;
 	}
 
@@ -506,7 +507,7 @@ public:
      * 
      * @return the base name of the plug-in runtime library or NULL
      */
-	CP_CXX_API inline const char* runtime_lib_name() const {
+	inline const char* runtime_lib_name() const {
 		return pinfo->runtime_lib_name;
 	}
 
@@ -519,7 +520,7 @@ public:
      * 
      * @return the name of the symbol pointing to the plug-in runtime information or NULL
      */
-	CP_CXX_API inline const char* runtime_funcs_symbol() const {
+	inline const char* runtime_funcs_symbol() const {
 		return pinfo->runtime_funcs_symbol;
 	}
 
@@ -528,7 +529,7 @@ public:
 	 * 
 	 * @return extension points provided by this plug-in
 	 */
-	CP_CXX_API inline const std::vector<ext_point_info> ext_points() const {
+	inline const std::vector<ext_point_info> ext_points() const {
 		return ext_points_vec;
 	}
 	
@@ -537,13 +538,13 @@ public:
 	 * 
 	 * @return extensions provided by this plug-in
 	 */
-	CP_CXX_API inline const std::vector<extension_info> extensions() const {
+	inline const std::vector<extension_info> extensions() const {
 		return extensions_vec;
 	}
 
 protected:
 
-	CP_CXX_API ~plugin_info();
+	~plugin_info();
 
 	/** @internal The C API plug-in context handle */
 	cp_context_t* context;
