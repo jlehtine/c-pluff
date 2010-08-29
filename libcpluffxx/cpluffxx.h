@@ -91,7 +91,7 @@ public:
 	 * 
 	 * @param feh the fatal error handler to be installed
 	 */ 
-	static void set_fatal_error_handler(fatal_error_handler &feh) throw ();
+	static void fatal_error_handler(fatal_error_handler &feh) throw ();
 
 	/**
 	 * Resets the default fatal error handler which prints the error message to
