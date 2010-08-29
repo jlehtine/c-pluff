@@ -50,7 +50,7 @@ public:
 	 * @param s2 the second string to compare
 	 * @return whether the first string comes before the second string
 	 */
-	CP_HIDDEN inline bool operator()(const char*& s1, const char*& s2) {
+	CP_HIDDEN inline bool operator()(const char* const& s1, const char* const& s2) {
 		return strcmp(s1, s2) < 0;
 	}
 };
@@ -495,7 +495,7 @@ public:
 	 * 
 	 * @return plug-in imports as a vector
 	 */
-	CP_HIDDEN inline const std::vector<const plugin_import>& imports() const {
+	CP_HIDDEN inline const std::vector<plugin_import>& imports() const {
 		return imports_vec;
 	}
 
@@ -530,7 +530,7 @@ public:
 	 * 
 	 * @return extension points provided by this plug-in
 	 */
-	CP_HIDDEN inline const std::vector<const ext_point_info> ext_points() const {
+	CP_HIDDEN inline const std::vector<ext_point_info> ext_points() const {
 		return ext_points_vec;
 	}
 	
@@ -539,7 +539,7 @@ public:
 	 * 
 	 * @return extensions provided by this plug-in
 	 */
-	CP_HIDDEN inline const std::vector<const extension_info> extensions() {
+	CP_HIDDEN inline const std::vector<extension_info> extensions() const {
 		return extensions_vec;
 	}
 
@@ -554,13 +554,13 @@ protected:
 	cp_plugin_info_t* pinfo;
 	
 	/** @internal The plug-in import objects */
-	std::vector<const plugin_import> imports_vec;
+	std::vector<plugin_import> imports_vec;
 	
 	/** @internal The extension point objects */
-	std::vector<const ext_point_info> ext_points_vec;
+	std::vector<ext_point_info> ext_points_vec;
 	
 	/** @internal The extension objects */
-	std::vector<const extension_info> extensions_vec;
+	std::vector<extension_info> extensions_vec;
 
 };
 
