@@ -3,3 +3,9 @@ gethosttype_cxx
 fatalerrordefault_cxx
 fatalerrorhandled_cxx
 fatalerrorreset_cxx
+initdestroy_cxx
+initcreatedestroy_cxx
+initloaddestroy_cxx
+initinstalldestroy_cxx
+initstartdestroy_cxx
+initstartdestroyboth_cxx

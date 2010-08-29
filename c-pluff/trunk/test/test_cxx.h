@@ -21,16 +21,30 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *-----------------------------------------------------------------------*/
 
-#include <cstdio>
-#include <cstring>
-#include "test_cxx.h"
+#ifndef TEST_CXX_H_
+#define TEST_CXX_H_
 
-extern "C" void getversion_cxx(void) {
-	check(cpluff::framework::version() != NULL);
-	check(!strcmp(cpluff::framework::version(), CP_VERSION));
-}
+#ifdef HAVE_CONFIG_H
+#include <config.h>
+#endif
+#include "test.h"
+#include <cpluffxx.h>
 
-extern "C" void gethosttype_cxx(void) {
-	check(cpluff::framework::host_type() != NULL);
-	check(!strcmp(cpluff::framework::host_type(), CP_HOST));
-}
+
+/**
+ * Initializes the C-Pluff framework and creates a plug-in container.
+ * Checks for any failures on the way. Also prints out context errors/warnings
+ * and maintains a count of logged context errors if so requested.
+ *
+ * @param min_disp_sev the minimum severity of messages to be displayed
+ * @param error_counter pointer to the location where the logged error count is to be stored or NULL 
+ * @return the created plug-in context
+ */
+CP_HIDDEN cpluff::plugin_container &init_container_cxx(cpluff::logger::severity min_disp_sev, int *error_counter);
+
+/**
+ * Destroys the framework instance initialized by the init_container_cxx.
+ */
+CP_HIDDEN void destroy_framework_cxx(void);
+
+#endif /*TEST_CXX_H_*/

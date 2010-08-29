@@ -68,42 +68,6 @@ private:
 	cp_plugin_import_t *pimport;
 };
 
-class framework_impl : public framework {
-public:
-
-	/**
-	 * Actually initializes the framework and constructs a framework object.
-	 */
-	CP_HIDDEN framework_impl();
-
-	/**
-	 * Destructs a framework object and deinitializes the framework if this
-	 * was the last object.
-	 */
-	CP_HIDDEN ~framework_impl() throw ();
-
-	CP_HIDDEN void destroy() throw ();
-
-	CP_HIDDEN plugin_container& create_plugin_container() throw (api_error);
-
-	/**
-	 * Unregisters a plug-in container object with this framework.
-	 * After the plug-in container has been unregistered, it is not implicitly
-	 * destroyed when the framework is destroyed.
-	 * 
-	 * @param container the container to be unregistered
-	 */
-	CP_HIDDEN void unregister_plugin_container(plugin_container_impl& container) throw ();
-
-private:
-
-	/** 
-	 * The associated valid plug-in containers
-	 */
-	std::set<plugin_container_impl*> containers;
-
-};
-
 class plugin_context_impl : public virtual plugin_context {
 public:
 
@@ -194,15 +158,10 @@ class plugin_container_impl : public plugin_container, public plugin_context_imp
 public:
 
 	/**
-	 * Constructs a new plug-in container associated with the specified
-	 * framework object.
-	 * 
-	 * @param framework the associated framework object
+	 * Constructs a new plug-in container.
 	 */
-	CP_HIDDEN plugin_container_impl(framework_impl& framework);
+	CP_HIDDEN plugin_container_impl();
 	
-	CP_HIDDEN void destroy() throw ();
-
 	CP_HIDDEN void register_plugin_collection(const char* dir) throw (api_error);
 
 	CP_HIDDEN void unregister_plugin_collection(const char* dir) throw ();
@@ -211,15 +170,12 @@ public:
 
 	CP_HIDDEN plugin_info& load_plugin_descriptor(const char* path) throw (api_error);
 
+	CP_HIDDEN void destroy() throw ();
+
 private:
 
-	CP_HIDDEN ~plugin_container_impl() throw ();
+	inline ~plugin_container_impl() {};
 
-	/**
-	 * The associated framework object
-	 */
-	framework_impl& framework;
-	
 };
 
 }

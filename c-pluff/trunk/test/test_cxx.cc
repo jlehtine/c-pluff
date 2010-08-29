@@ -21,16 +21,8 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *-----------------------------------------------------------------------*/
 
-#include <cstdio>
-#include <cstring>
 #include "test_cxx.h"
 
-extern "C" void getversion_cxx(void) {
-	check(cpluff::framework::version() != NULL);
-	check(!strcmp(cpluff::framework::version(), CP_VERSION));
-}
-
-extern "C" void gethosttype_cxx(void) {
-	check(cpluff::framework::host_type() != NULL);
-	check(!strcmp(cpluff::framework::host_type(), CP_HOST));
+CP_HIDDEN cpluff::plugin_container &init_container_cxx(cpluff::logger::severity min_disp_sev, int *error_counter) {
+	cpluff::framework::init();
 }
