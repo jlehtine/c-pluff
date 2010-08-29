@@ -39,7 +39,7 @@ namespace cpluff {
  * @param status a status code from C API
  * @return corresponding error message as C string
  */
-static const char* statusToCString(cp_status_t status) throw() {
+static const char* status_to_cs_string(cp_status_t status) throw() {
 	switch (status) {
 		case CP_ERR_RESOURCE:
 			return _("Insufficient system resources for the operation.");
@@ -60,11 +60,11 @@ static const char* statusToCString(cp_status_t status) throw() {
 	}	
 }
 
-CP_HIDDEN void check_cp_status(cp_status_t status) {
+CP_HIDDEN void check_cp_status(cp_status_t status) throw (api_error) {
 	if (status != CP_OK) {
-		throw cp_api_error(
-			(cp_api_error::code) status,
-			statusToCString(status)
+		throw api_error(
+			(api_error::code) status,
+			status_to_cs_string(status)
 		);
 	}
 }

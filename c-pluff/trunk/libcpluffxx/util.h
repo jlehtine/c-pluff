@@ -42,7 +42,7 @@ namespace cpluff {
  * @param status the status code from C API
  * @throw cp_api_error if the status code indicates a failure
  */
-CP_HIDDEN void check_cp_status(cp_status_t status);
+CP_HIDDEN void check_cp_status(cp_status_t status) throw (api_error);
 
 }
 

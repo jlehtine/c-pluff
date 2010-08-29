@@ -38,43 +38,43 @@
 namespace cpluff {
 
 
-CP_HIDDEN CPPluginContextImpl::CPPluginContextImpl(cp_context_t *context)
+CP_HIDDEN plugin_context_impl::plugin_context_impl(cp_context_t *context)
 : context(context),
-  minLoggerseverity(static_cast<logger::severity>(logger::ERROR + 1)) {}
+  min_logger_severity(static_cast<logger::severity>(logger::ERROR + 1)) {}
 
-CP_HIDDEN CPPluginContextImpl::CPPluginContextImpl() {
-	CPPluginContextImpl(NULL);
+CP_HIDDEN plugin_context_impl::plugin_context_impl() {
+	plugin_context_impl(NULL);
 }
 
-CP_HIDDEN CPPluginContextImpl::~CPPluginContextImpl() throw () {
+CP_HIDDEN plugin_context_impl::~plugin_context_impl() throw () {
 	cp_destroy_context(context);
 }
 
-CP_HIDDEN void CPPluginContextImpl::registerLogger(logger &logger, logger::severity minseverity) throw (cp_api_error) {
+CP_HIDDEN void plugin_context_impl::register_logger(logger &logger, logger::severity minseverity) throw (api_error) {
 	// TODO synchronization
 	loggers[&logger] = minseverity;
-	updateMinLoggerseverity();
+	update_min_logger_severity();
 }
 
-CP_HIDDEN void CPPluginContextImpl::unregisterLogger(logger &logger) throw () {
+CP_HIDDEN void plugin_context_impl::unregister_logger(logger &logger) throw () {
 	// TODO synchronization
 	loggers.erase(&logger);
-	updateMinLoggerseverity();
+	update_min_logger_severity();
 }
 
-CP_HIDDEN void CPPluginContextImpl::log(logger::severity severity, const char* msg) throw () {
+CP_HIDDEN void plugin_context_impl::log(logger::severity severity, const char* msg) throw () {
 	cp_log(context, (cp_log_severity_t) severity, msg);
 }
 
-CP_HIDDEN bool CPPluginContextImpl::isLogged(logger::severity severity) throw () {
+CP_HIDDEN bool plugin_context_impl::is_logged(logger::severity severity) throw () {
 	return cp_is_logged(context, (cp_log_severity_t) severity);
 }
 
-CP_HIDDEN void CPPluginContextImpl::logf(logger::severity severity, const char* msg, ...) throw () {
+CP_HIDDEN void plugin_context_impl::logf(logger::severity severity, const char* msg, ...) throw () {
 	assert(msg != NULL);
 	assert(severity >= logger::DEBUG && severity <= logger::ERROR);
 
-	if (isLogged(severity)) {
+	if (is_logged(severity)) {
 		char buffer[256];
 		va_list va;
 	
@@ -86,8 +86,8 @@ CP_HIDDEN void CPPluginContextImpl::logf(logger::severity severity, const char* 
 	}	
 }
 
-CP_HIDDEN void CPPluginContextImpl::deliverLogMessage(cp_log_severity_t sev, const char* msg, const char* apid, void* user_data) throw () {
-	CPPluginContextImpl* context = static_cast<CPPluginContextImpl*>(user_data);
+CP_HIDDEN void plugin_context_impl::deliver_log_message(cp_log_severity_t sev, const char* msg, const char* apid, void* user_data) throw () {
+	plugin_context_impl* context = static_cast<plugin_context_impl*>(user_data);
 	std::map<logger*, logger::severity>::iterator iter;
 	// TODO synchronization
 	for (iter = context->loggers.begin(); iter != context->loggers.end(); iter++) {
@@ -99,14 +99,14 @@ CP_HIDDEN void CPPluginContextImpl::deliverLogMessage(cp_log_severity_t sev, con
 	}
 }
 
-CP_HIDDEN void CPPluginContextImpl::updateMinLoggerseverity() throw () {
-	minLoggerseverity = static_cast<logger::severity>(logger::ERROR + 1);
+CP_HIDDEN void plugin_context_impl::update_min_logger_severity() throw () {
+	min_logger_severity = static_cast<logger::severity>(logger::ERROR + 1);
 	std::map<logger*, logger::severity>::iterator iter;
 	// TODO synchronization
 	for (iter = loggers.begin(); iter != loggers.end(); iter++) {
 		std::pair<logger* const, logger::severity>& p = *iter;
-		if (p.second < minLoggerseverity) {
-			minLoggerseverity = p.second;
+		if (p.second < min_logger_severity) {
+			min_logger_severity = p.second;
 		}
 	}
 } 

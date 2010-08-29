@@ -42,11 +42,11 @@
 
 namespace cpluff {
 
-class CPPluginContextImpl;
-class CPPluginContainerImpl;
-class plugin_importImpl;
+class plugin_context_impl;
+class plugin_container_impl;
+class plugin_import_impl;
 
-class plugin_importImpl: public plugin_import {
+class plugin_import_impl: public plugin_import {
 public:
 
 	/**
@@ -54,13 +54,13 @@ public:
 	 * 
 	 * @param pimport the C API plug-in import
 	 */
-	CP_HIDDEN plugin_importImpl(cp_plugin_import_t* pimport);
+	CP_HIDDEN plugin_import_impl(cp_plugin_import_t* pimport);
 
-	CP_HIDDEN const char* getPluginIdentifier() const throw ();
+	CP_HIDDEN const char* get_plugin_identifier() const throw ();
 
-	CP_HIDDEN const char* getVersion() const throw ();
+	CP_HIDDEN const char* get_version() const throw ();
 
-	CP_HIDDEN bool isOptional() const throw ();
+	CP_HIDDEN bool is_optional() const throw ();
 
 private:
 
@@ -68,23 +68,23 @@ private:
 	cp_plugin_import_t *pimport;
 };
 
-class CPFrameworkImpl : public CPFramework {
+class framework_impl : public framework {
 public:
 
 	/**
 	 * Actually initializes the framework and constructs a framework object.
 	 */
-	CP_HIDDEN CPFrameworkImpl();
+	CP_HIDDEN framework_impl();
 
 	/**
 	 * Destructs a framework object and deinitializes the framework if this
 	 * was the last object.
 	 */
-	CP_HIDDEN ~CPFrameworkImpl() throw ();
+	CP_HIDDEN ~framework_impl() throw ();
 
 	CP_HIDDEN void destroy() throw ();
 
-	CP_HIDDEN CPPluginContainer& createPluginContainer() throw (cp_api_error);
+	CP_HIDDEN plugin_container& create_plugin_container() throw (api_error);
 
 	/**
 	 * Unregisters a plug-in container object with this framework.
@@ -93,18 +93,18 @@ public:
 	 * 
 	 * @param container the container to be unregistered
 	 */
-	CP_HIDDEN void unregisterPluginContainer(CPPluginContainerImpl& container) throw ();
+	CP_HIDDEN void unregister_plugin_container(plugin_container_impl& container) throw ();
 
 private:
 
 	/** 
 	 * The associated valid plug-in containers
 	 */
-	std::set<CPPluginContainerImpl*> containers;
+	std::set<plugin_container_impl*> containers;
 
 };
 
-class CPPluginContextImpl : public virtual CPPluginContext {
+class plugin_context_impl : public virtual plugin_context {
 public:
 
 	/**
@@ -113,15 +113,15 @@ public:
 	 * 
 	 * @param context the C API plug-in context handle
 	 */
-	CP_HIDDEN CPPluginContextImpl(cp_context_t *context);
+	CP_HIDDEN plugin_context_impl(cp_context_t *context);
 
-	CP_HIDDEN void registerLogger(logger& logger, logger::severity minseverity) throw (cp_api_error);
+	CP_HIDDEN void register_logger(logger& logger, logger::severity minseverity) throw (api_error);
 
-	CP_HIDDEN void unregisterLogger(logger& logger) throw ();
+	CP_HIDDEN void unregister_logger(logger& logger) throw ();
 
 	CP_HIDDEN void log(logger::severity severity, const char* msg) throw ();
 
-	CP_HIDDEN bool isLogged(logger::severity severity) throw ();
+	CP_HIDDEN bool is_logged(logger::severity severity) throw ();
 
 	/**
 	 * Returns the associated C API plug-in context handle.
@@ -152,14 +152,14 @@ protected:
 	 * Constructs a new unassociated plug-in context. The subclass constructor
 	 * must set @ref context.
 	 */
-	CP_HIDDEN CPPluginContextImpl();
+	CP_HIDDEN plugin_context_impl();
 
 	/**
 	 * Destructs a plug-in context. All resources associated with this
 	 * plug-in context are released and all pointers and references
 	 * obtained via it become invalid.
 	 */
-	CP_HIDDEN ~CPPluginContextImpl() throw ();
+	CP_HIDDEN ~plugin_context_impl() throw ();
 
 private:
 
@@ -171,7 +171,7 @@ private:
 	/**
 	 * The minimum logging severity for registered loggers.
 	 */
-	logger::severity minLoggerseverity;
+	logger::severity min_logger_severity;
 
 	/**
 	 * Delivers a logged message to all registered C++ loggers of a specific
@@ -182,15 +182,15 @@ private:
 	 * @param apid the identifier of the activating plug-in or NULL for the main program
 	 * @param user_data pointer to the associated plug-in context object
 	 */
-	CP_HIDDEN static void deliverLogMessage(cp_log_severity_t severity, const char* msg, const char* apid, void* user_data) throw ();
+	CP_HIDDEN static void deliver_log_message(cp_log_severity_t severity, const char* msg, const char* apid, void* user_data) throw ();
 
 	/**
 	 * Updates the aggregate minimum severity for installed loggers.
 	 */
-	CP_HIDDEN void updateMinLoggerseverity() throw (); 
+	CP_HIDDEN void update_min_logger_severity() throw (); 
 };
 
-class CPPluginContainerImpl : public CPPluginContainer, public CPPluginContextImpl {
+class plugin_container_impl : public plugin_container, public plugin_context_impl {
 public:
 
 	/**
@@ -199,26 +199,26 @@ public:
 	 * 
 	 * @param framework the associated framework object
 	 */
-	CP_HIDDEN CPPluginContainerImpl(CPFrameworkImpl& framework);
+	CP_HIDDEN plugin_container_impl(framework_impl& framework);
 	
 	CP_HIDDEN void destroy() throw ();
 
-	CP_HIDDEN void registerPluginCollection(const char* dir) throw (cp_api_error);
+	CP_HIDDEN void register_plugin_collection(const char* dir) throw (api_error);
 
-	CP_HIDDEN void unregisterPluginCollection(const char* dir) throw ();
+	CP_HIDDEN void unregister_plugin_collection(const char* dir) throw ();
 
-	CP_HIDDEN void unregisterPluginCollections() throw ();
+	CP_HIDDEN void unregister_plugin_collections() throw ();
 
-	CP_HIDDEN plugin_info& loadPluginDescriptor(const char* path);
+	CP_HIDDEN plugin_info& load_plugin_descriptor(const char* path) throw (api_error);
 
 private:
 
-	CP_HIDDEN ~CPPluginContainerImpl() throw ();
+	CP_HIDDEN ~plugin_container_impl() throw ();
 
 	/**
 	 * The associated framework object
 	 */
-	CPFrameworkImpl& framework;
+	framework_impl& framework;
 	
 };
 
