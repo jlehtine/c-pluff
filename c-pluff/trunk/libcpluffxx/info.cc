@@ -38,7 +38,7 @@ CP_HIDDEN plugin_info::plugin_info(cp_context_t* context, cp_plugin_info_t* pinf
 context(context), pinfo(pinfo) {
 	imports_vec.reserve(pinfo->num_imports);
 	for (int i = 0; i < pinfo->num_imports; i++) {
-		imports_vec.push_back(plugin_import(pinfo->imports + i));
+		// TODO imports_vec.push_back(plugin_import(pinfo->imports + i));
 	}
 	ext_points_vec.reserve(pinfo->num_ext_points);
 	for (int i = 0; i < pinfo->num_ext_points; i++) {

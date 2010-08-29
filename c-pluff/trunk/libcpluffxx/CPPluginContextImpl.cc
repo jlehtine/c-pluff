@@ -51,7 +51,7 @@ CP_HIDDEN void CPPluginContextImpl::logf(logger::severity severity, const char* 
 		va_list va;
 	
 		va_start(va, msg);
-		vsnprintf(buffer, sizeof(buffer), _(msg), va);
+		// TODO fix vsnprintf(buffer, sizeof(buffer), _(msg), va);
 		va_end(va);
 		strcpy(buffer + sizeof(buffer)/sizeof(char) - 4, "...");
 		cp_log(context, (cp_log_severity_t) severity, buffer);

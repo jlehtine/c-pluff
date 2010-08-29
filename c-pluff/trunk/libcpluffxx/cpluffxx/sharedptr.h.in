@@ -40,4 +40,4 @@ struct shared_ptr {
 
 }
 
-#endif /* CPLUFFXX_SHAREDPTR_H_
+#endif /* CPLUFFXX_SHAREDPTR_H_ */
