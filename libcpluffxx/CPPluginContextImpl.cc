@@ -1,8 +1,36 @@
+/*-------------------------------------------------------------------------
+ * C-Pluff, a plug-in framework for C
+ * Copyright 2007 Johannes Lehtinen
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a
+ * copy of this software and associated documentation files (the "Software"),
+ * to deal in the Software without restriction, including without limitation
+ * the rights to use, copy, modify, merge, publish, distribute, sublicense,
+ * and/or sell copies of the Software, and to permit persons to whom the
+ * Software is furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included
+ * in all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS
+ * OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+ * CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+ * TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+ * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ *-----------------------------------------------------------------------*/
+
+/** @file
+ * Plug-in context implementation.
+ */
+
 #ifdef HAVE_CONFIG_H
 #include <config.h>
 #endif
 
 #include <cstdarg>
+#include <cstdio>
 #include <cassert>
 #include <cpluff.h>
 #include "internalxx.h"
@@ -44,14 +72,14 @@ CP_HIDDEN bool CPPluginContextImpl::isLogged(logger::severity severity) throw ()
 
 CP_HIDDEN void CPPluginContextImpl::logf(logger::severity severity, const char* msg, ...) throw () {
 	assert(msg != NULL);
-	assert(severity >= CP_LOG_DEBUG && severity <= CP_LOG_ERROR);
+	assert(severity >= logger::DEBUG && severity <= logger::ERROR);
 
 	if (isLogged(severity)) {
 		char buffer[256];
 		va_list va;
 	
 		va_start(va, msg);
-		// TODO fix vsnprintf(buffer, sizeof(buffer), _(msg), va);
+		vsnprintf(buffer, sizeof(buffer), _(msg), va);
 		va_end(va);
 		strcpy(buffer + sizeof(buffer)/sizeof(char) - 4, "...");
 		cp_log(context, (cp_log_severity_t) severity, buffer);
