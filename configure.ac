@@ -113,8 +113,8 @@ if test "$enable_threads" != no; then
   # Check for Posix thread support
   if test -z "$cp_threads" && \
     ( test -z "$enable_threads" || test "$enable_threads" = Posix ); then
-    AC_MSG_CHECKING([for Posix threads])
-    AC_LINK_IFELSE(
+    AC_CACHE_CHECK([for Posix threads], [cp_cv_sys_pthread],
+      [AC_LINK_IFELSE(
 [#include <pthread.h>
 
 int main(int argc, char *argv[]) {
@@ -123,23 +123,27 @@ int main(int argc, char *argv[]) {
 	pthread_mutex_init(&mutex, NULL);
 	return 0;
 }
-], [AC_MSG_RESULT([yes])
-cp_threads=Posix], AC_MSG_RESULT([no]))
+], [cp_cv_sys_pthread=yes], [cp_cv_sys_pthread=no])])
+    if test "$cp_cv_sys_pthread" = yes; then
+      cp_threads=Posix
+    fi
   fi
   
   # Check for Windows thread suppport
   if test -z "$cp_threads" && \
     ( test -z "$enable_threads" || test "$enable_threads" = Windows ); then
-    AC_MSG_CHECKING([for Windows threads])
-    AC_LINK_IFELSE(
+    AC_CACHE_CHECK([for Windows threads], [cp_cv_sys_wthread],
+      [AC_LINK_IFELSE(
 [#include <windows.h>
 
 int main(int argc, char *argv[]) {
   CreateMutex(NULL, FALSE, NULL);
   return 0;
 }
-], [AC_MSG_RESULT([yes])
-cp_threads=Windows], AC_MSG_RESULT([no]))
+], [cp_cv_sys_wthread=yes], [cp_cv_sys_wthread=no])])
+    if test "$cp_cv_sys_wthread" = yes; then
+      cp_threads=Windows
+    fi
   fi
   
   # Check if we got the desired thread support
