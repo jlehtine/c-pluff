@@ -70,7 +70,7 @@ public:
 	 * 
 	 * @return the release version of the C-Pluff implementation 
 	 */
-	CP_CXX_API static const char* get_version() throw ();
+	CP_CXX_API static const char* version() throw ();
 
 	/**
 	 * Returns the canonical host type associated with the linked in
@@ -79,7 +79,7 @@ public:
 	 * 
 	 * @return the canonical host type
 	 */ 
-	CP_CXX_API static const char* get_host_type() throw ();
+	CP_CXX_API static const char* host_type() throw ();
 
 	/**
 	 * Sets a global fatal error handler. The error handler

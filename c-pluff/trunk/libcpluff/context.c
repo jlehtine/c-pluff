@@ -358,8 +358,6 @@ static cp_status_t init_local_ploader(cp_context_t *context) {
 }
 
 CP_C_API cp_status_t cp_register_pcollection(cp_context_t *context, const char *dir) {
-	char *d = NULL;
-	lnode_t *node = NULL;
 	cp_status_t status = CP_OK;
 	
 	CHECK_NOT_NULL(context);
@@ -391,9 +389,6 @@ CP_C_API cp_status_t cp_register_pcollection(cp_context_t *context, const char *
 }
 
 CP_C_API void cp_unregister_pcollection(cp_context_t *context, const char *dir) {
-	char *d;
-	lnode_t *node;
-	
 	CHECK_NOT_NULL(context);
 	CHECK_NOT_NULL(dir);
 	
@@ -442,9 +437,9 @@ CP_C_API cp_status_t cp_register_ploader(cp_context_t *ctx, cp_plugin_loader_t *
 	
 	// Report error or success
 	if (status != CP_OK) {
-		cpi_errorf(ctx, N_("The plug-in loader %p could not be registered due to insufficient memory."), loader);
+		cpi_errorf(ctx, N_("The plug-in loader %p could not be registered due to insufficient memory."), (void *) loader);
 	} else {
-		cpi_debugf(ctx, N_("The plug-in loader %p was registered."), loader);
+		cpi_debugf(ctx, N_("The plug-in loader %p was registered."), (void *) loader);
 	}
 	cpi_unlock_context(ctx);
 	
@@ -476,7 +471,6 @@ CP_C_API void cp_unregister_ploader(cp_context_t *ctx, cp_plugin_loader_t *loade
 			hscan_t hscan;
 			hnode_t *hnode2;
 			cp_status_t status;
-			const char *id;
 	
 			hash_scan_begin(&hscan, loader_plugins);
 			hnode2 = hash_scan_next(&hscan);
@@ -487,7 +481,7 @@ CP_C_API void cp_unregister_ploader(cp_context_t *ctx, cp_plugin_loader_t *loade
 		hash_delete_free(ctx->env->loaders_to_plugins, hnode);
 		assert(hash_isempty(loader_plugins));
 		hash_destroy(loader_plugins);
-		cpi_debugf(ctx, N_("The plug-in loader %p was unregistered."), loader);
+		cpi_debugf(ctx, N_("The plug-in loader %p was unregistered."), (void *) loader);
 	}
 	cpi_unlock_context(ctx);
 }

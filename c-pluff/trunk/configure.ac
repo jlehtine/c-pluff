@@ -86,14 +86,12 @@ AC_PROG_LN_S
 # ----------------------------------------
 
 AC_ARG_ENABLE([cpluffxx], AS_HELP_STRING([--enable-cpluffxx], [enable C++ API (work in progress)]))
-DIR_LIBCPLUFFXX=
 case "$enable_cpluffxx" in
   yes)
-    DIR_LIBCPLUFFXX=libcpluffxx
     AC_MSG_NOTICE([WARNING! C-Pluff C++ API is work in progress and not yet usable.])
     ;;
 esac
-AC_SUBST([DIR_LIBCPLUFFXX])
+AM_CONDITIONAL([CPLUFFXX], [test "$enable_cpluffxx" = yes])
 
 
 # Include and library paths
@@ -111,6 +109,7 @@ CPPFLAGS="$CPPFLAGS -I\$(top_builddir)/libcpluffxx -I\$(top_srcdir)/libcpluffxx"
 # Substitute variables for libcpluff and non-libcpluff components
 AC_SUBST([LIBS_LIBCPLUFF])
 AC_SUBST([LIBS_OTHER])
+AC_SUBST([LIBS_OTHER_XX])
 
 
 # Define shared library extension
@@ -256,6 +255,7 @@ AM_CONDITIONAL([HAVE_READLINE], test "$have_readline" = yes)
 # Link non-library parts with the C-Pluff library
 # -----------------------------------------------
 LIBS_OTHER="\$(top_builddir)/libcpluff/libcpluff.la $LIBS_OTHER"
+LIBS_OTHER_XX="\$(top_builddir)/libcpluffxx/libcpluffxx.la"
 
 
 # Check for stat/lstat functions
@@ -437,6 +437,7 @@ AC_MSG_NOTICE([    LDFLAGS='$LDFLAGS'])
 AC_MSG_NOTICE([    LIBS='$LIBS'])
 AC_MSG_NOTICE([    LIBS_LIBCPLUFF='$LIBS_LIBCPLUFF'])
 AC_MSG_NOTICE([    LIBS_OTHER='$LIBS_OTHER'])
+AC_MSG_NOTICE([    LIBS_OTHER_XX='$LIBS_OTHER_XX'])
 AC_MSG_NOTICE([    LIB_READLINE='$LIB_READLINE'])
 AC_MSG_NOTICE([    LTLIBINTL='$LTLIBINTL'])
 AC_MSG_NOTICE([-----------------------------------------------------------])

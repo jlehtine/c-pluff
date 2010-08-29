@@ -21,48 +21,17 @@
  * SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
  *-----------------------------------------------------------------------*/
 
-/** @file 
- * Implements container classes for static plug-in information.
- */
-
-#ifdef HAVE_CONFIG_H
-#include <config.h>
-#endif
-
+#include <cstdio>
 #include <cstring>
-#include "internalxx.h"
+#include "test.h"
+#include <cpluffxx.h>
 
-namespace cpluff {
-
-CP_HIDDEN plugin_info::plugin_info(cp_context_t* context, cp_plugin_info_t* pinfo):
-context(context), pinfo(pinfo) {
-	imports_vec.reserve(pinfo->num_imports);
-	for (unsigned int i = 0; i < pinfo->num_imports; i++) {
-		imports_vec.push_back(plugin_import(pinfo->imports + i));
-	}
-	ext_points_vec.reserve(pinfo->num_ext_points);
-	for (unsigned int i = 0; i < pinfo->num_ext_points; i++) {
-		ext_points_vec.push_back(ext_point_info(pinfo->ext_points + i));
-	}
-	extensions_vec.reserve(pinfo->num_extensions);
-	for (unsigned int i = 0; i < pinfo->num_extensions; i++) {
-		extensions_vec.push_back(extension_info(pinfo->extensions + i));
-	}
+void getversion_cxx(void) {
+	check(cpluff::framework::version() != NULL);
+	check(!strcmp(cpluff::framework::version(), CP_VERSION));
 }
 
-CP_HIDDEN plugin_info::~plugin_info() {
-	cp_release_info(context, pinfo);
-}
-
-CP_HIDDEN cfg_element::cfg_element(cfg_element* parent, const cp_cfg_element_t* cfge):
-cfge(cfge), cfg_parent(parent) {
-	for (unsigned int i = 0; i < cfge->num_atts; i += 2) {
-		attr_map[cfge->atts[i]] = cfge->atts[i+1];
-	}
-	cfg_children.reserve(cfge->num_children);
-	for (unsigned int i = 0; i < cfge->num_children; i++) {
-		cfg_children.push_back(new cfg_element(this, cfge->children + i));
-	}
-}
-
+void gethosttype_cxx(void) {
+	check(cpluff::framework::host_type() != NULL);
+	check(!strcmp(cpluff::framework::host_type(), CP_HOST));
 }

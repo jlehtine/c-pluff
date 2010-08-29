@@ -38,6 +38,7 @@ CP_HIDDEN plugin_info& plugin_container_impl::load_plugin_descriptor(const char*
 	cp_status_t status;
 	cp_plugin_info_t *pinfo = cp_load_plugin_descriptor(context, path, &status);
 	check_cp_status(status);
+	return *(new plugin_info(context, pinfo));
 }
 
 CP_HIDDEN void plugin_container_impl::destroy() throw () {
