@@ -42,13 +42,6 @@
 #include <cpluffxx/info.h>
 
 
-// TODO: Eliminate rest
-
-#include <vector>
-#include <map>
-#include <cstddef>
-
-
 /* ------------------------------------------------------------------------
  * Classes
  * ----------------------------------------------------------------------*/
