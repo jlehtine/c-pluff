@@ -70,7 +70,7 @@ public:
 	 * 
 	 * @return the release version of the C-Pluff implementation 
 	 */
-	CP_CXX_API static const char* version() throw ();
+	static const char* version() throw ();
 
 	/**
 	 * Returns the canonical host type associated with the linked in
@@ -79,7 +79,7 @@ public:
 	 * 
 	 * @return the canonical host type
 	 */ 
-	CP_CXX_API static const char* host_type() throw ();
+	static const char* host_type() throw ();
 
 	/**
 	 * Sets a global fatal error handler. The error handler
@@ -91,14 +91,14 @@ public:
 	 * 
 	 * @param feh the fatal error handler to be installed
 	 */ 
-	CP_CXX_API static void set_fatal_error_handler(fatal_error_handler &feh) throw ();
+	static void set_fatal_error_handler(fatal_error_handler &feh) throw ();
 
 	/**
 	 * Resets the default fatal error handler which prints the error message to
 	 * standard error and aborts the program. This function is not thread-safe
 	 * with regards to other threads simultaneously invoking API.
 	 */
-	CP_CXX_API static void reset_fatal_error_handler() throw ();
+	static void reset_fatal_error_handler() throw ();
 	
 	/**
 	 * Initializes the C-Pluff framework. The framework should be destroyed
@@ -115,7 +115,7 @@ public:
 	 * 
 	 * @exception cp_api_error if there is not enough system resources
 	 */ 
-	CP_CXX_API static framework& init();
+	static framework& init();
 
 	/**
 	 * Destroys the framework. All plug-in contexts created via this framework
@@ -125,7 +125,7 @@ public:
 	 * This function is not thread-safe with regards to other threads
 	 * simultaneously initializing or destroying the framework.
 	 */
-	CP_CXX_API virtual void destroy() throw () = 0;
+	virtual void destroy() throw () = 0;
 
 	/**
 	 * Creates a new plug-in container. Plug-ins are loaded and installed into
@@ -140,11 +140,11 @@ public:
 	 * @return the newly created plugin container
 	 * @throw cp_api_error if an error occurs
 	 */
-	CP_CXX_API virtual plugin_container& create_plugin_container() = 0;
+	virtual plugin_container& create_plugin_container() = 0;
 
 protected:
 
-	CP_HIDDEN ~framework() {};
+	~framework() {};
 
 };
 
@@ -176,7 +176,7 @@ public:
 	 * @param minseverity the minimum severity of messages passed to logger
 	 * @throw cp_api_error if insufficient memory
 	 */
-	CP_CXX_API virtual void register_logger(logger& logger, logger::severity minseverity) = 0;
+	virtual void register_logger(logger& logger, logger::severity minseverity) = 0;
 
 	/**
 	 * Removes a logger registration.
@@ -184,7 +184,7 @@ public:
 	 * @param logger the logger object to be unregistered
 	 * @sa registerLogger
 	 */
-	CP_CXX_API virtual void unregister_logger(logger& logger) throw () = 0;
+	virtual void unregister_logger(logger& logger) throw () = 0;
 
 	/**
 	 * Emits a new log message.
@@ -192,7 +192,7 @@ public:
 	 * @param severity the severity of the event
 	 * @param msg the log message (possibly localized)
 	 */
-	CP_CXX_API virtual void log(logger::severity severity, const char* msg) = 0;
+	virtual void log(logger::severity severity, const char* msg) = 0;
 
 	/**
 	 * Returns whether a message of the specified severity would get logged.
@@ -200,11 +200,11 @@ public:
 	 * @param severity the target logging severity
 	 * @return whether a message of the specified severity would get logged
 	 */
-	CP_CXX_API virtual bool is_logged(logger::severity severity) throw () = 0;
+	virtual bool is_logged(logger::severity severity) throw () = 0;
 
 protected:
 
-	CP_HIDDEN ~plugin_context() {};
+	~plugin_context() {};
 };
 
 /**
@@ -220,7 +220,7 @@ public:
 	 * not be accessed after calling this function. All pointers and references
 	 * obtained via the container become invalid after call to destroy.
 	 */
-	CP_CXX_API virtual void destroy() throw () = 0;
+	virtual void destroy() throw () = 0;
 
 	/**
 	 * Registers a plug-in collection with this container. A plug-in collection
@@ -233,7 +233,7 @@ public:
 	 * @param dir the directory
 	 * @throw cp_api_error if insufficient memory
 	 */
-	CP_CXX_API virtual void register_plugin_collection(const char* dir) throw (api_error) = 0;
+	virtual void register_plugin_collection(const char* dir) throw (api_error) = 0;
 
 	/**
 	 * Unregisters a plug-in collection previously registered with this
@@ -243,7 +243,7 @@ public:
 	 * @param dir the previously registered directory
 	 * @sa registerPluginCollection
 	 */
-	CP_CXX_API virtual void unregister_plugin_collection(const char* dir) throw (api_error) = 0;
+	virtual void unregister_plugin_collection(const char* dir) throw (api_error) = 0;
 
 	/**
 	 * Unregisters all plug-in collections registered with this plug-in
@@ -251,7 +251,7 @@ public:
 	 * 
 	 * @sa registerPluginCollection
 	 */
-	CP_CXX_API virtual void unregister_plugin_collections() throw (api_error) = 0;
+	virtual void unregister_plugin_collections() throw (api_error) = 0;
 
 	/**
 	 * Loads a plug-in descriptor from the specified plug-in installation
@@ -266,11 +266,11 @@ public:
 	 * @return reference to the information structure
 	 * @throw cp_api_error if loading fails or the plug-in descriptor is malformed
 	 */
-	CP_CXX_API virtual plugin_info& load_plugin_descriptor(const char* path) throw (api_error) = 0;
+	virtual plugin_info& load_plugin_descriptor(const char* path) throw (api_error) = 0;
 
 protected:
 
-	CP_HIDDEN ~plugin_container() {};
+	~plugin_container() {};
 };
 
 

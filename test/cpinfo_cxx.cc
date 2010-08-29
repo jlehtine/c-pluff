@@ -26,12 +26,12 @@
 #include "test.h"
 #include <cpluffxx.h>
 
-void getversion_cxx(void) {
+extern "C" void getversion_cxx(void) {
 	check(cpluff::framework::version() != NULL);
 	check(!strcmp(cpluff::framework::version(), CP_VERSION));
 }
 
-void gethosttype_cxx(void) {
+extern "C" void gethosttype_cxx(void) {
 	check(cpluff::framework::host_type() != NULL);
 	check(!strcmp(cpluff::framework::host_type(), CP_HOST));
 }
