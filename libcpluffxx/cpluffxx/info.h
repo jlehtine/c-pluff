@@ -71,8 +71,8 @@ public:
 	 * @param pdescriptor the associated plug-in descriptor
 	 * @param pimport the associated C API plug-in import structure 
 	 */
-	CP_HIDDEN inline plugin_import(shared_ptr<const cp_plugin_info_t> pinfo, const cp_plugin_import_t* pimport):
-	/*pinfo(pinfo), pimport(pimport)*/ {}
+	CP_HIDDEN inline plugin_import(shared_ptr<const cp_plugin_info_t>::type pinfo, const cp_plugin_import_t* pimport)/*:
+	pinfo(pinfo), pimport(pimport)*/ {}
 
 	/**
 	 * Returns the identifier of the imported plug-in. This corresponds to the
@@ -115,7 +115,7 @@ public:
 
 protected:
 
-	shared_ptr<const cp_plugin_info_t*> pinfo;
+	shared_ptr<const cp_plugin_info_t*>::type pinfo;
 
 	/** @internal The associated C API plug-in import */
 	const cp_plugin_import_t* pimport;
