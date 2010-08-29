@@ -30,12 +30,8 @@
 
 #include <cstring>
 #include <vector>
-#ifdef INCLUDE_TR1_MEMORY
-#include <tr1/memory>
-#else /* INCLUDE_TR1_MEMORY */
-#include <memory>
-#endif /* INCLUDE_TR1_MEMORY */
 #include <cpluff.h>
+#include <cpluffxx/sharedptr.h>
 
 namespace cpluff {
 
@@ -75,7 +71,7 @@ public:
 	 * @param pdescriptor the associated plug-in descriptor
 	 * @param pimport the associated C API plug-in import structure 
 	 */
-	CP_HIDDEN inline plugin_import(::std::tr1::shared_ptr<const cp_plugin_info_t> pinfo, const cp_plugin_import_t* pimport):
+	CP_HIDDEN inline plugin_import(shared_ptr<const cp_plugin_info_t> pinfo, const cp_plugin_import_t* pimport):
 	/*pinfo(pinfo), pimport(pimport)*/ {}
 
 	/**
