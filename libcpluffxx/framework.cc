@@ -14,26 +14,30 @@ static void invoke_fatal_error_handler(const char *msg) {
 	current_fatal_error_handler->fatal_error(msg);
 }
 
-CP_CXX_API const char* framework::version() throw () {
+const char* framework::version() throw () {
 	return cp_get_version();
 }
 
-CP_CXX_API const char* framework::host_type() throw () {
+const char* framework::host_type() throw () {
 	return cp_get_host_type();
 }
 
-CP_CXX_API void framework::fatal_error_handler(fatal_error_handler &feh) throw () {
+void framework::fatal_error_handler(::cpluff::fatal_error_handler &feh) throw () {
 	current_fatal_error_handler = &feh;
 	cp_set_fatal_error_handler(invoke_fatal_error_handler);
 }
 
-CP_CXX_API void framework::reset_fatal_error_handler() throw () {
+void framework::reset_fatal_error_handler() throw () {
 	current_fatal_error_handler = NULL;
 	cp_set_fatal_error_handler(NULL);
 }
 
-CP_CXX_API framework& framework::init() {
-	return *(new framework_impl());
+void framework::init() throw (api_error) {
+	check_cp_status(cp_init());
+}
+
+void framework::destroy() {
+	cp_destroy();
 }
 
 

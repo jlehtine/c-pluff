@@ -56,10 +56,10 @@ class extension_info;
 class cfg_element;
 
 /**
- * The core class used for global initialization and to access framework
- * functionality. It also provides static information about the framework
- * implementation. This class is not intended to be subclassed by the client
- * program.
+ * The core class used for global initialization and to access global
+ * framework functionality. It also provides static information about
+ * the framework implementation. This class is not intended to be
+ * subclassed by the client program.
  */
 class framework {
 public:
@@ -91,7 +91,7 @@ public:
 	 * 
 	 * @param feh the fatal error handler to be installed
 	 */ 
-	static void fatal_error_handler(fatal_error_handler &feh) throw ();
+	static void fatal_error_handler(::cpluff::fatal_error_handler &feh) throw ();
 
 	/**
 	 * Resets the default fatal error handler which prints the error message to
@@ -102,10 +102,10 @@ public:
 	
 	/**
 	 * Initializes the C-Pluff framework. The framework should be destroyed
-	 * using CPFramework::destroy when framework services are not needed
-	 * anymore. This function can be called several times and it returns
-	 * distinct framework objects. Global initialization occurs at the first
-	 * call when in uninitialized state. This function is not thread-safe with
+	 * using cpluff::framework::destroy when framework services are not needed
+	 * anymore. This function can be called several times. Global
+	 * initialization occurs at the first call when in uninitialized state.
+	 * This function is not thread-safe with
 	 * regards to other threads simultaneously initializing or destroying the
 	 * framework.
 	 * 
@@ -113,39 +113,38 @@ public:
 	 * set the current locale using @code setlocale(LC_ALL, "") @endcode
 	 * before calling this function for the first time.
 	 * 
-	 * @exception cp_api_error if there is not enough system resources
+	 * @throw api_error if there are not enough system resources
 	 */ 
-	static framework& init();
+	static void init() throw (api_error);
 
 	/**
-	 * Destroys the framework. All plug-in contexts created via this framework
-	 * object are destroyed and all references and pointers obtained via this
-	 * framework object become invalid. Global deinitialization occurs when
-	 * all framework objects have been destroyed.
+	 * Destroys the framework. All plug-in containers are destroyed and all
+	 * references and pointers obtained from the plug-in framework become
+	 * invalid. Framework is destroyed when this function has been
+	 * called as many times as cpluff::framework::init.
 	 * This function is not thread-safe with regards to other threads
 	 * simultaneously initializing or destroying the framework.
 	 */
-	virtual void destroy() throw () = 0;
+	static void destroy();
 
 	/**
-	 * Creates a new plug-in container. Plug-ins are loaded and installed into
-	 * a specific container. The main program may have more than one plug-in
-	 * container but the plug-ins that interact with each other should be
-	 * placed in the same container. The resources associated with the
-	 * container are released by destroying the container via
-	 * CPPluginContainer::destroy when it is not needed anymore.
-	 * Remaining containers created via this framework object are automatically
-	 * destroyed when the framework object is destroyed.
-	 * 
-	 * @return the newly created plugin container
-	 * @throw cp_api_error if an error occurs
+	 * Creates and returns a new plug-in container. The returned plug-in
+	 * container should be destroyed by calling its destroy method when
+	 * it is not needed anymore. Any remaining plug-in containers are
+	 * destroyed when the framework is destroyed.
+	 *
+	 * @return reference to a new created plug-in container
+	 * @throw api_error if there are not enough system resources
 	 */
-	virtual plugin_container& create_plugin_container() = 0;
+	static plugin_container &new_plugin_container() throw (api_error);
 
-protected:
+private:
 
-	~framework() {};
+	/** @internal */
+	inline framework() {};
 
+	/** @internal */
+	inline ~framework() {};
 };
 
 /**
@@ -168,21 +167,22 @@ public:
 	 * a registered logger. The logger will receive selected log messages.
 	 * If the specified logger is not yet known, a new logger registration
 	 * is made, otherwise the settings for the existing logger are updated.
-	 * The logger can be unregistered using @ref unregisterLogger and it is
+	 * The logger can be unregistered using cpluff::unregister_logger and it is
 	 * automatically unregistered when the registering plug-in is stopped or
-	 * when the context is destroyed. 
+	 * when the context is destroyed.
 	 *
 	 * @param logger the logger object to be registered
 	 * @param minseverity the minimum severity of messages passed to logger
-	 * @throw cp_api_error if insufficient memory
+	 * @throw cpluff::api_error if insufficient memory
+	 * @sa cpluff::unregister_logger
 	 */
-	virtual void register_logger(logger& logger, logger::severity minseverity) = 0;
+	virtual void register_logger(logger& logger, logger::severity minseverity) throw (api_error) = 0;
 
 	/**
 	 * Removes a logger registration.
 	 *
 	 * @param logger the logger object to be unregistered
-	 * @sa registerLogger
+	 * @sa cpluff::register_logger
 	 */
 	virtual void unregister_logger(logger& logger) throw () = 0;
 
@@ -192,7 +192,7 @@ public:
 	 * @param severity the severity of the event
 	 * @param msg the log message (possibly localized)
 	 */
-	virtual void log(logger::severity severity, const char* msg) = 0;
+	virtual void log(logger::severity severity, const char* msg) throw () = 0;
 
 	/**
 	 * Returns whether a message of the specified severity would get logged.
@@ -204,7 +204,8 @@ public:
 
 protected:
 
-	~plugin_context() {};
+	/** @internal */
+	inline ~plugin_context() {};
 };
 
 /**
@@ -215,23 +216,17 @@ class plugin_container : public virtual plugin_context {
 public:
 
 	/**
-	 * Destroys this plug-in container and releases the associated resources.
-	 * Stops and uninstalls all plug-ins in the container. The container must
-	 * not be accessed after calling this function. All pointers and references
-	 * obtained via the container become invalid after call to destroy.
-	 */
-	virtual void destroy() throw () = 0;
-
-	/**
 	 * Registers a plug-in collection with this container. A plug-in collection
 	 * is a directory that has plug-ins as its immediate subdirectories. The
 	 * directory is scanned for plug-ins when @ref scanPlugins is called.
-	 * A plug-in collection can be unregistered using @ref unregisterPluginCollection or
-	 * @ref unregisterPluginCollections. The specified directory path is
+	 * A plug-in collection can be unregistered using @ref unregister_plugin_collection or
+	 * @ref unregister_plugin_collections. The specified directory path is
 	 * copied.
 	 * 
 	 * @param dir the directory
-	 * @throw cp_api_error if insufficient memory
+	 * @throw api_error if insufficient memory
+	 * @sa unregister_plugin_collection
+	 * @sa unregister_plugin_collections
 	 */
 	virtual void register_plugin_collection(const char* dir) throw (api_error) = 0;
 
@@ -241,17 +236,17 @@ public:
 	 * affected. Does nothing if the directory has not been registered.
 	 * 
 	 * @param dir the previously registered directory
-	 * @sa registerPluginCollection
+	 * @sa register_plugin_collection
 	 */
-	virtual void unregister_plugin_collection(const char* dir) throw (api_error) = 0;
+	virtual void unregister_plugin_collection(const char* dir) throw () = 0;
 
 	/**
 	 * Unregisters all plug-in collections registered with this plug-in
 	 * container. Plug-ins already loaded from collections are not affected.
 	 * 
-	 * @sa registerPluginCollection
+	 * @sa register_plugin_collection
 	 */
-	virtual void unregister_plugin_collections() throw (api_error) = 0;
+	virtual void unregister_plugin_collections() throw () = 0;
 
 	/**
 	 * Loads a plug-in descriptor from the specified plug-in installation
@@ -263,14 +258,23 @@ public:
 	 * anymore, typically after installing the plug-in.
 	 * 
 	 * @param path the installation path of the plug-in
-	 * @return reference to the information structure
+	 * @return reference to the plug-in information structure
 	 * @throw cp_api_error if loading fails or the plug-in descriptor is malformed
 	 */
 	virtual plugin_info& load_plugin_descriptor(const char* path) throw (api_error) = 0;
 
+	/**
+	 * Destroys this plug-in container and releases the associated resources.
+	 * Stops and uninstalls all plug-ins in the container. The container must
+	 * not be accessed after calling this function. All pointers and references
+	 * obtained via the container become invalid after call to destroy.
+	 */
+	virtual void destroy() throw () = 0;
+
 protected:
 
-	~plugin_container() {};
+	/** @internal */
+	inline ~plugin_container() {};
 };
 
 

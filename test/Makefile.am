@@ -24,7 +24,7 @@ check_PROGRAMS = testsuite
 testsuite_SOURCES = psymbolusage.c extcfg.c pdependencies.c pcallbacks.c pscanning.c pinstallation.c ploading.c loggers.c collections.c ploaders.c initdestroy.c fatalerror.c cpinfo.c testmain.c test.h
 testsuite_LDFLAGS = -dlopen self
 
-testsuite_cxx_SOURCES = fatalerror_cxx.cc cpinfo_cxx.cc testmain.c test.h
+testsuite_cxx_SOURCES = initdestroy_cxx.cc fatalerror_cxx.cc cpinfo_cxx.cc test_cxx.cc test_cxx.h testmain.c test.h
 testsuite_cxx_LDADD = @LIBS_OTHER_XX@
 testsuite_cxx_LDFLAGS = -dlopen self
 

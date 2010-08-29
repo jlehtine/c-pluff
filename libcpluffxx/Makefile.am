@@ -20,7 +20,7 @@ DOXYGEN_STYLE = $(top_srcdir)/docsrc/doxygen.footer $(top_srcdir)/docsrc/doxygen
 lib_LTLIBRARIES = libcpluffxx.la
 libcpluffxx_la_SOURCES = \
 	plugin_container_impl.cc \
-	plugin_context_impl.cc framework.cc framework_impl.cc \
+	plugin_context_impl.cc framework.cc \
 	info.cc util.cc internalxx.h
 libcpluffxx_la_LDFLAGS = -no-undefined -version-info $(CP_CXX_LIB_VERSION)
 

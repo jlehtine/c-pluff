@@ -10,16 +10,16 @@
 namespace cpluff {
 
 
-CP_HIDDEN plugin_container_impl::plugin_container_impl(framework_impl& framework)
-: framework(framework) {
+CP_HIDDEN plugin_container_impl::plugin_container_impl() {
 	cp_status_t status;
 	context = cp_create_context(&status);
 	check_cp_status(status);
 	this->context = context;
 }
 
-CP_HIDDEN plugin_container_impl::~plugin_container_impl() throw () {
+CP_HIDDEN void plugin_container_impl::destroy() throw () {
 	cp_destroy_context(context);
+	delete this;
 }
 
 CP_HIDDEN void plugin_container_impl::register_plugin_collection(const char* dir) throw (api_error) {
@@ -39,11 +39,6 @@ CP_HIDDEN plugin_info& plugin_container_impl::load_plugin_descriptor(const char*
 	cp_plugin_info_t *pinfo = cp_load_plugin_descriptor(context, path, &status);
 	check_cp_status(status);
 	return *(new plugin_info(context, pinfo));
-}
-
-CP_HIDDEN void plugin_container_impl::destroy() throw () {
-	framework.unregister_plugin_container(*this);
-	delete this;
 }
 
 }
