@@ -32,7 +32,7 @@
 
 namespace cpluff {
 
-class CPPlugin;
+class plugin;
 
 /**
  * An abstract base class for a fatal error handler. The client program may
@@ -128,7 +128,7 @@ public:
 	 * @param old_state the old plug-in state
 	 * @param new_state the new plug-in state
 	 */	
-	virtual void plugin_state_change(const CPPlugin& plugin, plugin_state old_state, plugin_state new_state) = 0;
+	virtual void plugin_state_change(const plugin& plugin, plugin_state old_state, plugin_state new_state) = 0;
 
 	virtual ~plugin_listener() = 0;
 };

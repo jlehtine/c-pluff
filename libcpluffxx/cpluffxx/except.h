@@ -37,7 +37,7 @@ namespace cpluff {
  * fail throw this exception on error conditions. This class is not intended
  * to be instantiated or subclassed by the client program.
  */
-class cp_api_error {
+class api_error {
 public:
 
 	/** Error codes included in cp_api_error. */
@@ -75,7 +75,7 @@ public:
 	 * @param reason the error code
 	 * @param message the error message
 	 */
-	CP_CXX_API inline cp_api_error(code reason, const char* message):
+	CP_CXX_API inline api_error(code reason, const char* message):
 	error_code(reason), error_message(message) {};
 
 	/**
