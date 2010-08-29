@@ -22,16 +22,45 @@
  *-----------------------------------------------------------------------*/
 
 #include <cstdio>
-#include <cstring>
+#include <cstdlib>
 #include <cpluffxx.h>
 #include "test.h"
 
-extern "C" void getversion_cxx(void) {
-	check(cpluff::framework::version() != NULL);
-	check(!strcmp(cpluff::framework::version(), CP_VERSION));
+static int testvar;
+
+static void cause_fatal_error(void) {
+	cp_context_t *ctx;
+	
+	// TODO: Replace with C++ API implementation
+	cp_init();
+	ctx = init_context((cp_log_severity_t) (CP_LOG_ERROR + 1), NULL);
+	cp_release_info(ctx, &testvar);
+	cp_destroy();
 }
 
-extern "C" void gethosttype_cxx(void) {
-	check(cpluff::framework::host_type() != NULL);
-	check(!strcmp(cpluff::framework::host_type(), CP_HOST));
+extern "C" void fatalerrordefault_cxx(void) {
+	cause_fatal_error();
+}
+
+class test_error_handler : public cpluff::fatal_error_handler {
+public:
+	void fatal_error(const char* msg) {
+		free_test_resources();
+		exit(0);
+	}
+};
+
+extern "C" void fatalerrorhandled_cxx(void) {
+	test_error_handler eh;
+	cpluff::framework::set_fatal_error_handler(eh);
+	cause_fatal_error();
+	free_test_resources();
+	exit(1);
+}
+
+extern "C" void fatalerrorreset_cxx(void) {
+	test_error_handler eh;
+	cpluff::framework::set_fatal_error_handler(eh);
+	cpluff::framework::reset_fatal_error_handler();
+	cause_fatal_error();
 }

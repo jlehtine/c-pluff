@@ -54,7 +54,6 @@ public:
 	 */
 	virtual void fatal_error(const char* msg) = 0;
 	
-	virtual ~fatal_error_handler() = 0;
 };
 
 /**

@@ -1,2 +1,5 @@
 getversion_cxx
 gethosttype_cxx
+fatalerrordefault_cxx
+fatalerrorhandled_cxx
+fatalerrorreset_cxx
