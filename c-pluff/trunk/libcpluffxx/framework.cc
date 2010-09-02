@@ -2,7 +2,6 @@
 #include <config.h>
 #endif
 
-#include <set>
 #include "internalxx.h"
 
 namespace cpluff {
@@ -32,17 +31,14 @@ void framework::reset_fatal_error_handler() throw () {
 	cp_set_fatal_error_handler(NULL);
 }
 
-void framework::init() throw (api_error) {
-	check_cp_status(cp_init());
+shared_ptr<framework> framework::init() throw (api_error) {
+	shared_ptr<framework_impl> sp(new framework_impl);
+	sp.get()->this_shared(sp);
+	return sp;
 }
 
-void framework::destroy() {
-	cp_destroy();
+CP_HIDDEN shared_ptr<plugin_container> framework_impl::new_plugin_container() throw (api_error) {
+	return shared_ptr<plugin_container>(new plugin_container_impl(shared_ptr<framework>(this_weak)));
 }
-
-plugin_container* framework::new_plugin_container() throw (api_error) {
-	return new plugin_container_impl();
-}
-
 
 }

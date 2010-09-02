@@ -7,5 +7,3 @@ initdestroy_cxx
 initcreatedestroy_cxx
 initloaddestroy_cxx
 initinstalldestroy_cxx
-initstartdestroy_cxx
-initstartdestroyboth_cxx

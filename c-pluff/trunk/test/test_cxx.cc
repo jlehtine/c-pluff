@@ -76,17 +76,16 @@ private:
 	int *error_counter;
 };
 
-CP_HIDDEN cpluff::plugin_container *init_container_cxx(cpluff::logger::severity min_disp_sev, int *error_counter) {
-	cpluff::framework::init();
-	cpluff::plugin_container *pc = cpluff::framework::new_plugin_container();
+CP_HIDDEN shared_ptr<cpluff::plugin_container> init_container_cxx(cpluff::logger::severity min_disp_sev, int *error_counter) {
+	shared_ptr<cpluff::plugin_container> pc = cpluff::framework::init().get()->new_plugin_container();
 	if (error_counter != NULL) {
 		*error_counter = 0;
 	}
 	if (error_counter != NULL || min_disp_sev <= cpluff::logger::ERROR) {
 		if (min_disp_sev <= cpluff::logger::ERROR) {
-			pc->register_logger(new full_logger(error_counter), min_disp_sev);
+			pc.get()->register_logger(new full_logger(error_counter), min_disp_sev);
 		} else {
-			pc->register_logger(new counting_logger(error_counter), cpluff::logger::ERROR);
+			pc.get()->register_logger(new counting_logger(error_counter), cpluff::logger::ERROR);
 		}
 	}
 	return pc;

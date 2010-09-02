@@ -131,8 +131,7 @@
  * used with symbols declared as "static" which are already internal to the
  * object file. Some platforms do not support hiding of symbols and therefore
  * unique prefixes should be used for global symbols internal to the module
- * even when they are declared using this macro. C++ code should generally use
- * this macro when declaring inline functions.
+ * even when they are declared using this macro.
  */
 
 #if defined(_WIN32)
