@@ -101,13 +101,11 @@ public:
 	static void reset_fatal_error_handler() throw ();
 	
 	/**
-	 * Initializes the C-Pluff framework. The framework should be destroyed
-	 * using cpluff::framework::destroy when framework services are not needed
-	 * anymore. This function can be called several times. Global
-	 * initialization occurs at the first call when in uninitialized state.
-	 * This function is not thread-safe with
-	 * regards to other threads simultaneously initializing or destroying the
-	 * framework.
+	 * Initializes the C-Pluff framework. The framework is automatically
+	 * destroyed when no more copies of the returned shared pointer are
+	 * left and all the created plug-in containers have been destroyed. This
+	 * function is not thread-safe with regards to other threads
+	 * simultaneously initializing or destroying the framework.
 	 * 
 	 * Additionally, to enable localization support, the main program should
 	 * set the current locale using @code setlocale(LC_ALL, "") @endcode
@@ -115,33 +113,19 @@ public:
 	 * 
 	 * @throw api_error if there are not enough system resources
 	 */ 
-	static void init() throw (api_error);
-
-	/**
-	 * Destroys the framework. All plug-in containers are destroyed and all
-	 * references and pointers obtained from the plug-in framework become
-	 * invalid. Framework is destroyed when this function has been
-	 * called as many times as cpluff::framework::init.
-	 * This function is not thread-safe with regards to other threads
-	 * simultaneously initializing or destroying the framework.
-	 */
-	static void destroy();
+	static shared_ptr<framework> init() throw (api_error);
 
 	/**
 	 * Creates and returns a new plug-in container. The returned plug-in
-	 * container should be destroyed by calling its destroy method when
-	 * it is not needed anymore. Any remaining plug-in containers are
-	 * destroyed when the framework is destroyed.
+	 * container is automatically destroyed when no more copies of the
+	 * returned shared pointer are left.
 	 *
 	 * @return reference to a new created plug-in container
 	 * @throw api_error if there are not enough system resources
 	 */
-	static plugin_container* new_plugin_container() throw (api_error);
+	virtual shared_ptr<plugin_container> new_plugin_container() throw (api_error) = 0;
 
-private:
-
-	/** @internal */
-	inline framework() {};
+protected:
 
 	/** @internal */
 	inline ~framework() {};
@@ -253,23 +237,14 @@ public:
 	 * path and returns information about the plug-in. The plug-in descriptor
 	 * is validated during loading. Possible loading errors are logged via this
 	 * plug-in container. The plug-in is not installed to the container.
-	 * The caller must release the returned information by calling
-	 * plugin_info::release when it does not need the information
-	 * anymore, typically after installing the plug-in.
+	 * The plug-in information is automatically released when there are no
+	 * more copies of the returned shared pointer left.
 	 * 
 	 * @param path the installation path of the plug-in
 	 * @return reference to the plug-in information structure
 	 * @throw cp_api_error if loading fails or the plug-in descriptor is malformed
 	 */
-	virtual plugin_info& load_plugin_descriptor(const char* path) throw (api_error) = 0;
-
-	/**
-	 * Destroys this plug-in container and releases the associated resources.
-	 * Stops and uninstalls all plug-ins in the container. The container must
-	 * not be accessed after calling this function. All pointers and references
-	 * obtained via the container become invalid after call to destroy.
-	 */
-	virtual void destroy() throw () = 0;
+	virtual shared_ptr<plugin_info> load_plugin_descriptor(const char* path) throw (api_error) = 0;
 
 protected:
 

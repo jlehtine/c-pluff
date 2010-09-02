@@ -28,17 +28,15 @@
 extern "C" void initdestroy_cxx(void) {
 	for (int i = 0; i < 10; i++) {
 		cpluff::framework::init();
-		cpluff::framework::destroy();
 	}
 }
 
 extern "C" void initcreatedestroy_cxx(void) {
 	for (int i = 0; i < 3; i++) {
 		int errors;
-
-		
-		init_context(CP_LOG_ERROR, &errors);
-		cp_destroy();
+		do {
+			init_container_cxx(cpluff::logger::ERROR, &errors);
+		} while (0);
 		check(errors == 0);
 	}
 }
@@ -47,16 +45,12 @@ extern "C" void initloaddestroy_cxx(void) {
 	int i;
 	
 	for (i = 0; i < 3; i++) {
-		cp_context_t *ctx;
-		cp_plugin_info_t *pi;
-		cp_status_t status;
 		const char *pdir = plugindir("minimal");
 		int errors;
-
-		ctx = init_context(CP_LOG_ERROR, &errors);		
-		check((pi = cp_load_plugin_descriptor(ctx, pdir, &status)) != NULL && status == CP_OK);
-		cp_release_info(ctx, pi);
-		cp_destroy();
+		do {
+			shared_ptr<cpluff::plugin_container> pc = init_container_cxx(cpluff::logger::ERROR, &errors);
+			pc.get()->load_plugin_descriptor(pdir);
+		} while (0);
 		check(errors == 0);
 	}
 }
@@ -65,21 +59,18 @@ extern "C" void initinstalldestroy_cxx(void) {
 	int i;
 	
 	for (i = 0; i < 3; i++) {
-		cp_context_t *ctx;
-		cp_plugin_info_t *pi;
-		cp_status_t status;
 		const char *pdir = plugindir("minimal");
 		int errors;
-
-		ctx = init_context(CP_LOG_ERROR, &errors);		
-		check((pi = cp_load_plugin_descriptor(ctx, pdir, &status)) != NULL && status == CP_OK);
-		check(cp_install_plugin(ctx, pi) == CP_OK);
-		cp_release_info(ctx, pi);
-		cp_destroy();
+		do {
+			shared_ptr<cpluff::plugin_container> pc = init_container_cxx(cpluff::logger::ERROR, &errors);
+			shared_ptr<cpluff::plugin_info> pi = pc.get()->load_plugin_descriptor(pdir);
+			// TODO check(cp_install_plugin(ctx, pi) == CP_OK);
+		} while (0);
 		check(errors == 0);
 	}
 }
 
+#if 0
 extern "C" void initstartdestroy_cxx(void) {
 	int i;
 	
@@ -89,13 +80,14 @@ extern "C" void initstartdestroy_cxx(void) {
 		cp_status_t status;
 		const char *pdir = plugindir("minimal");
 		int errors;
-		
+		do {
 		ctx = init_context(CP_LOG_ERROR, &errors);
 		check((pi = cp_load_plugin_descriptor(ctx, pdir, &status)) != NULL && status == CP_OK);
 		check(cp_install_plugin(ctx, pi) == CP_OK);
 		cp_release_info(ctx, pi);
 		check(cp_start_plugin(ctx, "minimal") == CP_OK);
 		cp_destroy();
+		} while (0);
 		check(errors == 0);
 	}
 }
@@ -120,3 +112,4 @@ extern "C" void initstartdestroyboth_cxx(void) {
 		check(errors == 0);
 	}
 }
+#endif

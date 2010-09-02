@@ -273,21 +273,19 @@ AC_LANG_PUSH([C++])
 AC_CACHE_CHECK([for std::tr1::shared_ptr in <memory>], [cp_cv_type_shared_ptr_in_memory],
   [AC_COMPILE_IFELSE(
 [#include <memory>
-class test;
-std::tr1::shared_ptr<test> shared_test;
+std::tr1::shared_ptr<int> shared_test;
 ], [cp_cv_type_shared_ptr_in_memory=yes], [cp_cv_type_shared_ptr_in_memory=no])])
 if test "$cp_cv_type_shared_ptr_in_memory" = yes; then
-  CP_CXX_SHARED_PTR="::std::tr1::shared_ptr"
+  CP_CXX_SHARED_PTR_NS="::std::tr1"
   CP_CXX_SHARED_PTR_INCLUDE="<memory>"
 else
   AC_CACHE_CHECK([for std::tr1:shared_ptr in <tr1/memory>], [cp_cv_type_shared_ptr_in_tr1_memory],
     [AC_COMPILE_IFELSE(
 [#include <tr1/memory>
-class test;
-std::tr1::shared_ptr<test> shared_test;
+std::tr1::shared_ptr<int> shared_test;
 ], [cp_cv_type_shared_ptr_in_tr1_memory=yes], [cp_cv_type_shared_ptr_in_tr1_memory=no])])
   if test "$cp_cv_type_shared_ptr_in_tr1_memory" = yes; then
-    CP_CXX_SHARED_PTR="::std::tr1::shared_ptr"
+    CP_CXX_SHARED_PTR_NS="::std::tr1"
     CP_CXX_SHARED_PTR_INCLUDE="<tr1/memory>"
   else
     AC_CACHE_CHECK([for GCC std::shared_ptr in <memory>], [cp_cv_type_gcc_shared_ptr_in_memory],
@@ -295,23 +293,21 @@ std::tr1::shared_ptr<test> shared_test;
       CXXFLAGS="$CXXFLAGS -std=c++0x"
       AC_COMPILE_IFELSE(
 [#include <memory>
-class test;
-std::shared_ptr<test> shared_test;
+std::shared_ptr<int> shared_test;
 ], [cp_cv_type_gcc_shared_ptr_in_memory=yes], [cp_cv_type_gcc_shared_ptr_in_memory=no])
       CXXFLAGS="$stored_CXXFLAGS"])
     if test "$cp_cv_type_gcc_shared_ptr_in_memory" = yes; then
-      CP_CXX_SHARED_PTR="::std::shared_ptr"
+      CP_CXX_SHARED_PTR_NS="::std"
       CP_CXX_SHARED_PTR_INCLUDE="<memory>"
       CXXFLAGS="$CXXFLAGS -std=c++0x"
     else
       AC_CACHE_CHECK([for boost::shared_ptr in <boost/shared_ptr.hpp>], [cp_cv_type_boost_shared_ptr],
         [AC_COMPILE_IFELSE([
 #include <boost/shared_ptr.hpp>
-class test;
-boost::shared_ptr<test> shared_test;
+boost::shared_ptr<int> shared_test;
 ], [cp_cv_type_boost_shared_ptr=yes], [cp_cv_type_boost_shared_ptr=no])])
       if test "$cp_cv_type_boost_shared_ptr" = yes; then
-        CP_CXX_SHARED_PTR="::boost::shared_ptr"
+        CP_CXX_SHARED_PTR_NS="::boost"
         CP_CXX_SHARED_PTR_INCLUDE="<boost/shared_ptr.hpp>"
       else
         AC_MSG_ERROR([Could not find compatible shared_ptr implementation.])
@@ -319,7 +315,7 @@ boost::shared_ptr<test> shared_test;
     fi    
   fi
 fi
-AC_SUBST([CP_CXX_SHARED_PTR])
+AC_SUBST([CP_CXX_SHARED_PTR_NS])
 AC_SUBST([CP_CXX_SHARED_PTR_INCLUDE])
 
 AC_LANG_POP([C++])

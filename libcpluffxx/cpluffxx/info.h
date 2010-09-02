@@ -542,9 +542,9 @@ public:
 		return extensions_vec;
 	}
 
-protected:
-
 	~plugin_info();
+
+protected:
 
 	/** @internal The C API plug-in context handle */
 	cp_context_t* context;

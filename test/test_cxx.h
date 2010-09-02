@@ -40,11 +40,6 @@
  * @param error_counter pointer to the location where the logged error count is to be stored or NULL 
  * @return the created plug-in context
  */
-CP_HIDDEN cpluff::plugin_container *init_container_cxx(cpluff::logger::severity min_disp_sev, int *error_counter);
-
-/**
- * Destroys the framework instance initialized by the init_container_cxx.
- */
-CP_HIDDEN void destroy_framework_cxx(void);
+CP_HIDDEN shared_ptr<cpluff::plugin_container> init_container_cxx(cpluff::logger::severity min_disp_sev, int *error_counter);
 
 #endif /*TEST_CXX_H_*/

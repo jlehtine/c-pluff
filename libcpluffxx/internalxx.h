@@ -36,6 +36,7 @@
 #include "../libcpluff/shared.h"
 #include "util.h"
 
+
 /* -----------------------------------------------------------------------
  * Implementation classes
  * ---------------------------------------------------------------------*/
@@ -46,7 +47,34 @@ class plugin_context_impl;
 class plugin_container_impl;
 class plugin_import_impl;
 
-class plugin_import_impl: public plugin_import {
+class framework_impl : public virtual framework {
+public:
+
+	/**
+	 * Initializes the C-Pluff framework, if first framework object.
+	 */
+	CP_HIDDEN inline framework_impl() {
+		cp_init();
+	}
+
+	/**
+	 * Destroys the C-Pluff framework, if last framework object.
+	 */
+	CP_HIDDEN inline ~framework_impl() {
+		cp_destroy();
+	}
+
+	CP_HIDDEN inline void this_shared(shared_ptr<framework> ts) {
+		this_weak = ts;
+	}
+
+	CP_HIDDEN shared_ptr<plugin_container> new_plugin_container() throw (api_error);
+
+private:
+	weak_ptr<framework> this_weak;
+};
+
+class plugin_import_impl : public virtual plugin_import {
 public:
 
 	/**
@@ -56,9 +84,9 @@ public:
 	 */
 	CP_HIDDEN plugin_import_impl(cp_plugin_import_t* pimport);
 
-	CP_HIDDEN const char* get_plugin_identifier() const throw ();
+	CP_HIDDEN const char* plugin_identifier() const throw ();
 
-	CP_HIDDEN const char* get_version() const throw ();
+	CP_HIDDEN const char* version() const throw ();
 
 	CP_HIDDEN bool is_optional() const throw ();
 
@@ -86,15 +114,6 @@ public:
 	CP_HIDDEN void log(logger::severity severity, const char* msg) throw ();
 
 	CP_HIDDEN bool is_logged(logger::severity severity) throw ();
-
-	/**
-	 * Returns the associated C API plug-in context handle.
-	 * 
-	 * @return the associated C API plug-in context handle
-	 */
-	CP_HIDDEN inline cp_context_t* getCContext() throw () {
-		return context;
-	}
 
 	/**
 	 * Emits a new formatted log message if the associated severity is being
@@ -160,7 +179,7 @@ public:
 	/**
 	 * Constructs a new plug-in container.
 	 */
-	CP_HIDDEN plugin_container_impl();
+	CP_HIDDEN plugin_container_impl(shared_ptr<framework> fw);
 	
 	CP_HIDDEN void register_plugin_collection(const char* dir) throw (api_error);
 
@@ -168,13 +187,11 @@ public:
 
 	CP_HIDDEN void unregister_plugin_collections() throw ();
 
-	CP_HIDDEN plugin_info& load_plugin_descriptor(const char* path) throw (api_error);
-
-	CP_HIDDEN void destroy() throw ();
+	CP_HIDDEN shared_ptr<plugin_info> load_plugin_descriptor(const char* path) throw (api_error);
 
 private:
 
-	inline ~plugin_container_impl() {};
+	shared_ptr<framework> fw;
 
 };
 
