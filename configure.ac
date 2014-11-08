@@ -144,7 +144,7 @@ if test "$enable_threads" != no; then
     ( test -z "$enable_threads" || test "$enable_threads" = Posix ); then
     AC_CACHE_CHECK([for Posix threads], [cp_cv_sys_pthread],
       [AC_LINK_IFELSE(
-[#include <pthread.h>
+[AC_LANG_SOURCE([#include <pthread.h>
 
 int main(int argc, char *argv[]) {
 	pthread_mutex_t mutex;
@@ -152,7 +152,7 @@ int main(int argc, char *argv[]) {
 	pthread_mutex_init(&mutex, NULL);
 	return 0;
 }
-], [cp_cv_sys_pthread=yes], [cp_cv_sys_pthread=no])])
+])], [cp_cv_sys_pthread=yes], [cp_cv_sys_pthread=no])])
     if test "$cp_cv_sys_pthread" = yes; then
       cp_threads=Posix
     fi
@@ -163,13 +163,13 @@ int main(int argc, char *argv[]) {
     ( test -z "$enable_threads" || test "$enable_threads" = Windows ); then
     AC_CACHE_CHECK([for Windows threads], [cp_cv_sys_wthread],
       [AC_LINK_IFELSE(
-[#include <windows.h>
+[AC_LANG_SOURCE([#include <windows.h>
 
 int main(int argc, char *argv[]) {
   CreateMutex(NULL, FALSE, NULL);
   return 0;
 }
-], [cp_cv_sys_wthread=yes], [cp_cv_sys_wthread=no])])
+])], [cp_cv_sys_wthread=yes], [cp_cv_sys_wthread=no])])
     if test "$cp_cv_sys_wthread" = yes; then
       cp_threads=Windows
     fi
@@ -272,18 +272,18 @@ AC_LANG_PUSH([C++])
 # --------------------
 AC_CACHE_CHECK([for std::tr1::shared_ptr in <memory>], [cp_cv_type_shared_ptr_in_memory],
   [AC_COMPILE_IFELSE(
-[#include <memory>
+[AC_LANG_SOURCE([#include <memory>
 std::tr1::shared_ptr<int> shared_test;
-], [cp_cv_type_shared_ptr_in_memory=yes], [cp_cv_type_shared_ptr_in_memory=no])])
+])], [cp_cv_type_shared_ptr_in_memory=yes], [cp_cv_type_shared_ptr_in_memory=no])])
 if test "$cp_cv_type_shared_ptr_in_memory" = yes; then
   CP_CXX_SHARED_PTR_NS="::std::tr1"
   CP_CXX_SHARED_PTR_INCLUDE="<memory>"
 else
   AC_CACHE_CHECK([for std::tr1:shared_ptr in <tr1/memory>], [cp_cv_type_shared_ptr_in_tr1_memory],
     [AC_COMPILE_IFELSE(
-[#include <tr1/memory>
+[AC_LANG_SOURCE([#include <tr1/memory>
 std::tr1::shared_ptr<int> shared_test;
-], [cp_cv_type_shared_ptr_in_tr1_memory=yes], [cp_cv_type_shared_ptr_in_tr1_memory=no])])
+])], [cp_cv_type_shared_ptr_in_tr1_memory=yes], [cp_cv_type_shared_ptr_in_tr1_memory=no])])
   if test "$cp_cv_type_shared_ptr_in_tr1_memory" = yes; then
     CP_CXX_SHARED_PTR_NS="::std::tr1"
     CP_CXX_SHARED_PTR_INCLUDE="<tr1/memory>"
@@ -292,9 +292,9 @@ std::tr1::shared_ptr<int> shared_test;
       [stored_CXXFLAGS="$CXXFLAGS"
       CXXFLAGS="$CXXFLAGS -std=c++0x"
       AC_COMPILE_IFELSE(
-[#include <memory>
+[AC_LANG_SOURCE([#include <memory>
 std::shared_ptr<int> shared_test;
-], [cp_cv_type_gcc_shared_ptr_in_memory=yes], [cp_cv_type_gcc_shared_ptr_in_memory=no])
+])], [cp_cv_type_gcc_shared_ptr_in_memory=yes], [cp_cv_type_gcc_shared_ptr_in_memory=no])
       CXXFLAGS="$stored_CXXFLAGS"])
     if test "$cp_cv_type_gcc_shared_ptr_in_memory" = yes; then
       CP_CXX_SHARED_PTR_NS="::std"
@@ -302,10 +302,10 @@ std::shared_ptr<int> shared_test;
       CXXFLAGS="$CXXFLAGS -std=c++0x"
     else
       AC_CACHE_CHECK([for boost::shared_ptr in <boost/shared_ptr.hpp>], [cp_cv_type_boost_shared_ptr],
-        [AC_COMPILE_IFELSE([
-#include <boost/shared_ptr.hpp>
+        [AC_COMPILE_IFELSE(
+[AC_LANG_SOURCE([#include <boost/shared_ptr.hpp>
 boost::shared_ptr<int> shared_test;
-], [cp_cv_type_boost_shared_ptr=yes], [cp_cv_type_boost_shared_ptr=no])])
+])], [cp_cv_type_boost_shared_ptr=yes], [cp_cv_type_boost_shared_ptr=no])])
       if test "$cp_cv_type_boost_shared_ptr" = yes; then
         CP_CXX_SHARED_PTR_NS="::boost"
         CP_CXX_SHARED_PTR_INCLUDE="<boost/shared_ptr.hpp>"
