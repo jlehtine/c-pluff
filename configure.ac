@@ -115,7 +115,7 @@ if test "$enable_threads" != no; then
     ( test -z "$enable_threads" || test "$enable_threads" = Posix ); then
     AC_CACHE_CHECK([for Posix threads], [cp_cv_sys_pthread],
       [AC_LINK_IFELSE(
-[#include <pthread.h>
+[AC_LANG_SOURCE([#include <pthread.h>
 
 int main(int argc, char *argv[]) {
 	pthread_mutex_t mutex;
@@ -123,7 +123,7 @@ int main(int argc, char *argv[]) {
 	pthread_mutex_init(&mutex, NULL);
 	return 0;
 }
-], [cp_cv_sys_pthread=yes], [cp_cv_sys_pthread=no])])
+])], [cp_cv_sys_pthread=yes], [cp_cv_sys_pthread=no])])
     if test "$cp_cv_sys_pthread" = yes; then
       cp_threads=Posix
     fi
@@ -134,13 +134,13 @@ int main(int argc, char *argv[]) {
     ( test -z "$enable_threads" || test "$enable_threads" = Windows ); then
     AC_CACHE_CHECK([for Windows threads], [cp_cv_sys_wthread],
       [AC_LINK_IFELSE(
-[#include <windows.h>
+[AC_LANG_SOURCE([#include <windows.h>
 
 int main(int argc, char *argv[]) {
   CreateMutex(NULL, FALSE, NULL);
   return 0;
 }
-], [cp_cv_sys_wthread=yes], [cp_cv_sys_wthread=no])])
+])], [cp_cv_sys_wthread=yes], [cp_cv_sys_wthread=no])])
     if test "$cp_cv_sys_wthread" = yes; then
       cp_threads=Windows
     fi
