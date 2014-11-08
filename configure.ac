@@ -48,7 +48,7 @@ AC_SUBST([CP_CXX_LIB_VERSION])
 
 # Automake initialization
 # -----------------------
-AM_INIT_AUTOMAKE([foreign])
+AM_INIT_AUTOMAKE([foreign subdir-objects])
 AM_GNU_GETTEXT([external])
 AM_GNU_GETTEXT_VERSION([0.16.1])
 
