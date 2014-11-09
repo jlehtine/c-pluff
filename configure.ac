@@ -108,6 +108,7 @@ CPPFLAGS="$CPPFLAGS -I\$(top_builddir)/libcpluffxx -I\$(top_srcdir)/libcpluffxx"
 
 # Substitute variables for libcpluff and non-libcpluff components
 AC_SUBST([LIBS_LIBCPLUFF])
+AC_SUBST([LIBS_TESTSUITE])
 AC_SUBST([LIBS_OTHER])
 AC_SUBST([LIBS_OTHER_XX])
 
@@ -208,12 +209,12 @@ dlmechanism=none
 if test "$with_dlopen" != no && test "$with_libltdl" != yes; then
   AC_CHECK_HEADER([dlfcn.h],
     AC_CHECK_LIB([dl], [dlopen],
-      [LIBS_LIBCPLUFF="-ldl $LIBS_LIBCPLUFF"; dlmechanism=dlopen]))
+      [LIBS_DL="-ldl $LIBS_DL"; dlmechanism=dlopen]))
 fi
 if test "$dlmechanism" = none && test "$with_libltdl" != no && test "$with_dlopen" != yes; then  
   AC_CHECK_HEADER([ltdl.h],
     AC_CHECK_LIB([ltdl], [lt_dlopen],
-      [LIBS_LIBCPLUFF="-lltdl $LIBS_LIBCPLUFF"; dlmechanism=libltdl]))
+      [LIBS_DL="-lltdl $LIBS_DL"; dlmechanism=libltdl]))
 fi
 case "$dlmechanism" in
   dlopen)
@@ -226,6 +227,8 @@ case "$dlmechanism" in
     AC_MSG_ERROR([Either the Posix dlopen facility or GNU Libtool libltdl is required])
     ;;
 esac
+LIBS_LIBCPLUFF="$LIBS_DL $LIBS_LIBCPLUFF"
+LIBS_TESTSUITE="$LIBS_DL $LIBS_TESTSUITE"
 
 
 # Check for Expat XML parsing library
@@ -432,6 +435,7 @@ AC_MSG_NOTICE([    CXXFLAGS='$CXXFLAGS'])
 AC_MSG_NOTICE([    LDFLAGS='$LDFLAGS'])
 AC_MSG_NOTICE([    LIBS='$LIBS'])
 AC_MSG_NOTICE([    LIBS_LIBCPLUFF='$LIBS_LIBCPLUFF'])
+AC_MSG_NOTICE([    LIBS_TESTSUITE='$LIBS_TESTSUITE'])
 AC_MSG_NOTICE([    LIBS_OTHER='$LIBS_OTHER'])
 AC_MSG_NOTICE([    LIBS_OTHER_XX='$LIBS_OTHER_XX'])
 AC_MSG_NOTICE([    LIB_READLINE='$LIB_READLINE'])
