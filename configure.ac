@@ -266,6 +266,22 @@ LIBS_OTHER_XX="\$(top_builddir)/libcpluffxx/libcpluffxx.la"
 AC_CHECK_FUNCS([stat lstat])
 
 
+# Check for isatty and fileno functions
+# -------------------------------------
+AC_CACHE_CHECK([for isatty and fileno], [cp_cv_sys_have_isatty_fileno],
+[AC_LINK_IFELSE(
+[AC_LANG_SOURCE([#include <unistd.h>
+#include <stdio.h>
+
+int main(int argc, char *argv[]) {
+  return isatty(fileno(stdin));
+}
+])], [cp_cv_sys_have_isatty_fileno=yes], [cp_cv_sys_have_isatty_fileno=no])])
+if test "$cp_cv_sys_have_isatty_fileno" = yes; then
+    AC_DEFINE([HAVE_ISATTY_FILENO],[],[Define to use isatty and fileno])
+fi
+
+
 # Execute C++ related tests if C++ interface enabled
 if test "$enable_cpluffxx" = yes; then
 AC_LANG_PUSH([C++])
@@ -323,7 +339,6 @@ AC_SUBST([CP_CXX_SHARED_PTR_INCLUDE])
 
 AC_LANG_POP([C++])
 fi # End of C++ related tests
-
 
 # Debugging support
 # -----------------
