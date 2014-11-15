@@ -230,6 +230,19 @@ LIBS_OTHER="\$(top_builddir)/libcpluff/libcpluff.la $LIBS_OTHER"
 # ------------------------------
 AC_CHECK_FUNCS([stat lstat])
 
+# Check for isatty and fileno functions
+# -------------------------------------
+AC_MSG_CHECKING([for isatty and fileno])
+AC_LINK_IFELSE(
+[AC_LANG_SOURCE([#include <unistd.h>
+#include <stdio.h>
+
+int main(int argc, char *argv[]) {
+  return isatty(fileno(stdin));
+}
+])], [AC_MSG_RESULT([yes])
+AC_DEFINE([HAVE_ISATTY_FILENO],[],[Define to use isatty and fileno])], AC_MSG_RESULT([no]))
+
 # Debugging support
 # -----------------
 AC_ARG_ENABLE([debug],
