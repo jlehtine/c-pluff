@@ -1213,7 +1213,7 @@ CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const c
  * If operation fails or the descriptor
  * is invalid then NULL is returned. The caller must release the returned
  * information by calling ::cp_release_plugin_info when it does not
- * need the information anymore.
+ * need the information anymore, typically after installing the plug-in.
  * The returned plug-in information must not be modified.
  * 
  * @param ctx the plug-in context
@@ -1222,7 +1222,7 @@ CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const c
  * @param status a pointer to the location where status code is to be stored, or NULL
  * @return pointer to the information structure or NULL if error occurs
  */
-CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor_from_memory(cp_context_t *context, const char *buffer, unsigned int buffer_len, cp_status_t *error) CP_GCC_NONNULL(1, 2);
+CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor_from_memory(cp_context_t *ctx, const char *buffer, unsigned int buffer_len, cp_status_t *status) CP_GCC_NONNULL(1, 2);
 
 /**
  * Installs the plug-in described by the specified plug-in information
