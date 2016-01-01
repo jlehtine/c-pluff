@@ -103,9 +103,9 @@ dist-hook:
 	$(MKDIR_P) '$(distdir)/expected'
 	cp -p '$(srcdir)'/expected/*.txt '$(distdir)'/expected
 	$(MKDIR_P) '$(distdir)'/plugins
-	for d in $(ls '$(srcdir)'/plugins); do \
-		( mkdir '$(distdir)'/plugins/"$$d" && \
-			cp -p '$(srcdir)'"/$$d/plugin.xml" '$(distdir)'/plugins/"$$d" ) \
+	for d in $$(ls '$(srcdir)'/plugins); do \
+		( $(MKDIR_P) '$(distdir)'/plugins/"$$d" && \
+			cp -p '$(srcdir)'"/plugins/$$d/plugin.xml" '$(distdir)'/plugins/"$$d" ) \
 		|| exit 1; \
 	done
 	$(MKDIR_P) '$(distdir)'/pcollections
