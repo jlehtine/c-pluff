@@ -103,19 +103,19 @@ dist-hook:
 	$(MKDIR_P) '$(distdir)/expected'
 	cp -p '$(srcdir)'/expected/*.txt '$(distdir)'/expected
 	$(MKDIR_P) '$(distdir)'/plugins
-	cd '$(srcdir)'/plugins && \
-		for d in *; do \
-			( mkdir '$(distdir)'/plugins/"$$d" && \
-				cp -p "$$d/plugin.xml" '$(distdir)'/plugins/"$$d" ) \
-			|| exit 1; \
-		done
+	for d in $(ls '$(srcdir)'/plugins); do \
+		( mkdir '$(distdir)'/plugins/"$$d" && \
+			cp -p '$(srcdir)'"/$$d/plugin.xml" '$(distdir)'/plugins/"$$d" ) \
+		|| exit 1; \
+	done
 	$(MKDIR_P) '$(distdir)'/pcollections
-	cd '$(srcdir)'/pcollections && \
-		for d in */*; do \
-			( $(MKDIR_P) '$(distdir)'/pcollections/"$$d" && \
-				cp -p "$$d/plugin.xml" '$(distdir)'/pcollections/"$$d" ) \
+	for d in $$(ls '$(srcdir)'/pcollections); do \
+		for d2 in $$(ls '$(srcdir)'"/pcollections/$$d"); do \
+			( $(MKDIR_P) '$(distdir)'/pcollections/"$$d/$$d2" && \
+				cp -p '$(srcdir)'"/pcollections/$$d/$$d2/plugin.xml" '$(distdir)'/pcollections/"$$d/$$d2" ) \
 			|| exit 1; \
-		done
+		done; \
+	done
 
 install-plugins: build-plugins install-libcpluff
 	cd plugins-source && $(MAKE) $(AM_MAKEFLAGS) DESTDIR='$(tmpinstalldir)' install
