@@ -8,11 +8,9 @@ ACLOCAL_AMFLAGS = -I m4
 
 if CPLUFFXX
 DIR_LIBCPLUFFXX = libcpluffxx
-else
-DIR_LIBCPLUFFXX =
 endif
 SUBDIRS = libcpluff $(DIR_LIBCPLUFFXX) loader console po test docsrc doc
-DIST_SUBDIRS = $(SUBDIRS) examples
+DIST_SUBDIRS = libcpluff libcpluffxx loader console po test docsrc doc examples
 DOC_SUBDIRS = libcpluff $(DIR_LIBCPLUFFXX)
 
 EXTRA_DIST = COPYRIGHT.txt INSTALL.txt ChangeLog.txt Roadmap.txt autogen.sh plugin.xsd
