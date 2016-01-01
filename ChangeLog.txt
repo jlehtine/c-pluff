@@ -1,6 +1,7 @@
 C-Pluff (0.2.0-SNAPSHOT)
 
-  * Initial implementation of C++ API.
+  * Initial incomplete implementation of C++ API (not built by default, use
+    configure option --enable-cpluffxx to enable C++ library).
   * Added support for application provided plug-in loaders that may resolve
     plug-ins using application specific mechanism. A local plug-in loader
     loading plug-ins from local file system is provided by the framework.
@@ -11,6 +12,10 @@ C-Pluff (0.2.0-SNAPSHOT)
 
 
 C-Pluff (0.1.4)
+
+This is an intermediate release based mostly on old codebase with couple of
+merged new features. It does not include the latest features from the master
+branch.
 
   * Merged cp_load_plugin_descriptor_from_memory() by Jonathan Marshall from
     Kodi/XBMC codebase and added a unit test for it.
