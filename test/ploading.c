@@ -47,7 +47,8 @@ void loadonlymaximalfrommemory(void) {
 	cp_plugin_info_t *plugin;
 	cp_status_t status;
 	int errors, bytesloaded = 0, i;
-	char *pd, *pdfilename, *membuffer;
+	const char *pd;
+	char *pdfilename, *membuffer;
 	FILE *f;
 
 	/* Load plugin descriptor to memory buffer */
