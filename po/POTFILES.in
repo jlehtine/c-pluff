@@ -8,6 +8,7 @@ libcpluff/context.c
 libcpluff/cpluff.c
 libcpluff/logging.c
 libcpluff/pcontrol.c
+libcpluff/pdescriptor.c
 libcpluff/pinfo.c
 libcpluff/ploader.c
 libcpluff/pscan.c
