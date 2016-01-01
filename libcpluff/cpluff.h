@@ -1082,7 +1082,7 @@ CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *ctx, const c
  * specified plug-in context. The plug-in is not installed to the context.
  * If operation fails or the descriptor
  * is invalid then NULL is returned. The caller must release the returned
- * information by calling ::cp_release_plugin_info when it does not
+ * information by calling ::cp_release_info when it does not
  * need the information anymore, typically after installing the plug-in.
  * The returned plug-in information must not be modified.
  * 
