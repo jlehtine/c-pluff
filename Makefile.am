@@ -13,9 +13,9 @@ SUBDIRS = libcpluff $(DIR_LIBCPLUFFXX) loader console po test docsrc doc
 DIST_SUBDIRS = libcpluff libcpluffxx loader console po test docsrc doc examples
 DOC_SUBDIRS = libcpluff $(DIR_LIBCPLUFFXX)
 
-EXTRA_DIST = COPYRIGHT.txt INSTALL.txt ChangeLog.txt Roadmap.txt autogen.sh plugin.xsd
+EXTRA_DIST = COPYRIGHT.txt INSTALL.txt ChangeLog.txt autogen.sh plugin.xsd
 
-doc_DATA = COPYRIGHT.txt ChangeLog.txt Roadmap.txt
+doc_DATA = COPYRIGHT.txt ChangeLog.txt
 
 doc:
 	for d in $(DOC_SUBDIRS); do ( cd "$$d" && $(MAKE) $(AM_MAKEFLAGS) $@ ) || exit 1; done
