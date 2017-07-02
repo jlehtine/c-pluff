@@ -18,7 +18,8 @@ cd "$basedir"
 autopoint
 rm -f ABOUT-NLS
 test -d auxliary || mkdir auxliary
-libtoolize --automake -f
+case `uname` in Darwin*) glibtoolize --automake -f ;;
+ *) libtoolize --automake -f ;; esac
 aclocal -I m4
 autoconf
 autoheader
