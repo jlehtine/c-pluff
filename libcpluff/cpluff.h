@@ -1033,6 +1033,15 @@ CP_C_API void cp_destroy(void);
 CP_C_API cp_context_t * cp_create_context(cp_status_t *status);
 
 /**
+ * Changes the file name in the plug-in the plug-in descriptor is loaded from.
+ * The default name is "plugin.xml"
+ *
+ * @param ctx the context to change the plug-in descriptor file name in
+ * @param name the new plug-in descriptor file name
+ */
+CP_C_API void cp_set_plugin_descriptor_name(cp_context_t *ctx, const char *name);
+
+/**
  * Destroys the specified plug-in context and releases the associated resources.
  * Stops and uninstalls all plug-ins in the context. The context must not be
  * accessed after calling this function.

@@ -60,9 +60,6 @@
 /// Initial configuration element value size 
 #define CP_CFG_ELEMENT_VALUE_INITSIZE 64
 
-/// Plugin descriptor name 
-#define CP_PLUGIN_DESCRIPTOR "plugin.xml"
-
 
 /* ------------------------------------------------------------------------
  * Internal data types
@@ -1150,14 +1147,14 @@ CP_C_API cp_plugin_info_t * cp_load_plugin_descriptor(cp_context_t *context, con
 		if (path[path_len - 1] == CP_FNAMESEP_CHAR) {
 			path_len--;
 		}
-		file = malloc((path_len + strlen(CP_PLUGIN_DESCRIPTOR) + 2) * sizeof(char));
+		file = malloc((path_len + strlen(context->env->plugin_descriptor_name) + 2) * sizeof(char));
 		if (file == NULL) {
 			status = CP_ERR_RESOURCE;
 			break;
 		}
 		strcpy(file, path);
 		file[path_len] = CP_FNAMESEP_CHAR;
-		strcpy(file + path_len + 1, CP_PLUGIN_DESCRIPTOR);
+		strcpy(file + path_len + 1, context->env->plugin_descriptor_name);
 
 		// Open the file 
 		if ((fh = fopen(file, "rb")) == NULL) {

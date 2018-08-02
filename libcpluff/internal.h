@@ -79,6 +79,9 @@ extern "C" {
 /// Logging limit for no logging
 #define CP_LOG_NONE 1000
 
+/// Plugin descriptor's default file name
+#define CP_PLUGIN_DESCRIPTOR "plugin.xml"
+
 
 /* ------------------------------------------------------------------------
  * Macros
@@ -151,6 +154,9 @@ struct cp_plugin_env_t {
 	/// An array of startup arguments
 	char **argv;
 	
+	/// Plugin descriptor file name
+	const char *plugin_descriptor_name;
+
 	/// Installed plug-in listeners 
 	list_t *plugin_listeners;
 	
