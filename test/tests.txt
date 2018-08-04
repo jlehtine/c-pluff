@@ -31,6 +31,7 @@ updatelogger
 logmsg
 islogged
 loadonlymaximal
+loadonlymaximaladdon
 loadonlymaximalfrommemory
 loadminimal
 loadmaximal
