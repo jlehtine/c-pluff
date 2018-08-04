@@ -515,13 +515,14 @@ static void CP_XMLCALL character_data_handler(
  */
 static void CP_XMLCALL start_element_handler(
 	void *userData, const XML_Char *name, const XML_Char **atts) {
+	ploader_context_t *plcontext = userData;
 	static const XML_Char * const req_plugin_atts[] = { "id", NULL };
 	static const XML_Char * const opt_plugin_atts[] = { "name", "version", "provider-name", NULL };
 	static const XML_Char * const req_bwcompatibility_atts[] = { NULL };
 	static const XML_Char * const opt_bwcompatibility_atts[] = { "abi", "api", NULL };
 	static const XML_Char * const req_cpluff_atts[] = { "version", NULL };
 	static const XML_Char * const opt_cpluff_atts[] = { NULL };
-	static const XML_Char * const req_import_atts[] = { "plugin", NULL };
+	const XML_Char * const req_import_atts[] = { plcontext->context->env->plugin_descriptor_root_element, NULL };
 	static const XML_Char * const opt_import_atts[] = { "version", "optional", NULL };
 	static const XML_Char * const req_runtime_atts[] = { "library", NULL };
 	static const XML_Char * const opt_runtime_atts[] = { "funcs", NULL };
@@ -529,14 +530,13 @@ static void CP_XMLCALL start_element_handler(
 	static const XML_Char * const opt_ext_point_atts[] = { "name", "schema", NULL };
 	static const XML_Char * const req_extension_atts[] = { "point", NULL };
 	//static const XML_Char * const opt_extension_atts[] = { "id", "name", NULL };
-	ploader_context_t *plcontext = userData;
 	unsigned int i;
 
 	// Process element start 
 	switch (plcontext->state) {
 
 		case PARSER_BEGIN:
-			if (!strcmp(name, "plugin")) {
+			if (!strcmp(name, plcontext->context->env->plugin_descriptor_root_element)) {
 				plcontext->state = PARSER_PLUGIN;
 				if (!check_attributes(plcontext, name, atts,
 						req_plugin_atts, opt_plugin_atts)) {
@@ -746,7 +746,7 @@ static void CP_XMLCALL start_element_handler(
 					import->plugin_id = NULL;
 					import->version = NULL;
 					for (i = 0; atts[i] != NULL; i += 2) {
-						if (!strcmp(atts[i], "plugin")) {
+						if (!strcmp(atts[i], req_import_atts[0])) {
 							import->plugin_id
 								= parser_strdup(plcontext, atts[i+1]);
 						} else if (!strcmp(atts[i], "version")) {
@@ -829,7 +829,7 @@ static void CP_XMLCALL end_element_handler(
 	switch (plcontext->state) {
 
 		case PARSER_PLUGIN:
-			if (!strcmp(name, "plugin")) {
+			if (!strcmp(name, plcontext->context->env->plugin_descriptor_root_element)) {
 				
 				// Readjust memory allocated for extension points, if necessary 
 				if (plcontext->ext_points_size != plcontext->plugin->num_ext_points) {

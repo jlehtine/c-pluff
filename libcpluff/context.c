@@ -197,6 +197,7 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 		env->argc = 0;
 		env->argv = NULL;
 		env->plugin_descriptor_name = CP_PLUGIN_DESCRIPTOR;
+		env->plugin_descriptor_root_element = CP_PLUGIN_ROOT_ELEMENT;
 		env->plugin_listeners = list_create(LISTCOUNT_T_MAX);
 		env->loggers = list_create(LISTCOUNT_T_MAX);
 		env->log_min_severity = CP_LOG_NONE;
@@ -272,6 +273,13 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *error) {
 	
 	// Return the context (or NULL on failure) 
 	return context;
+}
+
+CP_C_API void cp_set_plugin_descriptor_root_element(cp_context_t *context, const char *root) {
+	CHECK_NOT_NULL(context);
+	CHECK_NOT_NULL(context->env);
+	CHECK_NOT_NULL(root);
+	context->env->plugin_descriptor_root_element = root;
 }
 
 CP_C_API void cp_set_plugin_descriptor_name(cp_context_t *context, const char *name) {

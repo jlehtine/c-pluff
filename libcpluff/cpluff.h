@@ -1042,6 +1042,16 @@ CP_C_API cp_context_t * cp_create_context(cp_status_t *status);
 CP_C_API void cp_set_plugin_descriptor_name(cp_context_t *ctx, const char *name);
 
 /**
+ * Changes the XML root element's name in plug-in descriptor.
+ * This also changes the attribute name to be used in the "import" element.
+ * The default name is "plugin".
+ *
+ * @param ctx the context to change the plug-in descriptor's XML root element's name in
+ * @param root the new XML root element name
+ */
+CP_C_API void cp_set_plugin_descriptor_root_element(cp_context_t *ctx, const char *root);
+
+/**
  * Destroys the specified plug-in context and releases the associated resources.
  * Stops and uninstalls all plug-ins in the context. The context must not be
  * accessed after calling this function.

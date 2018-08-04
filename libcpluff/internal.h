@@ -82,6 +82,9 @@ extern "C" {
 /// Plugin descriptor's default file name
 #define CP_PLUGIN_DESCRIPTOR "plugin.xml"
 
+/// Plugin descriptor's default root xml element
+#define CP_PLUGIN_ROOT_ELEMENT "plugin"
+
 
 /* ------------------------------------------------------------------------
  * Macros
@@ -156,6 +159,9 @@ struct cp_plugin_env_t {
 	
 	/// Plugin descriptor file name
 	const char *plugin_descriptor_name;
+
+	/// Plugin descriptor's XML root element
+	const char *plugin_descriptor_root_element;
 
 	/// Installed plug-in listeners 
 	list_t *plugin_listeners;
