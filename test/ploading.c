@@ -42,6 +42,21 @@ void loadonlymaximal(void) {
 	check(errors == 0);
 }
 
+void loadonlymaximaladdon(void) {
+	cp_context_t *ctx;
+	cp_plugin_info_t *plugin;
+	cp_status_t status;
+	int errors;
+
+	ctx = init_context(CP_LOG_ERROR, &errors);
+	cp_set_plugin_descriptor_name(ctx, "addon.xml");
+	cp_set_plugin_descriptor_root_element(ctx, "addon");
+	check((plugin = cp_load_plugin_descriptor(ctx, plugindir("maximal"), &status)) != NULL && status == CP_OK);
+	cp_release_info(ctx, plugin);
+	cp_destroy();
+	check(errors == 0);
+}
+
 void loadonlymaximalfrommemory(void) {
 	cp_context_t *ctx;
 	cp_plugin_info_t *plugin;
