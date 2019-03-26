@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=${prefix}
+includedir=@includedir@
+libdir=@libdir@
+
+Name: libcpluff
+Description: C-Pluff, a plug-in framework for C
+URL: https://github.com/jlehtine/c-pluff
+Version: @PACKAGE_VERSION@
+Cflags: -I${includedir}
+Libs: -L${libdir} -lcpluff
