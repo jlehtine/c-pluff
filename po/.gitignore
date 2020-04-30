@@ -9,8 +9,11 @@ remove-potcdate.sin
 Makefile.in.in
 quot.sed
 en@quot.header
+en@quot.insert-header
 en@boldquot.header
+en@boldquot.insert-header
 boldquot.sed
+remove-potcdate.sed
 ChangeLog
 Makefile
 Makefile.in

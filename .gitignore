@@ -1,3 +1,4 @@
+*~
 autom4te.cache
 Makefile
 Makefile.in
@@ -5,7 +6,10 @@ aclocal.m4
 config.status
 configure
 .deps
+.dirstamp
 *.o
+*.lo
+*.la
 .libs
 libtool
 stamp-h1
@@ -15,3 +19,6 @@ build*
 config.h.in
 auxliary
 config.h
+config.log
+*.pc
+cpluff-*.tar.gz
