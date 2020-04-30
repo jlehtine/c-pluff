@@ -7,6 +7,13 @@ C-Pluff (0.2.0-SNAPSHOT)
     loading plug-ins from local file system is provided by the framework.
   * Updated build environment for current tool versions.
   * Improvements to build scripts (configure cache, etc).
+  * Removed files which are now part of Debian packaging.
+    Thank you to Bálint Réczey for Debian packaging.
+  * Support for Kodi plugin format added by Bálint Réczey.
+  * Support for pkg-config added by Olaf Hering.
+  * Build fix for iOS and OS X by Razzeee.
+  * Some compilation warnings fixed by Chris Mayo.
+  * Build fix for NetBSD by coypoop.
 
  -- UNRELEASED
 
