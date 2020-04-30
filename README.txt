@@ -9,6 +9,6 @@ the whole application or framework.
 
 For more information, see the documentation at C-Pluff web site.
 
-  http://www.c-pluff.org/
+  https://c-pluff.org/
 
 For build and installation instructions, see INSTALL.txt.

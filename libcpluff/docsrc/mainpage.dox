@@ -25,10 +25,10 @@
  * @mainpage
  *
  * This is reference documentation for the
- * <a href="http://www.c-pluff.org/">C-Pluff</a> C API.
+ * <a href="https://c-pluff.org/">C-Pluff</a> C API.
  * C-Pluff is a plug-in framework for C programs.
  * It has been strongly inspired by the Java plug-in framework in
- * <a href="http://www.eclipse.org/">Eclipse</a>. C-Pluff focuses on
+ * <a href="https://www.eclipse.org/">Eclipse</a>. C-Pluff focuses on
  * providing core services for plug-in interaction and plug-in
  * management. It aims to be platform neutral and supports dynamic changes to
  * plug-in configuration without stopping the whole application or framework.
@@ -50,7 +50,7 @@
  *
  * The latest version of the framework implementation
  * and documentation is available at
- * <a href="http://www.c-pluff.org/">C-Pluff web site</a>.
+ * <a href="https://c-pluff.org/">C-Pluff web site</a>.
  *
  * This documentation has been generated from the C-Pluff source code
  * using <a href="http://www.doxygen.org">Doxygen</a>.
