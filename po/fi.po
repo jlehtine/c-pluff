@@ -7,7 +7,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: C-Pluff 0.1.1\n"
 "Report-Msgid-Bugs-To: johannes.lehtinen@iki.fi\n"
-"POT-Creation-Date: 2016-01-01 22:26+0200\n"
+"POT-Creation-Date: 2020-04-30 23:48+0300\n"
 "PO-Revision-Date: 2007-03-26 08:40+0300\n"
 "Last-Translator: Johannes Lehtinen <johannes.lehtinen@iki.fi>\n"
 "Language-Team: Finnish <translation-team-fi@lists.sourceforge.net>\n"
@@ -448,11 +448,11 @@ msgstr "C-Pluff -konsoli > "
 msgid "Unknown command %s.\n"
 msgstr "Tuntematon komento %s.\n"
 
-#: libcpluff/context.c:279
+#: libcpluff/context.c:295
 msgid "Only the main program can destroy a plug-in context."
 msgstr "Vain pääohjelma voi tuhota liitännäisympäristön."
 
-#: libcpluff/context.c:382
+#: libcpluff/context.c:398
 #, c-format
 msgid ""
 "The plug-in collection in path %s could not be registered due to "
@@ -461,70 +461,70 @@ msgstr ""
 "Liitännäiskokoelmaa polussa %s ei voitu rekisteröidä riittämättömän muistin "
 "takia."
 
-#: libcpluff/context.c:384
+#: libcpluff/context.c:400
 #, c-format
 msgid "The plug-in collection in path %s was registered."
 msgstr "Liitännäiskokoelma polussa %s rekisteröitiin."
 
-#: libcpluff/context.c:400
+#: libcpluff/context.c:416
 #, c-format
 msgid "The plug-in collection in path %s was unregistered."
 msgstr "Polussa %s olevan liitännäiskokoelman rekisteröinti poistettiin."
 
-#: libcpluff/context.c:411
+#: libcpluff/context.c:427
 msgid "All plug-in collections were unregistered."
 msgstr "Kaikkien liitännäiskokoelmien rekisteröinnit poistettiin."
 
-#: libcpluff/context.c:440
+#: libcpluff/context.c:456
 #, c-format
 msgid ""
 "The plug-in loader %p could not be registered due to insufficient memory."
 msgstr ""
 "Liitännäislaturia %p ei voitu rekisteröidä riittämättömän muistin takia."
 
-#: libcpluff/context.c:442
+#: libcpluff/context.c:458
 #, c-format
 msgid "The plug-in loader %p was registered."
 msgstr "Liitännäislaturi %p rekisteröitiin."
 
-#: libcpluff/context.c:484
+#: libcpluff/context.c:500
 #, c-format
 msgid "The plug-in loader %p was unregistered."
 msgstr "Liitännäislaturin %p rekisteröinti poistettiin."
 
-#: libcpluff/context.c:526
+#: libcpluff/context.c:542
 #, c-format
 msgid "At least one startup argument must be given in call to function %s."
 msgstr ""
 "Käynnistysparametreja pitää olla vähintään yksi kutsuttaessa funktiota %s."
 
-#: libcpluff/context.c:557
+#: libcpluff/context.c:573
 #, c-format
 msgid "Function %s was called from within a logger invocation."
 msgstr "Funktiota %s kutsuttiin lokitietojen käsittelijän kautta."
 
-#: libcpluff/context.c:561
+#: libcpluff/context.c:577
 #, c-format
 msgid "Function %s was called from within an event listener invocation."
 msgstr "Funktiota %s kutsuttiin tapahtumakuuntelijan kautta."
 
-#: libcpluff/context.c:565
+#: libcpluff/context.c:581
 #, c-format
 msgid "Function %s was called from within a plug-in start function invocation."
 msgstr "Funktiota %s kutsuttiin liitännäisen käynnistysfunktion kautta."
 
-#: libcpluff/context.c:569
+#: libcpluff/context.c:585
 #, c-format
 msgid "Function %s was called from within a plug-in stop function invocation."
 msgstr "Funktiota %s kutsuttiin liitännäisen pysäytysfunktion kautta."
 
-#: libcpluff/context.c:572
+#: libcpluff/context.c:588
 #, c-format
 msgid ""
 "Function %s was called from within a plug-in create function invocation."
 msgstr "Funktiota %s kutsuttiin liitännäisen luontifunktion kautta."
 
-#: libcpluff/context.c:575
+#: libcpluff/context.c:591
 #, c-format
 msgid ""
 "Function %s was called from within a plug-in destroy function invocation."
@@ -532,14 +532,14 @@ msgstr "Funktiota %s kutsuttiin liitännäisen tuhoamisfunktion kautta."
 
 #. TRANSLATORS: The context owner (when it is a plug-in) used in some strings.
 #. Search for "context owner" to find these strings.
-#: libcpluff/context.c:625
+#: libcpluff/context.c:641
 #, c-format
 msgid "Plug-in %s"
 msgstr "Liitännäinen %s"
 
 #. TRANSLATORS: The context owner (when it is the main program) used in some strings.
 #. Search for "context owner" to find these strings.
-#: libcpluff/context.c:629
+#: libcpluff/context.c:645
 msgid "The main program"
 msgstr "Pääohjelma"
 
@@ -724,21 +724,21 @@ msgstr "Tuntematonta liitännäistä %s ei voitu pysäyttää."
 msgid "Unknown plug-in %s could not be uninstalled."
 msgstr "Tuntematonta liitännäistä %s ei voitu poistaa muistista."
 
-#: libcpluff/pdescriptor.c:166
+#: libcpluff/pdescriptor.c:163
 #, c-format
 msgid "Suspicious plug-in descriptor content in %s, line %d, column %d (%s)."
 msgstr ""
 "Epäilyttävä liitännäiskuvauksen sisältö kohteessa %s, rivillä %d, "
 "sarakkeessa %d (%s)."
 
-#: libcpluff/pdescriptor.c:173
+#: libcpluff/pdescriptor.c:170
 #, c-format
 msgid "Invalid plug-in descriptor content in %s, line %d, column %d (%s)."
 msgstr ""
 "Viallinen liitännäiskuvauksen sisältö kohteessa %s, rivillä %d, sarakkeessa "
 "%d (%s)."
 
-#: libcpluff/pdescriptor.c:193
+#: libcpluff/pdescriptor.c:190
 #, c-format
 msgid ""
 "Insufficient system resources to parse plug-in descriptor content in %s, "
@@ -747,59 +747,59 @@ msgstr ""
 "Järjestelmäresurssit eivät riitä liitännäiskuvauksen lataamiseen kohteessa "
 "%s, rivillä %d, sarakkeessa %d."
 
-#: libcpluff/pdescriptor.c:247
+#: libcpluff/pdescriptor.c:244
 #, c-format
 msgid "required attribute %s for element %s has an empty value"
 msgstr "pakollinen attribuutti %s elementille %s on tyhjä"
 
-#: libcpluff/pdescriptor.c:253
+#: libcpluff/pdescriptor.c:250
 #, c-format
 msgid "required attribute %s missing for element %s"
 msgstr "pakollinen attribuutti %s elementille %s puuttuu"
 
-#: libcpluff/pdescriptor.c:287
+#: libcpluff/pdescriptor.c:284
 #, c-format
 msgid "ignoring unknown attribute %s for element %s"
 msgstr "jätetään huomiotta tuntematon attribuutti %s elementille %s"
 
-#: libcpluff/pdescriptor.c:380
+#: libcpluff/pdescriptor.c:377
 #, c-format
 msgid "ignoring unexpected element %s and its contents"
 msgstr "jätetään huomiotta odottamaton elementti %s sisältöineen"
 
-#: libcpluff/pdescriptor.c:763
+#: libcpluff/pdescriptor.c:760
 #, c-format
 msgid "unknown boolean value: %s"
 msgstr "tuntematon boolean-arvo: %s"
 
-#: libcpluff/pdescriptor.c:973
+#: libcpluff/pdescriptor.c:970
 #, c-format
 msgid "unexpected closing tag for %s"
 msgstr "odottamaton sulkutägi elementille %s"
 
-#: libcpluff/pdescriptor.c:1037
+#: libcpluff/pdescriptor.c:1034
 #, c-format
 msgid "XML parsing error in %s, line %d, column %d (%s)."
 msgstr "XML-tulkintavirhe kohteessa %s, rivillä %d, sarakkeessa %d (%s)."
 
-#: libcpluff/pdescriptor.c:1081
+#: libcpluff/pdescriptor.c:1078
 #, c-format
 msgid "Plug-in descriptor in %s is invalid."
 msgstr "Liitännäiskuvaus kohteessa %s on viallinen."
 
-#: libcpluff/pdescriptor.c:1085
+#: libcpluff/pdescriptor.c:1082
 #, c-format
 msgid "An I/O error occurred while loading a plug-in descriptor from %s."
 msgstr "I/O-virhe ladattaessa liitännäiskuvausta kohteesta %s."
 
-#: libcpluff/pdescriptor.c:1089
+#: libcpluff/pdescriptor.c:1086
 #, c-format
 msgid "Insufficient system resources to load a plug-in descriptor from %s."
 msgstr ""
 "Järjestelmäresurssit eivät riitä liitännäiskuvauksen lataamiseen kohteesta "
 "%s."
 
-#: libcpluff/pdescriptor.c:1093
+#: libcpluff/pdescriptor.c:1090
 #, c-format
 msgid "Failed to load a plug-in descriptor from %s."
 msgstr "Liitännäisen lataaminen polusta %s epäonnistui."

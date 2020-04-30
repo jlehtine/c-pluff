@@ -6,7 +6,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: xbmc 12.0\n"
 "Report-Msgid-Bugs-To: johannes.lehtinen@iki.fi\n"
-"POT-Creation-Date: 2016-01-01 22:26+0200\n"
+"POT-Creation-Date: 2020-04-30 23:48+0300\n"
 "PO-Revision-Date: 2013-03-11 21:24+0200\n"
 "Last-Translator: Chris Leick <c.leick@vollbio.de>\n"
 "Language-Team: German <debian-l10n-german@lists.debian.org>\n"
@@ -452,11 +452,11 @@ msgstr "C-Pluff-Konsole > "
 msgid "Unknown command %s.\n"
 msgstr "unbekannter Befehl %s\n"
 
-#: libcpluff/context.c:279
+#: libcpluff/context.c:295
 msgid "Only the main program can destroy a plug-in context."
 msgstr "Nur das Hauptprogramm kann den Kontext eines Plug-ins zerstören."
 
-#: libcpluff/context.c:382
+#: libcpluff/context.c:398
 #, c-format
 msgid ""
 "The plug-in collection in path %s could not be registered due to "
@@ -465,21 +465,21 @@ msgstr ""
 "Die Plug-in-Sammlung in Pfad %s konnte aufgrund unzureichenden Speichers "
 "nicht registriert werden."
 
-#: libcpluff/context.c:384
+#: libcpluff/context.c:400
 #, c-format
 msgid "The plug-in collection in path %s was registered."
 msgstr "Die Plug-in-Sammlung in Pfad %s wurde registriert."
 
-#: libcpluff/context.c:400
+#: libcpluff/context.c:416
 #, c-format
 msgid "The plug-in collection in path %s was unregistered."
 msgstr "Die Registrierung der Plug-in-Sammlung in Pfad %s wurde entfernt."
 
-#: libcpluff/context.c:411
+#: libcpluff/context.c:427
 msgid "All plug-in collections were unregistered."
 msgstr "Die Registrierung aller Plug-in-Sammlungen wurde entfernt."
 
-#: libcpluff/context.c:440
+#: libcpluff/context.c:456
 #, fuzzy, c-format
 msgid ""
 "The plug-in loader %p could not be registered due to insufficient memory."
@@ -487,53 +487,53 @@ msgstr ""
 "Aufgrund unzureichenden Speichers konnte ein Programm, das auf Plug-ins "
 "wartet, nicht registriert werden."
 
-#: libcpluff/context.c:442
+#: libcpluff/context.c:458
 #, fuzzy, c-format
 msgid "The plug-in loader %p was registered."
 msgstr "Die Plug-in-Sammlung in Pfad %s wurde registriert."
 
-#: libcpluff/context.c:484
+#: libcpluff/context.c:500
 #, fuzzy, c-format
 msgid "The plug-in loader %p was unregistered."
 msgstr "Die Registrierung der Plug-in-Sammlung in Pfad %s wurde entfernt."
 
-#: libcpluff/context.c:526
+#: libcpluff/context.c:542
 #, c-format
 msgid "At least one startup argument must be given in call to function %s."
 msgstr ""
 "Beim Aufruf der Funktion %s muss mindestens ein Startargument angegeben "
 "werden."
 
-#: libcpluff/context.c:557
+#: libcpluff/context.c:573
 #, c-format
 msgid "Function %s was called from within a logger invocation."
 msgstr ""
 "Funktion %s wurde im Aufruf eines Protokollierungsprogramms aufgerufen."
 
-#: libcpluff/context.c:561
+#: libcpluff/context.c:577
 #, c-format
 msgid "Function %s was called from within an event listener invocation."
 msgstr ""
 "Funktion %s wurde im Aufruf einer Ereignisbehandlungsroutine aufgerufen."
 
-#: libcpluff/context.c:565
+#: libcpluff/context.c:581
 #, c-format
 msgid "Function %s was called from within a plug-in start function invocation."
 msgstr "Funktion %s wurde im Aufruf einer Plug-in-Startfunktion aufgerufen."
 
-#: libcpluff/context.c:569
+#: libcpluff/context.c:585
 #, c-format
 msgid "Function %s was called from within a plug-in stop function invocation."
 msgstr "Funktion %s wurde im Aufruf einer Plug-in-Stoppfunktion aufgerufen."
 
-#: libcpluff/context.c:572
+#: libcpluff/context.c:588
 #, c-format
 msgid ""
 "Function %s was called from within a plug-in create function invocation."
 msgstr ""
 "Funktion %s wurde im Aufruf einer Plug-in-Erstellungsfunktion aufgerufen."
 
-#: libcpluff/context.c:575
+#: libcpluff/context.c:591
 #, c-format
 msgid ""
 "Function %s was called from within a plug-in destroy function invocation."
@@ -542,14 +542,14 @@ msgstr ""
 
 #. TRANSLATORS: The context owner (when it is a plug-in) used in some strings.
 #. Search for "context owner" to find these strings.
-#: libcpluff/context.c:625
+#: libcpluff/context.c:641
 #, c-format
 msgid "Plug-in %s"
 msgstr "Plug-in %s"
 
 #. TRANSLATORS: The context owner (when it is the main program) used in some strings.
 #. Search for "context owner" to find these strings.
-#: libcpluff/context.c:629
+#: libcpluff/context.c:645
 msgid "The main program"
 msgstr "das Hauptprogramm"
 
@@ -739,17 +739,17 @@ msgstr "Das unbekannte Plug-in %s konnte nicht gestoppt werden."
 msgid "Unknown plug-in %s could not be uninstalled."
 msgstr "Das unbekannte Plug-in %s konnte nicht deinstalliert werden."
 
-#: libcpluff/pdescriptor.c:166
+#: libcpluff/pdescriptor.c:163
 #, c-format
 msgid "Suspicious plug-in descriptor content in %s, line %d, column %d (%s)."
 msgstr "verdächtiger Plug-in-Deskriptorinhalt in %s, Zeile %d, Spalte %d (%s)"
 
-#: libcpluff/pdescriptor.c:173
+#: libcpluff/pdescriptor.c:170
 #, c-format
 msgid "Invalid plug-in descriptor content in %s, line %d, column %d (%s)."
 msgstr "ungültiger Plug-in-Deskriptorinhalt in %s, Zeile %d, Spalte %d (%s)"
 
-#: libcpluff/pdescriptor.c:193
+#: libcpluff/pdescriptor.c:190
 #, c-format
 msgid ""
 "Insufficient system resources to parse plug-in descriptor content in %s, "
@@ -758,60 +758,60 @@ msgstr ""
 "Die Systemressourcen reichen nicht zum Auswerten des Plug-in-"
 "Deskriptorinhalts in %s, Zeile %d, Spalte %d aus."
 
-#: libcpluff/pdescriptor.c:247
+#: libcpluff/pdescriptor.c:244
 #, c-format
 msgid "required attribute %s for element %s has an empty value"
 msgstr "Wert des benötigten Attributs %s für Element %s ist leer"
 
-#: libcpluff/pdescriptor.c:253
+#: libcpluff/pdescriptor.c:250
 #, c-format
 msgid "required attribute %s missing for element %s"
 msgstr "benötigtes Attribut %s für Element %s fehlt"
 
-#: libcpluff/pdescriptor.c:287
+#: libcpluff/pdescriptor.c:284
 #, c-format
 msgid "ignoring unknown attribute %s for element %s"
 msgstr "unbekanntes Attribut %s für Element %s wird ignoriert"
 
-#: libcpluff/pdescriptor.c:380
+#: libcpluff/pdescriptor.c:377
 #, c-format
 msgid "ignoring unexpected element %s and its contents"
 msgstr "unerwartetes Element %s und sein Inhalt werden ignoriert"
 
-#: libcpluff/pdescriptor.c:763
+#: libcpluff/pdescriptor.c:760
 #, c-format
 msgid "unknown boolean value: %s"
 msgstr "unbekannter boolescher Wert: %s"
 
-#: libcpluff/pdescriptor.c:973
+#: libcpluff/pdescriptor.c:970
 #, c-format
 msgid "unexpected closing tag for %s"
 msgstr "unerwartete schließende Kennzeichnung für %s"
 
-#: libcpluff/pdescriptor.c:1037
+#: libcpluff/pdescriptor.c:1034
 #, c-format
 msgid "XML parsing error in %s, line %d, column %d (%s)."
 msgstr "XML-Auswertungsfehler in %s, Zeile %d, Spalte %d (%s)"
 
-#: libcpluff/pdescriptor.c:1081
+#: libcpluff/pdescriptor.c:1078
 #, c-format
 msgid "Plug-in descriptor in %s is invalid."
 msgstr "Plug-in-Deskriptor in %s ist ungültig."
 
-#: libcpluff/pdescriptor.c:1085
+#: libcpluff/pdescriptor.c:1082
 #, c-format
 msgid "An I/O error occurred while loading a plug-in descriptor from %s."
 msgstr ""
 "Beim Laden eines Plug-in-Deskriptors von %s ist ein E/A-Fehler aufgetreten."
 
-#: libcpluff/pdescriptor.c:1089
+#: libcpluff/pdescriptor.c:1086
 #, c-format
 msgid "Insufficient system resources to load a plug-in descriptor from %s."
 msgstr ""
 "Die Systemressourcen reichen nicht aus, um einen Plug-in-Deskriptor von %s "
 "zu laden."
 
-#: libcpluff/pdescriptor.c:1093
+#: libcpluff/pdescriptor.c:1090
 #, c-format
 msgid "Failed to load a plug-in descriptor from %s."
 msgstr "Laden eines Plug-in-Deskriptors von %s fehlgeschlagen"

@@ -1,4 +1,4 @@
-C-Pluff (0.2.0-SNAPSHOT)
+C-Pluff (0.2.0)
 
   * Initial incomplete implementation of C++ API (not built by default, use
     configure option --enable-cpluffxx to enable C++ library).
@@ -15,7 +15,7 @@ C-Pluff (0.2.0-SNAPSHOT)
   * Some compilation warnings fixed by Chris Mayo.
   * Build fix for NetBSD by coypoop.
 
- -- UNRELEASED
+ -- Johannes Lehtinen <johannes.lehtinen@iki.fi>  Fri, 01 May 2020 00:39:13 +0300
 
 
 C-Pluff (0.1.4)
