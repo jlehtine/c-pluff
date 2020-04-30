@@ -32,6 +32,8 @@ AC_CONFIG_SRCDIR([libcpluff/cpluff.h])
 AC_CONFIG_AUX_DIR([auxliary])
 AC_CONFIG_HEADERS([config.h])
 
+PKG_PROG_PKG_CONFIG
+PKG_INSTALLDIR
 
 # Version information
 # -------------------
@@ -386,11 +388,13 @@ AC_SUBST(CPLUFF_LOADER)
 # Output Makefiles
 # ----------------
 AC_CONFIG_FILES([Makefile
+libcpluff/libcpluff.pc
 libcpluff/Makefile
 libcpluff/cpluffdef.h
 libcpluff/docsrc/Makefile
 libcpluff/docsrc/Doxyfile-ref
 libcpluff/docsrc/Doxyfile-impl
+libcpluffxx/libcpluffxx.pc
 libcpluffxx/Makefile
 libcpluffxx/cpluffxx/Makefile
 libcpluffxx/cpluffxx/sharedptr.h

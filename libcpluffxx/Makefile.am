@@ -26,6 +26,8 @@ libcpluffxx_la_LDFLAGS = -no-undefined -version-info $(CP_CXX_LIB_VERSION)
 
 include_HEADERS = cpluffxx.h
 
+pkgconfig_DATA = libcpluffxx.pc
+
 doc: refdoc
 
 refdoc: doc/reference/cxx-api/index.html
