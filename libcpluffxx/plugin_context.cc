@@ -46,31 +46,31 @@ CP_HIDDEN plugin_context_impl::plugin_context_impl() {
 	plugin_context_impl(NULL);
 }
 
-CP_HIDDEN plugin_context_impl::~plugin_context_impl() throw () {
+CP_HIDDEN plugin_context_impl::~plugin_context_impl() noexcept {
 	cp_destroy_context(context);
 }
 
-CP_HIDDEN void plugin_context_impl::register_logger(logger* logger, logger::severity minseverity) throw (api_error) {
+CP_HIDDEN void plugin_context_impl::register_logger(logger* logger, logger::severity minseverity) {
 	// TODO synchronization
 	loggers[logger] = minseverity;
 	update_min_logger_severity();
 }
 
-CP_HIDDEN void plugin_context_impl::unregister_logger(logger* logger) throw () {
+CP_HIDDEN void plugin_context_impl::unregister_logger(logger* logger) noexcept {
 	// TODO synchronization
 	loggers.erase(logger);
 	update_min_logger_severity();
 }
 
-CP_HIDDEN void plugin_context_impl::log(logger::severity severity, const char* msg) throw () {
+CP_HIDDEN void plugin_context_impl::log(logger::severity severity, const char* msg) noexcept {
 	cp_log(context, (cp_log_severity_t) severity, msg);
 }
 
-CP_HIDDEN bool plugin_context_impl::is_logged(logger::severity severity) throw () {
+CP_HIDDEN bool plugin_context_impl::is_logged(logger::severity severity) noexcept {
 	return cp_is_logged(context, (cp_log_severity_t) severity);
 }
 
-CP_HIDDEN void plugin_context_impl::logf(logger::severity severity, const char* msg, ...) throw () {
+CP_HIDDEN void plugin_context_impl::logf(logger::severity severity, const char* msg, ...) noexcept {
 	assert(msg != NULL);
 	assert(severity >= logger::DEBUG && severity <= logger::ERROR);
 
@@ -86,7 +86,7 @@ CP_HIDDEN void plugin_context_impl::logf(logger::severity severity, const char* 
 	}	
 }
 
-CP_HIDDEN void plugin_context_impl::deliver_log_message(cp_log_severity_t sev, const char* msg, const char* apid, void* user_data) throw () {
+CP_HIDDEN void plugin_context_impl::deliver_log_message(cp_log_severity_t sev, const char* msg, const char* apid, void* user_data) noexcept {
 	plugin_context_impl* context = static_cast<plugin_context_impl*>(user_data);
 	std::map<logger*, logger::severity>::iterator iter;
 	// TODO synchronization
@@ -99,7 +99,7 @@ CP_HIDDEN void plugin_context_impl::deliver_log_message(cp_log_severity_t sev, c
 	}
 }
 
-CP_HIDDEN void plugin_context_impl::update_min_logger_severity() throw () {
+CP_HIDDEN void plugin_context_impl::update_min_logger_severity() noexcept {
 	min_logger_severity = static_cast<logger::severity>(logger::ERROR + 1);
 	std::map<logger*, logger::severity>::iterator iter;
 	// TODO synchronization

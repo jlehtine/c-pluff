@@ -68,7 +68,7 @@ public:
 		this_weak = ts;
 	}
 
-	CP_HIDDEN shared_ptr<plugin_container> new_plugin_container() throw (api_error);
+	CP_HIDDEN shared_ptr<plugin_container> new_plugin_container();
 
 private:
 	weak_ptr<framework> this_weak;
@@ -84,11 +84,11 @@ public:
 	 */
 	CP_HIDDEN plugin_import_impl(cp_plugin_import_t* pimport);
 
-	CP_HIDDEN const char* plugin_identifier() const throw ();
+	CP_HIDDEN const char* plugin_identifier() const noexcept;
 
-	CP_HIDDEN const char* version() const throw ();
+	CP_HIDDEN const char* version() const noexcept;
 
-	CP_HIDDEN bool is_optional() const throw ();
+	CP_HIDDEN bool is_optional() const noexcept;
 
 private:
 
@@ -107,13 +107,13 @@ public:
 	 */
 	CP_HIDDEN plugin_context_impl(cp_context_t *context);
 
-	CP_HIDDEN void register_logger(logger* logger, logger::severity minseverity) throw (api_error);
+	CP_HIDDEN void register_logger(logger* logger, logger::severity minseverity);
 
-	CP_HIDDEN void unregister_logger(logger* logger) throw ();
+	CP_HIDDEN void unregister_logger(logger* logger) noexcept;
 
-	CP_HIDDEN void log(logger::severity severity, const char* msg) throw ();
+	CP_HIDDEN void log(logger::severity severity, const char* msg) noexcept;
 
-	CP_HIDDEN bool is_logged(logger::severity severity) throw ();
+	CP_HIDDEN bool is_logged(logger::severity severity) noexcept;
 
 	/**
 	 * Emits a new formatted log message if the associated severity is being
@@ -122,7 +122,7 @@ public:
 	 * @param severity the severity of the event
 	 * @param msg the log message (possibly localized)
 	 */
-	CP_HIDDEN void logf(logger::severity severity, const char* msg, ...) throw ();
+	CP_HIDDEN void logf(logger::severity severity, const char* msg, ...) noexcept;
 
 protected:
 
@@ -142,7 +142,7 @@ protected:
 	 * plug-in context are released and all pointers and references
 	 * obtained via it become invalid.
 	 */
-	CP_HIDDEN ~plugin_context_impl() throw ();
+	CP_HIDDEN ~plugin_context_impl() noexcept;
 
 private:
 
@@ -165,12 +165,12 @@ private:
 	 * @param apid the identifier of the activating plug-in or NULL for the main program
 	 * @param user_data pointer to the associated plug-in context object
 	 */
-	CP_HIDDEN static void deliver_log_message(cp_log_severity_t severity, const char* msg, const char* apid, void* user_data) throw ();
+	CP_HIDDEN static void deliver_log_message(cp_log_severity_t severity, const char* msg, const char* apid, void* user_data) noexcept;
 
 	/**
 	 * Updates the aggregate minimum severity for installed loggers.
 	 */
-	CP_HIDDEN void update_min_logger_severity() throw (); 
+	CP_HIDDEN void update_min_logger_severity() noexcept; 
 };
 
 class plugin_container_impl : public plugin_container, public plugin_context_impl {
@@ -181,13 +181,13 @@ public:
 	 */
 	CP_HIDDEN plugin_container_impl(shared_ptr<framework> fw);
 	
-	CP_HIDDEN void register_plugin_collection(const char* dir) throw (api_error);
+	CP_HIDDEN void register_plugin_collection(const char* dir);
 
-	CP_HIDDEN void unregister_plugin_collection(const char* dir) throw ();
+	CP_HIDDEN void unregister_plugin_collection(const char* dir) noexcept;
 
-	CP_HIDDEN void unregister_plugin_collections() throw ();
+	CP_HIDDEN void unregister_plugin_collections() noexcept;
 
-	CP_HIDDEN shared_ptr<plugin_info> load_plugin_descriptor(const char* path) throw (api_error);
+	CP_HIDDEN shared_ptr<plugin_info> load_plugin_descriptor(const char* path);
 
 private:
 

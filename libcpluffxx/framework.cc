@@ -13,31 +13,31 @@ static void invoke_fatal_error_handler(const char *msg) {
 	current_fatal_error_handler->fatal_error(msg);
 }
 
-const char* framework::version() throw () {
+const char* framework::version() noexcept {
 	return cp_get_version();
 }
 
-const char* framework::host_type() throw () {
+const char* framework::host_type() noexcept {
 	return cp_get_host_type();
 }
 
-void framework::fatal_error_handler(::cpluff::fatal_error_handler &feh) throw () {
+void framework::fatal_error_handler(::cpluff::fatal_error_handler &feh) noexcept {
 	current_fatal_error_handler = &feh;
 	cp_set_fatal_error_handler(invoke_fatal_error_handler);
 }
 
-void framework::reset_fatal_error_handler() throw () {
+void framework::reset_fatal_error_handler() noexcept {
 	current_fatal_error_handler = NULL;
 	cp_set_fatal_error_handler(NULL);
 }
 
-shared_ptr<framework> framework::init() throw (api_error) {
+shared_ptr<framework> framework::init() {
 	shared_ptr<framework_impl> sp(new framework_impl);
 	sp.get()->this_shared(sp);
 	return sp;
 }
 
-CP_HIDDEN shared_ptr<plugin_container> framework_impl::new_plugin_container() throw (api_error) {
+CP_HIDDEN shared_ptr<plugin_container> framework_impl::new_plugin_container() {
 	return shared_ptr<plugin_container>(new plugin_container_impl(shared_ptr<framework>(this_weak)));
 }
 
