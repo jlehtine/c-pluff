@@ -7,7 +7,7 @@
 set -e
 
 # Check directory
-basedir="`dirname "$0"`"
+basedir="`dirname -- "$0"`"
 if ! test -f "$basedir"/libcpluff/cpluff.h; then
     echo 'Run autogen.sh in the top level source directory.' 1>&2
     exit 1
