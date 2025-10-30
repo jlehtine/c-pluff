@@ -111,7 +111,16 @@ extern "C" {
  * 
  * @param arg the argument
  */
+#ifdef __GNUC__
+#define CHECK_NOT_NULL(arg) do { \
+    _Pragma("GCC diagnostic push") \
+    _Pragma("GCC diagnostic ignored \"-Wnonnull-compare\"") \
+    if ((arg) == NULL) cpi_fatal_null_arg(#arg, __func__); \
+    _Pragma("GCC diagnostic pop") \
+} while (0)
+#else
 #define CHECK_NOT_NULL(arg) do { if ((arg) == NULL) cpi_fatal_null_arg(#arg, __func__); } while (0)
+#endif
 
 
 /* ------------------------------------------------------------------------
