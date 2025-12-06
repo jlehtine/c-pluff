@@ -11,7 +11,7 @@ dnl -------------------
 dnl Version information
 define(CP_M4_VERSION_MAJOR, [0])
 define(CP_M4_VERSION_MINOR, [2])
-define(CP_M4_VERSION_REV, [0])
+define(CP_M4_VERSION_REV, [1])
 define(CP_M4_RELEASE_VERSION, CP_M4_VERSION_MAJOR.CP_M4_VERSION_MINOR.CP_M4_VERSION_REV)
 
 dnl Backwards compatibility information
