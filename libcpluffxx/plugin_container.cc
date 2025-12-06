@@ -17,19 +17,19 @@ CP_HIDDEN plugin_container_impl::plugin_container_impl(shared_ptr<framework> fw)
 	this->context = context;
 }
 
-CP_HIDDEN void plugin_container_impl::register_plugin_collection(const char* dir) throw (api_error) {
+CP_HIDDEN void plugin_container_impl::register_plugin_collection(const char* dir) {
 	check_cp_status(cp_register_pcollection(context, dir));
 }
 
-CP_HIDDEN void plugin_container_impl::unregister_plugin_collection(const char* dir) throw () {
+CP_HIDDEN void plugin_container_impl::unregister_plugin_collection(const char* dir) noexcept {
 	cp_unregister_pcollection(context, dir);
 }
 
-CP_HIDDEN void plugin_container_impl::unregister_plugin_collections() throw () {
+CP_HIDDEN void plugin_container_impl::unregister_plugin_collections() noexcept {
 	cp_unregister_pcollections(context);
 }
 
-CP_HIDDEN shared_ptr<plugin_info> plugin_container_impl::load_plugin_descriptor(const char* path) throw (api_error) {
+CP_HIDDEN shared_ptr<plugin_info> plugin_container_impl::load_plugin_descriptor(const char* path) {
 	cp_status_t status;
 	cp_plugin_info_t *pinfo = cp_load_plugin_descriptor(context, path, &status);
 	check_cp_status(status);

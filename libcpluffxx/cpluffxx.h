@@ -70,7 +70,7 @@ public:
 	 * 
 	 * @return the release version of the C-Pluff implementation 
 	 */
-	static const char* version() throw ();
+	static const char* version() noexcept;
 
 	/**
 	 * Returns the canonical host type associated with the linked in
@@ -79,7 +79,7 @@ public:
 	 * 
 	 * @return the canonical host type
 	 */ 
-	static const char* host_type() throw ();
+	static const char* host_type() noexcept;
 
 	/**
 	 * Sets a global fatal error handler. The error handler
@@ -91,14 +91,14 @@ public:
 	 * 
 	 * @param feh the fatal error handler to be installed
 	 */ 
-	static void fatal_error_handler(::cpluff::fatal_error_handler &feh) throw ();
+	static void fatal_error_handler(::cpluff::fatal_error_handler &feh) noexcept;
 
 	/**
 	 * Resets the default fatal error handler which prints the error message to
 	 * standard error and aborts the program. This function is not thread-safe
 	 * with regards to other threads simultaneously invoking API.
 	 */
-	static void reset_fatal_error_handler() throw ();
+	static void reset_fatal_error_handler() noexcept;
 	
 	/**
 	 * Initializes the C-Pluff framework. The framework is automatically
@@ -113,7 +113,7 @@ public:
 	 * 
 	 * @throw api_error if there are not enough system resources
 	 */ 
-	static shared_ptr<framework> init() throw (api_error);
+	static shared_ptr<framework> init();
 
 	/**
 	 * Creates and returns a new plug-in container. The returned plug-in
@@ -123,7 +123,7 @@ public:
 	 * @return reference to a new created plug-in container
 	 * @throw api_error if there are not enough system resources
 	 */
-	virtual shared_ptr<plugin_container> new_plugin_container() throw (api_error) = 0;
+	virtual shared_ptr<plugin_container> new_plugin_container() = 0;
 
 protected:
 
@@ -160,7 +160,7 @@ public:
 	 * @throw cpluff::api_error if insufficient memory
 	 * @sa cpluff::unregister_logger
 	 */
-	virtual void register_logger(logger* logger, logger::severity minseverity) throw (api_error) = 0;
+	virtual void register_logger(logger* logger, logger::severity minseverity) = 0;
 
 	/**
 	 * Removes a logger registration.
@@ -168,7 +168,7 @@ public:
 	 * @param logger the logger object to be unregistered
 	 * @sa cpluff::register_logger
 	 */
-	virtual void unregister_logger(logger* logger) throw () = 0;
+	virtual void unregister_logger(logger* logger) noexcept = 0;
 
 	/**
 	 * Emits a new log message.
@@ -176,7 +176,7 @@ public:
 	 * @param severity the severity of the event
 	 * @param msg the log message (possibly localized)
 	 */
-	virtual void log(logger::severity severity, const char* msg) throw () = 0;
+	virtual void log(logger::severity severity, const char* msg) noexcept = 0;
 
 	/**
 	 * Returns whether a message of the specified severity would get logged.
@@ -184,7 +184,7 @@ public:
 	 * @param severity the target logging severity
 	 * @return whether a message of the specified severity would get logged
 	 */
-	virtual bool is_logged(logger::severity severity) throw () = 0;
+	virtual bool is_logged(logger::severity severity) noexcept = 0;
 
 protected:
 
@@ -212,7 +212,7 @@ public:
 	 * @sa unregister_plugin_collection
 	 * @sa unregister_plugin_collections
 	 */
-	virtual void register_plugin_collection(const char* dir) throw (api_error) = 0;
+	virtual void register_plugin_collection(const char* dir) = 0;
 
 	/**
 	 * Unregisters a plug-in collection previously registered with this
@@ -222,7 +222,7 @@ public:
 	 * @param dir the previously registered directory
 	 * @sa register_plugin_collection
 	 */
-	virtual void unregister_plugin_collection(const char* dir) throw () = 0;
+	virtual void unregister_plugin_collection(const char* dir) noexcept = 0;
 
 	/**
 	 * Unregisters all plug-in collections registered with this plug-in
@@ -230,7 +230,7 @@ public:
 	 * 
 	 * @sa register_plugin_collection
 	 */
-	virtual void unregister_plugin_collections() throw () = 0;
+	virtual void unregister_plugin_collections() noexcept = 0;
 
 	/**
 	 * Loads a plug-in descriptor from the specified plug-in installation
@@ -244,7 +244,7 @@ public:
 	 * @return reference to the plug-in information structure
 	 * @throw cp_api_error if loading fails or the plug-in descriptor is malformed
 	 */
-	virtual shared_ptr<plugin_info> load_plugin_descriptor(const char* path) throw (api_error) = 0;
+	virtual shared_ptr<plugin_info> load_plugin_descriptor(const char* path) = 0;
 
 protected:
 

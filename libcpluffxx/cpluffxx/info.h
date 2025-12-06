@@ -51,7 +51,7 @@ public:
 	 * @param s2 the second string to compare
 	 * @return whether the first string comes before the second string
 	 */
-	inline bool operator()(const char* const& s1, const char* const& s2) {
+	inline bool operator()(const char* const& s1, const char* const& s2) const {
 		return strcmp(s1, s2) < 0;
 	}
 };
